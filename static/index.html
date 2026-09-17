@@ -76,6 +76,36 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* Calendar styles */
+        .cal-day {
+            min-height: 80px;
+            transition: background 0.15s;
+        }
+        .cal-day:hover { background: #f0f5ff; cursor: pointer; }
+        .cal-day.today { background: #e0ecff; border: 2px solid #1b47cc; }
+        .cal-day.other-month { opacity: 0.4; }
+        .cal-event-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .cal-view-btn.active {
+            background: #0f2b5c;
+            color: white;
+        }
+        .deadline-card {
+            transition: all 0.2s;
+        }
+        .deadline-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .urgent-pulse { animation: pulse-dot 1.5s ease-in-out infinite; }
     </style>
 </head>
 
@@ -160,6 +190,11 @@
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
                     <span>🎓</span>
                     <span>個人學分與擋修診斷</span>
+                </button>
+                <button onclick="switchTab('tab-calendar')" id="tabBtn-calendar"
+                    class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
+                    <span>📅</span>
+                    <span>校曆行事曆</span>
                 </button>
                 <button onclick="switchTab('tab-portfolio')" id="tabBtn-portfolio"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
@@ -510,6 +545,24 @@
             <!-- 不及格科目與修課風險：與「尚未修習」明確區分 -->
             <div id="academicAlertPanel" class="hidden rounded-3xl border p-5 sm:p-6 shadow-sm"></div>
 
+            <!-- 即期學業期限迷你提醒條 (點擊跳轉至校曆行事曆) -->
+            <div id="miniDeadlineBanner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl urgent-pulse">⏰</span>
+                        <div>
+                            <div class="text-xs font-bold text-amber-800 mb-1">即期重要學業期限</div>
+                            <div id="miniDeadlineItems" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('tab-calendar')" class="flex items-center gap-1.5 text-xs font-bold bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-xl transition shadow-sm">
+                        <span>📅</span>
+                        <span>查看完整校曆行事曆</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- 跨系統期限雷達：整合選課/請假/抵免/獎助學金/教學評量等既有系統的期限 -->
             <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
                 <div class="flex items-center justify-between">
@@ -556,6 +609,94 @@
                     </button>
                 </div>
             </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 3c: 校曆行事曆與期限雷達 (Tab Calendar) -->
+        <!-- ======================================================== -->
+        <div id="tab-calendar" class="tab-content hidden space-y-6">
+
+            <!-- Hero Header -->
+            <div class="bg-gradient-to-r from-ukn-900 via-indigo-900 to-purple-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
+                            <span>📅</span>
+                            <span>115 學年度第 1 學期 · 自動依身分過濾適用期限</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold">校曆行事曆與重要期限雷達</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1">整合選課、停修、抵免、獎助學金、考試週等全學期校園行程，一目了然</p>
+                    </div>
+                    <!-- 視圖切換 -->
+                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/15">
+                        <button onclick="switchCalendarView('calendar')" id="calViewBtn-calendar" class="cal-view-btn active flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition">
+                            <span>🗓️</span><span class="hidden sm:inline">月曆</span>
+                        </button>
+                        <button onclick="switchCalendarView('radar')" id="calViewBtn-radar" class="cal-view-btn flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-blue-200 hover:text-white transition">
+                            <span>📡</span><span class="hidden sm:inline">雷達清單</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 月曆視圖 -->
+            <div id="calView-calendar" class="space-y-4">
+                <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200">
+                    <!-- 月份導覽 -->
+                    <div class="flex items-center justify-between mb-5">
+                        <button onclick="calNavigate(-1)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-ukn-100 flex items-center justify-center font-bold text-slate-600 hover:text-ukn-800 transition">‹</button>
+                        <div class="text-center">
+                            <div class="text-lg sm:text-xl font-extrabold text-slate-900" id="calMonthTitle">2026 年 9 月</div>
+                            <div class="text-xs text-slate-400">點擊有事件的日期查看詳情</div>
+                        </div>
+                        <button onclick="calNavigate(1)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-ukn-100 flex items-center justify-center font-bold text-slate-600 hover:text-ukn-800 transition">›</button>
+                    </div>
+                    <!-- 星期標頭 -->
+                    <div class="grid grid-cols-7 mb-2">
+                        <div class="text-center text-xs font-bold text-rose-500 py-2">日</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">一</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">二</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">三</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">四</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">五</div>
+                        <div class="text-center text-xs font-bold text-blue-500 py-2">六</div>
+                    </div>
+                    <!-- 日曆格子 -->
+                    <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
+                    <!-- 色標圖例 -->
+                    <div class="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-rose-500"></span>緊急</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-amber-500"></span>近期截止</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-blue-500"></span>進行中</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-emerald-500"></span>已結束/紀念日</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-purple-500"></span>考試週</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 雷達清單視圖 -->
+            <div id="calView-radar" class="hidden space-y-4">
+                <!-- 分類篩選器 -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-500 mr-1">🔎 篩選：</span>
+                        <button onclick="filterDeadlineRadar('all')" class="radar-filter-btn active px-3 py-1.5 rounded-lg text-xs font-bold bg-ukn-900 text-white transition" data-cat="all">全部</button>
+                        <button onclick="filterDeadlineRadar('選課')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="選課">選課 / 停修</button>
+                        <button onclick="filterDeadlineRadar('抵免')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="抵免">學分抵免</button>
+                        <button onclick="filterDeadlineRadar('獎助學金')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="獎助學金">獎助學金</button>
+                        <button onclick="filterDeadlineRadar('學習預警')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="學習預警">學習預警</button>
+                        <button onclick="filterDeadlineRadar('考試')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="考試">考試週</button>
+                        <button onclick="filterDeadlineRadar('教學評量')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="教學評量">教學評量</button>
+                    </div>
+                </div>
+                <div id="calRadarList" class="space-y-3"></div>
+                <div class="text-center pt-1">
+                    <a href="/api/deadlines/export.ics" class="inline-flex items-center gap-1.5 text-xs font-bold text-ukn-700 hover:text-ukn-900 bg-ukn-50 hover:bg-ukn-100 border border-ukn-200 px-4 py-2 rounded-xl transition">
+                        <span>⬇️</span><span>匯出全部期限至我的行事曆 (.ics)</span>
+                    </a>
+                </div>
+            </div>
+
         </div>
 
         <!-- ======================================================== -->
@@ -1035,6 +1176,23 @@
         </div>
     </div>
 
+    <!-- 彈窗 Modal: 行事曆日期事件詳情 -->
+    <div id="calDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📅</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">當日行程詳情</h3>
+                        <p class="text-xs text-slate-400" id="calDayModalDate"></p>
+                    </div>
+                </div>
+                <button onclick="closeCalDayModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100">✕</button>
+            </div>
+            <div id="calDayModalItems" class="overflow-y-auto space-y-3 flex-1 pr-1"></div>
+        </div>
+    </div>
+
     <!-- ======================================================== -->
     <!-- 前端核心 JavaScript 邏輯 -->
     <!-- ======================================================== -->
@@ -1044,6 +1202,13 @@
         let categoriesCache = [];
         let checklistsCache = [];
         let currentSearchData = null;
+
+        // 全域行事曆狀態
+        let calAllDeadlines = [];
+        let calCurrentYear = new Date().getFullYear();
+        let calCurrentMonth = new Date().getMonth(); // 0-indexed
+        let calCurrentView = 'calendar';
+        let radarCurrentCat = 'all';
 
         document.addEventListener('DOMContentLoaded', async () => {
             // 綁定 Enter 鍵手動搜尋
@@ -1070,6 +1235,9 @@
             await loadCompetitions();
             updatePortfolioActionButtons();
 
+            // 5b. 載入校曆行事曆（全部角色皆可查看）
+            await loadCalendarDeadlines();
+
             // 6. 訪客留痕清單僅教職員/管理員可查閱
             if (currentUser && ['教職員', '管理員'].includes(currentUser.role)) {
                 await loadVisitors();
@@ -1078,13 +1246,13 @@
 
         // 各角色可見的頁籤清單 (依身分分流導覽，全部身分皆可瀏覽證照與競賽成果)
         const TAB_VISIBILITY_BY_ROLE = {
-            '學生': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-portfolio'],
-            '家長': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-portfolio'],
-            '教職員': ['tab-ai', 'tab-checklist', 'tab-portfolio', 'tab-admin-embedded'],
-            '管理員': ['tab-ai', 'tab-checklist', 'tab-portfolio', 'tab-admin-embedded'],
-            '訪客': ['tab-ai', 'tab-checklist', 'tab-portfolio']
+            '學生': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio'],
+            '家長': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio'],
+            '教職員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
+            '管理員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
+            '訪客': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio']
         };
-        const ALL_TAB_IDS = ['tab-ai', 'tab-checklist', 'tab-course', 'tab-portfolio', 'tab-admin-embedded'];
+        const ALL_TAB_IDS = ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'];
 
         // 1. 取得登入身分 (未登入時如實顯示訪客狀態，不再假裝已登入)
         async function loadCurrentUser() {
@@ -1559,10 +1727,237 @@ ${currentSearchData.answer}
             }
         }
 
+        // ======================================================
+        // 校曆行事曆核心邏輯
+        // ======================================================
+
+        // 載入全學期行事曆（所有用戶皆可查看）
+        async function loadCalendarDeadlines() {
+            try {
+                const res = await fetch('/api/deadlines?scope=all');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    calAllDeadlines = data.data || [];
+                    renderCalendar(calCurrentYear, calCurrentMonth);
+                    renderRadarList(calAllDeadlines);
+                    renderMiniDeadlineBanner(calAllDeadlines);
+                }
+            } catch (e) {
+                console.error('Load calendar deadlines failed:', e);
+            }
+        }
+
+        // 切換行事曆視圖（月曆 / 雷達清單）
+        function switchCalendarView(view) {
+            calCurrentView = view;
+            document.getElementById('calView-calendar').classList.toggle('hidden', view !== 'calendar');
+            document.getElementById('calView-radar').classList.toggle('hidden', view !== 'radar');
+            document.querySelectorAll('.cal-view-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-blue-200');
+                btn.classList.remove('text-white');
+            });
+            const activeBtn = document.getElementById('calViewBtn-' + view);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.classList.remove('text-blue-200');
+                activeBtn.classList.add('text-white');
+            }
+        }
+
+        // 月份導覽
+        function calNavigate(delta) {
+            calCurrentMonth += delta;
+            if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+            if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
+            renderCalendar(calCurrentYear, calCurrentMonth);
+        }
+
+        // 渲染月曆
+        function renderCalendar(year, month) {
+            const title = document.getElementById('calMonthTitle');
+            const grid = document.getElementById('calGrid');
+            if (!title || !grid) return;
+
+            title.textContent = `${year} 年 ${month + 1} 月`;
+
+            const today = new Date();
+            const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrev = new Date(year, month, 0).getDate();
+
+            // Build event map: { 'YYYY-MM-DD': [deadline, ...] }
+            const eventMap = {};
+            calAllDeadlines.forEach(d => {
+                // Mark on end_date
+                if (!eventMap[d.end_date]) eventMap[d.end_date] = [];
+                eventMap[d.end_date].push(d);
+                // Mark range: start_date to end_date if both exist and different
+                if (d.start_date && d.start_date !== d.end_date) {
+                    let cur = new Date(d.start_date);
+                    const end = new Date(d.end_date);
+                    while (cur < end) {
+                        const key = cur.toISOString().slice(0, 10);
+                        if (!eventMap[key]) eventMap[key] = [];
+                        if (!eventMap[key].find(x => x.deadline_id === d.deadline_id)) {
+                            eventMap[key].push({...d, _rangeDay: true});
+                        }
+                        cur.setDate(cur.getDate() + 1);
+                    }
+                }
+            });
+
+            const catColor = {
+                '選課': 'bg-blue-500', '抵免': 'bg-indigo-500', '獎助學金': 'bg-emerald-500',
+                '學習預警': 'bg-amber-500', '教學評量': 'bg-purple-500',
+                '考試': 'bg-purple-600', '教務': 'bg-slate-400'
+            };
+            const urgencyColor = { 'urgent': 'bg-rose-500', 'soon': 'bg-amber-500', 'normal': 'bg-blue-500', 'past': 'bg-slate-300' };
+
+            let html = '';
+            // Previous month padding
+            for (let i = firstDay - 1; i >= 0; i--) {
+                html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-xs text-slate-300 font-medium">${daysInPrev - i}</div></div>`;
+            }
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+                const events = eventMap[dateStr] || [];
+                const endEvents = events.filter(e => e.end_date === dateStr && !e._rangeDay);
+                const dotHtml = endEvents.slice(0, 3).map(e => {
+                    const col = e.urgency ? urgencyColor[e.urgency] : (catColor[e.category] || 'bg-slate-400');
+                    return `<span class="cal-event-dot ${col}"></span>`;
+                }).join('');
+                const eventTitleHtml = endEvents.slice(0, 2).map(e =>
+                    `<div class="text-[9px] leading-tight text-slate-700 truncate font-medium">${e.title}</div>`
+                ).join('');
+                const moreHtml = endEvents.length > 2 ? `<div class="text-[9px] text-slate-400">+${endEvents.length - 2} 更多</div>` : '';
+                const clickData = endEvents.length ? `onclick="showCalDayDetail('${dateStr}')" style="cursor:pointer"` : '';
+                html += `<div class="cal-day ${isToday ? 'today' : ''} p-1.5 rounded-xl border ${isToday ? 'border-ukn-400' : 'border-slate-100'} bg-white" ${clickData}>
+                    <div class="text-xs font-bold ${isToday ? 'text-ukn-800' : 'text-slate-600'} mb-1">${d}</div>
+                    <div class="flex flex-wrap gap-0.5 mb-0.5">${dotHtml}</div>
+                    ${eventTitleHtml}${moreHtml}
+                </div>`;
+            }
+            // Next month padding
+            const total = firstDay + daysInMonth;
+            const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+            for (let i = 1; i <= remaining; i++) {
+                html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-xs text-slate-300 font-medium">${i}</div></div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        // 點擊日期後顯示當日事件
+        function showCalDayDetail(dateStr) {
+            const events = calAllDeadlines.filter(d => d.end_date === dateStr);
+            if (!events.length) return;
+            const urgencyLabel = { urgent: '🚨 緊急', soon: '⚠️ 近期', normal: '⏳ 尚有餘裕', past: '✅ 已過期' };
+            const items = events.map(e => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                    <div class="font-bold text-slate-900">${e.title}</div>
+                    <div class="flex gap-2 text-xs">
+                        <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">${e.category}</span>
+                        <span>${urgencyLabel[e.urgency] || ''}</span>
+                        ${e.days_left >= 0 ? `<span class="text-slate-500">剩 ${e.days_left} 天</span>` : '<span class="text-slate-400">已截止</span>'}
+                    </div>
+                    <p class="text-xs text-slate-500">${e.description || ''}</p>
+                    <a href="${e.related_system_url || '#'}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-ukn-700 hover:underline">前往官方系統 ↗</a>
+                </div>`).join('');
+            const modal = document.getElementById('calDayModal');
+            document.getElementById('calDayModalDate').textContent = dateStr;
+            document.getElementById('calDayModalItems').innerHTML = items;
+            modal.classList.remove('hidden');
+        }
+
+        function closeCalDayModal() {
+            document.getElementById('calDayModal').classList.add('hidden');
+        }
+
+        // 渲染雷達清單（全量，可篩選）
+        function renderRadarList(items) {
+            const list = document.getElementById('calRadarList');
+            if (!list) return;
+            const filtered = radarCurrentCat === 'all' ? items : items.filter(d => d.category === radarCurrentCat);
+            if (!filtered.length) {
+                list.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">此分類目前沒有期限項目。</div>`;
+                return;
+            }
+            const urgencyStyle = {
+                urgent: { badge: 'bg-rose-100 text-rose-800 border-rose-300', border: 'border-rose-200', left: 'bg-rose-500', label: '🚨 緊急', days: 'text-rose-700 font-black' },
+                soon:   { badge: 'bg-amber-100 text-amber-800 border-amber-300', border: 'border-amber-200', left: 'bg-amber-500', label: '⚠️ 近期', days: 'text-amber-700 font-black' },
+                normal: { badge: 'bg-blue-100 text-blue-800 border-blue-300', border: 'border-blue-200', left: 'bg-blue-500', label: '⏳ 進行中', days: 'text-blue-700 font-semibold' },
+                past:   { badge: 'bg-slate-100 text-slate-500 border-slate-300', border: 'border-slate-200', left: 'bg-slate-300', label: '✅ 已結束', days: 'text-slate-400 font-normal' }
+            };
+            const catIcon = { '選課':'📚', '抵免':'🏆', '獎助學金':'💰', '學習預警':'⚠️', '考試':'📝', '教學評量':'📊', '教務':'🏫' };
+            list.innerHTML = filtered.map(d => {
+                const s = urgencyStyle[d.urgency] || urgencyStyle.normal;
+                const daysText = d.days_left < 0 ? `已過 ${Math.abs(d.days_left)} 天` : d.days_left === 0 ? '今天截止！' : `剩 ${d.days_left} 天`;
+                return `
+                <div class="deadline-card flex gap-0 rounded-2xl border ${s.border} bg-white overflow-hidden shadow-sm">
+                    <div class="w-1.5 flex-shrink-0 ${s.left}"></div>
+                    <div class="flex-1 p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 flex-wrap mb-1">
+                                    <span class="text-sm">${catIcon[d.category] || '📌'}</span>
+                                    <span class="font-bold text-slate-900">${d.title}</span>
+                                    <span class="text-[11px] font-semibold border px-2 py-0.5 rounded-full ${s.badge}">${s.label}</span>
+                                    ${d.applies_to_dept_name ? `<span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">${d.applies_to_dept_name}</span>` : ''}
+                                </div>
+                                <p class="text-xs text-slate-500 leading-relaxed">${d.description || ''}</p>
+                                <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-400">
+                                    ${d.start_date ? `<span>開始：${d.start_date}</span>` : ''}
+                                    <span>截止：<strong class="text-slate-700">${d.end_date}</strong></span>
+                                </div>
+                            </div>
+                            <div class="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1 flex-shrink-0">
+                                <div class="text-xl sm:text-2xl ${s.days}">${daysText}</div>
+                                <a href="${d.related_system_url || '#'}" target="_blank" class="text-[11px] font-bold text-ukn-700 hover:text-ukn-900 bg-ukn-50 hover:bg-ukn-100 border border-ukn-200 px-3 py-1.5 rounded-xl transition">前往系統 ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterDeadlineRadar(cat) {
+            radarCurrentCat = cat;
+            document.querySelectorAll('.radar-filter-btn').forEach(btn => {
+                const isActive = btn.dataset.cat === cat;
+                btn.classList.toggle('bg-ukn-900', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('bg-slate-100', !isActive);
+                btn.classList.toggle('text-slate-600', !isActive);
+            });
+            renderRadarList(calAllDeadlines);
+        }
+
+        // 學分診斷迷你提醒條（顯示 30 天內與選課/停修相關期限）
+        function renderMiniDeadlineBanner(items) {
+            const banner = document.getElementById('miniDeadlineBanner');
+            const container = document.getElementById('miniDeadlineItems');
+            if (!banner || !container) return;
+            const relevantCats = ['選課', '抵免', '學習預警'];
+            const soon = items.filter(d => d.days_left >= 0 && d.days_left <= 30 && relevantCats.includes(d.category));
+            if (!soon.length) { banner.classList.add('hidden'); return; }
+            banner.classList.remove('hidden');
+            container.innerHTML = soon.slice(0, 4).map(d => {
+                const color = d.urgency === 'urgent' ? 'bg-rose-100 text-rose-800 border-rose-300' : d.urgency === 'soon' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-blue-100 text-blue-800 border-blue-300';
+                return `<span class="inline-flex items-center gap-1 text-[11px] font-bold border px-2 py-0.5 rounded-full ${color}">
+                    ${d.title} · <span class="font-black">${d.days_left === 0 ? '今天！' : `剩${d.days_left}天`}</span>
+                </span>`;
+            }).join('');
+        }
+
         // 跨系統期限雷達：整合選課/抵免/獎助學金/教學評量等既有系統的期限
         async function loadDeadlines() {
             try {
-                const res = await fetch('/api/deadlines');
+                const res = await fetch('/api/deadlines?scope=upcoming');
                 const data = await res.json();
                 if (data.status === 'success') {
                     renderDeadlineRadar(data.data || []);

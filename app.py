@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, redirect, send_from_directory
+from flask import Flask, request, jsonify, session, redirect, send_from_directory, make_response
 from flask_cors import CORS
 # pyrefly: ignore [missing-import]
 from werkzeug.security import check_password_hash
@@ -11,7 +11,7 @@ import os
 import sys
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -1229,13 +1229,14 @@ def diagnose_student_credits():
 
 # ==========================================
 # 8b. 跨系統期限雷達 API (/api/deadlines)
-#     把選課/請假/抵免/獎助學金/教學評量等既有系統的期限整合成
-#     「只屬於我」的清單：依身分與系所過濾，只顯示尚未截止者。
+#     把選課/請假/抵免/獎助學金/教學評量等既有系統的期限整合成單一清單；
+#     預設 (scope=all) 回傳完整校曆供行事曆月曆瀏覽，scope=upcoming 則只顯示尚未截止者。
 # ==========================================
 
 def _attach_deadline_urgency(rows, today):
-    """統一補上剩餘天數與急迫度標記，並把日期物件轉成字串方便前端顯示"""
+    """統一補上剩餘天數、急迫度標記與學分關聯性，並把日期物件轉成字串方便前端顯示"""
     result = []
+    credit_keywords = ["選課", "加退選", "停修", "棄修", "抵免", "重修", "重補修", "學分", "預警", "專題", "考試", "評量"]
     for r in rows:
         row = dict(r)
         end_date_val = row.get("end_date")
@@ -1251,7 +1252,18 @@ def _attach_deadline_urgency(rows, today):
             row["start_date"] = start_date_val.strftime("%Y-%m-%d")
 
         row["days_left"] = days_left
-        row["urgency"] = "urgent" if days_left <= 7 else ("soon" if days_left <= 14 else "normal")
+        if days_left < 0:
+            row["urgency"] = "past"
+        elif days_left <= 7:
+            row["urgency"] = "urgent"
+        elif days_left <= 14:
+            row["urgency"] = "soon"
+        else:
+            row["urgency"] = "normal"
+
+        title = row.get("title", "")
+        cat = row.get("category", "")
+        row["is_credit_related"] = any(k in title for k in credit_keywords) or cat in ["選課", "抵免", "學習預警", "考試", "教學評量"]
         result.append(row)
     result.sort(key=lambda x: x["end_date"])
     return result
@@ -1263,8 +1275,71 @@ def get_deadlines():
     filter_role = "學生" if role == "家長" else role
     student_dept_id = session.get("dept_id")
     today = datetime.now().date()
+    scope = request.args.get("scope", "all")  # 'all' = 完整校曆 (預設，供月曆瀏覽)；'upcoming' = 只顯示尚未截止者
+    credit_only = request.args.get("credit_only", "0") == "1"
 
     conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            if scope == "upcoming":
+                sql = """
+                    SELECT d.*, dept.dept_name AS applies_to_dept_name
+                    FROM deadlines d
+                    LEFT JOIN departments dept ON d.applies_to_dept = dept.dept_id
+                    WHERE d.end_date >= %s
+                      AND (d.applies_to_role = 'all' OR d.applies_to_role = %s)
+                      AND (d.applies_to_dept IS NULL OR d.applies_to_dept = %s)
+                    ORDER BY d.end_date ASC
+                """
+                cursor.execute(sql, (today, filter_role, student_dept_id or ""))
+            else:
+                sql = """
+                    SELECT d.*, dept.dept_name AS applies_to_dept_name
+                    FROM deadlines d
+                    LEFT JOIN departments dept ON d.applies_to_dept = dept.dept_id
+                    WHERE (d.applies_to_role = 'all' OR d.applies_to_role = %s)
+                      AND (d.applies_to_dept IS NULL OR d.applies_to_dept = %s)
+                    ORDER BY d.end_date ASC
+                """
+                cursor.execute(sql, (filter_role, student_dept_id or ""))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            res = _attach_deadline_urgency(rows, today)
+            if credit_only:
+                res = [x for x in res if x["is_credit_related"]]
+            return jsonify({"status": "success", "data": res}), 200
+        except Exception:
+            if conn: conn.close()
+
+    if scope == "upcoming":
+        demo_rows = [
+            d for d in DEMO_DEADLINES
+            if datetime.strptime(d["end_date"], "%Y-%m-%d").date() >= today
+            and d["applies_to_role"] in ("all", filter_role)
+            and (d["applies_to_dept"] is None or d["applies_to_dept"] == student_dept_id)
+        ]
+    else:
+        demo_rows = [
+            d for d in DEMO_DEADLINES
+            if d["applies_to_role"] in ("all", filter_role)
+            and (d["applies_to_dept"] is None or d["applies_to_dept"] == student_dept_id)
+        ]
+    res = _attach_deadline_urgency(demo_rows, today)
+    if credit_only:
+        res = [x for x in res if x["is_credit_related"]]
+    return jsonify({"status": "success", "data": res}), 200
+
+@app.route("/api/deadlines/export.ics", methods=["GET"])
+def export_deadlines_ics():
+    """匯出符合身分的完整校曆與學分期限為標準 iCalendar (.ics) 格式檔案"""
+    role = session.get("role", "訪客")
+    filter_role = "學生" if role == "家長" else role
+    student_dept_id = session.get("dept_id")
+
+    conn = get_db_connection()
+    rows = []
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
@@ -1272,26 +1347,75 @@ def get_deadlines():
                 SELECT d.*, dept.dept_name AS applies_to_dept_name
                 FROM deadlines d
                 LEFT JOIN departments dept ON d.applies_to_dept = dept.dept_id
-                WHERE d.end_date >= %s
-                  AND (d.applies_to_role = 'all' OR d.applies_to_role = %s)
+                WHERE (d.applies_to_role = 'all' OR d.applies_to_role = %s)
                   AND (d.applies_to_dept IS NULL OR d.applies_to_dept = %s)
                 ORDER BY d.end_date ASC
             """
-            cursor.execute(sql, (today, filter_role, student_dept_id or ""))
+            cursor.execute(sql, (filter_role, student_dept_id or ""))
             rows = cursor.fetchall()
             cursor.close()
             conn.close()
-            return jsonify({"status": "success", "data": _attach_deadline_urgency(rows, today)}), 200
         except Exception:
             if conn: conn.close()
+            rows = []
 
-    demo_rows = [
-        d for d in DEMO_DEADLINES
-        if datetime.strptime(d["end_date"], "%Y-%m-%d").date() >= today
-        and d["applies_to_role"] in ("all", filter_role)
-        and (d["applies_to_dept"] is None or d["applies_to_dept"] == student_dept_id)
+    if not rows:
+        rows = [
+            d for d in DEMO_DEADLINES
+            if d["applies_to_role"] in ("all", filter_role)
+            and (d["applies_to_dept"] is None or d["applies_to_dept"] == student_dept_id)
+        ]
+
+    # 產生 RFC 5545 iCalendar 檔案
+    now_str = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Smart UKN//Campus & Credit Calendar v3.0//ZH-TW",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:康寧大學校曆與個人學分行事曆",
+        "X-WR-TIMEZONE:Asia/Taipei"
     ]
-    return jsonify({"status": "success", "data": _attach_deadline_urgency(demo_rows, today)}), 200
+
+    for item in rows:
+        uid = f"smart-ukn-deadline-{item.get('deadline_id', 0)}@ukn.edu.tw"
+        title = item.get("title", "校務期限")
+        desc = (item.get("description") or "").replace("\n", " ")
+        if item.get("related_system_url"):
+            desc += f" (系統連結: {item['related_system_url']})"
+        category = item.get("category", "校務")
+
+        start_date_raw = str(item.get("start_date") or item.get("end_date", "")).replace("-", "")
+        end_date_raw = str(item.get("end_date", "")).replace("-", "")
+
+        # iCalendar 全天事件 DTEND 需為結束日翌日
+        try:
+            end_dt = datetime.strptime(str(item.get("end_date")), "%Y-%m-%d") + timedelta(days=1)
+            dtend_str = end_dt.strftime("%Y%m%d")
+        except Exception:
+            dtend_str = end_date_raw
+
+        lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:{uid}",
+            f"DTSTAMP:{now_str}",
+            f"DTSTART;VALUE=DATE:{start_date_raw}",
+            f"DTEND;VALUE=DATE:{dtend_str}",
+            f"SUMMARY:[{category}] {title}",
+            f"DESCRIPTION:{desc}",
+            f"CATEGORIES:{category}",
+            "STATUS:CONFIRMED",
+            "END:VEVENT"
+        ])
+
+    lines.append("END:VCALENDAR")
+    ics_content = "\r\n".join(lines) + "\r\n"
+
+    response = make_response(ics_content)
+    response.headers["Content-Type"] = "text/calendar; charset=utf-8"
+    response.headers["Content-Disposition"] = "attachment; filename=\"smart_ukn_academic_calendar.ics\""
+    return response
 
 # ==========================================
 # 8c. 學生證照與檢定成績管理 API (/api/certificates)
