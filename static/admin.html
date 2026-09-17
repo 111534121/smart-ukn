@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart UKN 管理控制台 - 康寧大學規章與系統管理</title>
+    <!-- Fonts & Tailwind CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ukn: {
+                            50: '#f0f5ff',
+                            100: '#e0ecff',
+                            700: '#1b47cc',
+                            800: '#1c3ca4',
+                            900: '#0f2b5c',
+                            950: '#0a1a3a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- 頂部管理導覽列 -->
+    <header class="bg-ukn-900 text-white p-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-400 text-ukn-950 flex items-center justify-center font-black">
+                    U
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight">Smart UKN 3NF 智慧校園管理控制台</h1>
+                    <p class="text-[11px] text-blue-200">康寧大學規章知識庫、同義詞、行政流程與訪客入校留痕系統</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div id="dbStatusBadge" class="hidden sm:flex items-center space-x-2 bg-ukn-800 px-3 py-1.5 rounded-full text-xs text-blue-100 border border-blue-400/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="dbModeText">資料庫檢測中...</span>
+                </div>
+                <a href="/" class="text-xs bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center gap-1">
+                    <span>🌐 開啟前台門戶 ↗</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 flex-grow w-full">
+        
+        <!-- 數據統計卡片 (Statistics Overview) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">校規知識庫條文</div>
+                <div class="text-2xl sm:text-3xl font-black text-ukn-900 mt-1" id="statRules">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">3NF 關聯主檔</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">同義詞對照庫</div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 mt-1" id="statSynonyms">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">口語轉換規則</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">行政申辦指引</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1" id="statChecklists">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">處室檢核流程</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">全校核心課程</div>
+                <div class="text-2xl sm:text-3xl font-black text-indigo-600 mt-1" id="statCourses">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">先修與擋修關係</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">訪客入校留痕</div>
+                <div class="text-2xl sm:text-3xl font-black text-rose-600 mt-1" id="statVisitors">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">電算中心分析用</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">服務斷點回報</div>
+                <div class="text-2xl sm:text-3xl font-black text-orange-600 mt-1" id="statFeedback">0</div>
+                <div class="text-[11px] text-slate-400 mt-1">匿名斷點統計</div>
+            </div>
+        </div>
+
+        <!-- 主控制面板 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+            
+            <!-- 標題與操作列 -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-900">資料庫即時維護與管理</h2>
+                    <p class="text-xs text-slate-500">即時新增、修改或刪除 MySQL 資料庫中之規章條文、同義詞與訪客名冊。</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="openModal('add')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow flex items-center gap-1">
+                        <span>+ 新增校規條文</span>
+                    </button>
+                    <button onclick="openSynonymModal()" class="bg-ukn-700 hover:bg-ukn-800 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow flex items-center gap-1">
+                        <span>+ 新增同義詞</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 後台分頁切換 -->
+            <div class="flex space-x-2 border-b border-slate-200 pb-2 text-sm font-bold">
+                <button onclick="switchTab('rules')" id="tabBtn-rules" class="px-4 py-2 rounded-xl bg-ukn-100 text-ukn-900">📚 校規知識庫條文</button>
+                <button onclick="switchTab('synonyms')" id="tabBtn-synonyms" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">💡 智慧同義詞對照</button>
+                <button onclick="switchTab('checklists')" id="tabBtn-checklists" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">📋 行政申辦流程</button>
+                <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">🌟 訪客留痕名冊</button>
+                <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">💬 服務斷點回報</button>
+            </div>
+
+            <!-- 分頁 1: 校規條文 -->
+            <div id="panel-rules" class="space-y-3">
+                <div class="flex justify-between items-center text-xs text-slate-500">
+                    <span>搜尋篩選：</span>
+                    <input type="text" id="ruleSearch" oninput="filterRules(this.value)" placeholder="輸入關鍵字搜尋條文..." class="px-3 py-1.5 border rounded-lg text-xs w-60 focus:outline-none focus:ring-2 focus:ring-ukn-500">
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">子項目/關鍵字</th>
+                                <th class="p-3">官方名稱</th>
+                                <th class="p-3">內容摘要</th>
+                                <th class="p-3">出處 / 頁碼</th>
+                                <th class="p-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ruleTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 2: 同義詞字典 -->
+            <div id="panel-synonyms" class="hidden space-y-3">
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">使用者俗稱 / 口語</th>
+                                <th class="p-3">官方標準名稱</th>
+                                <th class="p-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="synonymTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 3: 行政流程 -->
+            <div id="panel-checklists" class="hidden space-y-3">
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">承辦單位</th>
+                                <th class="p-3">業務名稱</th>
+                                <th class="p-3">辦理步驟</th>
+                                <th class="p-3">應備文件</th>
+                                <th class="p-3">聯絡電話</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checklistTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 4: 訪客留痕名冊 -->
+            <div id="panel-visitors" class="hidden space-y-3">
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">訪客姓名</th>
+                                <th class="p-3">聯絡手機</th>
+                                <th class="p-3">畢業國高中職</th>
+                                <th class="p-3">來訪目的</th>
+                                <th class="p-3">感興趣科系</th>
+                                <th class="p-3">登記時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visitorAdminTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 5: 校務服務斷點匿名回報 -->
+            <div id="panel-feedback" class="hidden space-y-3">
+                <p class="text-xs text-slate-500">使用者匿名回報的卡關情形，不含姓名/學號等個資，僅供分析改善哪個環節最容易讓人卡住。</p>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">卡關類型</th>
+                                <th class="p-3">補充說明</th>
+                                <th class="p-3">發生頁面</th>
+                                <th class="p-3">回報身分</th>
+                                <th class="p-3">回報時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedbackAdminTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        Smart UKN 管理控制系統 · 康寧大學版權所有 · 3NF 旗艦架構
+    </footer>
+
+    <!-- 彈窗 Modal: 條文新增/編輯 -->
+    <div id="ruleModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-900">新增校規條文</h3>
+            <form id="ruleForm" onsubmit="saveRule(event)" class="space-y-3 text-xs sm:text-sm">
+                <input type="hidden" id="ruleId">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">所屬大分類 *</label>
+                        <select id="mCategory" class="w-full border rounded-lg p-2.5">
+                            <option value="1">1. 選課與學分業務</option>
+                            <option value="2">2. 請假與出勤規定</option>
+                            <option value="3">3. 學籍異動與退學</option>
+                            <option value="4">4. 校園生活與證件</option>
+                            <option value="5">5. 招生科系與入學</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">子項目名稱</label>
+                        <input type="text" id="mSubcategory" class="w-full border rounded-lg p-2.5" placeholder="如: 停修手續">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">檢索關鍵字 *</label>
+                    <input type="text" id="mKeyword" class="w-full border rounded-lg p-2.5" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">官方正式名稱</label>
+                    <input type="text" id="mOfficial" class="w-full border rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">條文解答內容 *</label>
+                    <textarea id="mContent" rows="4" class="w-full border rounded-lg p-2.5" required></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">法規檔名</label>
+                        <input type="text" id="mDoc" class="w-full border rounded-lg p-2.5" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">頁碼</label>
+                        <input type="number" id="mPage" min="1" value="1" class="w-full border rounded-lg p-2.5" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">原始連結 URL</label>
+                    <input type="url" id="mUrl" class="w-full border rounded-lg p-2.5" required>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-ukn-700 text-white rounded-lg font-bold">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 彈窗 Modal: 同義詞新增 -->
+    <div id="synonymModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">新增同義詞</h3>
+            <form onsubmit="saveSynonym(event)" class="space-y-3 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">俗稱關鍵字 *</label>
+                    <input type="text" id="sKeyword" class="w-full border rounded-lg p-2.5" placeholder="例如: 棄修" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">官方標準名稱 *</label>
+                    <input type="text" id="sOfficial" class="w-full border rounded-lg p-2.5" placeholder="例如: 停修課程辦理規定" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">對應分類</label>
+                    <select id="sCatId" class="w-full border rounded-lg p-2.5">
+                        <option value="1">1. 選課與學分業務</option>
+                        <option value="2">2. 請假與出勤規定</option>
+                        <option value="3">3. 學籍異動與退學</option>
+                        <option value="4">4. 校園生活與證件</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="closeSynonymModal()" class="px-4 py-2 border rounded-lg">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-ukn-700 text-white rounded-lg font-bold">新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let rulesCache = [];
+        let synonymsCache = [];
+        let checklistsCache = [];
+        let visitorsCache = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 前端登入檢查 (UX 用途)：真正的存取控管在後端各 API 的角色裝飾器
+            try {
+                const authRes = await fetch('/api/auth/me');
+                const authData = await authRes.json();
+                const role = authData.user && authData.user.role;
+                if (!authData.is_authenticated || !['管理員', '教職員'].includes(role)) {
+                    window.location.href = '/login';
+                    return;
+                }
+            } catch (e) {
+                window.location.href = '/login';
+                return;
+            }
+
+            await checkHealth();
+            await loadStats();
+            await loadRules();
+            await loadSynonyms();
+            await loadChecklists();
+            await loadVisitors();
+            await loadFeedback();
+        });
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/api/health');
+                const json = await res.json();
+                const text = document.getElementById('dbModeText');
+                if (text) text.textContent = json.db_mode || '在線運行中';
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    document.getElementById('statRules').textContent = json.rules_count;
+                    document.getElementById('statSynonyms').textContent = json.synonyms_count;
+                    document.getElementById('statChecklists').textContent = json.checklists_count;
+                    document.getElementById('statCourses').textContent = json.courses_count;
+                    document.getElementById('statVisitors').textContent = json.visitors_count;
+                    document.getElementById('statFeedback').textContent = json.friction_reports_count;
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        async function loadRules() {
+            try {
+                const res = await fetch('/api/rules');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    rulesCache = json.data;
+                    renderRules(rulesCache);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderRules(list) {
+            const tbody = document.getElementById('ruleTableBody');
+            tbody.innerHTML = list.map(r => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-3 font-mono text-slate-400">${r.id}</td>
+                    <td class="p-3 font-bold text-ukn-800">${r.subcategory || ''} · ${r.keyword}</td>
+                    <td class="p-3 text-slate-700">${r.official_term || '-'}</td>
+                    <td class="p-3 max-w-xs truncate text-slate-600">${r.content}</td>
+                    <td class="p-3 text-xs text-slate-500">${r.doc_name} (p.${r.page})</td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="editRule(${r.id})" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs">編輯</button>
+                        <button onclick="deleteRule(${r.id})" class="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterRules(kw) {
+            const k = kw.trim().toLowerCase();
+            if (!k) {
+                renderRules(rulesCache);
+                return;
+            }
+            renderRules(rulesCache.filter(r => 
+                r.keyword.toLowerCase().includes(k) || 
+                (r.official_term && r.official_term.toLowerCase().includes(k)) || 
+                r.content.toLowerCase().includes(k)
+            ));
+        }
+
+        async function loadSynonyms() {
+            try {
+                const res = await fetch('/api/synonyms');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    synonymsCache = json.data;
+                    document.getElementById('synonymTableBody').innerHTML = synonymsCache.map(s => `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="p-3 font-mono text-slate-400">${s.synonym_id}</td>
+                            <td class="p-3 font-bold text-amber-700">${s.user_keyword}</td>
+                            <td class="p-3 font-bold text-ukn-800">${s.official_term}</td>
+                            <td class="p-3 text-center">
+                                <button onclick="deleteSynonym(${s.synonym_id})" class="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs">刪除</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadChecklists() {
+            try {
+                const res = await fetch('/api/checklists');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    checklistsCache = json.data;
+                    document.getElementById('checklistTableBody').innerHTML = checklistsCache.map(c => `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="p-3 font-mono text-slate-400">${c.item_id}</td>
+                            <td class="p-3 font-bold text-ukn-800">${c.category_name || '課務組'}</td>
+                            <td class="p-3 font-bold text-slate-800">${c.business_name}</td>
+                            <td class="p-3 text-xs">${(c.steps_json || []).join(' → ')}</td>
+                            <td class="p-3 text-xs text-slate-600">${c.required_docs || '-'}</td>
+                            <td class="p-3 text-xs font-mono text-slate-500">${c.contact_phone || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadVisitors() {
+            try {
+                const res = await fetch('/api/admin/visitors');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    visitorsCache = json.data;
+                    document.getElementById('visitorAdminTableBody').innerHTML = visitorsCache.map(v => `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="p-3 font-mono text-slate-400">${v.log_id}</td>
+                            <td class="p-3 font-bold text-ukn-800">${v.visitor_name}</td>
+                            <td class="p-3 font-mono text-slate-600">${v.phone}</td>
+                            <td class="p-3 font-semibold text-slate-700">${v.school_from}</td>
+                            <td class="p-3"><span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-bold">${v.purpose}</span></td>
+                            <td class="p-3 text-slate-600">${v.target_dept || '-'}</td>
+                            <td class="p-3 text-xs text-slate-400">${v.visited_at}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadFeedback() {
+            try {
+                const res = await fetch('/api/admin/feedback');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    document.getElementById('feedbackAdminTableBody').innerHTML = json.data.map(f => `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="p-3 font-mono text-slate-400">${f.report_id}</td>
+                            <td class="p-3"><span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">${f.category}</span></td>
+                            <td class="p-3 max-w-xs truncate text-slate-600">${f.description || '-'}</td>
+                            <td class="p-3 text-xs font-mono text-slate-500">${f.page_context || '-'}</td>
+                            <td class="p-3 text-slate-600">${f.role_context || '-'}</td>
+                            <td class="p-3 text-xs text-slate-400">${f.reported_at}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function switchTab(tab) {
+            ['rules', 'synonyms', 'checklists', 'visitors', 'feedback'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tabBtn-${t}`).className = 'px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100';
+            });
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            document.getElementById(`tabBtn-${tab}`).className = 'px-4 py-2 rounded-xl bg-ukn-100 text-ukn-900 font-bold';
+        }
+
+        function openModal(mode) {
+            document.getElementById('ruleModal').classList.remove('hidden');
+            if (mode === 'add') {
+                document.getElementById('modalTitle').textContent = '新增校規條文';
+                document.getElementById('ruleForm').reset();
+                document.getElementById('ruleId').value = '';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('ruleModal').classList.add('hidden');
+        }
+
+        function editRule(id) {
+            const r = rulesCache.find(x => x.id === id);
+            if (!r) return;
+            document.getElementById('modalTitle').textContent = '編輯校規條文';
+            document.getElementById('ruleId').value = r.id;
+            document.getElementById('mCategory').value = r.category_id || 1;
+            document.getElementById('mSubcategory').value = r.subcategory || '';
+            document.getElementById('mKeyword').value = r.keyword;
+            document.getElementById('mOfficial').value = r.official_term || '';
+            document.getElementById('mContent').value = r.content;
+            document.getElementById('mDoc').value = r.doc_name;
+            document.getElementById('mPage').value = r.page;
+            document.getElementById('mUrl').value = r.url;
+            document.getElementById('ruleModal').classList.remove('hidden');
+        }
+
+        async function saveRule(e) {
+            e.preventDefault();
+            const id = document.getElementById('ruleId').value;
+            const payload = {
+                category_id: parseInt(document.getElementById('mCategory').value) || 1,
+                subcategory: document.getElementById('mSubcategory').value.trim() || '一般規定',
+                keyword: document.getElementById('mKeyword').value.trim(),
+                official_term: document.getElementById('mOfficial').value.trim(),
+                content: document.getElementById('mContent').value.trim(),
+                doc_name: document.getElementById('mDoc').value.trim(),
+                page: parseInt(document.getElementById('mPage').value) || 1,
+                url: document.getElementById('mUrl').value.trim()
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/rules/${id}` : '/api/rules';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                closeModal();
+                await loadRules();
+                await loadStats();
+            } else {
+                alert('儲存失敗');
+            }
+        }
+
+        async function deleteRule(id) {
+            if (confirm(`確定要刪除 ID 為 ${id} 的條文嗎？`)) {
+                await fetch(`/api/rules/${id}`, { method: 'DELETE' });
+                await loadRules();
+                await loadStats();
+            }
+        }
+
+        function openSynonymModal() {
+            document.getElementById('synonymModal').classList.remove('hidden');
+        }
+
+        function closeSynonymModal() {
+            document.getElementById('synonymModal').classList.add('hidden');
+        }
+
+        async function saveSynonym(e) {
+            e.preventDefault();
+            const payload = {
+                user_keyword: document.getElementById('sKeyword').value.trim(),
+                official_term: document.getElementById('sOfficial').value.trim(),
+                category_id: parseInt(document.getElementById('sCatId').value) || 1
+            };
+            const res = await fetch('/api/synonyms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                closeSynonymModal();
+                await loadSynonyms();
+                await loadStats();
+            }
+        }
+
+        async function deleteSynonym(id) {
+            if (confirm('確定刪除此同義詞？')) {
+                await fetch(`/api/synonyms/${id}`, { method: 'DELETE' });
+                await loadSynonyms();
+                await loadStats();
+            }
+        }
+    </script>
+</body>
+</html>

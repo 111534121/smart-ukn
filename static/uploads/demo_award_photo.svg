@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" width="800" height="560">
+  <defs>
+    <linearGradient id="photoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f2b5c"/>
+    </linearGradient>
+    <linearGradient id="trophyGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="560" rx="16" fill="url(#photoBg)"/>
+  
+  <!-- 頒獎舞台燈光效果 -->
+  <polygon points="100,0 250,560 50,560" fill="#38bdf8" opacity="0.15"/>
+  <polygon points="700,0 750,560 550,560" fill="#f59e0b" opacity="0.15"/>
+  
+  <!-- 獎盃圖示 -->
+  <g transform="translate(350, 100) scale(1.6)">
+    <path d="M10 20 C10 45, 30 55, 50 55 C70 55, 90 45, 90 20 L90 10 L10 10 Z" fill="url(#trophyGold)"/>
+    <path d="M10 18 C-5 18, -5 38, 12 38" fill="none" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+    <path d="M90 18 C105 18, 105 38, 88 38" fill="none" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+    <rect x="42" y="55" width="16" height="25" fill="#ca8a04"/>
+    <rect x="25" y="80" width="50" height="15" rx="3" fill="#a16207"/>
+    <polygon points="50,22 53,30 62,30 55,36 57,44 50,39 43,44 45,36 38,30 47,30" fill="#ffffff"/>
+  </g>
+
+  <!-- 比賽標題與獲獎資訊 -->
+  <rect x="100" y="280" width="600" height="220" rx="16" fill="#ffffff" fill-opacity="0.95"/>
+  <text x="400" y="325" font-family="'Noto Sans TC', sans-serif" font-size="24" font-weight="bold" fill="#0f172a" text-anchor="middle">第十屆北區大專跨校程式設計黑客松</text>
+  <rect x="330" y="345" width="140" height="32" rx="16" fill="#f59e0b"/>
+  <text x="400" y="367" font-family="'Noto Sans TC', sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">🏆 佳作獲獎隊伍</text>
+
+  <text x="400" y="415" font-family="'Noto Sans TC', sans-serif" font-size="16" fill="#334155" text-anchor="middle">獲獎專案：AI 智慧法規檢索與智慧校園助理</text>
+  <text x="400" y="445" font-family="'Noto Sans TC', sans-serif" font-size="15" fill="#64748b" text-anchor="middle">隊伍代表：王小明 同學 (康寧大學 資訊科技與應用學系)</text>
+  <text x="400" y="475" font-family="'Noto Sans TC', sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">主辦單位：中華民國電腦學會 · 2026 年 7 月 10 日 頒發</text>
+</svg>
