@@ -1,0 +1,174 @@
+import mysql.connector
+import os
+import sys
+
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try: sys.stdout.reconfigure(encoding='utf-8')
+    except Exception: pass
+
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "smart_ukn"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "charset": "utf8mb4"
+}
+
+def seed_data():
+    print("=" * 60)
+    print("🌱 Smart UKN 3NF 基礎種子測試資料匯入程序 (seed_data)")
+    print("=" * 60)
+    
+    conn = None
+    cursor = None
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+
+        # 1. 寫入系所
+        cursor.execute("""
+            INSERT IGNORE INTO `departments` (`dept_id`, `dept_name`, `college_name`) VALUES
+            ('CS', '資訊科技與應用學系', '創新與管理學院'),
+            ('NUR', '護理學系', '健康照護學院'),
+            ('ENG', '應用外語學系', '人文與教育學院'),
+            ('GEN', '通識教育中心', '全校共同教學單位')
+        """)
+
+        # 2. 寫入學生主檔
+        cursor.execute("""
+            INSERT IGNORE INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
+            ('S112001', '王小明', 'CS', 112, '資科二甲', '0912-345-678'),
+            ('S112002', '李美華', 'CS', 112, '資科二甲', '0922-333-444'),
+            ('S112003', '張建華', 'NUR', 112, '護理二乙', '0933-555-666')
+        """)
+
+        # 3. 寫入使用者帳號 (密碼皆為 werkzeug pbkdf2:sha256 雜湊，原文為 123456 / admin123)
+        cursor.execute("""
+            INSERT IGNORE INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id`, `full_name`) VALUES
+            (1, 'student1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112001', '王小明'),
+            (2, 'student2', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112002', '李美華'),
+            (3, 'parent1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '家長', 'S112001', '王大明 (小明家長)'),
+            (4, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 老師'),
+            (5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員')
+        """)
+
+        # 4. 寫入課程地圖
+        cursor.execute("""
+            INSERT IGNORE INTO `course_map` (`course_id`, `course_name`, `credits`, `prerequisite_id`, `is_required`, `dept_id`, `semester_suggest`, `description`) VALUES
+            ('CS101', '計算機概論', 3, NULL, 1, 'CS', '大一上', '計算機科學基礎、電腦架構、作業系統與網路概論。'),
+            ('CS102', '程式設計(一)', 3, 'CS101', 1, 'CS', '大一下', 'Python 與 C 語言基礎邏輯、變數、迴圈與函式設計。'),
+            ('CS201', '資料結構', 3, 'CS102', 1, 'CS', '大二上', '陣列、鏈結串列、堆疊、佇列、樹狀與圖形演算法。'),
+            ('CS202', '物件導向程式設計', 3, 'CS102', 1, 'CS', '大二下', '類別、物件、繼承、多型與 Java/C++ 設計模式。'),
+            ('CS301', '演算法分析', 3, 'CS201', 1, 'CS', '大三上', '時間複雜度、分治法、貪婪演算法、動態規劃。'),
+            ('CS302', '資料庫系統概論', 3, 'CS201', 1, 'CS', '大三上', '關聯式資料庫、SQL 語法、正規化與 MySQL 實作。'),
+            ('CS401', '畢業專題研討', 3, 'CS302', 1, 'CS', '大四上', '綜合資訊系統開發、AI 應用整合與專題展示。'),
+            ('EN101', '基礎英文', 2, NULL, 1, 'GEN', '大一上', '大一基礎外語聽說讀寫與學術閱讀。'),
+            ('GE101', '大學之道與倫理', 2, NULL, 0, 'GEN', '大一上', '校園生活適應、生命教育與職場倫理。')
+        """)
+
+        # 5. 寫入學生成績與學分
+        cursor.execute("""
+            INSERT IGNORE INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester`, `score`, `is_passed`) VALUES
+            (1, 'S112001', 'CS101', '112-1', 85.00, 1),
+            (2, 'S112001', 'CS102', '112-2', 55.00, 0),
+            (3, 'S112001', 'EN101', '112-1', 78.00, 1),
+            (4, 'S112002', 'CS101', '112-1', 92.50, 1),
+            (5, 'S112002', 'CS102', '112-2', 88.00, 1),
+            (6, 'S112002', 'GE101', '112-1', 90.00, 1)
+        """)
+
+        # 5b. 寫入學生證照與檢定成績範例
+        cursor.execute("""
+            INSERT IGNORE INTO `certificates` (`cert_id`, `student_id`, `cert_name`, `issuing_org`, `cert_number`, `theory_score`, `practical_score`, `issue_date`, `created_at`) VALUES
+            (1, 'S112001', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署', '113-CS-004521', 82.00, 88.00, '2026-06-20', '2026-06-25 10:00:00')
+        """)
+
+        # 6. 寫入規章大類
+        cursor.execute("""
+            INSERT IGNORE INTO `knowledge_categories` (`category_id`, `category_name`, `icon`, `sort_order`) VALUES
+            (1, '選課與學分業務', '📚', 1),
+            (2, '請假與出勤規定', '📝', 2),
+            (3, '學籍異動與退學', '🎓', 3),
+            (4, '校園生活與證件', '💳', 4),
+            (5, '招生科系與入學', '🏫', 5)
+        """)
+
+        # 7. 寫入規章條文主檔
+        cursor.execute("""
+            INSERT IGNORE INTO `knowledge_base` (`id`, `category_id`, `subcategory`, `keyword`, `official_term`, `content`, `doc_name`, `page`, `url`) VALUES
+            (1, 1, '停修/棄修手續', '棄修', '停修課程辦理規定', '學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。', '康寧大學學生學則.pdf', 12, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (2, 1, '外語能力抵免', '英文抵免', '語言證照抵免辦法', '凡通過全民英檢中高級、多益 (TOEIC) 550 分以上或同等國際英語檢定標準者，得於入學第一學期規定期限內，檢附成績單與證書正本向教務處註冊組申請抵免大一英文或通識外語學分。', '康寧大學抵免學分辦法.pdf', 5, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (3, 2, '學生請假流程', '請假規定', '學生請假辦法', '學生因故不能出席課業活動，須於事前（事假）或事後 3 日內（病假）辦理請假。假別包含公假、事假、病假、喪假及生理假。病假須檢附三日內就醫證明，三天以上須經系主任簽核，均需透過學生教務系統線上完成申請。', '學生請假辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (4, 2, '缺課與扣考規定', '曠課扣考', '學生出勤與扣考規定', '學生未經請假或請假未准而缺席者視為曠課。某一科目缺課（含請假及曠課）時數達該科目全學期授課總時數三分之一以上者，該科目不得參加期末考試（即扣考），學期成績以零分計算。', '康寧大學學生學則.pdf', 18, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (5, 3, '學業二一退學', '二一退學', '學業退學規定', '學士班學生單一學期學業成績不及格科目之學分數，達該學期修習學分總數二分之一者，予以學業警示輔導；若累計達校規規定之學業成績二分之一不及格達兩次者，應予退學處分。', '康寧大學學生學則.pdf', 24, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (6, 3, '獎懲與申訴', '獎懲辦法', '學生獎懲辦法', '學生之獎勵分為嘉獎、小功、大功；懲處分為申誡、小過、大過、留校察看及退學。學生對於學校所為之懲處認有違法或不當致損害其權益者，得於收到處分通知書之次日起十日內向學生申訴評議委員會提出申訴。', '學生獎懲辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (7, 4, '學生證掛失補發', '補發學生證', '學生證遺失補發流程', '學生證遺失時，應即登入學生教務資訊系統辦理線上掛失，並至行政大樓自動繳費機繳納工本費（新台幣 150 元），攜帶繳費收據與身分證明文件至教務處註冊組辦理補發，約 3 個工作天即可領取新卡。', '學生證管理要點.pdf', 2, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+            (8, 5, '新生入學與科系', '招生科系', '康寧大學招生系所導覽', '本校設有資訊科技與應用學系、護理學系、幼兒保育學系、長期照護學系、應用外語學系等。提供五專、四技、學士班及碩士班完整升學路徑，提供豐富企業實習與證照輔導資源。', '康寧大學招生簡章.pdf', 1, 'https://www.ukn.edu.tw')
+        """)
+
+        # 8. 寫入同義詞
+        cursor.execute("""
+            INSERT IGNORE INTO `synonym_dictionary` (`synonym_id`, `category_id`, `user_keyword`, `official_term`) VALUES
+            (1, 1, '棄修', '停修課程辦理規定'),
+            (2, 1, '退選', '停修課程辦理規定'),
+            (3, 1, '英文免修', '語言證照抵免辦法'),
+            (4, 1, '英檢抵免', '語言證照抵免辦法'),
+            (5, 1, '擋修', '先修科目規定'),
+            (6, 2, '請假', '學生請假辦法'),
+            (7, 2, '病假怎麼請', '學生請假辦法'),
+            (8, 2, '缺課', '學生出勤與扣考規定'),
+            (9, 3, '二一', '學業退學規定'),
+            (10, 3, '被當掉', '學業退學規定'),
+            (11, 4, '補辦學生證', '學生證遺失補發流程'),
+            (12, 4, '卡片遺失', '學生證遺失補發流程')
+        """)
+
+        # 9. 寫入行政流程清單
+        cursor.execute("""
+            INSERT IGNORE INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `contact_phone`) VALUES
+            (1, 1, '課務組', '學生課程停修（棄修）申請', '[\"1. 登入學生教務系統填寫停修申請表\", \"2. 列印紙本申請單經授課教師簽名同意\", \"3. 送所屬系所導師及系主任核章\", \"4. 於學期第12週截止日前送教務處課務組審查\"]', '停修申請表（須授課教師簽章）、學生證正本', '週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)'),
+            (2, 4, '註冊組', '學生證遺失補發申請', '[\"1. 登入教務系統辦理線上卡片掛失\", \"2. 至行政大樓自動繳費機繳交補發工本費 150 元\", \"3. 持繳費收據及身分證明文件至註冊組辦理\", \"4. 3 個工作天後憑收據至註冊組領取新學生證\"]', '身分證或健保卡正本、工本費收據、2吋大頭照電子檔', '週一至週五 09:00 - 16:30', '02-2632-1181 分機 310 (註冊組)'),
+            (3, 1, '註冊組', '外語證照 / 學分抵免申請', '[\"1. 確認自身符合抵免資格（多益550分以上或全民英檢中高級）\", \"2. 備妥成績單或證書正本與影本\", \"3. 填寫學分抵免申請表並由所屬系所初審\", \"4. 開學兩週內送交教務處註冊組複審核定\"]', '語言檢定證書正影本、歷年成績單、抵免申請表', '開學前兩週內 08:30 - 17:00', '02-2632-1181 分機 310 (註冊組)'),
+            (4, 2, '學務處', '學生病假與公假線上請假流程', '[\"1. 事假須事前於線上請假系統提出申請\", \"2. 病假須於返校 3 日內登入系統補辦並上傳就醫證明\", \"3. 公假須檢附公函或主辦單位指派公文證明\", \"4. 經導師及系輔導人員線上審核通過即生效\"]', '三日內診斷證明或收據電子檔（病假）、派遣公文（公假）', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)'),
+            (5, 1, '課務組', '不及格科目重補修申請', '[\"1. 查詢下學期開課時間表，確認該科目是否開班\", \"2. 於加退選期間至教務系統重新選修該科目（重補修）\", \"3. 若該科目已停開，須洽系所辦理替代科目認定\", \"4. 選修科目亦可改選其他同學分選修科目以取代學分\"]', '無需另外書面文件；逾加退選期限則需填寫替代科目認定表', '加退選期間依教務處公告時間；平時洽詢 週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)')
+        """)
+
+        # 10. 寫入訪客留痕範例
+        cursor.execute("""
+            INSERT IGNORE INTO `visitor_logs` (`log_id`, `visitor_name`, `phone`, `school_from`, `purpose`, `target_dept`, `visited_at`, `ip_address`) VALUES
+            (1, '陳同學', '0912-888-999', '台北市立南港高中', '升學諮詢與系所探索', '資訊科技與應用學系', '2026-09-08 09:30:00', '127.0.0.1'),
+            (2, '林家長', '0922-111-222', '新北市立汐止國中', '五專免試入學諮詢', '護理學系', '2026-09-08 10:15:00', '127.0.0.1'),
+            (3, '黃同學', '0933-777-666', '基隆市立安樂高中', '校園環境參觀', '資訊科技與應用學系', '2026-09-08 11:00:00', '127.0.0.1')
+        """)
+
+        # 11. 寫入校務服務斷點匿名回報範例
+        cursor.execute("""
+            INSERT IGNORE INTO `friction_reports` (`report_id`, `category`, `description`, `page_context`, `role_context`, `reported_at`, `ip_address`) VALUES
+            (1, '不知道申請進度或結果', '送出停修申請後不知道現在審核到哪個階段。', 'tab-checklist', '學生', '2026-09-10 14:20:00', '127.0.0.1'),
+            (2, '忘記密碼', '', 'tab-ai', '訪客', '2026-09-11 09:05:00', '127.0.0.1')
+        """)
+
+        # 12. 寫入跨系統期限雷達範例
+        cursor.execute("""
+            INSERT IGNORE INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`) VALUES
+            (1, '加退選截止', '選課', '2026-09-14', '2026-09-20', 'all', NULL, 'https://www.ukn.edu.tw/', '逾期未完成加退選者，選課結果將依原排課確定生效。'),
+            (2, '語言證照學分抵免申請截止', '抵免', NULL, '2026-09-30', '學生', NULL, 'https://www.ukn.edu.tw/', '須檢附證書正影本與歷年成績單向教務處註冊組申請。'),
+            (3, '書卷獎與學海獎助學金申請截止', '獎助學金', NULL, '2026-10-15', '學生', NULL, 'https://www.ukn.edu.tw/', '依前一學期成績與家庭狀況審核，逾期不受理。'),
+            (4, '期中學業預警名單公告與輔導期', '學習預警', '2026-11-01', '2026-11-05', 'all', NULL, 'https://www.ukn.edu.tw/', '被列入預警名單者將由導師安排面談，家長可同步關注。'),
+            (5, '資訊科技與應用學系專題期中審查', '選課', NULL, '2026-11-10', '學生', 'CS', 'https://www.ukn.edu.tw/', '專題小組須完成期中進度報告並提交指導教師審核。'),
+            (6, '停修（棄修）申請截止（第10-12週）', '選課', '2026-11-09', '2026-11-20', '學生', NULL, 'https://www.ukn.edu.tw/', '逾期不受理，停修後修習學分不得低於最低應修學分。'),
+            (7, '教學評量填寫期間截止', '教學評量', '2026-12-15', '2026-12-25', '學生', NULL, 'https://www.ukn.edu.tw/', '完成填寫始可查詢學期成績，請於期末考前完成。')
+        """)
+
+        conn.commit()
+        print("🎉 3NF 種子測試資料全數匯入成功！")
+
+    except mysql.connector.Error as err:
+        print(f"❌ 寫入種子資料錯誤: {err}")
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+
+if __name__ == "__main__":
+    seed_data()

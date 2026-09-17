@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart UKN 康寧大學智慧校園規章與全方位行政服務平台</title>
+    <!-- Modern Typography & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ukn: {
+                            50: '#f0f5ff',
+                            100: '#e0ecff',
+                            200: '#c7dcfe',
+                            300: '#a3c4fd',
+                            400: '#75a3fc',
+                            500: '#477ef7',
+                            600: '#265deb',
+                            700: '#1b47cc',
+                            800: '#1c3ca4',
+                            900: '#0f2b5c',
+                            950: '#0a1a3a',
+                        },
+                        amber: {
+                            450: '#f59e0b',
+                            550: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #0a1a3a 0%, #0f2b5c 50%, #1e3a8a 100%);
+        }
+        .dropdown-glow {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Calendar styles */
+        .cal-day {
+            min-height: 80px;
+            transition: background 0.15s;
+        }
+        .cal-day:hover { background: #f0f5ff; cursor: pointer; }
+        .cal-day.today { background: #e0ecff; border: 2px solid #1b47cc; }
+        .cal-day.other-month { opacity: 0.4; }
+        .cal-event-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .cal-view-btn.active {
+            background: #0f2b5c;
+            color: white;
+        }
+        .deadline-card {
+            transition: all 0.2s;
+        }
+        .deadline-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .urgent-pulse { animation: pulse-dot 1.5s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-ukn-500 selection:text-white">
+
+    <!-- 頂部頂級導覽列與身分狀態條 -->
+    <header class="sticky top-0 z-40 bg-ukn-900 text-white shadow-lg border-b border-ukn-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- 上半部：Logo、使用者身分卡與系統模式 -->
+            <div class="flex justify-between items-center h-16 border-b border-ukn-800/80">
+                
+                <!-- Logo & 系統標題 -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('tab-ai')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
+                        <span class="text-xl font-black text-ukn-950">UKN</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg sm:text-xl font-bold tracking-tight">Smart UKN</span>
+                            <span class="text-[10px] bg-amber-400/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">v3.0 3NF 旗艦版</span>
+                        </div>
+                        <p class="text-[11px] text-blue-200 hidden sm:block">康寧大學智慧校園規章與行政檢索系統</p>
+                    </div>
+                </div>
+
+                <!-- 使用者登入身分狀態條 (Role Badge & Info) -->
+                <div class="flex items-center space-x-3">
+                    
+                    <!-- 使用者資訊膠囊 -->
+                    <div id="currentUserBadge" class="flex items-center space-x-2.5 bg-ukn-800/90 px-3.5 py-1.5 rounded-full border border-blue-400/30 text-xs">
+                        <span id="roleIcon" class="text-base">👨‍🎓</span>
+                        <div class="text-left">
+                            <div class="font-bold text-white flex items-center gap-1.5">
+                                <span id="userFullName">王小明</span>
+                                <span id="userRoleTag" class="text-[10px] bg-blue-500/40 text-blue-200 px-1.5 py-0.2 rounded font-normal">在校學生</span>
+                            </div>
+                            <div class="text-[10px] text-blue-300 hidden md:block" id="userSubInfo">學號 S112001 · 資訊科技系</div>
+                        </div>
+                    </div>
+
+                    <!-- 登出按鈕：僅登入時顯示，呼叫登出 API 後導向登入頁 -->
+                    <button onclick="handleLogout()" id="logoutBtn" class="hidden text-xs bg-white/10 hover:bg-white/20 text-blue-100 hover:text-white px-3 py-1.5 rounded-lg transition border border-white/10 items-center gap-1">
+                        <span>🚪 登出</span>
+                    </button>
+
+                    <!-- 切換身分 / 登入按鈕 -->
+                    <a href="/login" class="text-xs bg-white/10 hover:bg-white/20 text-blue-100 hover:text-white px-3 py-1.5 rounded-lg transition border border-white/10 flex items-center gap-1">
+                        <span>🔄 切換身分</span>
+                    </a>
+
+                    <!-- 管理者後台入口：僅教職員/管理員顯示 -->
+                    <a href="/admin" target="_blank" id="adminEntryLink" class="hidden sm:flex bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow items-center gap-1 border border-blue-400/30">
+                        <span>⚙️ 後台</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 下半部：功能模組頁籤導覽列 (Tabs Navigation) -->
+            <div class="flex space-x-1 sm:space-x-4 pt-1 overflow-x-auto no-scrollbar text-sm">
+                <button onclick="switchTab('tab-ai')" id="tabBtn-ai" class="tab-item py-3 px-3 sm:px-4 border-b-2 font-bold flex items-center space-x-2 text-amber-300 border-amber-400">
+                    <span>🤖</span>
+                    <span>AI 智慧校規問答</span>
+                </button>
+                <button onclick="switchTab('tab-checklist')" id="tabBtn-checklist" class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
+                    <span>📋</span>
+                    <span>行政申辦流程指引</span>
+                </button>
+                <button onclick="switchTab('tab-course')" id="tabBtn-course" class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
+                    <span>🎓</span>
+                    <span>個人學分與修課行事曆</span>
+                </button>
+                <button onclick="switchTab('tab-admin-embedded')" id="tabBtn-admin-embedded" class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
+                    <span>📊</span>
+                    <span>訪客留痕與管理中心</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- ======================================================== -->
+        <!-- 模組 1: AI 校規法規智慧問答與引導式分級檢索 (Tab AI) -->
+        <!-- ======================================================== -->
+        <div id="tab-ai" class="tab-content space-y-6">
+            
+            <!-- Hero Search & Guided Selection Section -->
+            <section class="hero-gradient text-white rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden space-y-6">
+                <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-10 -top-10 w-60 h-60 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="max-w-3xl mx-auto text-center relative z-10 space-y-3">
+                    <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold text-amber-300 border border-white/15">
+                        <span>✨</span>
+                        <span>極致防呆引導 · 官方核定規章 100% 精準檢索</span>
+                    </div>
+
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">請問今天想查詢什麼校規或申辦規定？</h1>
+                    <p class="text-blue-100 text-xs sm:text-base font-normal">可透過下方「分級下拉選單」零失誤精確查閱，亦可直接於搜尋框中輸入口語俗稱</p>
+                </div>
+
+                <!-- 🔥 核心防呆亮點：引導式分級聯動下拉選單 (Zero-Fail Guided Dropdown) -->
+                <div class="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-white/20 shadow-xl dropdown-glow space-y-3">
+                    <div class="flex items-center justify-between text-xs font-bold text-amber-300">
+                        <span class="flex items-center gap-1.5">
+                            <span>🎯</span>
+                            <span>快速引導分類查詢（強烈推薦 · 零錯誤防呆）：</span>
+                        </span>
+                        <span class="text-blue-200 font-normal hidden sm:inline">直接選取官方核定主題</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <!-- 第 1 級：大分類選單 -->
+                        <div class="sm:col-span-5">
+                            <select id="primaryCategorySelect" onchange="handlePrimaryCategoryChange()" class="w-full bg-white text-slate-800 font-semibold px-4 py-3 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400 text-xs sm:text-sm">
+                                <option value="">📌 步驟 1：請選擇諮詢大類...</option>
+                            </select>
+                        </div>
+
+                        <!-- 第 2 級：子項目選單 -->
+                        <div class="sm:col-span-5">
+                            <select id="subCategorySelect" class="w-full bg-white text-slate-800 font-semibold px-4 py-3 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400 text-xs sm:text-sm" disabled>
+                                <option value="">⏳ 步驟 2：請先選擇大類</option>
+                            </select>
+                        </div>
+
+                        <!-- 立即查閱按鈕 -->
+                        <div class="sm:col-span-2">
+                            <button onclick="handleGuidedQuery()" id="guidedSearchBtn" class="w-full h-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-ukn-950 font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center space-x-1 active:scale-95 text-xs sm:text-sm">
+                                <span>查閱</span>
+                                <span>➔</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手動關鍵字輸入搜尋框 (支援同義詞與安全防呆) -->
+                <div class="max-w-3xl mx-auto">
+                    <div class="bg-white p-2 rounded-2xl shadow-xl flex flex-col sm:flex-row gap-2 border border-white/20">
+                        <div class="relative flex-grow flex items-center">
+                            <span class="absolute left-4 text-slate-400 text-lg">🔍</span>
+                            <input type="text" id="searchInput" placeholder="手動搜尋：我想棄修、英文免修、病假怎麼請、被當掉..."
+                                   class="w-full pl-11 pr-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none text-xs sm:text-base">
+                        </div>
+                        <button onclick="handleSearch()" id="searchBtn" class="bg-ukn-700 hover:bg-ukn-800 text-white font-bold px-6 py-3 rounded-xl transition shadow flex items-center justify-center space-x-2 active:scale-95 text-xs sm:text-sm">
+                            <span>搜尋規章</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+
+                    <!-- 熱門標籤快選推薦 -->
+                    <div class="mt-4 flex items-center justify-center flex-wrap gap-2 text-xs">
+                        <span class="text-blue-200 font-semibold mr-1">💡 常見俗稱對照：</span>
+                        <button onclick="quickSearch('棄修')" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">棄修 ➔ 停修規定</button>
+                        <button onclick="quickSearch('英文免修')" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">英文免修 ➔ 證照抵免</button>
+                        <button onclick="quickSearch('請假規定')" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">請假手續</button>
+                        <button onclick="quickSearch('二一退學')" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">二一退學學則</button>
+                        <button onclick="quickSearch('補辦學生證')" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">補辦學生證</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 搜尋結果顯示區 (Result Section) -->
+            <section id="resultSection" class="hidden space-y-4">
+                
+                <!-- 同義詞對照提示徽章 (Synonym Badge) -->
+                <div id="synonymBadge" class="hidden bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-900 px-5 py-3.5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div class="flex items-center space-x-3 text-xs sm:text-sm">
+                        <span class="text-xl">💡</span>
+                        <div>
+                            <span>智慧同義詞轉換：您輸入的「<strong id="searchedTermText" class="text-emerald-700 font-bold"></strong>」，系統已自動對應至學校官方標準名稱「<strong id="officialTermText" class="text-emerald-700 underline font-bold"></strong>」進行精準檢索。</span>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full">詞彙已校正</span>
+                </div>
+
+                <!-- 狀況 A: 找到規章解答主卡片 (Success Match Card) -->
+                <div id="successResultCard" class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200 space-y-6">
+                    
+                    <!-- 卡片頂部標題與操作 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-2xl bg-ukn-50 flex items-center justify-center text-ukn-700 text-xl border border-ukn-100">
+                                📜
+                            </div>
+                            <div>
+                                <h3 class="text-lg sm:text-xl font-bold text-slate-900" id="resultCardTitle">學校官方規章核定解答</h3>
+                                <p class="text-xs text-slate-400">來源依據康寧大學正式法規與教務處條文</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="copyAnswerText()" class="text-xs font-semibold text-slate-600 hover:text-ukn-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                                <span>📋 複製內容</span>
+                            </button>
+                            <button onclick="openDocModal()" class="text-xs font-semibold text-ukn-700 hover:text-white bg-ukn-50 hover:bg-ukn-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1 border border-ukn-200">
+                                <span>📄 閱讀條文全文</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 條文詳細回答區塊 -->
+                    <div class="bg-gradient-to-br from-slate-50 to-blue-50/40 p-5 sm:p-6 rounded-2xl border border-blue-100 text-slate-800 text-sm sm:text-base leading-relaxed space-y-3">
+                        <div class="text-xs font-bold uppercase tracking-wider text-ukn-700 flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-ukn-600 mr-2"></span> 正式條文解答摘要
+                        </div>
+                        <p id="answerBox" class="text-slate-800 font-medium"></p>
+                    </div>
+
+                    <!-- 建議辦理步驟清單 (Checklist) -->
+                    <div id="checklistGroup" class="bg-amber-50/50 p-5 rounded-2xl border border-amber-100 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs sm:text-sm font-bold text-amber-900 flex items-center">
+                                <span class="mr-2">📋</span> 建議辦理步驟與注意事項：
+                            </h4>
+                            <span class="text-xs text-amber-700">（可直接勾選紀錄進度）</span>
+                        </div>
+                        <ul id="checklistUl" class="space-y-2 text-xs sm:text-sm text-slate-700"></ul>
+                        
+                        <div class="pt-3 border-t border-amber-200/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-amber-950">
+                            <div><strong>📌 應備文件：</strong><span id="chkRequiredDocs">-</span></div>
+                            <div><strong>🕒 辦公時間：</strong><span id="chkOfficeHours">-</span></div>
+                            <div><strong>📞 洽詢電話：</strong><span id="chkPhone" class="font-bold text-ukn-800">-</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 參考法規出處與官方連結 -->
+                    <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="flex items-center space-x-2 text-xs sm:text-sm text-slate-500">
+                            <span class="font-medium text-slate-600">🏛️ 法規出處：</span>
+                            <span id="docNameText" class="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md"></span>
+                            <span class="bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded text-xs">第 <span id="pageNumText">1</span> 頁</span>
+                        </div>
+                        <a id="sourceUrlBtn" href="https://www.ukn.edu.tw" target="_blank" class="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-bold text-ukn-700 hover:text-ukn-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition border border-blue-200">
+                            <span>開啟學校法規原始下載頁面</span>
+                            <span>↗</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 狀況 B: 安全邊界防呆卡片 (Safety Guardrail Card - 查無資料時友善指引) -->
+                <div id="safetyFallbackCard" class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-amber-200 space-y-6">
+                    <div class="flex items-center space-x-3 text-amber-800 pb-3 border-b border-amber-100">
+                        <span class="text-2xl">🛡️</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">安全邊界控制與防呆提示</h3>
+                            <p class="text-xs text-slate-500">本系統僅依據學校核可之法規庫回答，絕不胡亂生成未經驗證之內容</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 text-slate-800 text-xs sm:text-sm space-y-2">
+                        <p id="safetyMessageText" class="font-medium leading-relaxed"></p>
+                    </div>
+
+                    <!-- 推薦主題按鈕 -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">💡 您是不是想查詢以下熱門校務規定？</h4>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                            <button onclick="quickSearch('棄修')" class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">停修/棄修手續</button>
+                            <button onclick="quickSearch('英文免修')" class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">外語證照抵免</button>
+                            <button onclick="quickSearch('請假規定')" class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學生請假辦法</button>
+                            <button onclick="quickSearch('二一退學')" class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學業退學規定</button>
+                            <button onclick="quickSearch('補辦學生證')" class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學生證遺失補發</button>
+                        </div>
+                    </div>
+
+                    <!-- 全校各處室專責分機指引清單 -->
+                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">📞 全校相關業務專責單位聯絡電話：</h4>
+                        <div id="contactDirectoryGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 2: 行政申辦流程指引 (Tab Checklist) -->
+        <!-- ======================================================== -->
+        <div id="tab-checklist" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
+                            <span class="mr-2.5">📋</span> 行政申辦流程與應備文件檢核清單
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">掌握常用教務、學務與註冊申辦步驟，線上互動打勾避免缺漏文件</p>
+                    </div>
+
+                    <!-- 分類篩選按鈕 -->
+                    <div class="flex items-center gap-2 overflow-x-auto text-xs font-semibold">
+                        <button onclick="filterChecklists('all')" class="chk-filter-btn px-3 py-1.5 rounded-lg bg-ukn-900 text-white" data-cat="all">全部業務</button>
+                        <button onclick="filterChecklists('課務組')" class="chk-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="課務組">課務組</button>
+                        <button onclick="filterChecklists('註冊組')" class="chk-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="註冊組">註冊組</button>
+                        <button onclick="filterChecklists('學務處')" class="chk-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="學務處">學務處</button>
+                    </div>
+                </div>
+
+                <!-- 流程指引卡片列表 -->
+                <div id="checklistCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 3: 個人化學分與擋修自動診斷 (Tab Course Map) -->
+        <!-- ======================================================== -->
+        <div id="tab-course" class="tab-content hidden space-y-6">
+            
+            <!-- 學生個人學分看板 (Session 自動連動) -->
+            <div class="bg-gradient-to-r from-ukn-900 to-indigo-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 bg-amber-400/20 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
+                            <span>🎓</span>
+                            <span id="studentDiagnosisTag">登入 Session 連動 · 歷年成績與擋修條件自動診斷</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold" id="studentDiagnosisTitle">個人學分診斷與先修擋修預警</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="studentDiagnosisSubtitle">系統已自動依據您的學號向 MySQL 成績表撈取已通過科目，並即時套用擋修防呆！</p>
+                    </div>
+
+                    <!-- 學分試算數字卡片 -->
+                    <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                        <div class="text-center px-3 border-r border-white/15">
+                            <div class="text-2xl sm:text-3xl font-black text-amber-300" id="statPassedCredits">0</div>
+                            <div class="text-[11px] text-blue-200">已獲學分</div>
+                        </div>
+                        <div class="text-center px-3 border-r border-white/15">
+                            <div class="text-2xl sm:text-3xl font-black text-white" id="statRequiredCredits">0</div>
+                            <div class="text-[11px] text-blue-200">必修學分</div>
+                        </div>
+                        <div class="text-center px-3">
+                            <div class="text-2xl sm:text-3xl font-black text-emerald-300">128</div>
+                            <div class="text-[11px] text-blue-200">畢業門檻</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 畢業學分進度條 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span>學分完成進度</span>
+                        <span id="creditProgressPercentText" class="text-amber-300">0%</span>
+                    </div>
+                    <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden p-0.5">
+                        <div id="creditProgressBar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 不及格科目與修課風險：與「尚未修習」明確區分 -->
+            <div id="academicAlertPanel" class="hidden rounded-3xl border p-5 sm:p-6 shadow-sm"></div>
+
+            <!-- 即期學業期限迷你提醒條 (點擊跳轉至校曆行事曆) -->
+            <div id="miniDeadlineBanner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl urgent-pulse">⏰</span>
+                        <div>
+                            <div class="text-xs font-bold text-amber-800 mb-1">即期重要學業期限</div>
+                            <div id="miniDeadlineItems" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('tab-calendar')" class="flex items-center gap-1.5 text-xs font-bold bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-xl transition shadow-sm">
+                        <span>📅</span>
+                        <span>查看完整校曆行事曆</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 課程狀態卡片網格 -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base sm:text-lg font-bold text-slate-800">全系列核心課程與先修關係一覽</h3>
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> 已修畢</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-blue-500"></span> 可修讀</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500"></span> 遭擋修</span>
+                    </div>
+                </div>
+
+                <div id="courseCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2"></div>
+            </div>
+
+            <!-- 我的證照與檢定成績 -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span>🏆</span> 我的證照與檢定成績
+                    </h3>
+                    <button id="addCertBtn" onclick="toggleCertForm()" class="hidden text-xs font-bold bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-xl transition">+ 新增證照紀錄</button>
+                </div>
+
+                <!-- 新增證照表單 (僅學生本人可見) -->
+                <form id="certForm" onsubmit="submitCertificate(event)" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm">
+                    <div class="sm:col-span-2">
+                        <label class="block font-semibold text-slate-600 mb-1">證照名稱 *</label>
+                        <input type="text" id="certName" required placeholder="例：丙級電腦硬體裝修技術士" class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">發證單位</label>
+                        <input type="text" id="certOrg" value="勞動部勞動力發展署" class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">證照字號（選填）</label>
+                        <input type="text" id="certNumber" class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">學科成績（選填）</label>
+                        <input type="number" step="0.1" id="certTheoryScore" class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">術科成績（選填）</label>
+                        <input type="number" step="0.1" id="certPracticalScore" class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-semibold text-slate-600 mb-1">取得日期 *</label>
+                        <input type="date" id="certIssueDate" required class="w-full border rounded-xl p-2.5">
+                    </div>
+                    <p id="certErrorMsg" class="hidden sm:col-span-2 text-rose-600 text-xs font-semibold"></p>
+                    <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="toggleCertForm()" class="px-4 py-2 border rounded-xl">取消</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-ukn-800 text-white font-semibold hover:bg-ukn-900 transition">儲存</button>
+                    </div>
+                </form>
+
+                <div id="certificateList" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 4: 校曆行事曆與期限雷達 (Tab Calendar) -->
+        <!-- ======================================================== -->
+        <div id="tab-calendar" class="tab-content hidden space-y-6">
+
+            <!-- Hero Header -->
+            <div class="bg-gradient-to-r from-ukn-900 via-indigo-900 to-purple-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
+                            <span>📅</span>
+                            <span>115 學年度第 1 學期 · 自動依身分過濾適用期限</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold">校曆行事曆與重要期限雷達</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1">整合選課、停修、抵免、獎助學金、考試週等全學期校園行程，一目了然</p>
+                    </div>
+                    <!-- 視圖切換 -->
+                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/15">
+                        <button onclick="switchCalendarView('calendar')" id="calViewBtn-calendar" class="cal-view-btn active flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition">
+                            <span>🗓️</span><span class="hidden sm:inline">月曆</span>
+                        </button>
+                        <button onclick="switchCalendarView('radar')" id="calViewBtn-radar" class="cal-view-btn flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-blue-200 hover:text-white transition">
+                            <span>📡</span><span class="hidden sm:inline">雷達清單</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 月曆視圖 -->
+            <div id="calView-calendar" class="space-y-4">
+                <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200">
+                    <!-- 月份導覽 -->
+                    <div class="flex items-center justify-between mb-5">
+                        <button onclick="calNavigate(-1)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-ukn-100 flex items-center justify-center font-bold text-slate-600 hover:text-ukn-800 transition">‹</button>
+                        <div class="text-center">
+                            <div class="text-lg sm:text-xl font-extrabold text-slate-900" id="calMonthTitle">2026 年 9 月</div>
+                            <div class="text-xs text-slate-400">點擊有事件的日期查看詳情</div>
+                        </div>
+                        <button onclick="calNavigate(1)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-ukn-100 flex items-center justify-center font-bold text-slate-600 hover:text-ukn-800 transition">›</button>
+                    </div>
+                    <!-- 星期標頭 -->
+                    <div class="grid grid-cols-7 mb-2">
+                        <div class="text-center text-xs font-bold text-rose-500 py-2">日</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">一</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">二</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">三</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">四</div>
+                        <div class="text-center text-xs font-bold text-slate-500 py-2">五</div>
+                        <div class="text-center text-xs font-bold text-blue-500 py-2">六</div>
+                    </div>
+                    <!-- 日曆格子 -->
+                    <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
+                    <!-- 色標圖例 -->
+                    <div class="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-rose-500"></span>緊急</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-amber-500"></span>近期截止</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-blue-500"></span>進行中</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-emerald-500"></span>已結束/紀念日</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-purple-500"></span>考試週</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 雷達清單視圖 -->
+            <div id="calView-radar" class="hidden space-y-4">
+                <!-- 分類篩選器 -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-500 mr-1">🔎 篩選：</span>
+                        <button onclick="filterDeadlineRadar('all')" class="radar-filter-btn active px-3 py-1.5 rounded-lg text-xs font-bold bg-ukn-900 text-white transition" data-cat="all">全部</button>
+                        <button onclick="filterDeadlineRadar('選課')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="選課">選課 / 停修</button>
+                        <button onclick="filterDeadlineRadar('抵免')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="抵免">學分抵免</button>
+                        <button onclick="filterDeadlineRadar('獎助學金')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="獎助學金">獎助學金</button>
+                        <button onclick="filterDeadlineRadar('學習預警')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="學習預警">學習預警</button>
+                        <button onclick="filterDeadlineRadar('考試')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="考試">考試週</button>
+                        <button onclick="filterDeadlineRadar('教學評量')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="教學評量">教學評量</button>
+                    </div>
+                </div>
+                <div id="calRadarList" class="space-y-3"></div>
+            </div>
+
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 5: 整合管理控制台與訪客留痕分析 (Tab Admin Embedded) -->
+        <!-- ======================================================== -->
+        <div id="tab-admin-embedded" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
+                            <span class="mr-2">📊</span> 訪客入校留痕與資料庫管理中心
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">電算中心數據分析 · 訪客諮詢名冊與 3NF 校規規章維護</p>
+                    </div>
+
+                    <a href="/admin" target="_blank" class="bg-ukn-700 hover:bg-ukn-800 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow flex items-center gap-1.5 self-start">
+                        <span>開啟獨立管理員後台 (CMS) ↗</span>
+                    </a>
+                </div>
+
+                <!-- 訪客留痕數據表格 -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-xs text-slate-500">
+                        <span class="font-bold text-slate-700">📋 最新訪客入校登記名冊 (留痕記錄)：</span>
+                        <span>共 <strong id="visitorCountText" class="text-ukn-700">0</strong> 筆諮詢紀錄</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                    <th class="p-3 font-semibold">ID</th>
+                                    <th class="p-3 font-semibold">訪客姓名</th>
+                                    <th class="p-3 font-semibold">手機號碼</th>
+                                    <th class="p-3 font-semibold">畢業國高中職</th>
+                                    <th class="p-3 font-semibold">來訪目的</th>
+                                    <th class="p-3 font-semibold">感興趣科系</th>
+                                    <th class="p-3 font-semibold">登記時間</th>
+                                </tr>
+                            </thead>
+                            <tbody id="visitorTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-10 text-center text-xs text-slate-500">
+        <p>Smart UKN 康寧大學智慧校園規章與全方位行政服務平台 · 10/15 專題 70% 旗艦成果</p>
+        <p class="mt-1 text-slate-400">系統由電算中心與資圖中心指導建置 · 符合 3NF 資料庫正規化與全流程安全邊界防呆</p>
+    </footer>
+
+    <!-- 彈窗 Modal: 條文全文檢視 -->
+    <div id="docModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl">🏛️</span>
+                    <div>
+                        <h3 id="docModalTitle" class="text-lg font-bold text-slate-900">官方規章條文</h3>
+                        <p class="text-xs text-slate-400">康寧大學正式法規規章</p>
+                    </div>
+                </div>
+                <button onclick="closeDocModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            </div>
+            
+            <div id="docModalBody" class="flex-grow overflow-y-auto space-y-3 text-slate-700 text-sm leading-relaxed pr-2"></div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
+                <span id="docModalPage" class="text-slate-500 font-medium"></span>
+                <button onclick="closeDocModal()" class="px-5 py-2 rounded-xl bg-ukn-800 text-white font-semibold hover:bg-ukn-900 transition">關閉檢視</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浮動按鈕：校務服務斷點匿名回報 (所有身分皆可看到，不需登入) -->
+    <button onclick="openFeedbackModal()" class="fixed bottom-5 right-5 z-40 bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold px-4 py-3 rounded-full shadow-xl flex items-center gap-2 transition">
+        <span>💬</span>
+        <span class="hidden sm:inline">卡關回報</span>
+    </button>
+
+    <!-- 彈窗 Modal: 校務服務斷點匿名回報 -->
+    <div id="feedbackModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl">💬</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">卡在哪裡了嗎？</h3>
+                        <p class="text-xs text-slate-400">匿名回報，不收集姓名學號，僅供電算中心改善系統</p>
+                    </div>
+                </div>
+                <button onclick="closeFeedbackModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            </div>
+
+            <form id="feedbackForm" onsubmit="submitFeedback(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">卡關類型 *</label>
+                    <select id="feedbackCategory" required class="w-full border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-ukn-500">
+                        <option value="">請選擇...</option>
+                        <option value="忘記密碼">忘記密碼</option>
+                        <option value="找不到申請表單">找不到申請表單</option>
+                        <option value="不知道申請進度或結果">不知道申請進度或結果</option>
+                        <option value="不確定辦理期限">不確定辦理期限</option>
+                        <option value="操作介面看不懂">操作介面看不懂</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">補充說明（選填）</label>
+                    <textarea id="feedbackDescription" rows="3" placeholder="可簡單描述發生了什麼事..." class="w-full border rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-ukn-500"></textarea>
+                </div>
+                <p id="feedbackErrorMsg" class="hidden text-rose-600 text-xs font-semibold"></p>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeFeedbackModal()" class="px-4 py-2 border rounded-xl">取消</button>
+                    <button type="submit" id="feedbackSubmitBtn" class="px-5 py-2 rounded-xl bg-ukn-800 text-white font-semibold hover:bg-ukn-900 transition">送出回報</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 彈窗 Modal: 行事曆日期事件詳情 -->
+    <div id="calDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📅</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">當日行程詳情</h3>
+                        <p class="text-xs text-slate-400" id="calDayModalDate"></p>
+                    </div>
+                </div>
+                <button onclick="closeCalDayModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100">✕</button>
+            </div>
+            <div id="calDayModalItems" class="overflow-y-auto space-y-3 flex-1 pr-1"></div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 前端核心 JavaScript 邏輯 -->
+    <!-- ======================================================== -->
+    <script>
+        // 全域狀態
+        let currentUser = null;
+        let categoriesCache = [];
+        let checklistsCache = [];
+        let currentSearchData = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 綁定 Enter 鍵手動搜尋
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleSearch();
+                });
+            }
+
+            // 1. 載入當前登入者資訊 (並依角色決定可見頁籤)
+            await loadCurrentUser();
+            // 2. 載入分級下拉選單資料
+            await loadCategories();
+            // 3. 載入流程清單
+            await loadChecklists();
+            // 4. 僅學生/家長需要個人學分診斷、證照紀錄
+            if (currentUser && ['學生', '家長'].includes(currentUser.role)) {
+                await runStudentDiagnosis();
+                await loadCertificates();
+                document.getElementById('addCertBtn').classList.toggle('hidden', currentUser.role !== '學生');
+            }
+            // 5. 載入行事曆（全部角色皆可查看校曆）
+            await loadCalendarDeadlines();
+            // 5. 訪客留痕清單僅教職員/管理員可查閱
+            if (currentUser && ['教職員', '管理員'].includes(currentUser.role)) {
+                await loadVisitors();
+            }
+        });
+
+        // 各角色可見的頁籤清單 (老師要求依身分分流導覽)
+        const TAB_VISIBILITY_BY_ROLE = {
+            '學生':   ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar'],
+            '家長':   ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar'],
+            '教職員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-admin-embedded'],
+            '管理員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-admin-embedded'],
+            '訪客':   ['tab-ai', 'tab-checklist', 'tab-calendar']
+        };
+        const ALL_TAB_IDS = ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-admin-embedded'];
+
+        // 全域行事曆狀態
+        let calAllDeadlines = [];
+        let calCurrentYear = new Date().getFullYear();
+        let calCurrentMonth = new Date().getMonth(); // 0-indexed
+        let calCurrentView = 'calendar';
+
+        // 1. 取得登入身分 (未登入時如實顯示訪客狀態，不再假裝已登入)
+        async function loadCurrentUser() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                currentUser = (data.status === 'success' && data.is_authenticated && data.user) ? data.user : null;
+            } catch (e) {
+                console.warn('Failed to get auth user:', e);
+                currentUser = null;
+            }
+            updateUserUI(currentUser);
+        }
+
+        function updateUserUI(user) {
+            const logoutBtn = document.getElementById('logoutBtn');
+            const adminEntryLink = document.getElementById('adminEntryLink');
+
+            if (!user) {
+                // 未登入 / 尚未登記訪客：顯示中性的訪客狀態
+                document.getElementById('userFullName').textContent = '訪客';
+                document.getElementById('userRoleTag').textContent = '請登入';
+                document.getElementById('roleIcon').textContent = '👤';
+                document.getElementById('userSubInfo').textContent = '請登入或登記來訪';
+                document.getElementById('studentDiagnosisTag').textContent = '請先登入以查看個人學分診斷';
+                logoutBtn.style.display = 'none';
+                adminEntryLink.style.display = 'none';
+                applyTabVisibility(null);
+                return;
+            }
+
+            document.getElementById('userFullName').textContent = user.full_name;
+            document.getElementById('userRoleTag').textContent = user.role;
+
+            let icon = '👨‍🎓';
+            if (user.role === '家長') icon = '👨‍👩‍👦';
+            else if (user.role === '教職員') icon = '👨‍🏫';
+            else if (user.role === '管理員') icon = '⚙️';
+            else if (user.role === '訪客') icon = '🌟';
+            document.getElementById('roleIcon').textContent = icon;
+
+            const subInfo = document.getElementById('userSubInfo');
+            if (user.student_id) {
+                subInfo.textContent = `學號 ${user.student_id} · ${user.class_name || user.dept_name}`;
+            } else {
+                subInfo.textContent = `${user.class_name || user.dept_name || '康寧校園訪客'}`;
+            }
+
+            // 更新個人診斷看板標題
+            if (user.role === '學生') {
+                document.getElementById('studentDiagnosisTag').textContent = `學生 ${user.full_name} (${user.student_id}) · 歷年學分與擋修自動診斷`;
+            } else if (user.role === '家長') {
+                document.getElementById('studentDiagnosisTag').textContent = `家長專區：${user.full_name} 學生修課進度查閱`;
+            } else {
+                document.getElementById('studentDiagnosisTag').textContent = `修課模擬展示：${user.full_name}`;
+            }
+
+            logoutBtn.style.display = 'flex';
+            adminEntryLink.style.display = ['教職員', '管理員'].includes(user.role) ? 'flex' : 'none';
+            applyTabVisibility(user.role);
+        }
+
+        // 依角色顯示/隱藏頁籤按鈕；真正的存取控管仍在後端 API (前端僅為體驗優化)
+        function applyTabVisibility(role) {
+            const allowed = TAB_VISIBILITY_BY_ROLE[role] || ['tab-ai', 'tab-checklist'];
+            ALL_TAB_IDS.forEach(tabId => {
+                const btn = document.getElementById('tabBtn-' + tabId.replace('tab-', ''));
+                if (btn) btn.classList.toggle('hidden', !allowed.includes(tabId));
+            });
+            // 若目前分頁已被隱藏，切回預設的 AI 問答頁籤
+            const activeTab = document.querySelector('.tab-content:not(.hidden)');
+            if (activeTab && !allowed.includes(activeTab.id)) {
+                switchTab('tab-ai');
+            }
+        }
+
+        // 登出：呼叫登出 API 清除 session 後導向登入頁
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch (e) {
+                console.warn('登出請求失敗:', e);
+            }
+            window.location.href = '/login';
+        }
+
+        // 2. 頁籤切換
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.tab-item').forEach(btn => {
+                btn.className = 'tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white';
+            });
+            const activeBtn = document.getElementById('tabBtn-' + tabId.replace('tab-', ''));
+            if (activeBtn) {
+                activeBtn.className = 'tab-item py-3 px-3 sm:px-4 border-b-2 font-bold flex items-center space-x-2 text-amber-300 border-amber-400';
+            }
+
+            // switchTab 會重寫所有按鈕的 className，需重新套用角色頁籤可見性避免被還原
+            applyTabVisibility(currentUser ? currentUser.role : null);
+        }
+
+        // 3. 載入引導式分級下拉選單
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    categoriesCache = json.data;
+                    renderPrimaryCategorySelect(categoriesCache);
+                }
+            } catch (e) {
+                console.error('Failed to load categories:', e);
+            }
+        }
+
+        function renderPrimaryCategorySelect(cats) {
+            const select = document.getElementById('primaryCategorySelect');
+            select.innerHTML = `<option value="">📌 步驟 1：請選擇諮詢大類...</option>` + cats.map(c => `
+                <option value="${c.category_id}">${c.icon || '📚'} ${c.category_name}</option>
+            `).join('');
+        }
+
+        function handlePrimaryCategoryChange() {
+            const primaryId = parseInt(document.getElementById('primaryCategorySelect').value);
+            const subSelect = document.getElementById('subCategorySelect');
+
+            if (!primaryId) {
+                subSelect.innerHTML = `<option value="">⏳ 步驟 2：請先選擇大類</option>`;
+                subSelect.disabled = true;
+                return;
+            }
+
+            const target = categoriesCache.find(c => c.category_id === primaryId);
+            if (target && target.subcategories && target.subcategories.length > 0) {
+                subSelect.innerHTML = `<option value="">🔍 步驟 2：請選擇具體諮詢項目...</option>` + target.subcategories.map(s => `
+                    <option value="${s}">👉 ${s}</option>
+                `).join('');
+                subSelect.disabled = false;
+            } else {
+                subSelect.innerHTML = `<option value="">無子項目</option>`;
+                subSelect.disabled = true;
+            }
+        }
+
+        // 4. 引導式分級查詢送出 (100% 精準無失誤)
+        async function handleGuidedQuery() {
+            const catId = document.getElementById('primaryCategorySelect').value;
+            const subcat = document.getElementById('subCategorySelect').value;
+
+            if (!catId) {
+                alert('請先選擇諮詢大類！');
+                return;
+            }
+
+            const btn = document.getElementById('guidedSearchBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span>檢索中...</span>`;
+
+            try {
+                const res = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category_id: parseInt(catId), subcategory: subcat })
+                });
+                const data = await res.json();
+                renderSearchResult(data);
+            } catch (e) {
+                alert('伺服器連線失敗');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>查閱</span><span>➔</span>`;
+            }
+        }
+
+        // 5. 手動關鍵字搜尋
+        function quickSearch(kw) {
+            switchTab('tab-ai');
+            document.getElementById('searchInput').value = kw;
+            handleSearch();
+        }
+
+        async function handleSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('請輸入欲查詢的校規關鍵字或口語！');
+                return;
+            }
+
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span>搜尋中...</span>`;
+
+            try {
+                const res = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const data = await res.json();
+                renderSearchResult(data);
+            } catch (e) {
+                alert('伺服器連線失敗');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>搜尋規章</span><span>→</span>`;
+            }
+        }
+
+        // 6. 渲染搜尋結果 (含成功卡片與安全邊界拒答卡片)
+        function renderSearchResult(data) {
+            currentSearchData = data;
+            const resultSection = document.getElementById('resultSection');
+            const successCard = document.getElementById('successResultCard');
+            const fallbackCard = document.getElementById('safetyFallbackCard');
+            const synonymBadge = document.getElementById('synonymBadge');
+
+            resultSection.classList.remove('hidden');
+
+            if (data.matched) {
+                // 成功檢索到校規
+                successCard.classList.remove('hidden');
+                fallbackCard.classList.add('hidden');
+
+                // 同義詞
+                if (data.is_synonym_matched) {
+                    document.getElementById('searchedTermText').textContent = data.search_term;
+                    document.getElementById('officialTermText').textContent = data.official_term;
+                    synonymBadge.classList.remove('hidden');
+                } else {
+                    synonymBadge.classList.add('hidden');
+                }
+
+                document.getElementById('answerBox').textContent = data.answer;
+                document.getElementById('docNameText').textContent = data.source_doc;
+                document.getElementById('pageNumText').textContent = data.page_num;
+                document.getElementById('sourceUrlBtn').href = data.source_url;
+
+                document.getElementById('chkRequiredDocs').textContent = data.required_docs || '依各系所規定';
+                document.getElementById('chkOfficeHours').textContent = data.office_hours || '上班日 08:30 - 17:00';
+                document.getElementById('chkPhone').textContent = data.contact_phone || '02-2632-1181';
+
+                // Checklist 步驟
+                const chkUl = document.getElementById('checklistUl');
+                chkUl.innerHTML = '';
+                if (data.checklist && data.checklist.length > 0) {
+                    data.checklist.forEach((step, idx) => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-start space-x-2 bg-white p-2.5 rounded-xl border border-amber-100/80';
+                        li.innerHTML = `
+                            <input type="checkbox" id="chk_s_${idx}" class="mt-0.5 w-4 h-4 rounded text-ukn-600 focus:ring-ukn-500 cursor-pointer">
+                            <label for="chk_s_${idx}" class="cursor-pointer text-slate-700 leading-relaxed">${step}</label>
+                        `;
+                        chkUl.appendChild(li);
+                    });
+                    document.getElementById('checklistGroup').classList.remove('hidden');
+                } else {
+                    document.getElementById('checklistGroup').classList.add('hidden');
+                }
+
+            } else {
+                // 安全邊界拒答防呆 (查無資料)
+                successCard.classList.add('hidden');
+                fallbackCard.classList.remove('hidden');
+                synonymBadge.classList.add('hidden');
+
+                document.getElementById('safetyMessageText').textContent = data.answer;
+
+                const grid = document.getElementById('contactDirectoryGrid');
+                if (data.contacts_directory) {
+                    grid.innerHTML = data.contacts_directory.map(c => `
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="font-bold text-ukn-900">${c.office}</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">業務：${c.scope}</div>
+                            <div class="text-[11px] text-blue-700 font-bold mt-1">📞 ${c.phone}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function copyAnswerText() {
+            if (!currentSearchData) return;
+            const textToCopy = `【Smart UKN 校規解答】\n關鍵字：${currentSearchData.search_term}\n出處：${currentSearchData.source_doc} (第 ${currentSearchData.page_num} 頁)\n\n${currentSearchData.answer}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('已將解答複製至剪貼簿！');
+            });
+        }
+
+        function openDocModal() {
+            if (!currentSearchData) return;
+            document.getElementById('docModalTitle').textContent = currentSearchData.source_doc;
+            document.getElementById('docModalPage').textContent = `出處文件：${currentSearchData.source_doc} · 頁碼：第 ${currentSearchData.page_num} 頁`;
+            document.getElementById('docModalBody').innerHTML = `
+                <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 mb-3">
+                    <span class="font-bold text-ukn-900">官方核定項目：${currentSearchData.official_term || currentSearchData.search_term}</span>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 whitespace-pre-wrap text-sm leading-relaxed">
+${currentSearchData.answer}
+                </div>
+            `;
+            document.getElementById('docModal').classList.remove('hidden');
+        }
+
+        function closeDocModal() {
+            document.getElementById('docModal').classList.add('hidden');
+        }
+
+        // 校務服務斷點匿名回報：所有身分（含未登入訪客）皆可使用
+        function openFeedbackModal() {
+            document.getElementById('feedbackForm').reset();
+            document.getElementById('feedbackErrorMsg').classList.add('hidden');
+            document.getElementById('feedbackModal').classList.remove('hidden');
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').classList.add('hidden');
+        }
+
+        async function submitFeedback(e) {
+            e.preventDefault();
+            const category = document.getElementById('feedbackCategory').value;
+            const description = document.getElementById('feedbackDescription').value.trim();
+            const errorMsg = document.getElementById('feedbackErrorMsg');
+            const btn = document.getElementById('feedbackSubmitBtn');
+
+            if (!category) {
+                errorMsg.textContent = '請選擇卡關類型';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            const activeTab = document.querySelector('.tab-content:not(.hidden)');
+            btn.disabled = true;
+            btn.textContent = '送出中...';
+
+            try {
+                const res = await fetch('/api/feedback/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        category,
+                        description,
+                        page_context: activeTab ? activeTab.id : ''
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    closeFeedbackModal();
+                    alert(data.message || '感謝您的回報！');
+                } else {
+                    errorMsg.textContent = data.message || '送出失敗，請稍後再試';
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorMsg.textContent = '網路異常，請稍後再試';
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '送出回報';
+            }
+        }
+
+        // 7. 行政申辦流程指引
+        async function loadChecklists() {
+            try {
+                const res = await fetch('/api/checklists');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    checklistsCache = json.data;
+                    renderChecklistCards(checklistsCache);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderChecklistCards(list) {
+            const container = document.getElementById('checklistCardsContainer');
+            if (!container) return;
+
+            container.innerHTML = list.map((item, idx) => {
+                const steps = item.steps_json || [];
+                const stepsHtml = steps.map((s, sIdx) => `
+                    <div class="flex items-start space-x-2 text-xs text-slate-700">
+                        <input type="checkbox" onchange="updateChecklistProgress(${idx})" id="step_c_${idx}_${sIdx}" class="mt-0.5 rounded text-ukn-600 focus:ring-ukn-500 cursor-pointer">
+                        <label for="step_c_${idx}_${sIdx}" class="cursor-pointer leading-relaxed">${s}</label>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4 hover:shadow-md transition">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-[11px] font-bold bg-ukn-100 text-ukn-800 px-2.5 py-0.5 rounded-full">${item.category_name || '教務處'}</span>
+                                <h3 class="text-base font-bold text-slate-900 mt-1.5">${item.business_name}</h3>
+                            </div>
+                            <span id="chk_badge_${idx}" class="text-xs font-semibold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">0/${steps.length} 完成</span>
+                        </div>
+
+                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                            <div id="chk_bar_${idx}" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+
+                        <div class="space-y-2.5 bg-white p-3.5 rounded-xl border border-slate-100">
+                            ${stepsHtml}
+                        </div>
+
+                        <div class="text-[11px] text-slate-500 space-y-1 pt-1 border-t border-slate-200">
+                            <div><strong class="text-slate-700">📌 應備文件：</strong>${item.required_docs || '依各系所規定'}</div>
+                            <div><strong class="text-slate-700">🕒 服務時間：</strong>${item.office_hours || '上班日 08:30 - 17:00'}</div>
+                            <div><strong class="text-slate-700">📞 處室電話：</strong>${item.contact_phone || '02-2632-1181'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateChecklistProgress(cardIdx) {
+            const container = document.getElementById('checklistCardsContainer');
+            const checkboxes = container.querySelectorAll(`input[id^="step_c_${cardIdx}_"]`);
+            const total = checkboxes.length;
+            let checked = 0;
+            checkboxes.forEach(cb => { if (cb.checked) checked++; });
+
+            const percent = total > 0 ? (checked / total) * 100 : 0;
+            const bar = document.getElementById(`chk_bar_${cardIdx}`);
+            const badge = document.getElementById(`chk_badge_${cardIdx}`);
+            if (bar) bar.style.width = `${percent}%`;
+            if (badge) {
+                badge.textContent = `${checked}/${total} 完成 (${Math.round(percent)}%)`;
+                if (checked === total && total > 0) {
+                    badge.className = 'text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200';
+                } else {
+                    badge.className = 'text-xs font-semibold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200';
+                }
+            }
+        }
+
+        function filterChecklists(cat) {
+            document.querySelectorAll('.chk-filter-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.className = 'chk-filter-btn px-3 py-1.5 rounded-lg bg-ukn-900 text-white font-bold';
+                } else {
+                    btn.className = 'chk-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200';
+                }
+            });
+
+            if (cat === 'all') {
+                renderChecklistCards(checklistsCache);
+            } else {
+                renderChecklistCards(checklistsCache.filter(c => c.category_name.includes(cat) || c.business_name.includes(cat)));
+            }
+        }
+
+        // 8. 個人化學分與擋修自動診斷 (基於 Session 學號自動計算)
+        async function runStudentDiagnosis() {
+            try {
+                const res = await fetch('/api/student/credits/diagnose');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderCourseDashboard(data);
+                }
+            } catch (e) {
+                console.error('Diagnosis failed:', e);
+            }
+        }
+
+        // ======================================================
+        // 校曆行事曆核心邏輯
+        // ======================================================
+
+        // 載入全學期行事曆（所有用戶皆可查看）
+        async function loadCalendarDeadlines() {
+            try {
+                const res = await fetch('/api/deadlines?scope=all');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    calAllDeadlines = data.data || [];
+                    renderCalendar(calCurrentYear, calCurrentMonth);
+                    renderRadarList(calAllDeadlines);
+                    renderMiniDeadlineBanner(calAllDeadlines);
+                }
+            } catch (e) {
+                console.error('Load calendar deadlines failed:', e);
+            }
+        }
+
+        // 切換行事曆視圖（月曆 / 雷達清單）
+        function switchCalendarView(view) {
+            calCurrentView = view;
+            document.getElementById('calView-calendar').classList.toggle('hidden', view !== 'calendar');
+            document.getElementById('calView-radar').classList.toggle('hidden', view !== 'radar');
+            document.querySelectorAll('.cal-view-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-blue-200');
+                btn.classList.remove('text-white');
+            });
+            const activeBtn = document.getElementById('calViewBtn-' + view);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.classList.remove('text-blue-200');
+                activeBtn.classList.add('text-white');
+            }
+        }
+
+        // 月份導覽
+        function calNavigate(delta) {
+            calCurrentMonth += delta;
+            if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+            if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
+            renderCalendar(calCurrentYear, calCurrentMonth);
+        }
+
+        // 渲染月曆
+        function renderCalendar(year, month) {
+            const title = document.getElementById('calMonthTitle');
+            const grid = document.getElementById('calGrid');
+            if (!title || !grid) return;
+
+            title.textContent = `${year} 年 ${month + 1} 月`;
+
+            const today = new Date();
+            const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrev = new Date(year, month, 0).getDate();
+
+            // Build event map: { 'YYYY-MM-DD': [deadline, ...] }
+            const eventMap = {};
+            calAllDeadlines.forEach(d => {
+                // Mark on end_date
+                if (!eventMap[d.end_date]) eventMap[d.end_date] = [];
+                eventMap[d.end_date].push(d);
+                // Mark range: start_date to end_date if both exist and different
+                if (d.start_date && d.start_date !== d.end_date) {
+                    let cur = new Date(d.start_date);
+                    const end = new Date(d.end_date);
+                    while (cur < end) {
+                        const key = cur.toISOString().slice(0, 10);
+                        if (!eventMap[key]) eventMap[key] = [];
+                        if (!eventMap[key].find(x => x.deadline_id === d.deadline_id)) {
+                            eventMap[key].push({...d, _rangeDay: true});
+                        }
+                        cur.setDate(cur.getDate() + 1);
+                    }
+                }
+            });
+
+            const catColor = {
+                '選課': 'bg-blue-500', '抵免': 'bg-indigo-500', '獎助學金': 'bg-emerald-500',
+                '學習預警': 'bg-amber-500', '教學評量': 'bg-purple-500',
+                '考試': 'bg-purple-600', '教務': 'bg-slate-400'
+            };
+            const urgencyColor = { 'urgent': 'bg-rose-500', 'soon': 'bg-amber-500', 'normal': 'bg-blue-500', 'past': 'bg-slate-300' };
+
+            let html = '';
+            // Previous month padding
+            for (let i = firstDay - 1; i >= 0; i--) {
+                html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-xs text-slate-300 font-medium">${daysInPrev - i}</div></div>`;
+            }
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+                const events = eventMap[dateStr] || [];
+                const endEvents = events.filter(e => e.end_date === dateStr && !e._rangeDay);
+                const dotHtml = endEvents.slice(0, 3).map(e => {
+                    const col = e.urgency ? urgencyColor[e.urgency] : (catColor[e.category] || 'bg-slate-400');
+                    return `<span class="cal-event-dot ${col}"></span>`;
+                }).join('');
+                const eventTitleHtml = endEvents.slice(0, 2).map(e =>
+                    `<div class="text-[9px] leading-tight text-slate-700 truncate font-medium">${e.title}</div>`
+                ).join('');
+                const moreHtml = endEvents.length > 2 ? `<div class="text-[9px] text-slate-400">+${endEvents.length - 2} 更多</div>` : '';
+                const clickData = endEvents.length ? `onclick="showCalDayDetail('${dateStr}')" style="cursor:pointer"` : '';
+                html += `<div class="cal-day ${isToday ? 'today' : ''} p-1.5 rounded-xl border ${isToday ? 'border-ukn-400' : 'border-slate-100'} bg-white" ${clickData}>
+                    <div class="text-xs font-bold ${isToday ? 'text-ukn-800' : 'text-slate-600'} mb-1">${d}</div>
+                    <div class="flex flex-wrap gap-0.5 mb-0.5">${dotHtml}</div>
+                    ${eventTitleHtml}${moreHtml}
+                </div>`;
+            }
+            // Next month padding
+            const total = firstDay + daysInMonth;
+            const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+            for (let i = 1; i <= remaining; i++) {
+                html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-xs text-slate-300 font-medium">${i}</div></div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        // 點擊日期後顯示當日事件
+        function showCalDayDetail(dateStr) {
+            const events = calAllDeadlines.filter(d => d.end_date === dateStr);
+            if (!events.length) return;
+            const urgencyLabel = { urgent: '🚨 緊急', soon: '⚠️ 近期', normal: '⏳ 尚有餘裕', past: '✅ 已過期' };
+            const items = events.map(e => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                    <div class="font-bold text-slate-900">${e.title}</div>
+                    <div class="flex gap-2 text-xs">
+                        <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">${e.category}</span>
+                        <span>${urgencyLabel[e.urgency] || ''}</span>
+                        ${e.days_left >= 0 ? `<span class="text-slate-500">剩 ${e.days_left} 天</span>` : '<span class="text-slate-400">已截止</span>'}
+                    </div>
+                    <p class="text-xs text-slate-500">${e.description || ''}</p>
+                    <a href="${e.related_system_url || '#'}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-ukn-700 hover:underline">前往官方系統 ↗</a>
+                </div>`).join('');
+            const modal = document.getElementById('calDayModal');
+            document.getElementById('calDayModalDate').textContent = dateStr;
+            document.getElementById('calDayModalItems').innerHTML = items;
+            modal.classList.remove('hidden');
+        }
+
+        function closeCalDayModal() {
+            document.getElementById('calDayModal').classList.add('hidden');
+        }
+
+        // 渲染雷達清單（全量，可篩選）
+        let radarCurrentCat = 'all';
+        function renderRadarList(items) {
+            const list = document.getElementById('calRadarList');
+            if (!list) return;
+            const filtered = radarCurrentCat === 'all' ? items : items.filter(d => d.category === radarCurrentCat);
+            if (!filtered.length) {
+                list.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">此分類目前沒有期限項目。</div>`;
+                return;
+            }
+            const urgencyStyle = {
+                urgent: { badge: 'bg-rose-100 text-rose-800 border-rose-300', border: 'border-rose-200', left: 'bg-rose-500', label: '🚨 緊急', days: 'text-rose-700 font-black' },
+                soon:   { badge: 'bg-amber-100 text-amber-800 border-amber-300', border: 'border-amber-200', left: 'bg-amber-500', label: '⚠️ 近期', days: 'text-amber-700 font-black' },
+                normal: { badge: 'bg-blue-100 text-blue-800 border-blue-300', border: 'border-blue-200', left: 'bg-blue-500', label: '⏳ 進行中', days: 'text-blue-700 font-semibold' },
+                past:   { badge: 'bg-slate-100 text-slate-500 border-slate-300', border: 'border-slate-200', left: 'bg-slate-300', label: '✅ 已結束', days: 'text-slate-400 font-normal' }
+            };
+            const catIcon = { '選課':'📚', '抵免':'🏆', '獎助學金':'💰', '學習預警':'⚠️', '考試':'📝', '教學評量':'📊', '教務':'🏫' };
+            list.innerHTML = filtered.map(d => {
+                const s = urgencyStyle[d.urgency] || urgencyStyle.normal;
+                const daysText = d.days_left < 0 ? `已過 ${Math.abs(d.days_left)} 天` : d.days_left === 0 ? '今天截止！' : `剩 ${d.days_left} 天`;
+                return `
+                <div class="deadline-card flex gap-0 rounded-2xl border ${s.border} bg-white overflow-hidden shadow-sm">
+                    <div class="w-1.5 flex-shrink-0 ${s.left}"></div>
+                    <div class="flex-1 p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 flex-wrap mb-1">
+                                    <span class="text-sm">${catIcon[d.category] || '📌'}</span>
+                                    <span class="font-bold text-slate-900">${d.title}</span>
+                                    <span class="text-[11px] font-semibold border px-2 py-0.5 rounded-full ${s.badge}">${s.label}</span>
+                                    ${d.applies_to_dept_name ? `<span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">${d.applies_to_dept_name}</span>` : ''}
+                                </div>
+                                <p class="text-xs text-slate-500 leading-relaxed">${d.description || ''}</p>
+                                <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-400">
+                                    ${d.start_date ? `<span>開始：${d.start_date}</span>` : ''}
+                                    <span>截止：<strong class="text-slate-700">${d.end_date}</strong></span>
+                                </div>
+                            </div>
+                            <div class="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1 flex-shrink-0">
+                                <div class="text-xl sm:text-2xl ${s.days}">${daysText}</div>
+                                <a href="${d.related_system_url || '#'}" target="_blank" class="text-[11px] font-bold text-ukn-700 hover:text-ukn-900 bg-ukn-50 hover:bg-ukn-100 border border-ukn-200 px-3 py-1.5 rounded-xl transition">前往系統 ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterDeadlineRadar(cat) {
+            radarCurrentCat = cat;
+            document.querySelectorAll('.radar-filter-btn').forEach(btn => {
+                const isActive = btn.dataset.cat === cat;
+                btn.classList.toggle('bg-ukn-900', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('bg-slate-100', !isActive);
+                btn.classList.toggle('text-slate-600', !isActive);
+            });
+            renderRadarList(calAllDeadlines);
+        }
+
+        // 學分診斷迷你提醒條（顯示 14 天內與選課/停修相關期限）
+        function renderMiniDeadlineBanner(items) {
+            const banner = document.getElementById('miniDeadlineBanner');
+            const container = document.getElementById('miniDeadlineItems');
+            if (!banner || !container) return;
+            const relevantCats = ['選課', '抵免', '學習預警'];
+            const soon = items.filter(d => d.days_left >= 0 && d.days_left <= 30 && relevantCats.includes(d.category));
+            if (!soon.length) { banner.classList.add('hidden'); return; }
+            banner.classList.remove('hidden');
+            container.innerHTML = soon.slice(0, 4).map(d => {
+                const color = d.urgency === 'urgent' ? 'bg-rose-100 text-rose-800 border-rose-300' : d.urgency === 'soon' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-blue-100 text-blue-800 border-blue-300';
+                return `<span class="inline-flex items-center gap-1 text-[11px] font-bold border px-2 py-0.5 rounded-full ${color}">
+                    ${d.title} · <span class="font-black">${d.days_left === 0 ? '今天！' : `剩${d.days_left}天`}</span>
+                </span>`;
+            }).join('');
+        }
+
+        // 我的證照與檢定成績 (如勞動部技術士技能檢定成績單)
+        async function loadCertificates() {
+            try {
+                const res = await fetch('/api/certificates');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderCertificates(data.data || []);
+                }
+            } catch (e) {
+                console.error('Load certificates failed:', e);
+            }
+        }
+
+        function renderCertificates(items) {
+            const list = document.getElementById('certificateList');
+            if (!list) return;
+
+            if (!items.length) {
+                list.innerHTML = `<p class="col-span-full text-sm text-slate-400 py-4 text-center">尚未登錄任何證照紀錄。</p>`;
+                return;
+            }
+
+            const canDelete = currentUser && currentUser.role === '學生';
+            list.innerHTML = items.map(c => `
+                <div class="p-4 rounded-2xl border border-amber-200 bg-amber-50/40 space-y-1.5 relative">
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="font-bold text-slate-900">${c.cert_name}</h4>
+                        ${canDelete ? `<button onclick="deleteCertificate(${c.cert_id})" class="text-xs text-rose-500 hover:text-rose-700 font-bold">刪除</button>` : ''}
+                    </div>
+                    <p class="text-xs text-slate-600">發證單位：${c.issuing_org}</p>
+                    ${c.cert_number ? `<p class="text-xs text-slate-500">證照字號：${c.cert_number}</p>` : ''}
+                    ${(c.theory_score != null || c.practical_score != null) ? `<p class="text-xs text-slate-600">成績：${c.theory_score != null ? `學科 ${c.theory_score}` : ''} ${c.practical_score != null ? `／ 術科 ${c.practical_score}` : ''}</p>` : ''}
+                    <p class="text-[11px] text-slate-400">取得日期：${c.issue_date}</p>
+                </div>
+            `).join('');
+        }
+
+        function toggleCertForm() {
+            const form = document.getElementById('certForm');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                document.getElementById('certErrorMsg').classList.add('hidden');
+            } else {
+                document.getElementById('certForm').reset();
+            }
+        }
+
+        async function submitCertificate(e) {
+            e.preventDefault();
+            const errorMsg = document.getElementById('certErrorMsg');
+            const payload = {
+                cert_name: document.getElementById('certName').value.trim(),
+                issuing_org: document.getElementById('certOrg').value.trim(),
+                cert_number: document.getElementById('certNumber').value.trim(),
+                theory_score: document.getElementById('certTheoryScore').value,
+                practical_score: document.getElementById('certPracticalScore').value,
+                issue_date: document.getElementById('certIssueDate').value
+            };
+
+            try {
+                const res = await fetch('/api/certificates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    toggleCertForm();
+                    await loadCertificates();
+                } else {
+                    errorMsg.textContent = data.message || '新增失敗，請確認欄位內容';
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorMsg.textContent = '網路異常，請稍後再試';
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        async function deleteCertificate(certId) {
+            if (!confirm('確定要刪除這筆證照紀錄嗎？')) return;
+            try {
+                const res = await fetch(`/api/certificates/${certId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    await loadCertificates();
+                } else {
+                    alert(data.message || '刪除失敗');
+                }
+            } catch (err) {
+                alert('網路異常，請稍後再試');
+            }
+        }
+
+        function renderCourseDashboard(data) {
+            document.getElementById('statPassedCredits').textContent = data.total_passed_credits;
+            document.getElementById('statRequiredCredits').textContent = data.required_passed_credits;
+            document.getElementById('creditProgressPercentText').textContent = `${data.progress_percent}% (${data.total_passed_credits}/128 學分)`;
+            document.getElementById('creditProgressBar').style.width = `${Math.min(100, data.progress_percent)}%`;
+
+            renderAcademicAlert(data.failed_courses || [], data.academic_alert || {});
+
+            const grid = document.getElementById('courseCardsGrid');
+            if (!grid) return;
+
+            grid.innerHTML = data.courses.map(c => {
+                let statusBadge = '';
+                let borderClass = 'border-slate-200';
+                let bgClass = 'bg-slate-50';
+
+                if (c.is_passed) {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">✅ 已修畢通過</span>`;
+                    borderClass = 'border-emerald-300';
+                    bgClass = 'bg-emerald-50/40';
+                } else if (c.is_blocked) {
+                    statusBadge = `<span class="bg-rose-100 text-rose-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">🔒 遭擋修 (先修未過)</span>`;
+                    borderClass = 'border-rose-300';
+                    bgClass = 'bg-rose-50/40';
+                } else {
+                    statusBadge = `<span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">🔓 資格符合 (可修讀)</span>`;
+                    borderClass = 'border-blue-200';
+                    bgClass = 'bg-blue-50/30';
+                }
+
+                const prereqInfo = c.prerequisite_name 
+                    ? `<div class="text-xs text-slate-500 mt-2"><strong>先修規定：</strong>需先修畢 <span class="font-bold text-slate-700">${c.prerequisite_name} (${c.prerequisite_id})</span></div>` 
+                    : `<div class="text-xs text-slate-400 mt-2">無先修科目限制 (基礎核心)</div>`;
+
+                const blockedWarning = c.is_blocked && c.missing_prerequisite
+                    ? `<div class="bg-rose-100/90 text-rose-900 text-xs p-2.5 rounded-xl mt-2 font-semibold">⚠️ 擋修預警：因未修過「${c.missing_prerequisite.prerequisite_name}」，選課系統將自動攔截擋修。</div>`
+                    : '';
+
+                return `
+                    <div class="p-5 rounded-2xl border ${borderClass} ${bgClass} space-y-3 transition relative">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-xs font-mono font-bold text-ukn-700 bg-white px-2 py-0.5 rounded border border-slate-200">${c.course_id}</span>
+                                <span class="text-xs font-bold ${c.is_required ? 'text-amber-700 bg-amber-100' : 'text-slate-600 bg-slate-100'} px-2 py-0.5 rounded ml-1">${c.is_required ? '必修' : '選修'} ${c.credits} 學分</span>
+                                <h4 class="text-base font-bold text-slate-900 mt-1.5">${c.course_name}</h4>
+                            </div>
+                            ${statusBadge}
+                        </div>
+
+                        <p class="text-xs text-slate-600 line-clamp-2">${c.description || ''}</p>
+                        ${prereqInfo}
+                        ${blockedWarning}
+
+                        <div class="text-[11px] text-slate-400 pt-2 border-t border-slate-200/60 flex justify-between items-center">
+                            <span>建議修習：${c.semester_suggest || '大一'}</span>
+                            <span class="text-slate-500 font-medium">開課系所：${c.dept_id}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAcademicAlert(failedCourses, alert) {
+            const panel = document.getElementById('academicAlertPanel');
+            if (!panel) return;
+
+            panel.classList.remove('hidden', 'bg-rose-50', 'border-rose-200', 'bg-emerald-50', 'border-emerald-200');
+
+            // 未通過必修學分 / 擋修課程數量：無論有無不及格科目都清楚顯示
+            const statChips = `
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/70 border border-rose-200 text-rose-800">
+                        未通過必修學分：${alert.failed_required_credits ?? 0} 學分
+                    </span>
+                    <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/70 border border-rose-200 text-rose-800">
+                        遭擋修課程：${alert.blocked_course_count ?? 0} 門
+                    </span>
+                </div>`;
+
+            if (!failedCourses.length) {
+                panel.classList.add('bg-emerald-50', 'border-emerald-200');
+                panel.innerHTML = `
+                    <div class="flex gap-3">
+                        <span class="text-2xl">✅</span>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-emerald-900">目前沒有不及格科目</h3>
+                            <p class="text-sm text-emerald-800 mt-1">${alert.message || '請持續依修課地圖安排課程。'}</p>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/70 border border-emerald-200 text-emerald-800">
+                                    未通過必修學分：${alert.failed_required_credits ?? 0} 學分
+                                </span>
+                                <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/70 border border-emerald-200 text-emerald-800">
+                                    遭擋修課程：${alert.blocked_course_count ?? 0} 門
+                                </span>
+                            </div>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            panel.classList.add('bg-rose-50', 'border-rose-200');
+            const rows = failedCourses.map(course => `
+                <li class="flex flex-col gap-1.5 py-3 border-b border-rose-100 last:border-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <div>
+                            <span class="font-bold text-rose-950">${course.course_name}</span>
+                            <span class="text-xs text-rose-700 ml-1">${course.course_id} · ${course.is_required ? '必修' : '選修'} ${course.credits} 學分</span>
+                        </div>
+                        <span class="text-sm font-bold text-rose-800">成績：${course.score ?? '待確認'} 分</span>
+                    </div>
+                    <div class="text-xs text-rose-700 bg-rose-100/60 rounded-lg px-2.5 py-1.5 w-fit">
+                        💡 建議處理方式：${course.suggested_action || '請洽系所辦公室確認補救措施'}
+                    </div>
+                    <div class="text-xs text-rose-600">
+                        📞 求助對象：${course.contact_office || '課務組'} · ${course.contact_phone || ''}（${course.office_hours || ''}）
+                    </div>
+                </li>`).join('');
+
+            panel.innerHTML = `
+                <div class="flex gap-3">
+                    <span class="text-2xl">⚠️</span>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-rose-950">學習提醒：${failedCourses.length} 門科目未通過</h3>
+                        <p class="text-sm text-rose-800 mt-1">${alert.message || '建議優先確認重修與補救課程安排。'}</p>
+                        ${statChips}
+                        <ul class="mt-3 bg-white/70 border border-rose-100 rounded-2xl px-4">${rows}</ul>
+                        <p class="text-xs text-rose-700 mt-3">此區只列出已有成績但未通過的科目；尚未修習課程不會列在這裡。</p>
+                    </div>
+                </div>`;
+        }
+
+        // 9. 載入訪客留痕名冊
+        async function loadVisitors() {
+            try {
+                const res = await fetch('/api/admin/visitors');
+                const json = await res.json();
+                if (json.status === 'success') {
+                    document.getElementById('visitorCountText').textContent = json.count;
+                    const tbody = document.getElementById('visitorTableBody');
+                    if (tbody) {
+                        tbody.innerHTML = json.data.map(v => `
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                                <td class="p-3 font-mono text-slate-400">${v.log_id}</td>
+                                <td class="p-3 font-bold text-ukn-800">${v.visitor_name}</td>
+                                <td class="p-3 font-mono text-slate-600">${v.phone}</td>
+                                <td class="p-3 font-semibold text-slate-700">${v.school_from}</td>
+                                <td class="p-3"><span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-bold">${v.purpose}</span></td>
+                                <td class="p-3 text-slate-600">${v.target_dept || '-'}</td>
+                                <td class="p-3 text-xs text-slate-400">${v.visited_at}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>

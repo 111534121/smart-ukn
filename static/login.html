@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart UKN 統一身分登入與訪客通道 - 康寧大學智慧校園服務平台</title>
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ukn: {
+                            50: '#f0f5ff',
+                            100: '#e0ecff',
+                            200: '#c7dcfe',
+                            300: '#a3c4fd',
+                            400: '#75a3fc',
+                            500: '#477ef7',
+                            600: '#265deb',
+                            700: '#1b47cc',
+                            800: '#1c3ca4',
+                            900: '#0f2b5c',
+                            950: '#0a1a3a',
+                        },
+                        amber: {
+                            450: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hero-bg {
+            background: linear-gradient(135deg, #0a1a3a 0%, #0f2b5c 50%, #1e3a8a 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="hero-bg min-h-screen flex flex-col justify-between font-sans antialiased text-slate-800 selection:bg-ukn-500 selection:text-white relative overflow-x-hidden">
+
+    <!-- 背景光暈飾底 -->
+    <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- 頂部導覽 -->
+    <header class="p-4 sm:p-6 relative z-10">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="/" class="flex items-center space-x-3 text-white group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-ukn-950 shadow-md group-hover:scale-105 transition">
+                    UKN
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-bold tracking-tight">Smart UKN</span>
+                        <span class="text-[10px] bg-amber-400/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">統一入口</span>
+                    </div>
+                    <p class="text-xs text-blue-200">康寧大學智慧校園服務平台</p>
+                </div>
+            </a>
+            
+            <a href="/" class="text-xs text-blue-200 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-xl transition backdrop-blur-sm border border-white/10 flex items-center gap-1">
+                <span>跳過直接進入前台 ➔</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- 主卡片登入區 -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 relative z-10">
+        <div class="max-w-md w-full glass-card rounded-3xl shadow-2xl border border-white/40 p-6 sm:p-8 space-y-6">
+            
+            <div class="text-center space-y-1.5">
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">歡迎來到 Smart UKN</h1>
+                <p class="text-xs sm:text-sm text-slate-500">請選擇您的身分登入，或以訪客身分快速通關體驗</p>
+            </div>
+
+            <!-- 分頁切換鈕 -->
+            <div class="flex bg-slate-100 p-1 rounded-2xl text-xs sm:text-sm font-bold">
+                <button onclick="switchLoginTab('member')" id="tabBtn-member" class="flex-1 py-2.5 rounded-xl bg-white text-ukn-900 shadow-sm transition">
+                    🎓 在校師生 / 家長
+                </button>
+                <button onclick="switchLoginTab('visitor')" id="tabBtn-visitor" class="flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition">
+                    🌟 訪客 / 未來學生通道
+                </button>
+            </div>
+
+            <!-- 1. 在校師生與家長登入表單 -->
+            <div id="panel-member" class="space-y-4">
+                <form onsubmit="handleMemberLogin(event)" class="space-y-4 text-xs sm:text-sm">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">登入帳號 (Username / 學號)</label>
+                        <input type="text" id="mUsername" placeholder="請輸入學號或教職員帳號 (如: student1)" required
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">密碼 (Password)</label>
+                        <input type="password" id="mPassword" placeholder="預設密碼 123456" required
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                    </div>
+
+                    <div id="loginErrorMsg" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
+
+                    <button type="submit" id="loginBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-ukn-700 to-indigo-700 hover:from-ukn-800 hover:to-indigo-800 text-white font-bold transition shadow-md flex items-center justify-center space-x-2 active:scale-98">
+                        <span>登入系統</span>
+                        <span>➔</span>
+                    </button>
+                </form>
+
+                <!-- 展示快捷測試帳號一鍵填入 -->
+                <div class="pt-4 border-t border-slate-100 space-y-2">
+                    <span class="text-[11px] font-bold text-slate-400 block text-center">💡 評審與現場展示 - 快速填入測試帳號：</span>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                        <button onclick="fillAccount('student1', '123456')" class="p-2 rounded-xl bg-blue-50 text-blue-800 hover:bg-blue-100 transition border border-blue-200 text-left">
+                            <div>👨‍🎓 學生：王小明</div>
+                            <div class="text-[10px] text-blue-500 font-normal">S112001 (資科系)</div>
+                        </button>
+                        <button onclick="fillAccount('parent1', '123456')" class="p-2 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 transition border border-amber-200 text-left">
+                            <div>👨‍👩‍👦 家長：王大明</div>
+                            <div class="text-[10px] text-amber-500 font-normal">學生王小明家長</div>
+                        </button>
+                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded-xl bg-purple-50 text-purple-800 hover:bg-purple-100 transition border border-purple-200 text-left">
+                            <div>👨‍🏫 教職員：周立威 老師</div>
+                            <div class="text-[10px] text-purple-500 font-normal">資圖中心</div>
+                        </button>
+                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition border border-emerald-200 text-left">
+                            <div>⚙️ 管理員：系統後台</div>
+                            <div class="text-[10px] text-emerald-500 font-normal">CMS 完整權限</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 訪客/未來學生快速通關通道 (須留痕) -->
+            <div id="panel-visitor" class="hidden space-y-4">
+                <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80 text-xs text-amber-900 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <span>✨</span>
+                        <span>訪客免密碼快速通關機制 (須入校登記留痕)</span>
+                    </div>
+                    <p class="text-amber-800 leading-relaxed">提供未來新生、家長與校外訪客自由查閱全校規章與課程。系統將依法留存基本諮詢紀錄，以利電算中心數據分析。</p>
+                </div>
+
+                <form onsubmit="handleVisitorRegister(event)" class="space-y-3.5 text-xs sm:text-sm">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">您的稱謂 / 姓名 *</label>
+                        <input type="text" id="vName" placeholder="例如：陳同學、林家長" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">聯絡手機號碼 *</label>
+                        <input type="tel" id="vPhone" placeholder="例如：0912-345-678" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">畢業 / 就讀國高中職 *</label>
+                        <input type="text" id="vSchool" list="schoolOptions" placeholder="請選擇或輸入學校名稱" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50 focus:bg-white transition">
+                        <datalist id="schoolOptions">
+                            <option value="台北市立南港高中">
+                            <option value="台北市立內湖高工">
+                            <option value="新北市立汐止國中">
+                            <option value="新北市立秀峰高中">
+                            <option value="基隆市立安樂高中">
+                            <option value="國立基隆商工">
+                            <option value="其他國高中職學校">
+                        </datalist>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">來訪目的 *</label>
+                            <select id="vPurpose" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50 focus:bg-white text-xs sm:text-sm">
+                                <option value="升學諮詢與系所探索">升學諮詢</option>
+                                <option value="五專免試入學諮詢">五專入學</option>
+                                <option value="校園環境參觀">校園參觀</option>
+                                <option value="洽公與交流活動">洽公交流</option>
+                                <option value="校友回校查詢">校友回校</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">感興趣科系</label>
+                            <select id="vTargetDept" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50 focus:bg-white text-xs sm:text-sm">
+                                <option value="資訊科技與應用學系">資訊科技系</option>
+                                <option value="護理學系">護理學系</option>
+                                <option value="幼兒保育學系">幼兒保育系</option>
+                                <option value="應用外語學系">應用外語系</option>
+                                <option value="長期照護學系">長期照護系</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="visitorErrorMsg" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
+
+                    <button type="submit" id="visitorBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-ukn-950 font-bold transition shadow-md flex items-center justify-center space-x-2 active:scale-98">
+                        <span>留痕登記並進入系統</span>
+                        <span>➔</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="p-4 text-center text-xs text-blue-300/80 relative z-10">
+        Smart UKN 康寧大學智慧校園服務平台 · 電算中心與資圖中心指導專案
+    </footer>
+
+    <script>
+        function switchLoginTab(tab) {
+            if (tab === 'member') {
+                document.getElementById('panel-member').classList.remove('hidden');
+                document.getElementById('panel-visitor').classList.add('hidden');
+                document.getElementById('tabBtn-member').className = 'flex-1 py-2.5 rounded-xl bg-white text-ukn-900 shadow-sm transition font-bold';
+                document.getElementById('tabBtn-visitor').className = 'flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition';
+            } else {
+                document.getElementById('panel-member').classList.add('hidden');
+                document.getElementById('panel-visitor').classList.remove('hidden');
+                document.getElementById('tabBtn-member').className = 'flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-800 transition';
+                document.getElementById('tabBtn-visitor').className = 'flex-1 py-2.5 rounded-xl bg-white text-amber-700 shadow-sm transition font-bold';
+            }
+        }
+
+        function fillAccount(u, p) {
+            document.getElementById('mUsername').value = u;
+            document.getElementById('mPassword').value = p;
+        }
+
+        async function handleMemberLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('mUsername').value.trim();
+            const p = document.getElementById('mPassword').value.trim();
+            const errBox = document.getElementById('loginErrorMsg');
+            const btn = document.getElementById('loginBtn');
+
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<span>登入驗證中...</span>`;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.status === 'success') {
+                    window.location.href = '/';
+                } else {
+                    errBox.textContent = data.message || '帳號或密碼錯誤';
+                    errBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errBox.textContent = '無法連線至伺服器，請確認後端已啟動';
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>登入系統</span><span>➔</span>`;
+            }
+        }
+
+        async function handleVisitorRegister(e) {
+            e.preventDefault();
+            const payload = {
+                visitor_name: document.getElementById('vName').value.trim(),
+                phone: document.getElementById('vPhone').value.trim(),
+                school_from: document.getElementById('vSchool').value.trim(),
+                purpose: document.getElementById('vPurpose').value,
+                target_dept: document.getElementById('vTargetDept').value
+            };
+            const errBox = document.getElementById('visitorErrorMsg');
+            const btn = document.getElementById('visitorBtn');
+
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<span>留痕登記中...</span>`;
+
+            try {
+                const res = await fetch('/api/visitor/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok && data.status === 'success') {
+                    window.location.href = '/';
+                } else {
+                    errBox.textContent = data.message || '登記失敗，請檢查欄位';
+                    errBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                errBox.textContent = '無法連線至伺服器';
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>留痕登記並進入系統</span><span>➔</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

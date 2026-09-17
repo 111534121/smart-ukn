@@ -1,0 +1,341 @@
+-- ========================================================
+-- Smart UKN 康寧大學智慧校園服務平台 - 資料庫 3NF 正規化 Schema
+-- 版本: v3.0 旗艦正規化版 (符合 1NF, 2NF, 3NF 及完整外鍵約束)
+-- ========================================================
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+08:00";
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- 資料庫: `smart_ukn`
+--
+CREATE DATABASE IF NOT EXISTS `smart_ukn` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `smart_ukn`;
+
+-- --------------------------------------------------------
+-- 1. 系所單位資料表 `departments`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `student_credits`;
+DROP TABLE IF EXISTS `certificates`;
+DROP TABLE IF EXISTS `visitor_logs`;
+DROP TABLE IF EXISTS `friction_reports`;
+DROP TABLE IF EXISTS `deadlines`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `students`;
+DROP TABLE IF EXISTS `course_map`;
+DROP TABLE IF EXISTS `departments`;
+DROP TABLE IF EXISTS `checklist_items`;
+DROP TABLE IF EXISTS `synonym_dictionary`;
+DROP TABLE IF EXISTS `knowledge_base`;
+DROP TABLE IF EXISTS `knowledge_categories`;
+
+CREATE TABLE `departments` (
+  `dept_id` varchar(20) NOT NULL COMMENT '系所代碼 (PK)',
+  `dept_name` varchar(100) NOT NULL COMMENT '系所全名',
+  `college_name` varchar(100) NOT NULL COMMENT '所屬學院',
+  PRIMARY KEY (`dept_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系所與學院主檔';
+
+INSERT INTO `departments` (`dept_id`, `dept_name`, `college_name`) VALUES
+('CS', '資訊科技與應用學系', '創新與管理學院'),
+('NUR', '護理學系', '健康照護學院'),
+('ENG', '應用外語學系', '人文與教育學院'),
+('GEN', '通識教育中心', '全校共同教學單位');
+
+-- --------------------------------------------------------
+-- 2. 學生基本資料表 `students` (符合 3NF: 不存可推導的年齡，僅存學籍核心欄位)
+-- --------------------------------------------------------
+CREATE TABLE `students` (
+  `student_id` varchar(20) NOT NULL COMMENT '學號 (PK)',
+  `full_name` varchar(50) NOT NULL COMMENT '學生姓名',
+  `dept_id` varchar(20) NOT NULL COMMENT '所屬系所 (FK)',
+  `admission_year` int(11) NOT NULL COMMENT '入學學年度',
+  `class_name` varchar(50) NOT NULL COMMENT '班級名稱',
+  `parent_phone` varchar(30) DEFAULT NULL COMMENT '家長聯絡電話',
+  PRIMARY KEY (`student_id`),
+  KEY `fk_students_dept` (`dept_id`),
+  CONSTRAINT `fk_students_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生學籍基本資料檔';
+
+INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
+('S112001', '王小明', 'CS', 112, '資科二甲', '0912-345-678'),
+('S112002', '李美華', 'CS', 112, '資科二甲', '0922-333-444'),
+('S112003', '張建華', 'NUR', 112, '護理二乙', '0933-555-666');
+
+-- --------------------------------------------------------
+-- 3. 系統使用者與登入帳號資料表 `users`
+-- --------------------------------------------------------
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '使用者唯一識別碼 (PK)',
+  `username` varchar(50) NOT NULL COMMENT '登入帳號',
+  `password_hash` varchar(255) NOT NULL COMMENT '密碼雜湊或測試明碼',
+  `role` enum('學生','家長','教職員','管理員','訪客') NOT NULL COMMENT '系統角色',
+  `student_id` varchar(20) DEFAULT NULL COMMENT '綁定學號 (FK, 學生或家長關聯用)',
+  `full_name` varchar(50) NOT NULL COMMENT '使用者真實姓名/稱謂',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '註冊/建立時間',
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uk_username` (`username`),
+  KEY `fk_users_student` (`student_id`),
+  CONSTRAINT `fk_users_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系統使用者身分與權限表';
+
+-- 密碼皆已用 werkzeug (pbkdf2:sha256) 雜湊，原文分別為 123456 / admin123，不再明碼儲存
+INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id`, `full_name`) VALUES
+(1, 'student1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112001', '王小明'),
+(2, 'student2', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112002', '李美華'),
+(3, 'parent1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '家長', 'S112001', '王大明 (小明家長)'),
+(4, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 老師'),
+(5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員');
+
+-- --------------------------------------------------------
+-- 4. 課程地圖與先修關係表 `course_map`
+-- --------------------------------------------------------
+CREATE TABLE `course_map` (
+  `course_id` varchar(20) NOT NULL COMMENT '課程代碼 (PK)',
+  `course_name` varchar(100) NOT NULL COMMENT '課程名稱',
+  `credits` int(11) NOT NULL COMMENT '學分數',
+  `prerequisite_id` varchar(20) DEFAULT NULL COMMENT '先修科目代碼 (FK 自關聯)',
+  `is_required` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否為必修 (1=必修, 0=選修)',
+  `dept_id` varchar(20) NOT NULL DEFAULT 'CS' COMMENT '開課系所 (FK)',
+  `semester_suggest` varchar(20) DEFAULT '大一上' COMMENT '建議修習學期',
+  `description` text DEFAULT NULL COMMENT '課程大綱簡介',
+  PRIMARY KEY (`course_id`),
+  KEY `fk_course_prereq` (`prerequisite_id`),
+  KEY `fk_course_dept` (`dept_id`),
+  CONSTRAINT `fk_course_prereq` FOREIGN KEY (`prerequisite_id`) REFERENCES `course_map` (`course_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_course_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='課程地圖與先修關係表';
+
+INSERT INTO `course_map` (`course_id`, `course_name`, `credits`, `prerequisite_id`, `is_required`, `dept_id`, `semester_suggest`, `description`) VALUES
+('CS101', '計算機概論', 3, NULL, 1, 'CS', '大一上', '計算機科學基礎、電腦架構、作業系統與網路概論。'),
+('CS102', '程式設計(一)', 3, 'CS101', 1, 'CS', '大一下', 'Python 與 C 語言基礎邏輯、變數、迴圈與函式設計。'),
+('CS201', '資料結構', 3, 'CS102', 1, 'CS', '大二上', '陣列、鏈結串列、堆疊、佇列、樹狀與圖形演算法。'),
+('CS202', '物件導向程式設計', 3, 'CS102', 1, 'CS', '大二下', '類別、物件、繼承、多型與 Java/C++ 設計模式。'),
+('CS301', '演算法分析', 3, 'CS201', 1, 'CS', '大三上', '時間複雜度、分治法、貪婪演算法、動態規劃。'),
+('CS302', '資料庫系統概論', 3, 'CS201', 1, 'CS', '大三上', '關聯式資料庫、SQL 語法、正規化與 MySQL 實作。'),
+('CS401', '畢業專題研討', 3, 'CS302', 1, 'CS', '大四上', '綜合資訊系統開發、AI 應用整合與專題展示。'),
+('EN101', '基礎英文', 2, NULL, 1, 'GEN', '大一上', '大一基礎外語聽說讀寫與學術閱讀。'),
+('GE101', '大學之道與倫理', 2, NULL, 0, 'GEN', '大一上', '校園生活適應、生命教育與職場倫理。');
+
+-- --------------------------------------------------------
+-- 5. 學生成績與學分紀錄表 `student_credits`
+-- --------------------------------------------------------
+CREATE TABLE `student_credits` (
+  `credit_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '成績紀錄唯一碼 (PK)',
+  `student_id` varchar(20) NOT NULL COMMENT '學號 (FK)',
+  `course_id` varchar(20) NOT NULL COMMENT '課程代碼 (FK)',
+  `semester` varchar(20) NOT NULL COMMENT '修課學期 (如 112-1)',
+  `score` decimal(5,2) DEFAULT NULL COMMENT '成績分數',
+  `is_passed` tinyint(1) NOT NULL COMMENT '是否通過 (1=通過, 0=未通過)',
+  PRIMARY KEY (`credit_id`),
+  KEY `fk_credits_student` (`student_id`),
+  KEY `fk_credits_course` (`course_id`),
+  CONSTRAINT `fk_credits_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_credits_course` FOREIGN KEY (`course_id`) REFERENCES `course_map` (`course_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生成績與學分紀錄表';
+
+INSERT INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester`, `score`, `is_passed`) VALUES
+(1, 'S112001', 'CS101', '112-1', 85.00, 1),
+(2, 'S112001', 'CS102', '112-2', 55.00, 0),
+(3, 'S112001', 'EN101', '112-1', 78.00, 1),
+(4, 'S112002', 'CS101', '112-1', 92.50, 1),
+(5, 'S112002', 'CS102', '112-2', 88.00, 1),
+(6, 'S112002', 'GE101', '112-1', 90.00, 1);
+
+-- --------------------------------------------------------
+-- 5b. 學生證照與檢定成績表 `certificates`
+--     學生自行維護的證照紀錄 (如勞動部技術士技能檢定成績單)
+-- --------------------------------------------------------
+CREATE TABLE `certificates` (
+  `cert_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '證照紀錄唯一碼 (PK)',
+  `student_id` varchar(20) NOT NULL COMMENT '學號 (FK)',
+  `cert_name` varchar(100) NOT NULL COMMENT '證照名稱',
+  `issuing_org` varchar(100) NOT NULL DEFAULT '勞動部勞動力發展署' COMMENT '發證單位',
+  `cert_number` varchar(50) DEFAULT NULL COMMENT '證照字號 (選填)',
+  `theory_score` decimal(5,2) DEFAULT NULL COMMENT '學科成績 (選填)',
+  `practical_score` decimal(5,2) DEFAULT NULL COMMENT '術科成績 (選填)',
+  `issue_date` date NOT NULL COMMENT '取得日期',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '建立時間',
+  PRIMARY KEY (`cert_id`),
+  KEY `fk_cert_student` (`student_id`),
+  CONSTRAINT `fk_cert_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生證照與檢定成績表';
+
+INSERT INTO `certificates` (`cert_id`, `student_id`, `cert_name`, `issuing_org`, `cert_number`, `theory_score`, `practical_score`, `issue_date`, `created_at`) VALUES
+(1, 'S112001', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署', '113-CS-004521', 82.00, 88.00, '2026-06-20', '2026-06-25 10:00:00');
+
+-- --------------------------------------------------------
+-- 6. 規章大分類資料表 `knowledge_categories`
+-- --------------------------------------------------------
+CREATE TABLE `knowledge_categories` (
+  `category_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分類代碼 (PK)',
+  `category_name` varchar(50) NOT NULL COMMENT '大分類名稱',
+  `icon` varchar(20) DEFAULT '📚' COMMENT '顯示圖示',
+  `sort_order` int(11) DEFAULT 1 COMMENT '排序權重',
+  PRIMARY KEY (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='規章與行政大分類表';
+
+INSERT INTO `knowledge_categories` (`category_id`, `category_name`, `icon`, `sort_order`) VALUES
+(1, '選課與學分業務', '📚', 1),
+(2, '請假與出勤規定', '📝', 2),
+(3, '學籍異動與退學', '🎓', 3),
+(4, '校園生活與證件', '💳', 4),
+(5, '招生科系與入學', '🏫', 5);
+
+-- --------------------------------------------------------
+-- 7. 校規法規知識庫 `knowledge_base`
+-- --------------------------------------------------------
+CREATE TABLE `knowledge_base` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '條文唯一碼 (PK)',
+  `category_id` int(11) NOT NULL COMMENT '所屬大分類 (FK)',
+  `subcategory` varchar(50) NOT NULL COMMENT '子項目類別',
+  `keyword` varchar(255) NOT NULL COMMENT '檢索關鍵字',
+  `official_term` varchar(255) DEFAULT '' COMMENT '官方標準規章名稱',
+  `content` text NOT NULL COMMENT '條文內容詳解與解答',
+  `doc_name` varchar(255) NOT NULL COMMENT '出處法規檔名',
+  `page` int(11) DEFAULT 1 COMMENT '官方規章頁碼',
+  `url` varchar(500) NOT NULL COMMENT '規章下載或公告連結',
+  PRIMARY KEY (`id`),
+  KEY `fk_kb_category` (`category_id`),
+  CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校規與行政問答知識庫';
+
+INSERT INTO `knowledge_base` (`id`, `category_id`, `subcategory`, `keyword`, `official_term`, `content`, `doc_name`, `page`, `url`) VALUES
+(1, 1, '停修/棄修手續', '棄修', '停修課程辦理規定', '學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。', '康寧大學學生學則.pdf', 12, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(2, 1, '外語能力抵免', '英文抵免', '語言證照抵免辦法', '凡通過全民英檢中高級、多益 (TOEIC) 550 分以上或同等國際英語檢定標準者，得於入學第一學期規定期限內，檢附成績單與證書正本向教務處註冊組申請抵免大一英文或通識外語學分。', '康寧大學抵免學分辦法.pdf', 5, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(3, 2, '學生請假流程', '請假規定', '學生請假辦法', '學生因故不能出席課業活動，須於事前（事假）或事後 3 日內（病假）辦理請假。假別包含公假、事假、病假、喪假及生理假。病假須檢附三日內就醫證明，三天以上須經系主任簽核，均需透過學生教務系統線上完成申請。', '學生請假辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(4, 2, '缺課與扣考規定', '曠課扣考', '學生出勤與扣考規定', '學生未經請假或請假未准而缺席者視為曠課。某一科目缺課（含請假及曠課）時數達該科目全學期授課總時數三分之一以上者，該科目不得參加期末考試（即扣考），學期成績以零分計算。', '康寧大學學生學則.pdf', 18, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(5, 3, '學業二一退學', '二一退學', '學業退學規定', '學士班學生單一學期學業成績不及格科目之學分數，達該學期修習學分總數二分之一者，予以學業警示輔導；若累計達校規規定之學業成績二分之一不及格達兩次者，應予退學處分。', '康寧大學學生學則.pdf', 24, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(6, 3, '獎懲與申訴', '獎懲辦法', '學生獎懲辦法', '學生之獎勵分為嘉獎、小功、大功；懲處分為申誡、小過、大過、留校察看及退學。學生對於學校所為之懲處認有違法或不當致損害其權益者，得於收到處分通知書之次日起十日內向學生申訴評議委員會提出申訴。', '學生獎懲辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(7, 4, '學生證掛失補發', '補發學生證', '學生證遺失補發流程', '學生證遺失時，應即登入學生教務資訊系統辦理線上掛失，並至行政大樓自動繳費機繳納工本費（新台幣 150 元），攜帶繳費收據與身分證明文件至教務處註冊組辦理補發，約 3 個工作天即可領取新卡。', '學生證管理要點.pdf', 2, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
+(8, 5, '新生入學與科系', '招生科系', '康寧大學招生系所導覽', '本校設有資訊科技與應用學系、護理學系、幼兒保育學系、長期照護學系、應用外語學系等。提供五專、四技、學士班及碩士班完整升學路徑，提供豐富企業實習與證照輔導資源。', '康寧大學招生簡章.pdf', 1, 'https://www.ukn.edu.tw');
+
+-- --------------------------------------------------------
+-- 8. 智慧同義詞字典 `synonym_dictionary`
+-- --------------------------------------------------------
+CREATE TABLE `synonym_dictionary` (
+  `synonym_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '字典唯一碼 (PK)',
+  `category_id` int(11) DEFAULT NULL COMMENT '對應分類 (FK)',
+  `user_keyword` varchar(50) NOT NULL COMMENT '使用者俗稱/口語',
+  `official_term` varchar(50) NOT NULL COMMENT '官方標準用語',
+  PRIMARY KEY (`synonym_id`),
+  KEY `fk_synonym_cat` (`category_id`),
+  CONSTRAINT `fk_synonym_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='智慧同義詞字典';
+
+INSERT INTO `synonym_dictionary` (`synonym_id`, `category_id`, `user_keyword`, `official_term`) VALUES
+(1, 1, '棄修', '停修課程辦理規定'),
+(2, 1, '退選', '停修課程辦理規定'),
+(3, 1, '英文免修', '語言證照抵免辦法'),
+(4, 1, '英檢抵免', '語言證照抵免辦法'),
+(5, 1, '擋修', '先修科目規定'),
+(6, 2, '請假', '學生請假辦法'),
+(7, 2, '病假怎麼請', '學生請假辦法'),
+(8, 2, '缺課', '學生出勤與扣考規定'),
+(9, 3, '二一', '學業退學規定'),
+(10, 3, '被當掉', '學業退學規定'),
+(11, 4, '補辦學生證', '學生證遺失補發流程'),
+(12, 4, '卡片遺失', '學生證遺失補發流程');
+
+-- --------------------------------------------------------
+-- 9. 行政流程指引清單 `checklist_items`
+-- --------------------------------------------------------
+CREATE TABLE `checklist_items` (
+  `item_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '清單唯一碼 (PK)',
+  `category_id` int(11) DEFAULT NULL COMMENT '所屬分類 (FK)',
+  `category_name` varchar(50) NOT NULL DEFAULT '課務組' COMMENT '辦理單位',
+  `business_name` varchar(100) NOT NULL COMMENT '行政業務名稱',
+  `steps_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '辦理步驟 (JSON 陣列格式)' CHECK (json_valid(`steps_json`)),
+  `required_docs` text DEFAULT NULL COMMENT '應備文件說明',
+  `office_hours` varchar(100) DEFAULT NULL COMMENT '辦公服務時間',
+  `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 310' COMMENT '處室聯絡分機',
+  PRIMARY KEY (`item_id`),
+  KEY `fk_chk_cat` (`category_id`),
+  CONSTRAINT `fk_chk_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行政流程指引清單';
+
+INSERT INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `contact_phone`) VALUES
+(1, 1, '課務組', '學生課程停修（棄修）申請', '[\"1. 登入學生教務系統填寫停修申請表\", \"2. 列印紙本申請單經授課教師簽名同意\", \"3. 送所屬系所導師及系主任核章\", \"4. 於學期第12週截止日前送教務處課務組審查\"]', '停修申請表（須授課教師簽章）、學生證正本', '週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)'),
+(2, 4, '註冊組', '學生證遺失補發申請', '[\"1. 登入教務系統辦理線上卡片掛失\", \"2. 至行政大樓自動繳費機繳交補發工本費 150 元\", \"3. 持繳費收據及身分證明文件至註冊組辦理\", \"4. 3 個工作天後憑收據至註冊組領取新學生證\"]', '身分證或健保卡正本、工本費收據、2吋大頭照電子檔', '週一至週五 09:00 - 16:30', '02-2632-1181 分機 310 (註冊組)'),
+(3, 1, '註冊組', '外語證照 / 學分抵免申請', '[\"1. 確認自身符合抵免資格（多益550分以上或全民英檢中高級）\", \"2. 備妥成績單或證書正本與影本\", \"3. 填寫學分抵免申請表並由所屬系所初審\", \"4. 開學兩週內送交教務處註冊組複審核定\"]', '語言檢定證書正影本、歷年成績單、抵免申請表', '開學前兩週內 08:30 - 17:00', '02-2632-1181 分機 310 (註冊組)'),
+(4, 2, '學務處', '學生病假與公假線上請假流程', '[\"1. 事假須事前於線上請假系統提出申請\", \"2. 病假須於返校 3 日內登入系統補辦並上傳就醫證明\", \"3. 公假須檢附公函或主辦單位指派公文證明\", \"4. 經導師及系輔導人員線上審核通過即生效\"]', '三日內診斷證明或收據電子檔（病假）、派遣公文（公假）', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)'),
+(5, 1, '課務組', '不及格科目重補修申請', '[\"1. 查詢下學期開課時間表，確認該科目是否開班\", \"2. 於加退選期間至教務系統重新選修該科目（重補修）\", \"3. 若該科目已停開，須洽系所辦理替代科目認定\", \"4. 選修科目亦可改選其他同學分選修科目以取代學分\"]', '無需另外書面文件；逾加退選期限則需填寫替代科目認定表', '加退選期間依教務處公告時間；平時洽詢 週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)');
+
+-- --------------------------------------------------------
+-- 10. 訪客/未來學生登記入校留痕表 `visitor_logs`
+-- --------------------------------------------------------
+CREATE TABLE `visitor_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '留痕紀錄唯一碼 (PK)',
+  `visitor_name` varchar(50) NOT NULL COMMENT '訪客姓名/稱謂',
+  `phone` varchar(30) NOT NULL COMMENT '訪客聯絡手機',
+  `school_from` varchar(100) NOT NULL COMMENT '畢業國中/高中職學校',
+  `purpose` varchar(100) NOT NULL COMMENT '來訪目的 (升學諮詢/校園參觀/洽公等)',
+  `target_dept` varchar(100) DEFAULT '資訊科技與應用學系' COMMENT '有興趣了解之科系',
+  `visited_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '登記來訪時間',
+  `ip_address` varchar(50) DEFAULT '127.0.0.1' COMMENT '來源 IP 位址',
+  PRIMARY KEY (`log_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='訪客與未來學生入校留痕紀錄表';
+
+INSERT INTO `visitor_logs` (`log_id`, `visitor_name`, `phone`, `school_from`, `purpose`, `target_dept`, `visited_at`, `ip_address`) VALUES
+(1, '陳同學', '0912-888-999', '台北市立南港高中', '升學諮詢與系所探索', '資訊科技與應用學系', '2026-09-08 09:30:00', '127.0.0.1'),
+(2, '林家長', '0922-111-222', '新北市立汐止國中', '五專免試入學諮詢', '護理學系', '2026-09-08 10:15:00', '127.0.0.1'),
+(3, '黃同學', '0933-777-666', '基隆市立安樂高中', '校園環境參觀', '資訊科技與應用學系', '2026-09-08 11:00:00', '127.0.0.1');
+
+-- --------------------------------------------------------
+-- 11. 校務服務斷點匿名回報表 `friction_reports`
+--     不收集姓名/學號等個資，僅記錄卡關類型與情境，供電算中心統計改善
+-- --------------------------------------------------------
+CREATE TABLE `friction_reports` (
+  `report_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '回報唯一碼 (PK)',
+  `category` varchar(50) NOT NULL COMMENT '卡關類型 (忘記密碼/找不到表單/不知道進度等)',
+  `description` text DEFAULT NULL COMMENT '補充說明 (選填)',
+  `page_context` varchar(100) DEFAULT NULL COMMENT '發生於哪個功能頁籤',
+  `role_context` varchar(20) DEFAULT NULL COMMENT '回報當下身分 (僅供統計，非個資)',
+  `reported_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '回報時間',
+  `ip_address` varchar(50) DEFAULT '127.0.0.1' COMMENT '來源 IP 位址',
+  PRIMARY KEY (`report_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校務服務斷點匿名回報表';
+
+INSERT INTO `friction_reports` (`report_id`, `category`, `description`, `page_context`, `role_context`, `reported_at`, `ip_address`) VALUES
+(1, '不知道申請進度或結果', '送出停修申請後不知道現在審核到哪個階段。', 'tab-checklist', '學生', '2026-09-10 14:20:00', '127.0.0.1'),
+(2, '忘記密碼', '', 'tab-ai', '訪客', '2026-09-11 09:05:00', '127.0.0.1');
+
+-- --------------------------------------------------------
+-- 12. 跨系統期限雷達表 `deadlines`
+--     整合選課/請假/抵免/獎助學金/教學評量等既有系統的期限 (校方系統無 API 可串，須人工建檔)
+-- --------------------------------------------------------
+CREATE TABLE `deadlines` (
+  `deadline_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '期限唯一碼 (PK)',
+  `title` varchar(100) NOT NULL COMMENT '期限標題',
+  `category` varchar(50) NOT NULL COMMENT '所屬系統 (選課/請假/抵免/獎助學金/教學評量等)',
+  `start_date` date DEFAULT NULL COMMENT '開始日期 (選填)',
+  `end_date` date NOT NULL COMMENT '截止日期',
+  `applies_to_role` varchar(20) NOT NULL DEFAULT 'all' COMMENT '適用身分 (all/學生/家長)',
+  `applies_to_dept` varchar(20) DEFAULT NULL COMMENT '適用系所 (NULL=全校)',
+  `related_system_url` varchar(300) DEFAULT NULL COMMENT '對應原系統入口連結',
+  `description` text DEFAULT NULL COMMENT '補充說明',
+  PRIMARY KEY (`deadline_id`),
+  KEY `fk_deadline_dept` (`applies_to_dept`),
+  CONSTRAINT `fk_deadline_dept` FOREIGN KEY (`applies_to_dept`) REFERENCES `departments` (`dept_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='跨系統期限雷達表';
+
+INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`) VALUES
+(1, '加退選截止', '選課', '2026-09-14', '2026-09-20', 'all', NULL, 'https://www.ukn.edu.tw/', '逾期未完成加退選者，選課結果將依原排課確定生效。'),
+(2, '語言證照學分抵免申請截止', '抵免', NULL, '2026-09-30', '學生', NULL, 'https://www.ukn.edu.tw/', '須檢附證書正影本與歷年成績單向教務處註冊組申請。'),
+(3, '書卷獎與學海獎助學金申請截止', '獎助學金', NULL, '2026-10-15', '學生', NULL, 'https://www.ukn.edu.tw/', '依前一學期成績與家庭狀況審核，逾期不受理。'),
+(4, '期中學業預警名單公告與輔導期', '學習預警', '2026-11-01', '2026-11-05', 'all', NULL, 'https://www.ukn.edu.tw/', '被列入預警名單者將由導師安排面談，家長可同步關注。'),
+(5, '資訊科技與應用學系專題期中審查', '選課', NULL, '2026-11-10', '學生', 'CS', 'https://www.ukn.edu.tw/', '專題小組須完成期中進度報告並提交指導教師審核。'),
+(6, '停修（棄修）申請截止（第10-12週）', '選課', '2026-11-09', '2026-11-20', '學生', NULL, 'https://www.ukn.edu.tw/', '逾期不受理，停修後修習學分不得低於最低應修學分。'),
+(7, '教學評量填寫期間截止', '教學評量', '2026-12-15', '2026-12-25', '學生', NULL, 'https://www.ukn.edu.tw/', '完成填寫始可查詢學期成績，請於期末考前完成。');
+
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
