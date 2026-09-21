@@ -51,7 +51,7 @@
         }
 
         .hero-gradient {
-            background: linear-gradient(135deg, #0a1a3a 0%, #0f2b5c 50%, #1e3a8a 100%);
+            background: #0a1a3a;
         }
 
         .dropdown-glow {
@@ -190,6 +190,11 @@
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
                     <span>🎓</span>
                     <span>個人學分與擋修診斷</span>
+                </button>
+                <button onclick="switchTab('tab-graduation')" id="tabBtn-graduation"
+                    class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
+                    <span>🎯</span>
+                    <span>畢業門檻儀表板</span>
                 </button>
                 <button onclick="switchTab('tab-calendar')" id="tabBtn-calendar"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
@@ -497,7 +502,7 @@
 
             <!-- 學生個人學分看板 (Session 自動連動) -->
             <div
-                class="bg-gradient-to-r from-ukn-900 to-indigo-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+                class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div
@@ -522,7 +527,7 @@
                             <div class="text-[11px] text-blue-200">必修學分</div>
                         </div>
                         <div class="text-center px-3">
-                            <div class="text-2xl sm:text-3xl font-black text-emerald-300">128</div>
+                            <div class="text-2xl sm:text-3xl font-black text-emerald-300">220</div>
                             <div class="text-[11px] text-blue-200">畢業門檻</div>
                         </div>
                     </div>
@@ -593,7 +598,7 @@
 
             <!-- 我的證照與競賽成果快捷導引 -->
             <div
-                class="bg-gradient-to-r from-amber-500/10 via-amber-100/50 to-indigo-50 rounded-3xl p-6 sm:p-8 border border-amber-200/80 space-y-4 shadow-sm">
+                class="bg-amber-50/70 rounded-3xl p-6 sm:p-8 border border-amber-200/80 space-y-4 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div class="space-y-1">
                         <div class="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-800">
@@ -612,12 +617,195 @@
         </div>
 
         <!-- ======================================================== -->
+        <!-- 模組 3a2: 畢業門檻儀表板 (Tab Graduation) -->
+        <!-- 學生快速掌握「離畢業還有多遠」：畢業學分總數 220、專業證照畢業門檻 2 張， -->
+        <!-- 並比對同屆(入學年度)同學的證照持有統計，支援下載 CSV 報表。 -->
+        <!-- ======================================================== -->
+        <div id="tab-graduation" class="tab-content hidden space-y-6 viz-root">
+            <style>
+                .viz-root {
+                    color-scheme: light;
+                    --gd-surface: #fcfcfb;
+                    --gd-ink: #0b0b0b;
+                    --gd-ink-2: #52514e;
+                    --gd-muted: #898781;
+                    --gd-grid: #e1e0d9;
+                    --gd-blue: #2a78d6;
+                    --gd-blue-dark: #184f95;
+                    --gd-good: #0ca30c;
+                    --gd-warning: #fab219;
+                    --gd-critical: #d03b3b;
+                }
+                .gd-ring-track { stroke: var(--gd-grid); }
+                .gd-ring-progress { stroke: var(--gd-blue); stroke-linecap: round; transition: stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1); }
+                .gd-bar-track { background: var(--gd-grid); }
+                .gd-bar-fill { background: var(--gd-blue); transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+                .gd-bar-row:hover .gd-bar-fill { background: var(--gd-blue-dark); }
+                .gd-stat-tile { background: var(--gd-surface); border: 1px solid rgba(11,11,11,0.08); }
+            </style>
+
+            <!-- Hero Header -->
+            <div class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
+                            <span>🎯</span>
+                            <span>畢業學分 220 學分 · 專業證照畢業門檻 2 張</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold">畢業門檻儀表板</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="gdSubtitle">一眼掌握離畢業還有多遠、還缺幾學分，並比較同屆證照取得情形</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="downloadGraduationCsv()" id="gdDownloadBtn"
+                            class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shadow active:scale-95">
+                            <span>⬇️</span><span>下載報表 (CSV)</span>
+                        </button>
+                        <button onclick="window.print()"
+                            class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition border border-white/15">
+                            <span>🖨️</span><span class="hidden sm:inline">列印/PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 教職員/管理員/老師專用：輸入學號查詢 -->
+                <div id="gdSearchBar" class="hidden flex flex-col sm:flex-row gap-2 bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/15">
+                    <input type="text" id="gdStudentIdInput" placeholder="請輸入學號查詢，例如 S112001"
+                        class="flex-1 px-4 py-2.5 rounded-xl bg-white/95 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <button onclick="handleGraduationSearch()"
+                        class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold text-sm transition active:scale-95">查詢學生</button>
+                </div>
+            </div>
+
+            <!-- 查無資料 / 尚未查詢提示 -->
+            <div id="gdEmptyState" class="hidden bg-white rounded-3xl p-10 border border-slate-200 text-center text-slate-400 text-sm shadow-sm">
+                請於上方輸入學號以查詢該生的畢業門檻儀表板。
+            </div>
+
+            <!-- 主要儀表板內容 -->
+            <div id="gdDashboardBody" class="hidden space-y-6">
+
+                <!-- 學生資訊條 -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl px-5 py-3.5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-ukn-50 flex items-center justify-center text-lg">🎓</span>
+                        <div>
+                            <div class="font-bold text-slate-900 text-sm sm:text-base" id="gdStudentName">-</div>
+                            <div class="text-xs text-slate-400" id="gdStudentMeta">-</div>
+                        </div>
+                    </div>
+                    <span id="gdOverallBadge" class="text-xs font-bold px-3 py-1.5 rounded-full border">-</span>
+                </div>
+
+                <!-- 統計卡片列 -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                        <div class="text-[11px] font-bold text-slate-400 mb-1">已獲學分</div>
+                        <div class="text-2xl sm:text-3xl font-black" style="color:var(--gd-blue)" id="gdStatEarned">0</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">畢業門檻 220 學分</div>
+                    </div>
+                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                        <div class="text-[11px] font-bold text-slate-400 mb-1">尚缺學分</div>
+                        <div class="text-2xl sm:text-3xl font-black text-slate-800" id="gdStatRemaining">0</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">依目前已通過科目試算</div>
+                    </div>
+                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                        <div class="text-[11px] font-bold text-slate-400 mb-1">已取得證照</div>
+                        <div class="text-2xl sm:text-3xl font-black" id="gdStatCerts"><span id="gdCertsOwned">0</span><span class="text-base text-slate-300">/2</span></div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">畢業門檻 2 張專業證照</div>
+                    </div>
+                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                        <div class="text-[11px] font-bold text-slate-400 mb-1">同屆人數</div>
+                        <div class="text-2xl sm:text-3xl font-black text-slate-800" id="gdCohortSize">0</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5" id="gdCohortYearLabel">同屆入學同學</div>
+                    </div>
+                </div>
+
+                <!-- 學分進度環 + 證照門檻雙卡 -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+                        <h3 class="text-sm font-bold text-slate-500 mb-4 self-start">🎓 畢業學分進度</h3>
+                        <div class="relative w-44 h-44">
+                            <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
+                                <circle cx="60" cy="60" r="52" fill="none" stroke-width="12" class="gd-ring-track"></circle>
+                                <circle cx="60" cy="60" r="52" fill="none" stroke-width="12" stroke-dasharray="326.7"
+                                    stroke-dashoffset="326.7" class="gd-ring-progress" id="gdRingProgress"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-3xl font-black text-slate-900" id="gdRingPercent">0%</span>
+                                <span class="text-[11px] text-slate-400 mt-0.5" id="gdRingCreditsLabel">0 / 220 學分</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-4" id="gdCreditNote">依目前已通過學分試算，僅供參考。</p>
+                    </div>
+
+                    <div class="lg:col-span-3 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold text-slate-500">🏆 專業證照畢業門檻 (需 2 張)</h3>
+                        <div class="flex items-center gap-4" id="gdCertBadgeRow">
+                            <!-- JS 動態注入 2 個徽章方塊 -->
+                        </div>
+                        <div id="gdCertList" class="space-y-2 pt-2 border-t border-slate-100"></div>
+                        <div id="gdCertHint" class="text-xs rounded-xl p-3 font-semibold"></div>
+                    </div>
+                </div>
+
+                <!-- 同屆統計：這屆有多少人拿到這張證照 -->
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <span>📊</span> 同屆(<span id="gdCohortYearText">-</span>學年度)證照統計
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">與同屆入學同學比較，了解自己的證照與畢業條件達成情形所在位置</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="rounded-2xl border border-slate-200 p-4 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-500">
+                                <span>同屆至少擁有 1 張證照</span>
+                                <span id="gdPct1PlusText" class="text-slate-800">0%</span>
+                            </div>
+                            <div class="w-full h-2.5 rounded-full gd-bar-track overflow-hidden">
+                                <div class="h-full rounded-full gd-bar-fill" id="gdPct1PlusBar" style="width:0%"></div>
+                            </div>
+                            <div class="text-[11px] text-slate-400" id="gdPct1PlusSub">0 / 0 人</div>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 p-4 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-500">
+                                <span>同屆達成雙證照畢業門檻</span>
+                                <span id="gdPctThresholdText" class="text-slate-800">0%</span>
+                            </div>
+                            <div class="w-full h-2.5 rounded-full gd-bar-track overflow-hidden">
+                                <div class="h-full rounded-full" id="gdPctThresholdBar" style="width:0%; background:var(--gd-good); transition: width 0.6s cubic-bezier(.4,0,.2,1);"></div>
+                            </div>
+                            <div class="text-[11px] text-slate-400" id="gdPctThresholdSub">0 / 0 人</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="lg:col-span-3">
+                            <h4 class="text-xs font-bold text-slate-500 mb-3">這屆各項證照持有人數 (「這屆總共有多少人拿到這張證照」)</h4>
+                            <div id="gdCertBreakdownChart" class="space-y-3"></div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <h4 class="text-xs font-bold text-slate-500 mb-3">同屆證照張數分佈</h4>
+                            <div class="flex items-center gap-5">
+                                <div id="gdCertDistDonut" class="shrink-0"></div>
+                                <div id="gdCertDistLegend" class="space-y-1.5 flex-1 text-xs"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
         <!-- 模組 3c: 校曆行事曆與期限雷達 (Tab Calendar) -->
         <!-- ======================================================== -->
         <div id="tab-calendar" class="tab-content hidden space-y-6">
 
             <!-- Hero Header -->
-            <div class="bg-gradient-to-r from-ukn-900 via-indigo-900 to-purple-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+            <div class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
@@ -706,7 +894,7 @@
 
             <!-- 成果看板 Header & 勞動部官方連線快捷區 -->
             <div
-                class="bg-gradient-to-r from-ukn-950 via-ukn-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 relative overflow-hidden">
+                class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 relative overflow-hidden">
                 <div
                     class="absolute -right-16 -bottom-16 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none">
                 </div>
@@ -772,6 +960,41 @@
                             <span>📜</span>
                             <span>技術士證照線上驗證查詢 ↗</span>
                         </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📈 證照數據圖表總覽：多角度檢視證照組合、成績表現與累積趨勢 -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span>📈</span> 證照數據圖表總覽
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">從成績表現、發證單位與累積趨勢等不同角度檢視你的證照組合</p>
+                </div>
+                <div id="certChartsEmpty" class="hidden text-center py-8 text-sm text-slate-400">尚無證照紀錄，新增後將自動顯示圖表統計。</div>
+                <div id="certChartsBody" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <!-- 學科 vs 術科成績比較 -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-500">📊 各證照學科／術科成績比較</h4>
+                        <div class="flex items-center gap-4 text-[11px] text-slate-500">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#2a78d6"></span>學科成績</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#eb6834"></span>術科成績</span>
+                        </div>
+                        <div id="certScoreChart" class="space-y-3"></div>
+                    </div>
+                    <!-- 發證單位分佈 -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-500">🏛️ 發證單位分佈</h4>
+                        <div class="flex items-center gap-5">
+                            <div id="certOrgDonut" class="shrink-0"></div>
+                            <div id="certOrgLegend" class="space-y-1.5 flex-1 text-xs"></div>
+                        </div>
+                    </div>
+                    <!-- 證照累積取得趨勢 -->
+                    <div class="lg:col-span-2 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-500">📈 證照累積取得趨勢</h4>
+                        <div id="certTrendChart"></div>
                     </div>
                 </div>
             </div>
@@ -1230,6 +1453,8 @@
                 await runStudentDiagnosis();
                 await loadDeadlines();
             }
+            // 4b. 畢業門檻儀表板：學生/家長自動載入本人資料；教職員/老師/管理員顯示查詢欄位
+            setupGraduationDashboard();
             // 5. 載入證照與比賽紀錄 (同畫面專區支援全角色瀏覽查閱)
             await loadCertificates();
             await loadCompetitions();
@@ -1246,13 +1471,16 @@
 
         // 各角色可見的頁籤清單 (依身分分流導覽，全部身分皆可瀏覽證照與競賽成果)
         const TAB_VISIBILITY_BY_ROLE = {
-            '學生': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio'],
-            '家長': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio'],
-            '教職員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
-            '管理員': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
+            '學生': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-graduation', 'tab-calendar', 'tab-portfolio'],
+            '家長': ['tab-ai', 'tab-checklist', 'tab-course', 'tab-graduation', 'tab-calendar', 'tab-portfolio'],
+            '老師': ['tab-ai', 'tab-checklist', 'tab-graduation', 'tab-calendar', 'tab-portfolio'],
+            '教職員': ['tab-ai', 'tab-checklist', 'tab-graduation', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
+            '管理員': ['tab-ai', 'tab-checklist', 'tab-graduation', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'],
             '訪客': ['tab-ai', 'tab-checklist', 'tab-calendar', 'tab-portfolio']
         };
-        const ALL_TAB_IDS = ['tab-ai', 'tab-checklist', 'tab-course', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'];
+        const ALL_TAB_IDS = ['tab-ai', 'tab-checklist', 'tab-course', 'tab-graduation', 'tab-calendar', 'tab-portfolio', 'tab-admin-embedded'];
+        // 需要「輸入學號查詢」的角色 (老師/教職員/管理員 沒有個人學號，需指定查詢對象)
+        const STAFF_LIKE_ROLES = ['老師', '教職員', '管理員'];
 
         // 1. 取得登入身分 (未登入時如實顯示訪客狀態，不再假裝已登入)
         async function loadCurrentUser() {
@@ -1728,6 +1956,234 @@ ${currentSearchData.answer}
         }
 
         // ======================================================
+        // 8x. 畢業門檻儀表板 (Power BI 風格：學分進度環、證照門檻、同屆證照統計)
+        // ======================================================
+
+        let gdLastStudentId = null; // 記住最後一次查詢的學號，供下載 CSV 使用
+
+        function setupGraduationDashboard() {
+            const searchBar = document.getElementById('gdSearchBar');
+            const emptyState = document.getElementById('gdEmptyState');
+            const body = document.getElementById('gdDashboardBody');
+            if (!searchBar || !currentUser) return;
+
+            if (STAFF_LIKE_ROLES.includes(currentUser.role)) {
+                searchBar.classList.remove('hidden');
+                emptyState.classList.remove('hidden');
+                body.classList.add('hidden');
+                const input = document.getElementById('gdStudentIdInput');
+                if (input) {
+                    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleGraduationSearch(); });
+                }
+            } else if (['學生', '家長'].includes(currentUser.role)) {
+                searchBar.classList.add('hidden');
+                loadGraduationDashboard(null);
+            }
+        }
+
+        function handleGraduationSearch() {
+            const input = document.getElementById('gdStudentIdInput');
+            const sid = input ? input.value.trim() : '';
+            if (!sid) {
+                input && input.focus();
+                return;
+            }
+            loadGraduationDashboard(sid);
+        }
+
+        async function loadGraduationDashboard(studentId) {
+            const emptyState = document.getElementById('gdEmptyState');
+            const body = document.getElementById('gdDashboardBody');
+            try {
+                const url = studentId ? `/api/student/graduation/dashboard?student_id=${encodeURIComponent(studentId)}` : '/api/student/graduation/dashboard';
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    gdLastStudentId = data.student.student_id;
+                    emptyState.classList.add('hidden');
+                    body.classList.remove('hidden');
+                    renderGraduationDashboard(data);
+                } else {
+                    body.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    emptyState.textContent = data.message || '查無此學號之學生資料，請確認後再試一次。';
+                }
+            } catch (e) {
+                console.error('Load graduation dashboard failed:', e);
+            }
+        }
+
+        // 通用甜甜圈圖繪製工具：categorical 固定色階順序 (blue, orange, aqua, yellow)，超過 4 類自動併入「其他」
+        const GD_CATEGORICAL_PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'];
+        function renderDonutChart(svgElId, legendElId, entries) {
+            const svgEl = document.getElementById(svgElId);
+            const legendEl = document.getElementById(legendElId);
+            if (!svgEl || !legendEl) return;
+
+            let items = entries.filter(e => e.value > 0);
+            if (items.length > 4) {
+                const sorted = [...items].sort((a, b) => b.value - a.value);
+                const top = sorted.slice(0, 3);
+                const otherValue = sorted.slice(3).reduce((s, e) => s + e.value, 0);
+                items = [...top, { label: '其他', value: otherValue }];
+            }
+            const total = items.reduce((s, e) => s + e.value, 0);
+            if (!total) {
+                svgEl.innerHTML = '';
+                legendEl.innerHTML = `<div class="text-xs text-slate-400">尚無資料</div>`;
+                return;
+            }
+
+            const r = 40, cx = 50, cy = 50, sw = 16;
+            const circumference = 2 * Math.PI * r;
+            let acc = 0;
+            const arcs = items.map((it, i) => {
+                const frac = it.value / total;
+                const dash = Math.max(0, frac * circumference - 2);
+                const gap = circumference - dash;
+                const rotation = (acc / total) * 360 - 90;
+                acc += it.value;
+                const color = GD_CATEGORICAL_PALETTE[i % GD_CATEGORICAL_PALETTE.length];
+                return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${dash} ${gap}" transform="rotate(${rotation} ${cx} ${cy})"><title>${it.label}：${it.value} (${Math.round(frac * 100)}%)</title></circle>`;
+            }).join('');
+            svgEl.innerHTML = `<svg viewBox="0 0 100 100" class="w-28 h-28">${arcs}</svg>`;
+            legendEl.innerHTML = items.map((it, i) => `
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background:${GD_CATEGORICAL_PALETTE[i % GD_CATEGORICAL_PALETTE.length]}"></span>
+                    <span class="text-slate-600 truncate flex-1">${it.label}</span>
+                    <span class="text-slate-400 font-semibold">${it.value} (${Math.round(it.value / total * 100)}%)</span>
+                </div>`).join('');
+        }
+
+        function renderGraduationDashboard(data) {
+            const stu = data.student, credits = data.credits, certs = data.certificates, cohort = data.cohort;
+
+            document.getElementById('gdStudentName').textContent = `${stu.full_name} (${stu.student_id})`;
+            document.getElementById('gdStudentMeta').textContent = `${stu.dept_name || ''} · ${stu.class_name || ''} · ${stu.admission_year} 學年度入學`;
+
+            const overallBadge = document.getElementById('gdOverallBadge');
+            if (data.overall_meets_graduation_requirement) {
+                overallBadge.textContent = '✅ 已達成畢業條件 (學分 + 證照)';
+                overallBadge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200';
+            } else {
+                const gaps = [];
+                if (!credits.meets_requirement) gaps.push(`尚缺 ${credits.remaining} 學分`);
+                if (!certs.meets_requirement) gaps.push(`尚缺 ${certs.required - certs.owned_count} 張證照`);
+                overallBadge.textContent = `⏳ 尚未達成畢業條件（${gaps.join('、')}）`;
+                overallBadge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200';
+            }
+
+            // 統計卡片
+            document.getElementById('gdStatEarned').textContent = credits.earned;
+            document.getElementById('gdStatRemaining').textContent = credits.remaining;
+            document.getElementById('gdCertsOwned').textContent = certs.owned_count;
+            document.getElementById('gdCohortSize').textContent = cohort.cohort_size;
+            document.getElementById('gdCohortYearLabel').textContent = `${cohort.admission_year} 學年度入學同學`;
+            document.getElementById('gdCohortYearText').textContent = cohort.admission_year;
+
+            // 學分進度環
+            const circumference = 326.7; // 2 * PI * 52
+            const pct = Math.min(100, credits.progress_percent);
+            const ring = document.getElementById('gdRingProgress');
+            ring.style.strokeDasharray = `${circumference}`;
+            ring.style.strokeDashoffset = `${circumference - (circumference * pct / 100)}`;
+            ring.style.stroke = pct >= 100 ? 'var(--gd-good)' : 'var(--gd-blue)';
+            document.getElementById('gdRingPercent').textContent = `${credits.progress_percent}%`;
+            document.getElementById('gdRingCreditsLabel').textContent = `${credits.earned} / ${credits.threshold} 學分`;
+            document.getElementById('gdCreditNote').textContent = credits.meets_requirement
+                ? '恭喜！已達成畢業學分門檻。'
+                : `依目前已通過學分試算，還差 ${credits.remaining} 學分。`;
+
+            // 證照門檻雙徽章
+            const badgeRow = document.getElementById('gdCertBadgeRow');
+            let badgesHtml = '';
+            for (let i = 1; i <= certs.required; i++) {
+                const filled = i <= certs.owned_count;
+                badgesHtml += `
+                    <div class="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 ${filled ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-slate-200 bg-slate-50'}">
+                        <span class="text-2xl">${filled ? '🏅' : '⭕'}</span>
+                        <span class="text-xs font-bold ${filled ? 'text-emerald-700' : 'text-slate-400'}">第 ${i} 張${filled ? '已取得' : '尚未取得'}</span>
+                    </div>`;
+            }
+            badgeRow.innerHTML = badgesHtml;
+
+            const certListEl = document.getElementById('gdCertList');
+            if (certs.list && certs.list.length) {
+                certListEl.innerHTML = certs.list.map(c => `
+                    <div class="flex items-center justify-between text-xs sm:text-sm py-1.5">
+                        <span class="font-semibold text-slate-700">${c.cert_name}</span>
+                        <span class="text-slate-400">${c.issue_date || ''}</span>
+                    </div>`).join('');
+            } else {
+                certListEl.innerHTML = `<div class="text-xs text-slate-400 py-1.5">尚未登錄任何證照紀錄，可至「證照與競賽成果」頁籤新增。</div>`;
+            }
+
+            const hintEl = document.getElementById('gdCertHint');
+            if (certs.meets_requirement) {
+                hintEl.className = 'text-xs rounded-xl p-3 font-semibold bg-emerald-50 text-emerald-800';
+                hintEl.textContent = '已達成畢業所需的 2 張專業證照門檻！';
+            } else {
+                hintEl.className = 'text-xs rounded-xl p-3 font-semibold bg-amber-50 text-amber-800';
+                hintEl.textContent = `距離畢業證照門檻還差 ${certs.required - certs.owned_count} 張，建議至「證照與競賽成果」頁籤上傳最新取得的證照。`;
+            }
+
+            // 同屆統計
+            const pct1 = cohort.percent_1plus_cert, pctT = cohort.percent_meeting_cert_threshold;
+            document.getElementById('gdPct1PlusText').textContent = `${pct1}%`;
+            document.getElementById('gdPct1PlusBar').style.width = `${Math.min(100, pct1)}%`;
+            document.getElementById('gdPct1PlusSub').textContent = `${cohort.students_with_1plus_cert} / ${cohort.cohort_size} 人`;
+            document.getElementById('gdPctThresholdText').textContent = `${pctT}%`;
+            document.getElementById('gdPctThresholdBar').style.width = `${Math.min(100, pctT)}%`;
+            document.getElementById('gdPctThresholdSub').textContent = `${cohort.students_meeting_cert_threshold} / ${cohort.cohort_size} 人`;
+
+            // 證照持有人數橫向長條圖 (同一測量值 → 單一藍色，不需圖例)
+            const chartEl = document.getElementById('gdCertBreakdownChart');
+            const breakdown = cohort.cert_breakdown || [];
+            if (!breakdown.length) {
+                chartEl.innerHTML = `<div class="text-xs text-slate-400 py-2">同屆目前尚無任何證照紀錄。</div>`;
+            } else {
+                const maxCount = Math.max(...breakdown.map(b => b.holder_count), 1);
+                const ownedNames = new Set((certs.list || []).map(c => c.cert_name));
+                chartEl.innerHTML = breakdown.map(b => {
+                    const widthPct = Math.max(4, Math.round(b.holder_count / maxCount * 100));
+                    const isMine = ownedNames.has(b.cert_name);
+                    return `
+                    <div class="gd-bar-row" title="${b.cert_name}：本屆共 ${b.holder_count} 人持有 (${b.percent_of_cohort}%)">
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                                ${b.cert_name}
+                                ${isMine ? '<span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">我已取得</span>' : ''}
+                            </span>
+                            <span class="text-slate-400 font-semibold">${b.holder_count} 人 · ${b.percent_of_cohort}%</span>
+                        </div>
+                        <div class="w-full h-3 rounded-full gd-bar-track overflow-hidden">
+                            <div class="h-full rounded-full gd-bar-fill" style="width:${widthPct}%"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // 同屆證照張數分佈甜甜圈圖：0張 / 1張 / 達成雙證照門檻(2張以上)
+            const zeroCount = Math.max(0, cohort.cohort_size - cohort.students_with_1plus_cert);
+            const oneOnlyCount = Math.max(0, cohort.students_with_1plus_cert - cohort.students_meeting_cert_threshold);
+            renderDonutChart('gdCertDistDonut', 'gdCertDistLegend', [
+                { label: '尚未取得證照 (0張)', value: zeroCount },
+                { label: '已取得 1 張', value: oneOnlyCount },
+                { label: '達成畢業門檻 (2張以上)', value: cohort.students_meeting_cert_threshold }
+            ]);
+        }
+
+        function downloadGraduationCsv() {
+            if (!gdLastStudentId) {
+                if (currentUser && STAFF_LIKE_ROLES.includes(currentUser.role)) {
+                    alert('請先輸入學號查詢後，再下載報表。');
+                }
+                return;
+            }
+            window.open(`/api/student/graduation/export.csv?student_id=${encodeURIComponent(gdLastStudentId)}`, '_blank');
+        }
+
+        // ======================================================
         // 校曆行事曆核心邏輯
         // ======================================================
 
@@ -2016,10 +2472,109 @@ ${currentSearchData.answer}
                     const items = data.data || [];
                     renderCertificates(items);
                     updateCertStats(items);
+                    renderCertCharts(items);
                 }
             } catch (e) {
                 console.error('Load certificates failed:', e);
             }
+        }
+
+        // 證照數據圖表總覽：學科/術科成績比較長條圖、發證單位分佈甜甜圈圖、累積取得趨勢折線圖
+        function renderCertCharts(items) {
+            const emptyEl = document.getElementById('certChartsEmpty');
+            const bodyEl = document.getElementById('certChartsBody');
+            if (!emptyEl || !bodyEl) return;
+
+            if (!items.length) {
+                emptyEl.classList.remove('hidden');
+                bodyEl.classList.add('hidden');
+                return;
+            }
+            emptyEl.classList.add('hidden');
+            bodyEl.classList.remove('hidden');
+
+            renderCertScoreChart(items);
+            renderCertOrgDonut(items);
+            renderCertTrendChart(items);
+        }
+
+        function renderCertScoreChart(items) {
+            const el = document.getElementById('certScoreChart');
+            if (!el) return;
+            const scored = items.filter(c => c.theory_score != null || c.practical_score != null);
+            if (!scored.length) {
+                el.innerHTML = `<div class="text-xs text-slate-400 py-2">目前證照紀錄尚無成績資料，補上學科／術科成績即可顯示比較圖。</div>`;
+                return;
+            }
+            el.innerHTML = scored.map(c => {
+                const t = c.theory_score, p = c.practical_score;
+                const tWidth = t != null ? Math.max(4, Math.min(100, Math.round(t))) : 0;
+                const pWidth = p != null ? Math.max(4, Math.min(100, Math.round(p))) : 0;
+                return `
+                <div>
+                    <div class="text-xs font-semibold text-slate-700 mb-1 truncate" title="${c.cert_name}">${c.cert_name}</div>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden" title="學科成績：${t != null ? t : '未填'}">
+                                <div class="h-full rounded-full transition-all duration-500" style="width:${tWidth}%; background:#2a78d6"></div>
+                            </div>
+                            <span class="text-[11px] text-slate-400 w-9 text-right">${t != null ? t : '-'}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden" title="術科成績：${p != null ? p : '未填'}">
+                                <div class="h-full rounded-full transition-all duration-500" style="width:${pWidth}%; background:#eb6834"></div>
+                            </div>
+                            <span class="text-[11px] text-slate-400 w-9 text-right">${p != null ? p : '-'}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderCertOrgDonut(items) {
+            const counts = {};
+            items.forEach(c => {
+                const org = c.issuing_org || '未標示單位';
+                counts[org] = (counts[org] || 0) + 1;
+            });
+            const entries = Object.entries(counts).map(([label, value]) => ({ label, value }));
+            renderDonutChart('certOrgDonut', 'certOrgLegend', entries);
+        }
+
+        function renderCertTrendChart(items) {
+            const el = document.getElementById('certTrendChart');
+            if (!el) return;
+            const dated = items.filter(c => c.issue_date);
+            if (!dated.length) {
+                el.innerHTML = `<div class="text-xs text-slate-400 py-2">尚無取得日期資料，無法繪製趨勢圖。</div>`;
+                return;
+            }
+            const sorted = [...dated].sort((a, b) => new Date(a.issue_date) - new Date(b.issue_date));
+            const points = sorted.map((c, i) => ({ date: c.issue_date, count: i + 1, name: c.cert_name }));
+
+            const w = 600, h = 170, padL = 28, padR = 16, padT = 16, padB = 28;
+            const maxCount = points[points.length - 1].count;
+            const xStep = points.length > 1 ? (w - padL - padR) / (points.length - 1) : 0;
+            const xForI = i => points.length > 1 ? padL + i * xStep : (padL + w - padR) / 2;
+            const yScale = v => h - padB - (v / maxCount) * (h - padT - padB);
+
+            const linePoints = points.map((p, i) => `${xForI(i)},${yScale(p.count)}`).join(' ');
+            const areaPoints = `${xForI(0)},${h - padB} ${linePoints} ${xForI(points.length - 1)},${h - padB}`;
+            const dots = points.map((p, i) => `<circle cx="${xForI(i)}" cy="${yScale(p.count)}" r="4" fill="#2a78d6" stroke="white" stroke-width="1.5"><title>${p.date}：累積 ${p.count} 張（${p.name}）</title></circle>`).join('');
+
+            const labelIdxs = points.length <= 4 ? points.map((_, i) => i) : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+            const xLabels = labelIdxs.map(i => `<text x="${xForI(i)}" y="${h - 8}" font-size="9" fill="#898781" text-anchor="middle">${points[i].date}</text>`).join('');
+
+            el.innerHTML = `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full h-40">
+                    <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e1e0d9" stroke-width="1"/>
+                    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#e1e0d9" stroke-width="1"/>
+                    <polyline points="${areaPoints}" fill="#2a78d6" fill-opacity="0.08" stroke="none"/>
+                    <polyline points="${linePoints}" fill="none" stroke="#2a78d6" stroke-width="2"/>
+                    ${dots}
+                    ${xLabels}
+                    <text x="${padL}" y="${padT + 2}" font-size="9" fill="#898781">累積共 ${maxCount} 張</text>
+                </svg>`;
         }
 
         function updateCertStats(items) {
@@ -2057,7 +2612,7 @@ ${currentSearchData.answer}
                 const molVerifyUrl = c.verify_url || 'https://eservice.wdasec.gov.tw/WWW/C101Q';
 
                 return `
-                <div class="p-5 rounded-2xl border ${isMOL ? 'border-amber-200 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20' : 'border-slate-200 bg-white'} shadow-sm hover:shadow-md transition space-y-3 relative">
+                <div class="p-5 rounded-2xl border ${isMOL ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'} shadow-sm hover:shadow-md transition space-y-3 relative">
                     <div class="flex items-start justify-between gap-2">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -2276,7 +2831,7 @@ ${currentSearchData.answer}
             const canDelete = currentUser && currentUser.role === '學生';
 
             list.innerHTML = items.map(c => `
-                <div class="p-5 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/40 via-white to-indigo-50/20 shadow-sm hover:shadow-md transition space-y-3 relative">
+                <div class="p-5 rounded-2xl border border-blue-200 bg-blue-50/25 shadow-sm hover:shadow-md transition space-y-3 relative">
                     <div class="flex items-start justify-between gap-2">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -2432,7 +2987,7 @@ ${currentSearchData.answer}
         function renderCourseDashboard(data) {
             document.getElementById('statPassedCredits').textContent = data.total_passed_credits;
             document.getElementById('statRequiredCredits').textContent = data.required_passed_credits;
-            document.getElementById('creditProgressPercentText').textContent = `${data.progress_percent}% (${data.total_passed_credits}/128 學分)`;
+            document.getElementById('creditProgressPercentText').textContent = `${data.progress_percent}% (${data.total_passed_credits}/${data.graduation_threshold || 220} 學分)`;
             document.getElementById('creditProgressBar').style.width = `${Math.min(100, data.progress_percent)}%`;
 
             renderAcademicAlert(data.failed_courses || [], data.academic_alert || {});

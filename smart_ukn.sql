@@ -66,7 +66,9 @@ CREATE TABLE `students` (
 INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
 ('S112001', '王小明', 'CS', 112, '資科二甲', '0912-345-678'),
 ('S112002', '李美華', 'CS', 112, '資科二甲', '0922-333-444'),
-('S112003', '張建華', 'NUR', 112, '護理二乙', '0933-555-666');
+('S112003', '張建華', 'NUR', 112, '護理二乙', '0933-555-666'),
+('S112004', '陳冠宇', 'CS', 112, '資科二乙', '0955-222-111'),
+('S112005', '林雨潔', 'CS', 112, '資科二甲', '0966-777-888');
 
 -- --------------------------------------------------------
 -- 3. 系統使用者與登入帳號資料表 `users`
@@ -75,7 +77,7 @@ CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '使用者唯一識別碼 (PK)',
   `username` varchar(50) NOT NULL COMMENT '登入帳號',
   `password_hash` varchar(255) NOT NULL COMMENT '密碼雜湊或測試明碼',
-  `role` enum('學生','家長','教職員','管理員','訪客') NOT NULL COMMENT '系統角色',
+  `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL COMMENT '系統角色',
   `student_id` varchar(20) DEFAULT NULL COMMENT '綁定學號 (FK, 學生或家長關聯用)',
   `full_name` varchar(50) NOT NULL COMMENT '使用者真實姓名/稱謂',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '註冊/建立時間',
@@ -90,8 +92,9 @@ INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id
 (1, 'student1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112001', '王小明'),
 (2, 'student2', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112002', '李美華'),
 (3, 'parent1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '家長', 'S112001', '王大明 (小明家長)'),
-(4, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 老師'),
-(5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員');
+(4, 'staff1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 (教務處職員)'),
+(5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員'),
+(6, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '老師', NULL, '陳雅婷 老師');
 
 -- --------------------------------------------------------
 -- 4. 課程地圖與先修關係表 `course_map`
@@ -146,7 +149,12 @@ INSERT INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester
 (3, 'S112001', 'EN101', '112-1', 78.00, 1),
 (4, 'S112002', 'CS101', '112-1', 92.50, 1),
 (5, 'S112002', 'CS102', '112-2', 88.00, 1),
-(6, 'S112002', 'GE101', '112-1', 90.00, 1);
+(6, 'S112002', 'GE101', '112-1', 90.00, 1),
+(7, 'S112004', 'CS101', '112-1', 88.00, 1),
+(8, 'S112004', 'CS102', '112-2', 91.00, 1),
+(9, 'S112004', 'CS201', '113-1', 84.00, 1),
+(10, 'S112004', 'EN101', '112-1', 80.00, 1),
+(11, 'S112005', 'CS101', '112-1', 76.00, 1);
 
 -- --------------------------------------------------------
 -- 5b. 學生證照與檢定成績表 `certificates`
@@ -173,7 +181,11 @@ CREATE TABLE `certificates` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生證照與檢定成績表';
 
 INSERT INTO `certificates` (`cert_id`, `student_id`, `cert_name`, `issuing_org`, `cert_number`, `theory_score`, `practical_score`, `cert_status`, `verify_url`, `file_path`, `file_name`, `file_type`, `issue_date`, `created_at`) VALUES
-(1, 'S112001', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署技能檢定中心', '113-CS-004521', 82.00, 88.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', '/uploads/demo_mol_transcript.pdf', '勞動部技術士技能檢定成績單.pdf', 'pdf', '2026-06-20', '2026-06-25 10:00:00');
+(1, 'S112001', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署技能檢定中心', '113-CS-004521', 82.00, 88.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', '/uploads/demo_mol_transcript.pdf', '勞動部技術士技能檢定成績單.pdf', 'pdf', '2026-06-20', '2026-06-25 10:00:00'),
+(2, 'S112001', '乙級電腦軟體應用技術士', '勞動部勞動力發展署技能檢定中心', '114-CS-008912', 86.50, 92.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', '/uploads/demo_mol_cert.svg', '乙級技術士證書正本.svg', 'image', '2026-08-15', '2026-08-20 14:30:00'),
+(3, 'S112002', 'TQC+ 網頁設計工程師', '財團法人中華民國電腦技能基金會', 'TQC-WD-22310', 78.00, 85.00, '及格發證', 'https://www.tqc.org.tw/', NULL, NULL, NULL, '2026-07-05', '2026-07-10 09:00:00'),
+(4, 'S112004', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署技能檢定中心', '113-CS-004588', 90.00, 86.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', NULL, NULL, NULL, '2026-06-20', '2026-06-25 10:00:00'),
+(5, 'S112004', '乙級電腦軟體應用技術士', '勞動部勞動力發展署技能檢定中心', '114-CS-009010', 88.00, 90.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', NULL, NULL, NULL, '2026-08-15', '2026-08-20 14:30:00');
 
 -- --------------------------------------------------------
 -- 5c. 學生競賽得獎與榮譽獎狀表 `competitions`

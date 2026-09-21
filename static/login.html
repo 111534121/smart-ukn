@@ -41,7 +41,7 @@
     </script>
     <style>
         .hero-bg {
-            background: linear-gradient(135deg, #0a1a3a 0%, #0f2b5c 50%, #1e3a8a 100%);
+            background: #0a1a3a;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -132,11 +132,15 @@
                             <div>👨‍👩‍👦 家長：王大明</div>
                             <div class="text-[10px] text-amber-500 font-normal">學生王小明家長</div>
                         </button>
-                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded-xl bg-purple-50 text-purple-800 hover:bg-purple-100 transition border border-purple-200 text-left">
-                            <div>👨‍🏫 教職員：周立威 老師</div>
-                            <div class="text-[10px] text-purple-500 font-normal">資圖中心</div>
+                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded-xl bg-violet-50 text-violet-800 hover:bg-violet-100 transition border border-violet-200 text-left">
+                            <div>👩‍🏫 老師：陳雅婷</div>
+                            <div class="text-[10px] text-violet-500 font-normal">資科系導師 · 查閱指導學生</div>
                         </button>
-                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition border border-emerald-200 text-left">
+                        <button onclick="fillAccount('staff1', '123456')" class="p-2 rounded-xl bg-purple-50 text-purple-800 hover:bg-purple-100 transition border border-purple-200 text-left">
+                            <div>🏫 教職員：周立威</div>
+                            <div class="text-[10px] text-purple-500 font-normal">教務處職員 · 行政後台</div>
+                        </button>
+                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition border border-emerald-200 text-left col-span-2">
                             <div>⚙️ 管理員：系統後台</div>
                             <div class="text-[10px] text-emerald-500 font-normal">CMS 完整權限</div>
                         </button>
@@ -144,14 +148,29 @@
                 </div>
             </div>
 
-            <!-- 2. 訪客/未來學生快速通關通道 (須留痕) -->
+            <!-- 2. 訪客/未來學生/未來家長快速通關通道 (須留痕) -->
             <div id="panel-visitor" class="hidden space-y-4">
                 <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80 text-xs text-amber-900 space-y-1">
                     <div class="font-bold flex items-center gap-1.5">
                         <span>✨</span>
                         <span>訪客免密碼快速通關機制 (須入校登記留痕)</span>
                     </div>
-                    <p class="text-amber-800 leading-relaxed">提供未來新生、家長與校外訪客自由查閱全校規章與課程。系統將依法留存基本諮詢紀錄，以利電算中心數據分析。</p>
+                    <p class="text-amber-800 leading-relaxed">提供未來新生、未來家長與校外訪客自由查閱全校規章與課程。系統將依法留存基本諮詢紀錄，以利電算中心數據分析。</p>
+                </div>
+
+                <!-- 訪客身分細分：未來學生 / 未來家長，決定登入後看到的頁籤內容 -->
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1.5 text-xs sm:text-sm">您的身分 *</label>
+                    <div class="grid grid-cols-2 gap-2" id="visitorTypeGroup">
+                        <button type="button" data-type="未來學生" onclick="selectVisitorType('未來學生')"
+                            class="visitor-type-btn py-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
+                            <span>🌱</span><span>未來學生</span>
+                        </button>
+                        <button type="button" data-type="未來家長" onclick="selectVisitorType('未來家長')"
+                            class="visitor-type-btn py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-500 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 hover:border-amber-300">
+                            <span>👨‍👩‍👧</span><span>未來家長</span>
+                        </button>
+                    </div>
                 </div>
 
                 <form onsubmit="handleVisitorRegister(event)" class="space-y-3.5 text-xs sm:text-sm">
@@ -223,6 +242,21 @@
     </footer>
 
     <script>
+        let selectedVisitorType = '未來學生';
+
+        function selectVisitorType(type) {
+            selectedVisitorType = type;
+            document.querySelectorAll('.visitor-type-btn').forEach(btn => {
+                const active = btn.dataset.type === type;
+                btn.classList.toggle('border-amber-400', active);
+                btn.classList.toggle('bg-amber-50', active);
+                btn.classList.toggle('text-amber-900', active);
+                btn.classList.toggle('border-slate-200', !active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-slate-500', !active);
+            });
+        }
+
         function switchLoginTab(tab) {
             if (tab === 'member') {
                 document.getElementById('panel-member').classList.remove('hidden');
@@ -283,7 +317,8 @@
                 phone: document.getElementById('vPhone').value.trim(),
                 school_from: document.getElementById('vSchool').value.trim(),
                 purpose: document.getElementById('vPurpose').value,
-                target_dept: document.getElementById('vTargetDept').value
+                target_dept: document.getElementById('vTargetDept').value,
+                visitor_type: selectedVisitorType
             };
             const errBox = document.getElementById('visitorErrorMsg');
             const btn = document.getElementById('visitorBtn');

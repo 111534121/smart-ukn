@@ -63,7 +63,7 @@ def init_database():
               `user_id` int(11) NOT NULL AUTO_INCREMENT,
               `username` varchar(50) NOT NULL,
               `password_hash` varchar(255) NOT NULL,
-              `role` enum('學生','家長','教職員','管理員','訪客') NOT NULL,
+              `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL,
               `student_id` varchar(20) DEFAULT NULL,
               `full_name` varchar(50) NOT NULL,
               `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

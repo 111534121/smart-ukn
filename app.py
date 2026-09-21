@@ -11,6 +11,8 @@ import os
 import sys
 import json
 import uuid
+import csv
+from io import StringIO
 from datetime import datetime, timedelta
 
 # 設定 Windows 終端輸出為 UTF-8
@@ -126,6 +128,10 @@ def role_required(*allowed_roles):
 #    保證即使 MySQL 未啟動也能 100% 完整展示！
 # ==========================================
 
+# 畢業門檻設定：畢業學分總數 220、專業證照畢業門檻 2 張 (供各角色與統計儀表板一致引用)
+GRADUATION_CREDIT_THRESHOLD = 220
+GRADUATION_CERT_REQUIREMENT = 2
+
 DEMO_DEPARTMENTS = [
     {"dept_id": "CS", "dept_name": "資訊科技與應用學系", "college_name": "創新與管理學院"},
     {"dept_id": "NUR", "dept_name": "護理學系", "college_name": "健康照護學院"},
@@ -136,7 +142,9 @@ DEMO_DEPARTMENTS = [
 DEMO_STUDENTS = [
     {"student_id": "S112001", "full_name": "王小明", "dept_id": "CS", "dept_name": "資訊科技與應用學系", "admission_year": 112, "class_name": "資科二甲", "parent_phone": "0912-345-678"},
     {"student_id": "S112002", "full_name": "李美華", "dept_id": "CS", "dept_name": "資訊科技與應用學系", "admission_year": 112, "class_name": "資科二甲", "parent_phone": "0922-333-444"},
-    {"student_id": "S112003", "full_name": "張建華", "dept_id": "NUR", "dept_name": "護理學系", "admission_year": 112, "class_name": "護理二乙", "parent_phone": "0933-555-666"}
+    {"student_id": "S112003", "full_name": "張建華", "dept_id": "NUR", "dept_name": "護理學系", "admission_year": 112, "class_name": "護理二乙", "parent_phone": "0933-555-666"},
+    {"student_id": "S112004", "full_name": "陳冠宇", "dept_id": "CS", "dept_name": "資訊科技與應用學系", "admission_year": 112, "class_name": "資科二乙", "parent_phone": "0955-222-111"},
+    {"student_id": "S112005", "full_name": "林雨潔", "dept_id": "CS", "dept_name": "資訊科技與應用學系", "admission_year": 112, "class_name": "資科二甲", "parent_phone": "0966-777-888"}
 ]
 
 # 密碼皆已用 werkzeug 雜湊處理，不再明碼儲存 (原文分別為 123456 / admin123)
@@ -147,7 +155,8 @@ DEMO_USERS = [
     {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
-    {"user_id": 4, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 老師"},
+    {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
+    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "陳雅婷 老師", "dept_id": "CS", "dept_name": "資訊科技與應用學系"},
     {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"}
 ]
 
@@ -459,7 +468,12 @@ DEMO_STUDENT_CREDITS = [
     {"credit_id": 3, "student_id": "S112001", "course_id": "EN101", "semester": "112-1", "score": 78.0, "is_passed": 1},
     {"credit_id": 4, "student_id": "S112002", "course_id": "CS101", "semester": "112-1", "score": 92.5, "is_passed": 1},
     {"credit_id": 5, "student_id": "S112002", "course_id": "CS102", "semester": "112-2", "score": 88.0, "is_passed": 1},
-    {"credit_id": 6, "student_id": "S112002", "course_id": "GE101", "semester": "112-1", "score": 90.0, "is_passed": 1}
+    {"credit_id": 6, "student_id": "S112002", "course_id": "GE101", "semester": "112-1", "score": 90.0, "is_passed": 1},
+    {"credit_id": 7, "student_id": "S112004", "course_id": "CS101", "semester": "112-1", "score": 88.0, "is_passed": 1},
+    {"credit_id": 8, "student_id": "S112004", "course_id": "CS102", "semester": "112-2", "score": 91.0, "is_passed": 1},
+    {"credit_id": 9, "student_id": "S112004", "course_id": "CS201", "semester": "113-1", "score": 84.0, "is_passed": 1},
+    {"credit_id": 10, "student_id": "S112004", "course_id": "EN101", "semester": "112-1", "score": 80.0, "is_passed": 1},
+    {"credit_id": 11, "student_id": "S112005", "course_id": "CS101", "semester": "112-1", "score": 76.0, "is_passed": 1}
 ]
 
 # 學生證照與檢定成績紀錄 (如勞動部技術士技能檢定成績單)
@@ -493,6 +507,54 @@ DEMO_CERTIFICATES = [
         "file_path": "/uploads/demo_mol_cert.svg",
         "file_name": "乙級技術士證書正本.svg",
         "file_type": "image",
+        "issue_date": "2026-08-15",
+        "created_at": "2026-08-20 14:30:00"
+    },
+    {
+        "cert_id": 3,
+        "student_id": "S112002",
+        "cert_name": "TQC+ 網頁設計工程師",
+        "issuing_org": "財團法人中華民國電腦技能基金會",
+        "cert_number": "TQC-WD-22310",
+        "theory_score": 78.0,
+        "practical_score": 85.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://www.tqc.org.tw/",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
+        "issue_date": "2026-07-05",
+        "created_at": "2026-07-10 09:00:00"
+    },
+    {
+        "cert_id": 4,
+        "student_id": "S112004",
+        "cert_name": "丙級電腦硬體裝修技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "113-CS-004588",
+        "theory_score": 90.0,
+        "practical_score": 86.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
+        "issue_date": "2026-06-20",
+        "created_at": "2026-06-25 10:00:00"
+    },
+    {
+        "cert_id": 5,
+        "student_id": "S112004",
+        "cert_name": "乙級電腦軟體應用技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "114-CS-009010",
+        "theory_score": 88.0,
+        "practical_score": 90.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
         "issue_date": "2026-08-15",
         "created_at": "2026-08-20 14:30:00"
     }
@@ -654,9 +716,13 @@ def auth_login():
                         user_record["dept_id"] = stu["dept_id"]
                         user_record["class_name"] = stu["class_name"]
                         user_record["dept_name"] = stu.get("dept_name", "資訊科技與應用學系")
+                elif u.get("dept_id"):
+                    # 老師/教職員未綁定學號時，直接沿用帳號本身設定的所屬系所 (如導師制)
+                    user_record.setdefault("class_name", "")
                 break
 
     if user_record:
+        session.clear()  # 清除前一位使用者(如訪客)殘留的 session 欄位，避免身分混雜
         session["user_id"] = user_record["user_id"]
         session["username"] = user_record["username"]
         session["role"] = user_record["role"]
@@ -702,7 +768,8 @@ def auth_me():
                 "full_name": session.get("full_name"),
                 "student_id": session.get("student_id"),
                 "dept_name": session.get("dept_name", ""),
-                "class_name": session.get("class_name", "")
+                "class_name": session.get("class_name", ""),
+                "visitor_type": session.get("visitor_type")
             }
         }), 200
 
@@ -726,6 +793,11 @@ def register_visitor():
     school = data.get("school_from", "").strip()
     purpose = data.get("purpose", "").strip()
     target_dept = data.get("target_dept", "資訊科技與應用學系").strip()
+    # 訪客身分細分：未來學生 (準新生) 或 未來家長，僅影響前台顯示用稱謂與頁籤預設內容，
+    # 資料庫層級仍統一以「訪客」角色留痕，不額外變更 schema。
+    visitor_type = data.get("visitor_type", "未來學生").strip()
+    if visitor_type not in ("未來學生", "未來家長"):
+        visitor_type = "未來學生"
     ip = request.remote_addr or "127.0.0.1"
 
     if not vname or not phone or not school or not purpose:
@@ -759,10 +831,12 @@ def register_visitor():
         })
 
     # 設定訪客 Session
+    session.clear()  # 清除前一位使用者殘留的 session 欄位，避免身分混雜
     session["user_id"] = 999000 + new_id
     session["username"] = f"visitor_{new_id}"
     session["role"] = "訪客"
-    session["full_name"] = f"{vname} (訪客)"
+    session["visitor_type"] = visitor_type
+    session["full_name"] = f"{vname} ({visitor_type})"
     session["student_id"] = None
     session["dept_name"] = target_dept
     session["class_name"] = school
@@ -774,6 +848,7 @@ def register_visitor():
             "log_id": new_id,
             "visitor_name": vname,
             "role": "訪客",
+            "visitor_type": visitor_type,
             "school_from": school,
             "purpose": purpose,
             "target_dept": target_dept
@@ -1084,8 +1159,8 @@ def diagnose_student_credits():
         if requested_id and requested_id != session_student_id:
             return jsonify({"status": "error", "message": "無權查詢非本人子女之學生資料"}), 403
         target_student_id = session_student_id
-    elif role in ("教職員", "管理員"):
-        # 教職員/管理員可依需要指定學號查詢，但不可省略
+    elif role in ("教職員", "管理員", "老師"):
+        # 教職員/管理員/老師可依需要指定學號查詢，但不可省略
         target_student_id = requested_id
         if not target_student_id:
             return jsonify({"status": "error", "message": "請提供欲查詢之學號 (student_id)"}), 400
@@ -1222,10 +1297,250 @@ def diagnose_student_credits():
         "elective_passed_credits": elective_passed_credits,
         "failed_courses": failed_courses,
         "academic_alert": academic_alert,
-        "graduation_threshold": 128,
-        "progress_percent": round(min(100, (total_passed_credits / 128) * 100), 1),
+        "graduation_threshold": GRADUATION_CREDIT_THRESHOLD,
+        "credits_remaining": max(0, GRADUATION_CREDIT_THRESHOLD - total_passed_credits),
+        "progress_percent": round(min(100, (total_passed_credits / GRADUATION_CREDIT_THRESHOLD) * 100), 1),
         "courses": evaluated_courses
     }), 200
+
+# ==========================================
+# 8a2. 畢業門檻儀表板與同屆證照統計 API
+#      (/api/student/graduation/dashboard, /api/student/graduation/export.csv)
+#      供學生「離畢業還有多遠」的 Power BI 風格儀表板使用：
+#      畢業學分門檻 220、專業證照畢業門檻 2 張，並提供同屆(入學年度)證照持有統計。
+# ==========================================
+
+def _resolve_graduation_target_student(role, session_student_id, requested_id):
+    """統一解析畢業儀表板/證照統計可查詢的目標學號，避免任何人用 ?student_id= 查到別人的資料 (IDOR)"""
+    if role == "學生":
+        return session_student_id, None
+    if role == "家長":
+        if requested_id and requested_id != session_student_id:
+            return None, ("無權查詢非本人子女之學生資料", 403)
+        return session_student_id, None
+    if role in ("教職員", "管理員", "老師"):
+        if not requested_id:
+            return None, ("請提供欲查詢之學號 (student_id)", 400)
+        return requested_id, None
+    return None, ("此身分無權查詢畢業門檻儀表板", 403)
+
+def _compute_graduation_dashboard(target_student_id):
+    """計算單一學生的畢業學分/證照達成度，並比對其入學同屆 (admission_year) 的證照統計。
+    回傳 None 代表查無此學生。DB 連線可用時走 MySQL，否則自動退回示範資料引擎。"""
+    conn = get_db_connection()
+    student_info = None
+    total_passed_credits = 0
+    own_certs = []
+    cohort_year = None
+    cohort_size = 0
+    cert_rows = []
+
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT s.*, d.dept_name FROM students s JOIN departments d ON s.dept_id = d.dept_id WHERE s.student_id = %s",
+                (target_student_id,)
+            )
+            student_info = cursor.fetchone()
+
+            if student_info:
+                cursor.execute("""
+                    SELECT COALESCE(SUM(c.credits), 0) AS total
+                    FROM student_credits sc JOIN course_map c ON sc.course_id = c.course_id
+                    WHERE sc.student_id = %s AND sc.is_passed = 1
+                """, (target_student_id,))
+                row = cursor.fetchone()
+                total_passed_credits = int(row["total"]) if row and row.get("total") is not None else 0
+
+                cursor.execute("SELECT * FROM certificates WHERE student_id = %s ORDER BY issue_date DESC", (target_student_id,))
+                own_certs = cursor.fetchall()
+
+                cohort_year = student_info["admission_year"]
+                cursor.execute("SELECT student_id FROM students WHERE admission_year = %s", (cohort_year,))
+                cohort_size = len(cursor.fetchall())
+
+                cursor.execute("""
+                    SELECT c.student_id, c.cert_name
+                    FROM certificates c JOIN students s ON c.student_id = s.student_id
+                    WHERE s.admission_year = %s
+                """, (cohort_year,))
+                cert_rows = cursor.fetchall()
+
+            cursor.close()
+            conn.close()
+        except Exception:
+            if conn: conn.close()
+            student_info = None
+
+    if not student_info:
+        # 示範資料引擎 Fallback
+        student_info = next((s for s in DEMO_STUDENTS if s["student_id"] == target_student_id), None)
+        if not student_info:
+            return None
+        course_by_id = {c["course_id"]: c for c in DEMO_COURSES}
+        total_passed_credits = sum(
+            course_by_id.get(r["course_id"], {}).get("credits", 0)
+            for r in DEMO_STUDENT_CREDITS
+            if r["student_id"] == target_student_id and r["is_passed"] == 1
+        )
+        own_certs = [c for c in DEMO_CERTIFICATES if c["student_id"] == target_student_id]
+        cohort_year = student_info["admission_year"]
+        cohort_ids = {s["student_id"] for s in DEMO_STUDENTS if s["admission_year"] == cohort_year}
+        cohort_size = len(cohort_ids)
+        cert_rows = [
+            {"student_id": c["student_id"], "cert_name": c["cert_name"]}
+            for c in DEMO_CERTIFICATES if c["student_id"] in cohort_ids
+        ]
+
+    # 依學生分組同屆證照持有情形，計算「至少1張 / 達成畢業雙證照門檻」人數
+    certs_by_student = {}
+    for r in cert_rows:
+        certs_by_student.setdefault(r["student_id"], set()).add(r["cert_name"])
+    students_with_1plus = sum(1 for names in certs_by_student.values() if len(names) >= 1)
+    students_meeting_threshold = sum(1 for names in certs_by_student.values() if len(names) >= GRADUATION_CERT_REQUIREMENT)
+
+    # 每張證照名稱在同屆的持有人數 (「這屆有多少人拿到這張證照」統計)
+    cert_name_holders = {}
+    for r in cert_rows:
+        cert_name_holders.setdefault(r["cert_name"], set()).add(r["student_id"])
+    cert_breakdown = sorted(
+        [
+            {
+                "cert_name": name,
+                "holder_count": len(holders),
+                "percent_of_cohort": round(len(holders) / cohort_size * 100, 1) if cohort_size else 0
+            }
+            for name, holders in cert_name_holders.items()
+        ],
+        key=lambda x: (-x["holder_count"], x["cert_name"])
+    )
+
+    own_cert_names = {c["cert_name"] for c in own_certs}
+    own_cert_cohort_comparison = [
+        {
+            "cert_name": name,
+            "cohort_holder_count": len(cert_name_holders.get(name, set())),
+            "percent_of_cohort": round(len(cert_name_holders.get(name, set())) / cohort_size * 100, 1) if cohort_size else 0
+        }
+        for name in sorted(own_cert_names)
+    ]
+
+    credits_remaining = max(0, GRADUATION_CREDIT_THRESHOLD - total_passed_credits)
+    progress_percent = round(min(100, (total_passed_credits / GRADUATION_CREDIT_THRESHOLD) * 100), 1)
+    certs_owned = len(own_cert_names)
+    meets_credit_requirement = total_passed_credits >= GRADUATION_CREDIT_THRESHOLD
+    meets_cert_requirement = certs_owned >= GRADUATION_CERT_REQUIREMENT
+
+    return {
+        "student": {
+            "student_id": student_info.get("student_id"),
+            "full_name": student_info.get("full_name"),
+            "dept_name": student_info.get("dept_name"),
+            "admission_year": student_info.get("admission_year"),
+            "class_name": student_info.get("class_name")
+        },
+        "credits": {
+            "earned": total_passed_credits,
+            "threshold": GRADUATION_CREDIT_THRESHOLD,
+            "remaining": credits_remaining,
+            "progress_percent": progress_percent,
+            "meets_requirement": meets_credit_requirement
+        },
+        "certificates": {
+            "owned_count": certs_owned,
+            "required": GRADUATION_CERT_REQUIREMENT,
+            "meets_requirement": meets_cert_requirement,
+            "list": own_certs,
+            "cohort_comparison": own_cert_cohort_comparison
+        },
+        "overall_meets_graduation_requirement": meets_credit_requirement and meets_cert_requirement,
+        "cohort": {
+            "admission_year": cohort_year,
+            "cohort_size": cohort_size,
+            "students_with_1plus_cert": students_with_1plus,
+            "percent_1plus_cert": round(students_with_1plus / cohort_size * 100, 1) if cohort_size else 0,
+            "students_meeting_cert_threshold": students_meeting_threshold,
+            "percent_meeting_cert_threshold": round(students_meeting_threshold / cohort_size * 100, 1) if cohort_size else 0,
+            "cert_breakdown": cert_breakdown
+        }
+    }
+
+@app.route("/api/student/graduation/dashboard", methods=["GET"])
+@login_required
+def student_graduation_dashboard():
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+    requested_id = request.args.get("student_id")
+    target_student_id, err = _resolve_graduation_target_student(role, session_student_id, requested_id)
+    if err:
+        message, code = err
+        return jsonify({"status": "error", "message": message}), code
+
+    result = _compute_graduation_dashboard(target_student_id)
+    if result is None:
+        return jsonify({"status": "error", "message": "查無此學號之學生資料"}), 404
+
+    result["status"] = "success"
+    return jsonify(result), 200
+
+@app.route("/api/student/graduation/export.csv", methods=["GET"])
+@login_required
+def export_graduation_dashboard_csv():
+    """將畢業門檻儀表板數據匯出為可下載的 CSV 檔案 (Excel UTF-8 BOM 相容)"""
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+    requested_id = request.args.get("student_id")
+    target_student_id, err = _resolve_graduation_target_student(role, session_student_id, requested_id)
+    if err:
+        message, code = err
+        return jsonify({"status": "error", "message": message}), code
+
+    result = _compute_graduation_dashboard(target_student_id)
+    if result is None:
+        return jsonify({"status": "error", "message": "查無此學號之學生資料"}), 404
+
+    buf = StringIO()
+    writer = csv.writer(buf)
+    stu = result["student"]
+    credits = result["credits"]
+    certs = result["certificates"]
+    cohort = result["cohort"]
+
+    writer.writerow(["Smart UKN 畢業門檻儀表板匯出報表"])
+    writer.writerow(["產出時間", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+    writer.writerow([])
+    writer.writerow(["項目", "數值"])
+    writer.writerow(["學號", stu.get("student_id")])
+    writer.writerow(["姓名", stu.get("full_name")])
+    writer.writerow(["系所", stu.get("dept_name")])
+    writer.writerow(["入學年度", stu.get("admission_year")])
+    writer.writerow(["班級", stu.get("class_name")])
+    writer.writerow(["已獲學分", credits.get("earned")])
+    writer.writerow(["畢業學分門檻", credits.get("threshold")])
+    writer.writerow(["尚缺學分", credits.get("remaining")])
+    writer.writerow(["學分達成率(%)", credits.get("progress_percent")])
+    writer.writerow(["已取得證照數", certs.get("owned_count")])
+    writer.writerow(["畢業門檻證照數", certs.get("required")])
+    writer.writerow(["是否達成證照門檻", "是" if certs.get("meets_requirement") else "否"])
+    writer.writerow(["是否達成畢業條件", "是" if result.get("overall_meets_graduation_requirement") else "否"])
+    writer.writerow([])
+    writer.writerow(["同屆(入學年度)統計", ""])
+    writer.writerow(["同屆人數", cohort.get("cohort_size")])
+    writer.writerow(["同屆至少1張證照人數", cohort.get("students_with_1plus_cert")])
+    writer.writerow(["同屆至少1張證照比例(%)", cohort.get("percent_1plus_cert")])
+    writer.writerow(["同屆達成雙證照門檻人數", cohort.get("students_meeting_cert_threshold")])
+    writer.writerow(["同屆達成雙證照門檻比例(%)", cohort.get("percent_meeting_cert_threshold")])
+    writer.writerow([])
+    writer.writerow(["證照名稱", "本屆持有人數", "占本屆比例(%)"])
+    for c in cohort.get("cert_breakdown", []):
+        writer.writerow([c["cert_name"], c["holder_count"], c["percent_of_cohort"]])
+
+    csv_content = buf.getvalue()
+    response = make_response(csv_content.encode("utf-8-sig"))
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = f"attachment; filename=\"graduation_dashboard_{stu.get('student_id')}.csv\""
+    return response
 
 # ==========================================
 # 8b. 跨系統期限雷達 API (/api/deadlines)
@@ -1438,7 +1753,7 @@ def manage_certificates():
             if requested_id and requested_id != session_student_id:
                 return jsonify({"status": "error", "message": "無權查詢非本人子女之證照資料"}), 403
             target_student_id = session_student_id
-        elif role in ("教職員", "管理員"):
+        elif role in ("教職員", "管理員", "老師"):
             target_student_id = requested_id
             if not target_student_id:
                 return jsonify({"status": "error", "message": "請提供欲查詢之學號 (student_id)"}), 400
@@ -1608,7 +1923,7 @@ def manage_competitions():
             if requested_id and requested_id != session_student_id:
                 return jsonify({"status": "error", "message": "無權查詢非本人子女之比賽獲獎資料"}), 403
             target_student_id = session_student_id
-        elif role in ("教職員", "管理員"):
+        elif role in ("教職員", "管理員", "老師"):
             target_student_id = requested_id
             if not target_student_id:
                 return jsonify({"status": "error", "message": "請提供欲查詢之學號 (student_id)"}), 400
