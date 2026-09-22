@@ -52,7 +52,7 @@
                     <span id="dbModeText">資料庫檢測中...</span>
                 </div>
                 <a href="/" class="text-xs bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center gap-1">
-                    <span>🌐 開啟前台門戶 ↗</span>
+                    <span>開啟前台門戶 ↗</span>
                 </a>
             </div>
         </div>
@@ -63,32 +63,32 @@
         
         <!-- 數據統計卡片 (Statistics Overview) -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">校規知識庫條文</div>
                 <div class="text-2xl sm:text-3xl font-black text-ukn-900 mt-1" id="statRules">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">3NF 關聯主檔</div>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">同義詞對照庫</div>
                 <div class="text-2xl sm:text-3xl font-black text-amber-600 mt-1" id="statSynonyms">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">口語轉換規則</div>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">行政申辦指引</div>
                 <div class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1" id="statChecklists">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">處室檢核流程</div>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">全校核心課程</div>
                 <div class="text-2xl sm:text-3xl font-black text-indigo-600 mt-1" id="statCourses">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">先修與擋修關係</div>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">訪客入校留痕</div>
                 <div class="text-2xl sm:text-3xl font-black text-rose-600 mt-1" id="statVisitors">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">電算中心分析用</div>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">服務斷點回報</div>
                 <div class="text-2xl sm:text-3xl font-black text-orange-600 mt-1" id="statFeedback">0</div>
                 <div class="text-[11px] text-slate-400 mt-1">匿名斷點統計</div>
@@ -96,7 +96,7 @@
         </div>
 
         <!-- 主控制面板 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 space-y-6">
             
             <!-- 標題與操作列 -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -116,11 +116,11 @@
 
             <!-- 後台分頁切換 -->
             <div class="flex space-x-2 border-b border-slate-200 pb-2 text-sm font-bold">
-                <button onclick="switchTab('rules')" id="tabBtn-rules" class="px-4 py-2 rounded-xl bg-ukn-100 text-ukn-900">📚 校規知識庫條文</button>
-                <button onclick="switchTab('synonyms')" id="tabBtn-synonyms" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">💡 智慧同義詞對照</button>
-                <button onclick="switchTab('checklists')" id="tabBtn-checklists" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">📋 行政申辦流程</button>
-                <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">🌟 訪客留痕名冊</button>
-                <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100">💬 服務斷點回報</button>
+                <button onclick="switchTab('rules')" id="tabBtn-rules" class="px-4 py-2 rounded-lg bg-ukn-100 text-ukn-900">校規知識庫條文</button>
+                <button onclick="switchTab('synonyms')" id="tabBtn-synonyms" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100">智慧同義詞對照</button>
+                <button onclick="switchTab('checklists')" id="tabBtn-checklists" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100">行政申辦流程</button>
+                <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100">訪客留痕名冊</button>
+                <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100">服務斷點回報</button>
             </div>
 
             <!-- 分頁 1: 校規條文 -->
@@ -228,12 +228,12 @@
 
     <!-- 頁尾 -->
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        Smart UKN 管理控制系統 · 康寧大學版權所有 · 3NF 旗艦架構
+        Smart UKN 管理控制系統 · 康寧大學版權所有
     </footer>
 
     <!-- 彈窗 Modal: 條文新增/編輯 -->
-    <div id="ruleModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div id="ruleModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6 shadow-sm space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 id="modalTitle" class="text-lg font-bold text-slate-900">新增校規條文</h3>
             <form id="ruleForm" onsubmit="saveRule(event)" class="space-y-3 text-xs sm:text-sm">
                 <input type="hidden" id="ruleId">
@@ -289,8 +289,8 @@
     </div>
 
     <!-- 彈窗 Modal: 同義詞新增 -->
-    <div id="synonymModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+    <div id="synonymModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg max-w-md w-full p-6 shadow-sm space-y-4">
             <h3 class="text-lg font-bold text-slate-900">新增同義詞</h3>
             <form onsubmit="saveSynonym(event)" class="space-y-3 text-xs sm:text-sm">
                 <div>
@@ -510,10 +510,10 @@
         function switchTab(tab) {
             ['rules', 'synonyms', 'checklists', 'visitors', 'feedback'].forEach(t => {
                 document.getElementById(`panel-${t}`).classList.add('hidden');
-                document.getElementById(`tabBtn-${t}`).className = 'px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100';
+                document.getElementById(`tabBtn-${t}`).className = 'px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100';
             });
             document.getElementById(`panel-${tab}`).classList.remove('hidden');
-            document.getElementById(`tabBtn-${tab}`).className = 'px-4 py-2 rounded-xl bg-ukn-100 text-ukn-900 font-bold';
+            document.getElementById(`tabBtn-${tab}`).className = 'px-4 py-2 rounded-lg bg-ukn-100 text-ukn-900 font-bold';
         }
 
         function openModal(mode) {

@@ -796,11 +796,11 @@
                     <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
                     <!-- 色標圖例 -->
                     <div class="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
-                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-rose-500"></span>緊急</span>
-                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-amber-500"></span>近期截止</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-rose-500"></span>緊急（7天內）</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-amber-500"></span>近期截止（14天內）</span>
                         <span class="flex items-center gap-1"><span class="cal-event-dot bg-blue-500"></span>進行中</span>
-                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-emerald-500"></span>已結束/紀念日</span>
-                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-purple-500"></span>考試週</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-slate-300"></span>已過期</span>
+                        <span class="flex items-center gap-1"><span class="cal-event-dot bg-purple-600"></span>考試週</span>
                     </div>
                 </div>
             </div>
@@ -2220,8 +2220,9 @@ ${currentSearchData.answer}
                 // Mark on end_date
                 if (!eventMap[d.end_date]) eventMap[d.end_date] = [];
                 eventMap[d.end_date].push(d);
-                // Mark range: start_date to end_date if both exist and different
-                if (d.start_date && d.start_date !== d.end_date) {
+                // 只有「考試」這類本身就是連續多天活動的分類才整段標色點；
+                // 一般申請期限 (如停修、加退選) 真正重要的只有截止日，不需要每天都標，避免看起來像每天都有事卻沒有內容
+                if (d.category === '考試' && d.start_date && d.start_date !== d.end_date) {
                     let cur = new Date(d.start_date);
                     const end = new Date(d.end_date);
                     while (cur < end) {
@@ -2255,16 +2256,18 @@ ${currentSearchData.answer}
                 const dow = (firstDay + d - 1) % 7; // 0=日, 6=六
                 const isWeekend = dow === 0 || dow === 6;
                 const events = eventMap[dateStr] || [];
+                // 多日期間的事件 (如考試週) 每一天都要顯示色點，但事件標題文字只在截止日當天顯示，避免每天重複洗版
                 const endEvents = events.filter(e => e.end_date === dateStr && !e._rangeDay);
-                const dotHtml = endEvents.slice(0, 3).map(e => {
-                    const col = e.urgency ? urgencyColor[e.urgency] : (catColor[e.category] || 'bg-slate-400');
+                const dotHtml = events.slice(0, 3).map(e => {
+                    // 考試週不論急迫度一律標紫色，其餘依急迫度（緊急/近期/進行中/已過期）上色
+                    const col = e.category === '考試' ? catColor['考試'] : (e.urgency ? urgencyColor[e.urgency] : (catColor[e.category] || 'bg-slate-400'));
                     return `<span class="cal-event-dot ${col}"></span>`;
                 }).join('');
                 const eventTitleHtml = endEvents.slice(0, 1).map(e =>
                     `<div class="text-xs leading-snug text-slate-700 truncate font-medium">${e.title}</div>`
                 ).join('');
                 const moreHtml = endEvents.length > 1 ? `<div class="text-xs text-slate-400">+${endEvents.length - 1} 更多</div>` : '';
-                const clickData = endEvents.length ? `onclick="showCalDayDetail('${dateStr}')" style="cursor:pointer"` : '';
+                const clickData = events.length ? `onclick="showCalDayDetail('${dateStr}')" style="cursor:pointer"` : '';
                 let cellBg = 'bg-white';
                 let cellBorder = 'border-slate-100';
                 if (!isToday && isWeekend) {
@@ -2289,7 +2292,8 @@ ${currentSearchData.answer}
 
         // 點擊日期後顯示當日事件
         function showCalDayDetail(dateStr) {
-            const events = calAllDeadlines.filter(d => d.end_date === dateStr);
+            // 涵蓋單日截止事件，以及多日期間事件 (如考試週) 中間任何一天
+            const events = calAllDeadlines.filter(d => d.end_date === dateStr || (d.start_date && d.start_date <= dateStr && dateStr <= d.end_date));
             if (!events.length) return;
             const urgencyLabel = { urgent: '緊急', soon: '近期', normal: '尚有餘裕', past: '已結束' };
             const items = events.map(e => {

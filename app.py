@@ -724,7 +724,10 @@ DEMO_DEADLINES = [
     {"deadline_id": 8, "title": "導師班務座談會", "category": "教師行政", "start_date": None, "end_date": "2026-10-15", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "各班導師與學務處生輔組召開期初班務座談，說明本學期預警與輔導重點。"},
     {"deadline_id": 9, "title": "期中教學研討會議", "category": "教師行政", "start_date": None, "end_date": "2026-11-12", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "全校教師參加，說明期中預警名單與教學評量作業重點。"},
     {"deadline_id": 10, "title": "期中成績繳交截止", "category": "教師行政", "start_date": None, "end_date": "2026-11-18", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "請於期限內至教師成績登錄系統完成期中成績輸入。"},
-    {"deadline_id": 11, "title": "期末成績繳交截止", "category": "教師行政", "start_date": None, "end_date": "2027-01-15", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。"}
+    {"deadline_id": 11, "title": "期末成績繳交截止", "category": "教師行政", "start_date": None, "end_date": "2027-01-15", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。"},
+    # 考試週：未來將串接學校正式行事曆，目前先以示範資料標示於月曆
+    {"deadline_id": 12, "title": "期中考試週", "category": "考試", "start_date": "2026-11-23", "end_date": "2026-11-27", "applies_to_role": "all", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "期中考試週期間，請留意各科考試時間與地點公告。"},
+    {"deadline_id": 13, "title": "期末考試週", "category": "考試", "start_date": "2027-01-05", "end_date": "2027-01-09", "applies_to_role": "all", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "期末考試週期間，請留意各科考試時間與地點公告。"}
 ]
 
 # ==========================================
