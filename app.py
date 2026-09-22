@@ -156,7 +156,7 @@ DEMO_USERS = [
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
     {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
-    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "陳雅婷 老師", "dept_id": "CS", "dept_name": "資訊科技與應用學系"},
+    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "陳雅婷 老師", "dept_id": "CS", "dept_name": "資訊科技與應用學系", "advised_class": "資科二甲"},
     {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"}
 ]
 
@@ -296,7 +296,8 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "停修申請表（須任課老師簽章）、學生證正本",
         "office_hours": "週一至週五 08:30 - 17:00 (行政大樓教務處)",
-        "contact_phone": "02-2632-1181 分機 312 (課務組)"
+        "contact_phone": "02-2632-1181 分機 312 (課務組)",
+        "audience": "學生"
     },
     {
         "item_id": 2,
@@ -311,7 +312,8 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "身分證或健保卡正本、工本費收據、2吋大頭照電子檔",
         "office_hours": "週一至週五 09:00 - 16:30 (行政大樓註冊組)",
-        "contact_phone": "02-2632-1181 分機 310 (註冊組)"
+        "contact_phone": "02-2632-1181 分機 310 (註冊組)",
+        "audience": "學生"
     },
     {
         "item_id": 3,
@@ -326,7 +328,8 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "語言檢定證書正影本、歷年成績單、學分抵免申請表",
         "office_hours": "開學前兩週內 08:30 - 17:00 (教務處)",
-        "contact_phone": "02-2632-1181 分機 310 (註冊組)"
+        "contact_phone": "02-2632-1181 分機 310 (註冊組)",
+        "audience": "學生"
     },
     {
         "item_id": 4,
@@ -341,7 +344,8 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "三日內診斷證明或收據電子檔（病假）、派遣公文（公假）",
         "office_hours": "線上系統 24 小時開放受理",
-        "contact_phone": "02-2632-1181 分機 410 (生輔組)"
+        "contact_phone": "02-2632-1181 分機 410 (生輔組)",
+        "audience": "學生"
     },
     {
         "item_id": 5,
@@ -356,7 +360,57 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "無需另外書面文件；逾加退選期限則需填寫替代科目認定表",
         "office_hours": "加退選期間依教務處公告時間；平時洽詢 週一至週五 08:30 - 17:00",
-        "contact_phone": "02-2632-1181 分機 312 (課務組)"
+        "contact_phone": "02-2632-1181 分機 312 (課務組)",
+        "audience": "學生"
+    },
+    # 以下為老師專屬的行政申辦流程，與學生端業務不同
+    {
+        "item_id": 6,
+        "category_id": 1,
+        "category_name": "課務組",
+        "business_name": "教師調（代）課申請",
+        "steps_json": [
+            "1. 登入教師端系統線上填寫調（代）課申請表",
+            "2. 敘明異動原因、代課教師與異動堂數",
+            "3. 經系主任核章後送教務處課務組備查",
+            "4. 至遲於異動日前 3 天完成申請，調代課完成後於系統登錄異動紀錄"
+        ],
+        "required_docs": "調（代）課申請表（系主任簽核）",
+        "office_hours": "週一至週五 08:30 - 17:00 (行政大樓教務處)",
+        "contact_phone": "02-2632-1181 分機 312 (課務組)",
+        "audience": "老師"
+    },
+    {
+        "item_id": 7,
+        "category_id": 1,
+        "category_name": "註冊組",
+        "business_name": "學生成績登錄與更正申請",
+        "steps_json": [
+            "1. 學期成績需於規定期限內至教師成績登錄系統輸入",
+            "2. 如需更正已送出之成績，填寫成績更正申請單並經系主任核章",
+            "3. 送註冊組於次學期開始前完成更正",
+            "4. 更正後成績將重新產出正式成績單"
+        ],
+        "required_docs": "成績更正申請單（系主任簽章）",
+        "office_hours": "週一至週五 09:00 - 16:30 (行政大樓註冊組)",
+        "contact_phone": "02-2632-1181 分機 310 (註冊組)",
+        "audience": "老師"
+    },
+    {
+        "item_id": 8,
+        "category_id": 2,
+        "category_name": "學務處",
+        "business_name": "導師班務通報與期中期末座談",
+        "steps_json": [
+            "1. 每學期至少安排一次班會或個別晤談",
+            "2. 將學生出缺勤、獎懲及輔導紀錄填寫於導師手冊系統",
+            "3. 期中預警名單公告後，需於輔導期內完成受輔導學生之面談紀錄",
+            "4. 學期末提交班級輔導總結報告"
+        ],
+        "required_docs": "導師輔導紀錄表",
+        "office_hours": "線上系統 24 小時開放受理",
+        "contact_phone": "02-2632-1181 分機 410 (生輔組)",
+        "audience": "老師"
     }
 ]
 
@@ -644,6 +698,18 @@ CAMPUS_CONTACT_DIRECTORY = [
     {"office": "招生服務中心", "phone": "02-2632-1181 分機 302", "scope": "升學簡章、五專四技入學諮詢"}
 ]
 
+# 跨系統期限雷達分類 → 承辦處室對應表 (供已過期期限提供「事後仍要辦理」的洽詢窗口)
+DEADLINE_CATEGORY_CONTACT = {
+    "選課": {"office": "教務處課務組", "phone": "02-2632-1181 分機 312"},
+    "抵免": {"office": "教務處註冊組", "phone": "02-2632-1181 分機 310"},
+    "獎助學金": {"office": "學務處生輔組", "phone": "02-2632-1181 分機 410"},
+    "學習預警": {"office": "學務處生輔組", "phone": "02-2632-1181 分機 410"},
+    "考試": {"office": "教務處課務組", "phone": "02-2632-1181 分機 312"},
+    "教學評量": {"office": "教務處註冊組", "phone": "02-2632-1181 分機 310"},
+    "教師行政": {"office": "教務處課務組", "phone": "02-2632-1181 分機 312"},
+}
+DEADLINE_DEFAULT_CONTACT = {"office": "教務處課務組", "phone": "02-2632-1181 分機 312"}
+
 # 跨系統期限雷達：把選課/請假/抵免/獎助學金/教學評量等既有系統的期限整合成單一清單
 # (校方系統無公開 API 可串接，期限資料由行政單位人工建檔維護)
 DEMO_DEADLINES = [
@@ -653,7 +719,12 @@ DEMO_DEADLINES = [
     {"deadline_id": 4, "title": "期中學業預警名單公告與輔導期", "category": "學習預警", "start_date": "2026-11-01", "end_date": "2026-11-05", "applies_to_role": "all", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "被列入預警名單者將由導師安排面談，家長可同步關注。"},
     {"deadline_id": 5, "title": "資訊科技與應用學系專題期中審查", "category": "選課", "start_date": None, "end_date": "2026-11-10", "applies_to_role": "學生", "applies_to_dept": "CS", "applies_to_dept_name": "資訊科技與應用學系", "related_system_url": "https://www.ukn.edu.tw/", "description": "專題小組須完成期中進度報告並提交指導教師審核。"},
     {"deadline_id": 6, "title": "停修（棄修）申請截止（第10-12週）", "category": "選課", "start_date": "2026-11-09", "end_date": "2026-11-20", "applies_to_role": "學生", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "逾期不受理，停修後修習學分不得低於最低應修學分。"},
-    {"deadline_id": 7, "title": "教學評量填寫期間截止", "category": "教學評量", "start_date": "2026-12-15", "end_date": "2026-12-25", "applies_to_role": "學生", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "完成填寫始可查詢學期成績，請於期末考前完成。"}
+    {"deadline_id": 7, "title": "教學評量填寫期間截止", "category": "教學評量", "start_date": "2026-12-15", "end_date": "2026-12-25", "applies_to_role": "學生", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "完成填寫始可查詢學期成績，請於期末考前完成。"},
+    # 老師專屬事項：與學生端的選課/請假/獎學金無關，是教師自己的行政行程 (會議、成績繳交等)
+    {"deadline_id": 8, "title": "導師班務座談會", "category": "教師行政", "start_date": None, "end_date": "2026-10-15", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "各班導師與學務處生輔組召開期初班務座談，說明本學期預警與輔導重點。"},
+    {"deadline_id": 9, "title": "期中教學研討會議", "category": "教師行政", "start_date": None, "end_date": "2026-11-12", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "全校教師參加，說明期中預警名單與教學評量作業重點。"},
+    {"deadline_id": 10, "title": "期中成績繳交截止", "category": "教師行政", "start_date": None, "end_date": "2026-11-18", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "請於期限內至教師成績登錄系統完成期中成績輸入。"},
+    {"deadline_id": 11, "title": "期末成績繳交截止", "category": "教師行政", "start_date": None, "end_date": "2027-01-15", "applies_to_role": "老師", "applies_to_dept": None, "applies_to_dept_name": None, "related_system_url": "https://www.ukn.edu.tw/", "description": "請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。"}
 ]
 
 # ==========================================
@@ -731,6 +802,7 @@ def auth_login():
         session["dept_id"] = user_record.get("dept_id")
         session["dept_name"] = user_record.get("dept_name", "資訊科技與應用學系")
         session["class_name"] = user_record.get("class_name", "")
+        session["advised_class"] = user_record.get("advised_class")
 
         return jsonify({
             "status": "success",
@@ -742,7 +814,8 @@ def auth_login():
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
                 "dept_name": user_record.get("dept_name", ""),
-                "class_name": user_record.get("class_name", "")
+                "class_name": user_record.get("class_name", ""),
+                "advised_class": user_record.get("advised_class")
             }
         }), 200
 
@@ -769,6 +842,7 @@ def auth_me():
                 "student_id": session.get("student_id"),
                 "dept_name": session.get("dept_name", ""),
                 "class_name": session.get("class_name", ""),
+                "advised_class": session.get("advised_class"),
                 "visitor_type": session.get("visitor_type")
             }
         }), 200
@@ -1543,6 +1617,62 @@ def export_graduation_dashboard_csv():
     return response
 
 # ==========================================
+# 7c. 導師班級總表 API (/api/teacher/class-summary)
+#     導師登入後不必一個個輸入學號查詢，直接看到自己導師班級全體學生的
+#     畢業學分與證照達成度總表；教職員/管理員則可指定任意班級查詢。
+# ==========================================
+
+def _get_class_student_ids(class_name):
+    """取得指定班級的學號清單 (依學號排序)，DB 連線可用時走 MySQL，否則退回示範資料"""
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT student_id FROM students WHERE class_name = %s ORDER BY student_id", (class_name,))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            if rows:
+                return [r["student_id"] for r in rows]
+        except Exception:
+            if conn: conn.close()
+    return [s["student_id"] for s in DEMO_STUDENTS if s["class_name"] == class_name]
+
+@app.route("/api/teacher/class-summary", methods=["GET"])
+@login_required
+def teacher_class_summary():
+    role = session.get("role")
+    if role not in ("老師", "教職員", "管理員"):
+        return jsonify({"status": "error", "message": "此身分無權查詢班級總表"}), 403
+
+    # 老師預設查詢自己擔任導師的班級；教職員/管理員可用 ?class_name= 指定任意班級
+    class_name = request.args.get("class_name") or session.get("advised_class")
+    if not class_name:
+        return jsonify({"status": "error", "message": "請提供欲查詢之班級名稱 (class_name)"}), 400
+
+    student_ids = _get_class_student_ids(class_name)
+    if not student_ids:
+        return jsonify({"status": "error", "message": f"查無「{class_name}」班級的學生資料"}), 404
+
+    students = []
+    for sid in student_ids:
+        data = _compute_graduation_dashboard(sid)
+        if not data:
+            continue
+        students.append({
+            "student_id": data["student"]["student_id"],
+            "full_name": data["student"]["full_name"],
+            "credits_earned": data["credits"]["earned"],
+            "credits_threshold": data["credits"]["threshold"],
+            "credits_progress_percent": data["credits"]["progress_percent"],
+            "certs_owned": data["certificates"]["owned_count"],
+            "certs_required": data["certificates"]["required"],
+            "overall_meets_graduation_requirement": data["overall_meets_graduation_requirement"]
+        })
+
+    return jsonify({"status": "success", "class_name": class_name, "students": students}), 200
+
+# ==========================================
 # 8b. 跨系統期限雷達 API (/api/deadlines)
 #     把選課/請假/抵免/獎助學金/教學評量等既有系統的期限整合成單一清單；
 #     預設 (scope=all) 回傳完整校曆供行事曆月曆瀏覽，scope=upcoming 則只顯示尚未截止者。
@@ -1579,6 +1709,13 @@ def _attach_deadline_urgency(rows, today):
         title = row.get("title", "")
         cat = row.get("category", "")
         row["is_credit_related"] = any(k in title for k in credit_keywords) or cat in ["選課", "抵免", "學習預警", "考試", "教學評量"]
+
+        # 已結束的期限：仍可能有人事後需要補辦，附上對應承辦處室資訊供詢問
+        if row["urgency"] == "past":
+            contact = DEADLINE_CATEGORY_CONTACT.get(cat, DEADLINE_DEFAULT_CONTACT)
+            row["contact_office"] = contact["office"]
+            row["contact_phone"] = contact["phone"]
+
         result.append(row)
     result.sort(key=lambda x: x["end_date"])
     return result
@@ -2293,8 +2430,17 @@ def delete_synonym(synonym_id):
     DEMO_SYNONYMS = [s for s in DEMO_SYNONYMS if s["synonym_id"] != synonym_id]
     return jsonify({"status": "success", "message": "同義詞刪除成功！"}), 200
 
+def _filter_checklists_by_audience(items, role):
+    """老師只看老師專屬流程；學生/家長/訪客只看學生流程；教職員/管理員需要管理兩邊，全部顯示"""
+    if role in ("教職員", "管理員"):
+        return items
+    if role == "老師":
+        return [i for i in items if i.get("audience") == "老師"]
+    return [i for i in items if i.get("audience", "學生") != "老師"]
+
 @app.route("/api/checklists", methods=["GET"])
 def get_checklists():
+    role = session.get("role", "訪客")
     conn = get_db_connection()
     if conn:
         try:
@@ -2307,11 +2453,11 @@ def get_checklists():
                     except Exception: r["steps_json"] = [r["steps_json"]]
             cursor.close()
             conn.close()
-            return jsonify({"status": "success", "data": rows}), 200
+            return jsonify({"status": "success", "data": _filter_checklists_by_audience(rows, role)}), 200
         except Exception:
             if conn: conn.close()
 
-    return jsonify({"status": "success", "data": DEMO_CHECKLISTS}), 200
+    return jsonify({"status": "success", "data": _filter_checklists_by_audience(DEMO_CHECKLISTS, role)}), 200
 
 @app.route("/api/courses", methods=["GET"])
 def get_courses():

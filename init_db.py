@@ -66,6 +66,7 @@ def init_database():
               `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL,
               `student_id` varchar(20) DEFAULT NULL,
               `full_name` varchar(50) NOT NULL,
+              `advised_class` varchar(50) DEFAULT NULL,
               `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
               PRIMARY KEY (`user_id`),
               UNIQUE KEY `uk_username` (`username`),
@@ -206,6 +207,7 @@ def init_database():
               `required_docs` text DEFAULT NULL,
               `office_hours` varchar(100) DEFAULT NULL,
               `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 310',
+              `audience` varchar(20) NOT NULL DEFAULT '學生',
               PRIMARY KEY (`item_id`),
               KEY `fk_chk_cat` (`category_id`),
               CONSTRAINT `fk_chk_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL

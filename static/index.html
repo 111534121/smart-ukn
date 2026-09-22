@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart UKN 康寧大學智慧校園規章與全方位行政服務平台</title>
+    <title>Smart UKN 康寧大學智慧校園服務平台</title>
     <!-- Modern Typography & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,7 +55,7 @@
         }
 
         .dropdown-glow {
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
         /* Custom scrollbar */
@@ -79,14 +79,14 @@
 
         /* Calendar styles */
         .cal-day {
-            min-height: 80px;
+            min-height: 100px;
             transition: background 0.15s;
         }
         .cal-day:hover { background: #f0f5ff; cursor: pointer; }
         .cal-day.today { background: #e0ecff; border: 2px solid #1b47cc; }
         .cal-day.other-month { opacity: 0.4; }
         .cal-event-dot {
-            width: 6px; height: 6px;
+            width: 7px; height: 7px;
             border-radius: 50%;
             display: inline-block;
         }
@@ -101,11 +101,6 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-        .urgent-pulse { animation: pulse-dot 1.5s ease-in-out infinite; }
     </style>
 </head>
 
@@ -122,16 +117,11 @@
                 <!-- Logo & 系統標題 -->
                 <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('tab-ai')">
                     <div
-                        class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
+                        class="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
                         <span class="text-xl font-black text-ukn-950">UKN</span>
                     </div>
                     <div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-lg sm:text-xl font-bold tracking-tight">Smart UKN</span>
-                            <span
-                                class="text-[10px] bg-amber-400/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">v3.0
-                                3NF 旗艦版</span>
-                        </div>
+                        <span class="text-lg sm:text-xl font-bold tracking-tight">Smart UKN</span>
                         <p class="text-[11px] text-blue-200 hidden sm:block">康寧大學智慧校園規章與行政檢索系統</p>
                     </div>
                 </div>
@@ -139,10 +129,9 @@
                 <!-- 使用者登入身分狀態條 (Role Badge & Info) -->
                 <div class="flex items-center space-x-3">
 
-                    <!-- 使用者資訊膠囊 -->
+                    <!-- 使用者資訊 -->
                     <div id="currentUserBadge"
-                        class="flex items-center space-x-2.5 bg-ukn-800/90 px-3.5 py-1.5 rounded-full border border-blue-400/30 text-xs">
-                        <span id="roleIcon" class="text-base">👨‍🎓</span>
+                        class="flex items-center space-x-2.5 bg-ukn-800/90 px-3.5 py-1.5 rounded-lg border border-ukn-700 text-xs">
                         <div class="text-left">
                             <div class="font-bold text-white flex items-center gap-1.5">
                                 <span id="userFullName">王小明</span>
@@ -157,19 +146,19 @@
                     <!-- 登出按鈕：僅登入時顯示，呼叫登出 API 後導向登入頁 -->
                     <button onclick="handleLogout()" id="logoutBtn"
                         class="hidden text-xs bg-white/10 hover:bg-white/20 text-blue-100 hover:text-white px-3 py-1.5 rounded-lg transition border border-white/10 items-center gap-1">
-                        <span>🚪 登出</span>
+                        <span>登出</span>
                     </button>
 
                     <!-- 切換身分 / 登入按鈕 -->
                     <a href="/login"
                         class="text-xs bg-white/10 hover:bg-white/20 text-blue-100 hover:text-white px-3 py-1.5 rounded-lg transition border border-white/10 flex items-center gap-1">
-                        <span>🔄 切換身分</span>
+                        <span>切換身分</span>
                     </a>
 
                     <!-- 管理者後台入口：僅教職員/管理員顯示 -->
                     <a href="/admin" target="_blank" id="adminEntryLink"
-                        class="hidden sm:flex bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow items-center gap-1 border border-blue-400/30">
-                        <span>⚙️ 後台</span>
+                        class="hidden sm:flex bg-ukn-700 hover:bg-ukn-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition items-center gap-1 border border-blue-400/30">
+                        <span>後台</span>
                     </a>
                 </div>
             </div>
@@ -178,37 +167,30 @@
             <div class="flex space-x-1 sm:space-x-4 pt-1 overflow-x-auto no-scrollbar text-sm">
                 <button onclick="switchTab('tab-ai')" id="tabBtn-ai"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-bold flex items-center space-x-2 text-amber-300 border-amber-400">
-                    <span>🤖</span>
                     <span>AI 智慧校規問答</span>
                 </button>
                 <button onclick="switchTab('tab-checklist')" id="tabBtn-checklist"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>📋</span>
                     <span>行政申辦流程指引</span>
                 </button>
                 <button onclick="switchTab('tab-course')" id="tabBtn-course"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>🎓</span>
                     <span>個人學分與擋修診斷</span>
                 </button>
                 <button onclick="switchTab('tab-graduation')" id="tabBtn-graduation"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>🎯</span>
                     <span>畢業門檻儀表板</span>
                 </button>
                 <button onclick="switchTab('tab-calendar')" id="tabBtn-calendar"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>📅</span>
                     <span>校曆行事曆</span>
                 </button>
                 <button onclick="switchTab('tab-portfolio')" id="tabBtn-portfolio"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>🏆</span>
                     <span>證照與競賽成果</span>
                 </button>
                 <button onclick="switchTab('tab-admin-embedded')" id="tabBtn-admin-embedded"
                     class="tab-item py-3 px-3 sm:px-4 border-b-2 font-medium flex items-center space-x-2 text-blue-200 border-transparent hover:text-white">
-                    <span>📊</span>
                     <span>訪客留痕與管理中心</span>
                 </button>
             </div>
@@ -223,237 +205,188 @@
         <!-- ======================================================== -->
         <div id="tab-ai" class="tab-content space-y-6">
 
-            <!-- Hero Search & Guided Selection Section -->
-            <section
-                class="hero-gradient text-white rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden space-y-6">
-                <div
-                    class="absolute -right-10 -bottom-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl pointer-events-none">
-                </div>
-                <div
-                    class="absolute -left-10 -top-10 w-60 h-60 bg-amber-400/10 rounded-full blur-3xl pointer-events-none">
+            <!-- 查詢面板：分類選單、關鍵字搜尋與結果都在同一個工作面板內 -->
+            <section class="bg-white rounded-lg border border-slate-200 shadow-sm">
+
+                <div class="p-6 sm:p-8 border-b border-slate-100">
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-900">校規與申辦規定查詢</h1>
+                    <p class="text-slate-500 text-xs sm:text-sm mt-1">選擇分類查閱，或直接輸入口語說法搜尋</p>
                 </div>
 
-                <div class="max-w-3xl mx-auto text-center relative z-10 space-y-3">
-                    <div
-                        class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold text-amber-300 border border-white/15">
-                        <span>✨</span>
-                        <span>極致防呆引導 · 官方核定規章 100% 精準檢索</span>
-                    </div>
-
-                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">請問今天想查詢什麼校規或申辦規定？</h1>
-                    <p class="text-blue-100 text-xs sm:text-base font-normal">可透過下方「分級下拉選單」零失誤精確查閱，亦可直接於搜尋框中輸入口語俗稱</p>
-                </div>
-
-                <!-- 🔥 核心防呆亮點：引導式分級聯動下拉選單 (Zero-Fail Guided Dropdown) -->
-                <div
-                    class="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-white/20 shadow-xl dropdown-glow space-y-3">
-                    <div class="flex items-center justify-between text-xs font-bold text-amber-300">
-                        <span class="flex items-center gap-1.5">
-                            <span>🎯</span>
-                            <span>快速引導分類查詢（強烈推薦 · 零錯誤防呆）：</span>
-                        </span>
-                        <span class="text-blue-200 font-normal hidden sm:inline">直接選取官方核定主題</span>
-                    </div>
-
+                <div class="p-6 sm:p-8 space-y-4">
+                    <!-- 引導式分級聯動下拉選單 -->
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <!-- 第 1 級：大分類選單 -->
                         <div class="sm:col-span-5">
+                            <label class="block text-xs font-medium text-slate-500 mb-1.5">分類</label>
                             <select id="primaryCategorySelect" onchange="handlePrimaryCategoryChange()"
-                                class="w-full bg-white text-slate-800 font-semibold px-4 py-3 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400 text-xs sm:text-sm">
-                                <option value="">📌 步驟 1：請選擇諮詢大類...</option>
+                                class="w-full bg-white text-slate-800 px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 text-sm">
+                                <option value="">請選擇諮詢大類</option>
                             </select>
                         </div>
-
-                        <!-- 第 2 級：子項目選單 -->
                         <div class="sm:col-span-5">
+                            <label class="block text-xs font-medium text-slate-500 mb-1.5">子項目</label>
                             <select id="subCategorySelect"
-                                class="w-full bg-white text-slate-800 font-semibold px-4 py-3 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400 text-xs sm:text-sm"
+                                class="w-full bg-white text-slate-800 px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 text-sm disabled:bg-slate-50 disabled:text-slate-400"
                                 disabled>
-                                <option value="">⏳ 步驟 2：請先選擇大類</option>
+                                <option value="">請先選擇大類</option>
                             </select>
                         </div>
-
-                        <!-- 立即查閱按鈕 -->
-                        <div class="sm:col-span-2">
+                        <div class="sm:col-span-2 flex flex-col justify-end">
                             <button onclick="handleGuidedQuery()" id="guidedSearchBtn"
-                                class="w-full h-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-ukn-950 font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center space-x-1 active:scale-95 text-xs sm:text-sm">
-                                <span>查閱</span>
-                                <span>➔</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 手動關鍵字輸入搜尋框 (支援同義詞與安全防呆) -->
-                <div class="max-w-3xl mx-auto">
-                    <div
-                        class="bg-white p-2 rounded-2xl shadow-xl flex flex-col sm:flex-row gap-2 border border-white/20">
-                        <div class="relative flex-grow flex items-center">
-                            <span class="absolute left-4 text-slate-400 text-lg">🔍</span>
-                            <input type="text" id="searchInput" placeholder="手動搜尋：我想棄修、英文免修、病假怎麼請、被當掉..."
-                                class="w-full pl-11 pr-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none text-xs sm:text-base">
-                        </div>
-                        <button onclick="handleSearch()" id="searchBtn"
-                            class="bg-ukn-700 hover:bg-ukn-800 text-white font-bold px-6 py-3 rounded-xl transition shadow flex items-center justify-center space-x-2 active:scale-95 text-xs sm:text-sm">
-                            <span>搜尋規章</span>
-                            <span>→</span>
-                        </button>
-                    </div>
-
-                    <!-- 熱門標籤快選推薦 -->
-                    <div class="mt-4 flex items-center justify-center flex-wrap gap-2 text-xs">
-                        <span class="text-blue-200 font-semibold mr-1">💡 常見俗稱對照：</span>
-                        <button onclick="quickSearch('棄修')"
-                            class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">棄修
-                            ➔ 停修規定</button>
-                        <button onclick="quickSearch('英文免修')"
-                            class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">英文免修
-                            ➔ 證照抵免</button>
-                        <button onclick="quickSearch('請假規定')"
-                            class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">請假手續</button>
-                        <button onclick="quickSearch('二一退學')"
-                            class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">二一退學學則</button>
-                        <button onclick="quickSearch('補辦學生證')"
-                            class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full transition backdrop-blur-sm border border-white/10">補辦學生證</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 搜尋結果顯示區 (Result Section) -->
-            <section id="resultSection" class="hidden space-y-4">
-
-                <!-- 同義詞對照提示徽章 (Synonym Badge) -->
-                <div id="synonymBadge"
-                    class="hidden bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-900 px-5 py-3.5 rounded-2xl shadow-sm flex items-center justify-between">
-                    <div class="flex items-center space-x-3 text-xs sm:text-sm">
-                        <span class="text-xl">💡</span>
-                        <div>
-                            <span>智慧同義詞轉換：您輸入的「<strong id="searchedTermText"
-                                    class="text-emerald-700 font-bold"></strong>」，系統已自動對應至學校官方標準名稱「<strong
-                                    id="officialTermText"
-                                    class="text-emerald-700 underline font-bold"></strong>」進行精準檢索。</span>
-                        </div>
-                    </div>
-                    <span
-                        class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full">詞彙已校正</span>
-                </div>
-
-                <!-- 狀況 A: 找到規章解答主卡片 (Success Match Card) -->
-                <div id="successResultCard"
-                    class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200 space-y-6">
-
-                    <!-- 卡片頂部標題與操作 -->
-                    <div
-                        class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-                        <div class="flex items-center space-x-3">
-                            <div
-                                class="w-10 h-10 rounded-2xl bg-ukn-50 flex items-center justify-center text-ukn-700 text-xl border border-ukn-100">
-                                📜
-                            </div>
-                            <div>
-                                <h3 class="text-lg sm:text-xl font-bold text-slate-900" id="resultCardTitle">學校官方規章核定解答
-                                </h3>
-                                <p class="text-xs text-slate-400">來源依據康寧大學正式法規與教務處條文</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="copyAnswerText()"
-                                class="text-xs font-semibold text-slate-600 hover:text-ukn-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-                                <span>📋 複製內容</span>
-                            </button>
-                            <button onclick="openDocModal()"
-                                class="text-xs font-semibold text-ukn-700 hover:text-white bg-ukn-50 hover:bg-ukn-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1 border border-ukn-200">
-                                <span>📄 閱讀條文全文</span>
+                                class="w-full bg-ukn-800 hover:bg-ukn-900 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+                                查閱
                             </button>
                         </div>
                     </div>
 
-                    <!-- 條文詳細回答區塊 -->
-                    <div
-                        class="bg-gradient-to-br from-slate-50 to-blue-50/40 p-5 sm:p-6 rounded-2xl border border-blue-100 text-slate-800 text-sm sm:text-base leading-relaxed space-y-3">
-                        <div class="text-xs font-bold uppercase tracking-wider text-ukn-700 flex items-center">
-                            <span class="w-2 h-2 rounded-full bg-ukn-600 mr-2"></span> 正式條文解答摘要
+                    <!-- 手動關鍵字輸入搜尋框 (支援同義詞與安全防呆) -->
+                    <div class="pt-3 border-t border-slate-100">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="searchInput" placeholder="搜尋：我想棄修、英文免修、病假怎麼請、被當掉..."
+                                class="flex-grow px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-ukn-500 text-sm">
+                            <button onclick="handleSearch()" id="searchBtn"
+                                class="bg-slate-800 hover:bg-slate-900 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm">
+                                搜尋
+                            </button>
                         </div>
-                        <p id="answerBox" class="text-slate-800 font-medium"></p>
-                    </div>
 
-                    <!-- 建議辦理步驟清單 (Checklist) -->
-                    <div id="checklistGroup" class="bg-amber-50/50 p-5 rounded-2xl border border-amber-100 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-xs sm:text-sm font-bold text-amber-900 flex items-center">
-                                <span class="mr-2">📋</span> 建議辦理步驟與注意事項：
-                            </h4>
-                            <span class="text-xs text-amber-700">（可直接勾選紀錄進度）</span>
-                        </div>
-                        <ul id="checklistUl" class="space-y-2 text-xs sm:text-sm text-slate-700"></ul>
-
-                        <div
-                            class="pt-3 border-t border-amber-200/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-amber-950">
-                            <div><strong>📌 應備文件：</strong><span id="chkRequiredDocs">-</span></div>
-                            <div><strong>🕒 辦公時間：</strong><span id="chkOfficeHours">-</span></div>
-                            <div><strong>📞 洽詢電話：</strong><span id="chkPhone" class="font-bold text-ukn-800">-</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 參考法規出處與官方連結 -->
-                    <div
-                        class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div class="flex items-center space-x-2 text-xs sm:text-sm text-slate-500">
-                            <span class="font-medium text-slate-600">🏛️ 法規出處：</span>
-                            <span id="docNameText"
-                                class="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md"></span>
-                            <span class="bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded text-xs">第 <span
-                                    id="pageNumText">1</span> 頁</span>
-                        </div>
-                        <a id="sourceUrlBtn" href="https://www.ukn.edu.tw" target="_blank"
-                            class="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-bold text-ukn-700 hover:text-ukn-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition border border-blue-200">
-                            <span>開啟學校法規原始下載頁面</span>
-                            <span>↗</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 狀況 B: 安全邊界防呆卡片 (Safety Guardrail Card - 查無資料時友善指引) -->
-                <div id="safetyFallbackCard"
-                    class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-amber-200 space-y-6">
-                    <div class="flex items-center space-x-3 text-amber-800 pb-3 border-b border-amber-100">
-                        <span class="text-2xl">🛡️</span>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900">安全邊界控制與防呆提示</h3>
-                            <p class="text-xs text-slate-500">本系統僅依據學校核可之法規庫回答，絕不胡亂生成未經驗證之內容</p>
-                        </div>
-                    </div>
-
-                    <div
-                        class="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 text-slate-800 text-xs sm:text-sm space-y-2">
-                        <p id="safetyMessageText" class="font-medium leading-relaxed"></p>
-                    </div>
-
-                    <!-- 推薦主題按鈕 -->
-                    <div class="space-y-2">
-                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">💡 您是不是想查詢以下熱門校務規定？</h4>
-                        <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                        <!-- 常見俗稱快選 -->
+                        <div class="mt-3 flex items-center flex-wrap gap-2 text-xs">
+                            <span class="text-slate-400 mr-1">常見俗稱：</span>
                             <button onclick="quickSearch('棄修')"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">停修/棄修手續</button>
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition">棄修</button>
                             <button onclick="quickSearch('英文免修')"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">外語證照抵免</button>
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition">英文免修</button>
                             <button onclick="quickSearch('請假規定')"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學生請假辦法</button>
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition">請假手續</button>
                             <button onclick="quickSearch('二一退學')"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學業退學規定</button>
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition">二一退學</button>
                             <button onclick="quickSearch('補辦學生證')"
-                                class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-xl border border-slate-200 transition">學生證遺失補發</button>
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition">補辦學生證</button>
                         </div>
                     </div>
 
-                    <!-- 全校各處室專責分機指引清單 -->
-                    <div class="space-y-2 pt-2 border-t border-slate-100">
-                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">📞 全校相關業務專責單位聯絡電話：</h4>
-                        <div id="contactDirectoryGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
-                    </div>
-                </div>
+                    <!-- 搜尋結果顯示區 (Result Section) -->
+                    <section id="resultSection" class="hidden pt-2 space-y-4">
 
+                        <!-- 同義詞對照提示徽章 (Synonym Badge) -->
+                        <div id="synonymBadge"
+                            class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-lg flex items-center justify-between">
+                            <div class="text-xs sm:text-sm">
+                                <span>您輸入的「<strong id="searchedTermText"
+                                        class="text-emerald-700 font-bold"></strong>」已對應至學校官方標準名稱「<strong
+                                        id="officialTermText"
+                                        class="text-emerald-700 underline font-bold"></strong>」。</span>
+                            </div>
+                            <span
+                                class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-lg">詞彙已校正</span>
+                        </div>
+
+                        <!-- 狀況 A: 找到規章解答主卡片 (Success Match Card) -->
+                        <div id="successResultCard"
+                            class="border border-slate-200 rounded-lg p-5 sm:p-6 space-y-5">
+
+                            <!-- 卡片頂部標題與操作 -->
+                            <div
+                                class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                                <div>
+                                    <h3 class="text-base sm:text-lg font-bold text-slate-900" id="resultCardTitle">學校官方規章核定解答
+                                    </h3>
+                                    <p class="text-xs text-slate-400">來源依據康寧大學正式法規與教務處條文</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="copyAnswerText()"
+                                        class="text-xs font-semibold text-slate-600 hover:text-ukn-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                                        複製內容
+                                    </button>
+                                    <button onclick="openDocModal()"
+                                        class="text-xs font-semibold text-ukn-700 hover:text-white bg-ukn-50 hover:bg-ukn-700 px-3 py-1.5 rounded-lg transition border border-ukn-200">
+                                        閱讀條文全文
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 條文詳細回答區塊 -->
+                            <div
+                                class="bg-slate-50 p-4 sm:p-5 rounded-lg text-slate-800 text-sm sm:text-base leading-relaxed space-y-2">
+                                <div class="text-xs font-bold uppercase tracking-wider text-ukn-700">正式條文解答摘要</div>
+                                <p id="answerBox" class="text-slate-800 font-medium"></p>
+                            </div>
+
+                            <!-- 建議辦理步驟清單 (Checklist) -->
+                            <div id="checklistGroup" class="bg-amber-50/50 p-4 sm:p-5 rounded-lg border border-amber-100 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-xs sm:text-sm font-bold text-amber-900">建議辦理步驟與注意事項</h4>
+                                    <span class="text-xs text-amber-700">（可直接勾選紀錄進度）</span>
+                                </div>
+                                <ul id="checklistUl" class="space-y-2 text-xs sm:text-sm text-slate-700"></ul>
+
+                                <div
+                                    class="pt-3 border-t border-amber-200/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-amber-950">
+                                    <div><strong>應備文件：</strong><span id="chkRequiredDocs">-</span></div>
+                                    <div><strong>辦公時間：</strong><span id="chkOfficeHours">-</span></div>
+                                    <div><strong>洽詢電話：</strong><span id="chkPhone" class="font-bold text-ukn-800">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 參考法規出處與官方連結 -->
+                            <div
+                                class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div class="flex items-center space-x-2 text-xs sm:text-sm text-slate-500">
+                                    <span class="font-medium text-slate-600">法規出處：</span>
+                                    <span id="docNameText"
+                                        class="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md"></span>
+                                    <span class="bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded text-xs">第 <span
+                                            id="pageNumText">1</span> 頁</span>
+                                </div>
+                                <a id="sourceUrlBtn" href="https://www.ukn.edu.tw" target="_blank"
+                                    class="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-bold text-ukn-700 hover:text-ukn-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition border border-blue-200">
+                                    <span>開啟學校法規原始下載頁面</span>
+                                    <span>↗</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 狀況 B: 安全邊界防呆卡片 (Safety Guardrail Card - 查無資料時友善指引) -->
+                        <div id="safetyFallbackCard"
+                            class="hidden border border-amber-200 rounded-lg p-5 sm:p-6 space-y-5">
+                            <div class="pb-3 border-b border-amber-100">
+                                <h3 class="text-base font-bold text-slate-900">查無相關規章</h3>
+                                <p class="text-xs text-slate-500 mt-0.5">本系統僅依據學校核可之法規庫回答，不會自行生成未經驗證之內容</p>
+                            </div>
+
+                            <div
+                                class="bg-amber-50/70 p-4 sm:p-5 rounded-lg border border-amber-200 text-slate-800 text-xs sm:text-sm space-y-2">
+                                <p id="safetyMessageText" class="font-medium leading-relaxed"></p>
+                            </div>
+
+                            <!-- 推薦主題按鈕 -->
+                            <div class="space-y-2">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">您是不是想查詢以下規定？</h4>
+                                <div class="flex flex-wrap gap-2 text-xs font-semibold">
+                                    <button onclick="quickSearch('棄修')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-lg border border-slate-200 transition">停修/棄修手續</button>
+                                    <button onclick="quickSearch('英文免修')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-lg border border-slate-200 transition">外語證照抵免</button>
+                                    <button onclick="quickSearch('請假規定')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-lg border border-slate-200 transition">學生請假辦法</button>
+                                    <button onclick="quickSearch('二一退學')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-lg border border-slate-200 transition">學業退學規定</button>
+                                    <button onclick="quickSearch('補辦學生證')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-ukn-50 text-slate-700 hover:text-ukn-800 rounded-lg border border-slate-200 transition">學生證遺失補發</button>
+                                </div>
+                            </div>
+
+                            <!-- 全校各處室專責分機指引清單 -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">相關業務專責單位聯絡電話</h4>
+                                <div id="contactDirectoryGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
             </section>
 
         </div>
@@ -462,7 +395,7 @@
         <!-- 模組 2: 行政申辦流程指引 (Tab Checklist) -->
         <!-- ======================================================== -->
         <div id="tab-checklist" class="tab-content hidden space-y-6">
-            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+            <div class="bg-white rounded-xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
 
                 <div
                     class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -502,22 +435,19 @@
 
             <!-- 學生個人學分看板 (Session 自動連動) -->
             <div
-                class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+                class="bg-ukn-950 text-white rounded-xl p-6 sm:p-8 shadow-sm space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <div
-                            class="inline-flex items-center space-x-2 bg-amber-400/20 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
-                            <span>🎓</span>
-                            <span id="studentDiagnosisTag">登入 Session 連動 · 歷年成績與擋修條件自動診斷</span>
-                        </div>
-                        <h2 class="text-2xl sm:text-3xl font-extrabold" id="studentDiagnosisTitle">個人學分診斷與先修擋修預警</h2>
-                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="studentDiagnosisSubtitle">系統已自動依據您的學號向
-                            MySQL 成績表撈取已通過科目，並即時套用擋修防呆！</p>
+                        <div class="text-xs font-semibold text-blue-200 mb-2" id="studentDiagnosisTag">登入 Session 連動 ·
+                            歷年成績與擋修條件自動診斷</div>
+                        <h2 class="text-2xl sm:text-3xl font-bold" id="studentDiagnosisTitle">個人學分診斷與先修擋修預警</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="studentDiagnosisSubtitle">系統會依據您的學號自動查詢
+                            成績並套用擋修檢查</p>
                     </div>
 
                     <!-- 學分試算數字卡片 -->
                     <div
-                        class="flex items-center gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                        class="flex items-center gap-3 bg-white/10 p-4 rounded-lg border border-white/15">
                         <div class="text-center px-3 border-r border-white/15">
                             <div class="text-2xl sm:text-3xl font-black text-amber-300" id="statPassedCredits">0</div>
                             <div class="text-[11px] text-blue-200">已獲學分</div>
@@ -541,27 +471,23 @@
                     </div>
                     <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden p-0.5">
                         <div id="creditProgressBar"
-                            class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                            class="bg-amber-400 h-full rounded-full transition-all duration-500"
                             style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
             <!-- 不及格科目與修課風險：與「尚未修習」明確區分 -->
-            <div id="academicAlertPanel" class="hidden rounded-3xl border p-5 sm:p-6 shadow-sm"></div>
+            <div id="academicAlertPanel" class="hidden rounded-xl border p-5 sm:p-6 shadow-sm"></div>
 
             <!-- 即期學業期限迷你提醒條 (點擊跳轉至校曆行事曆) -->
-            <div id="miniDeadlineBanner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+            <div id="miniDeadlineBanner" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
                 <div class="flex items-center justify-between flex-wrap gap-3">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xl urgent-pulse">⏰</span>
-                        <div>
-                            <div class="text-xs font-bold text-amber-800 mb-1">即期重要學業期限</div>
-                            <div id="miniDeadlineItems" class="flex flex-wrap gap-2"></div>
-                        </div>
+                    <div>
+                        <div class="text-xs font-bold text-amber-800 mb-1">即期重要學業期限</div>
+                        <div id="miniDeadlineItems" class="flex flex-wrap gap-2"></div>
                     </div>
-                    <button onclick="switchTab('tab-calendar')" class="flex items-center gap-1.5 text-xs font-bold bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-xl transition shadow-sm">
-                        <span>📅</span>
+                    <button onclick="switchTab('tab-calendar')" class="flex items-center gap-1.5 text-xs font-bold bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-lg transition shadow-sm">
                         <span>查看完整校曆行事曆</span>
                         <span>→</span>
                     </button>
@@ -569,7 +495,7 @@
             </div>
 
             <!-- 跨系統期限雷達：整合選課/請假/抵免/獎助學金/教學評量等既有系統的期限 -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+            <div class="bg-white rounded-xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
                         <span>📡</span> 我的期限雷達
@@ -580,7 +506,7 @@
             </div>
 
             <!-- 課程狀態卡片網格 -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+            <div class="bg-white rounded-xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-base sm:text-lg font-bold text-slate-800">全系列核心課程與先修關係一覽</h3>
                     <div class="flex items-center space-x-3 text-xs">
@@ -598,7 +524,7 @@
 
             <!-- 我的證照與競賽成果快捷導引 -->
             <div
-                class="bg-amber-50/70 rounded-3xl p-6 sm:p-8 border border-amber-200/80 space-y-4 shadow-sm">
+                class="bg-amber-50/70 rounded-xl p-6 sm:p-8 border border-amber-200/80 space-y-4 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div class="space-y-1">
                         <div class="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-800">
@@ -609,7 +535,7 @@
                         <p class="text-xs sm:text-sm text-slate-600">已全面支援上傳 PDF 檔、證照與得獎照片，並串聯勞動部技能檢定官方查驗系統！</p>
                     </div>
                     <button onclick="switchTab('tab-portfolio')"
-                        class="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-ukn-950 font-extrabold text-sm transition shadow flex items-center gap-2 self-start active:scale-95 shrink-0">
+                        class="px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-ukn-950 font-extrabold text-sm transition shadow flex items-center gap-2 self-start active:scale-95 shrink-0">
                         <span>開啟證照與競賽專區 ➔</span>
                     </button>
                 </div>
@@ -645,30 +571,27 @@
             </style>
 
             <!-- Hero Header -->
-            <div class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+            <div class="bg-ukn-950 text-white rounded-xl p-6 sm:p-8 shadow-sm space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
-                            <span>🎯</span>
-                            <span>畢業學分 220 學分 · 專業證照畢業門檻 2 張</span>
-                        </div>
-                        <h2 class="text-2xl sm:text-3xl font-extrabold">畢業門檻儀表板</h2>
-                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="gdSubtitle">一眼掌握離畢業還有多遠、還缺幾學分，並比較同屆證照取得情形</p>
+                        <div class="text-xs font-semibold text-blue-200 mb-2">畢業學分 220 學分 · 專業證照畢業門檻 2 張</div>
+                        <h2 class="text-2xl sm:text-3xl font-bold">畢業門檻儀表板</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1" id="gdSubtitle">查看離畢業還差幾學分，並比較同屆證照取得情形</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button onclick="downloadGraduationCsv()" id="gdDownloadBtn"
-                            class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition shadow active:scale-95">
-                            <span>⬇️</span><span>下載報表 (CSV)</span>
+                            class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-ukn-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg transition shadow active:scale-95">
+                            <span>下載報表 (CSV)</span>
                         </button>
                         <button onclick="window.print()"
-                            class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition border border-white/15">
-                            <span>🖨️</span><span class="hidden sm:inline">列印/PDF</span>
+                            class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-lg transition border border-white/15">
+                            <span class="hidden sm:inline">列印/PDF</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- 教職員/管理員/老師專用：輸入學號查詢 -->
-                <div id="gdSearchBar" class="hidden flex flex-col sm:flex-row gap-2 bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/15">
+                <div id="gdSearchBar" class="hidden flex flex-col sm:flex-row gap-2 bg-white/10 p-2 rounded-lg border border-white/15">
                     <input type="text" id="gdStudentIdInput" placeholder="請輸入學號查詢，例如 S112001"
                         class="flex-1 px-4 py-2.5 rounded-xl bg-white/95 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
                     <button onclick="handleGraduationSearch()"
@@ -676,8 +599,31 @@
                 </div>
             </div>
 
+            <!-- 老師專用：導師班級總表捷徑，不用一個個輸入學號查詢 -->
+            <div id="gdClassSummaryPanel" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="p-5 sm:p-6 border-b border-slate-100">
+                    <h3 class="text-base sm:text-lg font-bold text-slate-900">我的導師班級：<span id="gdClassNameText">-</span></h3>
+                    <p class="text-xs text-slate-500 mt-0.5">共 <span id="gdClassStudentCount">0</span> 位學生，點選任一列可查看該生詳細儀表板</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs">
+                                <th class="p-3 font-semibold">學號</th>
+                                <th class="p-3 font-semibold">姓名</th>
+                                <th class="p-3 font-semibold">已獲學分</th>
+                                <th class="p-3 font-semibold">證照數</th>
+                                <th class="p-3 font-semibold">畢業條件</th>
+                                <th class="p-3 font-semibold"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="gdClassSummaryBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- 查無資料 / 尚未查詢提示 -->
-            <div id="gdEmptyState" class="hidden bg-white rounded-3xl p-10 border border-slate-200 text-center text-slate-400 text-sm shadow-sm">
+            <div id="gdEmptyState" class="hidden bg-white rounded-xl p-10 border border-slate-200 text-center text-slate-400 text-sm shadow-sm">
                 請於上方輸入學號以查詢該生的畢業門檻儀表板。
             </div>
 
@@ -685,7 +631,7 @@
             <div id="gdDashboardBody" class="hidden space-y-6">
 
                 <!-- 學生資訊條 -->
-                <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl px-5 py-3.5 border border-slate-200 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg px-5 py-3.5 border border-slate-200 shadow-sm">
                     <div class="flex items-center gap-3">
                         <span class="w-10 h-10 rounded-xl bg-ukn-50 flex items-center justify-center text-lg">🎓</span>
                         <div>
@@ -698,22 +644,22 @@
 
                 <!-- 統計卡片列 -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                    <div class="gd-stat-tile rounded-lg p-4 sm:p-5">
                         <div class="text-[11px] font-bold text-slate-400 mb-1">已獲學分</div>
                         <div class="text-2xl sm:text-3xl font-black" style="color:var(--gd-blue)" id="gdStatEarned">0</div>
                         <div class="text-[11px] text-slate-400 mt-0.5">畢業門檻 220 學分</div>
                     </div>
-                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                    <div class="gd-stat-tile rounded-lg p-4 sm:p-5">
                         <div class="text-[11px] font-bold text-slate-400 mb-1">尚缺學分</div>
                         <div class="text-2xl sm:text-3xl font-black text-slate-800" id="gdStatRemaining">0</div>
                         <div class="text-[11px] text-slate-400 mt-0.5">依目前已通過科目試算</div>
                     </div>
-                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                    <div class="gd-stat-tile rounded-lg p-4 sm:p-5">
                         <div class="text-[11px] font-bold text-slate-400 mb-1">已取得證照</div>
                         <div class="text-2xl sm:text-3xl font-black" id="gdStatCerts"><span id="gdCertsOwned">0</span><span class="text-base text-slate-300">/2</span></div>
                         <div class="text-[11px] text-slate-400 mt-0.5">畢業門檻 2 張專業證照</div>
                     </div>
-                    <div class="gd-stat-tile rounded-2xl p-4 sm:p-5">
+                    <div class="gd-stat-tile rounded-lg p-4 sm:p-5">
                         <div class="text-[11px] font-bold text-slate-400 mb-1">同屆人數</div>
                         <div class="text-2xl sm:text-3xl font-black text-slate-800" id="gdCohortSize">0</div>
                         <div class="text-[11px] text-slate-400 mt-0.5" id="gdCohortYearLabel">同屆入學同學</div>
@@ -722,7 +668,7 @@
 
                 <!-- 學分進度環 + 證照門檻雙卡 -->
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
-                    <div class="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+                    <div class="lg:col-span-2 bg-white rounded-xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
                         <h3 class="text-sm font-bold text-slate-500 mb-4 self-start">🎓 畢業學分進度</h3>
                         <div class="relative w-44 h-44">
                             <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
@@ -738,7 +684,7 @@
                         <p class="text-xs text-slate-400 mt-4" id="gdCreditNote">依目前已通過學分試算，僅供參考。</p>
                     </div>
 
-                    <div class="lg:col-span-3 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+                    <div class="lg:col-span-3 bg-white rounded-xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
                         <h3 class="text-sm font-bold text-slate-500">🏆 專業證照畢業門檻 (需 2 張)</h3>
                         <div class="flex items-center gap-4" id="gdCertBadgeRow">
                             <!-- JS 動態注入 2 個徽章方塊 -->
@@ -749,7 +695,7 @@
                 </div>
 
                 <!-- 同屆統計：這屆有多少人拿到這張證照 -->
-                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
+                <div class="bg-white rounded-xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                             <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -760,7 +706,7 @@
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="rounded-2xl border border-slate-200 p-4 space-y-1.5">
+                        <div class="rounded-lg border border-slate-200 p-4 space-y-1.5">
                             <div class="flex items-center justify-between text-xs font-bold text-slate-500">
                                 <span>同屆至少擁有 1 張證照</span>
                                 <span id="gdPct1PlusText" class="text-slate-800">0%</span>
@@ -770,7 +716,7 @@
                             </div>
                             <div class="text-[11px] text-slate-400" id="gdPct1PlusSub">0 / 0 人</div>
                         </div>
-                        <div class="rounded-2xl border border-slate-200 p-4 space-y-1.5">
+                        <div class="rounded-lg border border-slate-200 p-4 space-y-1.5">
                             <div class="flex items-center justify-between text-xs font-bold text-slate-500">
                                 <span>同屆達成雙證照畢業門檻</span>
                                 <span id="gdPctThresholdText" class="text-slate-800">0%</span>
@@ -805,23 +751,20 @@
         <div id="tab-calendar" class="tab-content hidden space-y-6">
 
             <!-- Hero Header -->
-            <div class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+            <div class="bg-ukn-950 text-white rounded-xl p-6 sm:p-8 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <div class="inline-flex items-center gap-2 bg-white/10 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-400/30 mb-2">
-                            <span>📅</span>
-                            <span>115 學年度第 1 學期 · 自動依身分過濾適用期限</span>
-                        </div>
-                        <h2 class="text-2xl sm:text-3xl font-extrabold">校曆行事曆與重要期限雷達</h2>
-                        <p class="text-blue-200 text-xs sm:text-sm mt-1">整合選課、停修、抵免、獎助學金、考試週等全學期校園行程，一目了然</p>
+                        <div class="text-xs font-semibold text-blue-200 mb-2">115 學年度第 1 學期 · 自動依身分過濾適用期限</div>
+                        <h2 class="text-2xl sm:text-3xl font-bold">校曆行事曆與重要期限雷達</h2>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1">整合選課、停修、抵免、獎助學金、考試週等全學期校園行程</p>
                     </div>
                     <!-- 視圖切換 -->
-                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/15">
+                    <div class="flex items-center gap-2 bg-white/10 p-1 rounded-lg border border-white/15">
                         <button onclick="switchCalendarView('calendar')" id="calViewBtn-calendar" class="cal-view-btn active flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition">
-                            <span>🗓️</span><span class="hidden sm:inline">月曆</span>
+                            <span>月曆</span>
                         </button>
                         <button onclick="switchCalendarView('radar')" id="calViewBtn-radar" class="cal-view-btn flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-blue-200 hover:text-white transition">
-                            <span>📡</span><span class="hidden sm:inline">雷達清單</span>
+                            <span>清單</span>
                         </button>
                     </div>
                 </div>
@@ -829,7 +772,7 @@
 
             <!-- 月曆視圖 -->
             <div id="calView-calendar" class="space-y-4">
-                <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200">
+                <div class="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-slate-200">
                     <!-- 月份導覽 -->
                     <div class="flex items-center justify-between mb-5">
                         <button onclick="calNavigate(-1)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-ukn-100 flex items-center justify-center font-bold text-slate-600 hover:text-ukn-800 transition">‹</button>
@@ -841,13 +784,13 @@
                     </div>
                     <!-- 星期標頭 -->
                     <div class="grid grid-cols-7 mb-2">
-                        <div class="text-center text-xs font-bold text-rose-500 py-2">日</div>
-                        <div class="text-center text-xs font-bold text-slate-500 py-2">一</div>
-                        <div class="text-center text-xs font-bold text-slate-500 py-2">二</div>
-                        <div class="text-center text-xs font-bold text-slate-500 py-2">三</div>
-                        <div class="text-center text-xs font-bold text-slate-500 py-2">四</div>
-                        <div class="text-center text-xs font-bold text-slate-500 py-2">五</div>
-                        <div class="text-center text-xs font-bold text-blue-500 py-2">六</div>
+                        <div class="text-center text-sm font-bold text-rose-500 py-2">日</div>
+                        <div class="text-center text-sm font-bold text-slate-500 py-2">一</div>
+                        <div class="text-center text-sm font-bold text-slate-500 py-2">二</div>
+                        <div class="text-center text-sm font-bold text-slate-500 py-2">三</div>
+                        <div class="text-center text-sm font-bold text-slate-500 py-2">四</div>
+                        <div class="text-center text-sm font-bold text-slate-500 py-2">五</div>
+                        <div class="text-center text-sm font-bold text-blue-500 py-2">六</div>
                     </div>
                     <!-- 日曆格子 -->
                     <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
@@ -865,9 +808,9 @@
             <!-- 雷達清單視圖 -->
             <div id="calView-radar" class="hidden space-y-4">
                 <!-- 分類篩選器 -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div class="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs font-bold text-slate-500 mr-1">🔎 篩選：</span>
+                        <span class="text-xs font-bold text-slate-500 mr-1">篩選：</span>
                         <button onclick="filterDeadlineRadar('all')" class="radar-filter-btn active px-3 py-1.5 rounded-lg text-xs font-bold bg-ukn-900 text-white transition" data-cat="all">全部</button>
                         <button onclick="filterDeadlineRadar('選課')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="選課">選課 / 停修</button>
                         <button onclick="filterDeadlineRadar('抵免')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="抵免">學分抵免</button>
@@ -875,6 +818,8 @@
                         <button onclick="filterDeadlineRadar('學習預警')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="學習預警">學習預警</button>
                         <button onclick="filterDeadlineRadar('考試')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="考試">考試週</button>
                         <button onclick="filterDeadlineRadar('教學評量')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="教學評量">教學評量</button>
+                        <button onclick="filterDeadlineRadar('教師行政')" id="radarFilterTeacherBtn" class="hidden radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="教師行政">教師行政事務</button>
+                        <button onclick="filterDeadlineRadar('ended')" class="radar-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition" data-cat="ended">已結束的活動</button>
                     </div>
                 </div>
                 <div id="calRadarList" class="space-y-3"></div>
@@ -894,30 +839,19 @@
 
             <!-- 成果看板 Header & 勞動部官方連線快捷區 -->
             <div
-                class="bg-ukn-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 relative overflow-hidden">
-                <div
-                    class="absolute -right-16 -bottom-16 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none">
-                </div>
-                <div
-                    class="absolute -left-16 -top-16 w-64 h-64 bg-blue-500/15 rounded-full blur-3xl pointer-events-none">
-                </div>
-
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                class="bg-ukn-950 text-white rounded-xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div class="space-y-2">
-                        <div
-                            class="inline-flex items-center space-x-2 bg-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/30">
-                            <span>🏆</span>
-                            <span>學生個人成果履歷與認證中心</span>
-                        </div>
-                        <h2 class="text-2xl sm:text-3xl font-black tracking-tight">專業技能證照與競賽榮譽獎狀</h2>
+                        <div class="text-xs font-semibold text-blue-200">學生個人成果履歷與認證中心</div>
+                        <h2 class="text-2xl sm:text-3xl font-bold">專業技能證照與競賽榮譽獎狀</h2>
                         <p class="text-blue-200 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                            同畫面整合管理「專業技術士證照／勞動部技能檢定成績單」與「競賽得獎／榮譽獎狀」。支援上傳 PDF 檔與高畫質照片，並提供勞動部官方查驗系統快速連線！
+                            管理專業技術士證照、勞動部技能檢定成績單，以及競賽得獎與榮譽獎狀，支援上傳 PDF 檔與照片
                         </p>
                     </div>
 
                     <!-- 即時統計卡 -->
                     <div
-                        class="flex items-center gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 shrink-0">
+                        class="flex items-center gap-3 bg-white/10 p-4 rounded-lg border border-white/15 shrink-0">
                         <div class="text-center px-3 border-r border-white/15">
                             <div class="text-2xl sm:text-3xl font-black text-amber-300" id="statCertCount">0</div>
                             <div class="text-[11px] text-blue-200">專業證照</div>
@@ -934,30 +868,26 @@
                     </div>
                 </div>
 
-                <!-- 🌟 勞動部官方網站快速連接通道 (官方外部連線) -->
+                <!-- 勞動部官方網站快速連接通道 (官方外部連線) -->
                 <div
-                    class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 space-y-2.5 relative z-10">
+                    class="bg-white/10 rounded-lg p-4 border border-white/20 space-y-2.5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-300">
-                            <span>🏛️</span>
-                            <span>勞動部技術士技能檢定 · 官方成績與發證即時線上查詢專區：</span>
+                        <div class="text-xs sm:text-sm font-bold text-amber-300">
+                            勞動部技術士技能檢定 · 官方成績與發證線上查詢專區
                         </div>
                         <span class="text-[11px] text-blue-200">可直接點擊下方官方通道進行線上核驗或報檢</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 pt-1">
                         <a href="https://eservice.wdasec.gov.tw/WWW/C101Q" target="_blank"
-                            class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-ukn-950 text-xs font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
-                            <span>🔍</span>
+                            class="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-ukn-950 text-xs font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
                             <span>勞動部技術士成績與發證進度查詢 ↗</span>
                         </a>
                         <a href="https://www.wdasec.gov.tw/" target="_blank"
-                            class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/20 flex items-center gap-1.5">
-                            <span>🌐</span>
+                            class="px-3.5 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/20 flex items-center gap-1.5">
                             <span>勞動力發展署技能檢定中心官網 ↗</span>
                         </a>
                         <a href="https://eservice.wdasec.gov.tw/" target="_blank"
-                            class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/20 flex items-center gap-1.5">
-                            <span>📜</span>
+                            class="px-3.5 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/20 flex items-center gap-1.5">
                             <span>技術士證照線上驗證查詢 ↗</span>
                         </a>
                     </div>
@@ -965,7 +895,7 @@
             </div>
 
             <!-- 📈 證照數據圖表總覽：多角度檢視證照組合、成績表現與累積趨勢 -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+            <div class="bg-white rounded-xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
                 <div>
                     <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
                         <span>📈</span> 證照數據圖表總覽
@@ -1003,7 +933,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
                 <!-- ================= 左欄：專業證照與勞動部成績單 ================= -->
-                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
                     <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
                         <div>
                             <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -1020,7 +950,7 @@
 
                     <!-- 新增證照表單 (支援 PDF 檔與證照照片上傳、勞動部成績單) -->
                     <form id="certForm" onsubmit="submitCertificate(event)"
-                        class="hidden space-y-3.5 p-5 rounded-2xl bg-amber-50/40 border border-amber-200 text-xs sm:text-sm">
+                        class="hidden space-y-3.5 p-5 rounded-lg bg-amber-50/40 border border-amber-200 text-xs sm:text-sm">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-amber-900 flex items-center gap-1.5">
                                 <span>📝</span> 填寫證照與檢定資料
@@ -1101,17 +1031,19 @@
                                     class="w-full border border-slate-200 rounded-xl p-2.5 bg-white">
                             </div>
                             <div>
-                                <label class="block font-semibold text-slate-700 mb-1">官方查驗連結（可連勞動部）</label>
-                                <input type="url" id="certVerifyUrl" value="https://eservice.wdasec.gov.tw/WWW/C101Q"
-                                    placeholder="https://..."
-                                    class="w-full border border-slate-200 rounded-xl p-2.5 bg-white text-xs">
+                                <label class="block font-semibold text-slate-700 mb-1">官方查驗連結</label>
+                                <input type="hidden" id="certVerifyUrl" value="https://eservice.wdasec.gov.tw/WWW/C101Q">
+                                <a href="https://eservice.wdasec.gov.tw/WWW/C101Q" target="_blank"
+                                    class="w-full flex items-center justify-center gap-1.5 border border-slate-200 rounded-xl p-2.5 bg-white text-xs font-semibold text-ukn-700 hover:bg-slate-50 transition">
+                                    <span>開啟勞動部技能檢定查驗頁面 ↗</span>
+                                </a>
                             </div>
                         </div>
 
                         <!-- 檔案上傳（支援 PDF 或 證照照片） -->
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">上傳附件（支援 PDF 成績單、證照照片）</label>
-                            <div class="border-2 border-dashed border-amber-300 rounded-2xl p-4 bg-white hover:bg-amber-50/50 transition cursor-pointer text-center relative"
+                            <div class="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-white hover:bg-amber-50/50 transition cursor-pointer text-center relative"
                                 onclick="document.getElementById('certFileInput').click()">
                                 <input type="file" id="certFileInput" accept=".pdf,image/*"
                                     onchange="handleFileSelected('cert')" class="hidden">
@@ -1148,7 +1080,7 @@
                 </div>
 
                 <!-- ================= 右欄：比賽得獎與榮譽獎狀 ================= -->
-                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
                     <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
                         <div>
                             <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -1165,7 +1097,7 @@
 
                     <!-- 新增比賽獎狀表單 (支援 PDF 獎狀與得獎現場照片上傳) -->
                     <form id="compForm" onsubmit="submitCompetition(event)"
-                        class="hidden space-y-3.5 p-5 rounded-2xl bg-blue-50/40 border border-blue-200 text-xs sm:text-sm">
+                        class="hidden space-y-3.5 p-5 rounded-lg bg-blue-50/40 border border-blue-200 text-xs sm:text-sm">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-blue-900 flex items-center gap-1.5">
                                 <span>🏆</span> 填寫競賽獲獎資料
@@ -1223,7 +1155,7 @@
                         <!-- 獎狀檔案上傳（支援 PDF 或 比賽照片） -->
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">上傳附件（支援 PDF 獎狀、受獎現場照片）</label>
-                            <div class="border-2 border-dashed border-blue-300 rounded-2xl p-4 bg-white hover:bg-blue-50/50 transition cursor-pointer text-center relative"
+                            <div class="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:bg-blue-50/50 transition cursor-pointer text-center relative"
                                 onclick="document.getElementById('compFileInput').click()">
                                 <input type="file" id="compFileInput" accept=".pdf,image/*"
                                     onchange="handleFileSelected('comp')" class="hidden">
@@ -1267,7 +1199,7 @@
         <!-- 模組 4: 整合管理控制台與訪客留痕分析 (Tab Admin Embedded) -->
         <!-- ======================================================== -->
         <div id="tab-admin-embedded" class="tab-content hidden space-y-6">
-            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+            <div class="bg-white rounded-xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
 
                 <div
                     class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -1316,14 +1248,14 @@
 
     <!-- 頁尾 -->
     <footer class="bg-white border-t border-slate-200 py-6 mt-10 text-center text-xs text-slate-500">
-        <p>Smart UKN 康寧大學智慧校園規章與全方位行政服務平台 · 10/15 專題 70% 旗艦成果</p>
-        <p class="mt-1 text-slate-400">系統由電算中心與資圖中心指導建置 · 符合 3NF 資料庫正規化與全流程安全邊界防呆</p>
+        <p>Smart UKN 康寧大學智慧校園規章與行政服務平台</p>
+        <p class="mt-1 text-slate-400">系統由電算中心與資圖中心指導建置</p>
     </footer>
 
     <!-- 彈窗 Modal: 條文全文檢視 -->
     <div id="docModal"
-        class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-2xl w-full p-6 sm:p-8 shadow-sm space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-start border-b border-slate-100 pb-3">
                 <div class="flex items-center space-x-2.5">
                     <span class="text-2xl">🏛️</span>
@@ -1349,15 +1281,15 @@
 
     <!-- 浮動按鈕：校務服務斷點匿名回報 (所有身分皆可看到，不需登入) -->
     <button onclick="openFeedbackModal()"
-        class="fixed bottom-5 right-5 z-40 bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold px-4 py-3 rounded-full shadow-xl flex items-center gap-2 transition">
+        class="fixed bottom-5 right-5 z-40 bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold px-4 py-3 rounded-full shadow-sm flex items-center gap-2 transition">
         <span>💬</span>
         <span class="hidden sm:inline">卡關回報</span>
     </button>
 
     <!-- 彈窗 Modal: 校務服務斷點匿名回報 -->
     <div id="feedbackModal"
-        class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-sm space-y-4">
             <div class="flex justify-between items-start border-b border-slate-100 pb-3">
                 <div class="flex items-center space-x-2.5">
                     <span class="text-2xl">💬</span>
@@ -1400,8 +1332,8 @@
     </div>
 
     <!-- 彈窗 Modal: 行事曆日期事件詳情 -->
-    <div id="calDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+    <div id="calDayModal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-sm space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <span class="text-2xl">📅</span>
@@ -1503,7 +1435,6 @@
                 // 未登入 / 尚未登記訪客：顯示中性的訪客狀態
                 document.getElementById('userFullName').textContent = '訪客';
                 document.getElementById('userRoleTag').textContent = '請登入';
-                document.getElementById('roleIcon').textContent = '👤';
                 document.getElementById('userSubInfo').textContent = '請登入或登記來訪';
                 document.getElementById('studentDiagnosisTag').textContent = '請先登入以查看個人學分診斷';
                 logoutBtn.style.display = 'none';
@@ -1515,13 +1446,6 @@
 
             document.getElementById('userFullName').textContent = user.full_name;
             document.getElementById('userRoleTag').textContent = user.role;
-
-            let icon = '👨‍🎓';
-            if (user.role === '家長') icon = '👨‍👩‍👦';
-            else if (user.role === '教職員') icon = '👨‍🏫';
-            else if (user.role === '管理員') icon = '⚙️';
-            else if (user.role === '訪客') icon = '🌟';
-            document.getElementById('roleIcon').textContent = icon;
 
             const subInfo = document.getElementById('userSubInfo');
             if (user.student_id) {
@@ -1543,6 +1467,10 @@
             adminEntryLink.style.display = ['教職員', '管理員'].includes(user.role) ? 'flex' : 'none';
             applyTabVisibility(user.role);
             updatePortfolioActionButtons();
+
+            // 「教師行政事務」篩選只對老師身分顯示，其他人看不到也用不到
+            const teacherFilterBtn = document.getElementById('radarFilterTeacherBtn');
+            if (teacherFilterBtn) teacherFilterBtn.classList.toggle('hidden', user.role !== '老師');
         }
 
         // 依角色顯示/隱藏頁籤按鈕；真正的存取控管仍在後端 API (前端僅為體驗優化)
@@ -1781,10 +1709,10 @@
             document.getElementById('docModalTitle').textContent = currentSearchData.source_doc;
             document.getElementById('docModalPage').textContent = `出處文件：${currentSearchData.source_doc} · 頁碼：第 ${currentSearchData.page_num} 頁`;
             document.getElementById('docModalBody').innerHTML = `
-                <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 mb-3">
+                <div class="bg-blue-50/70 p-4 rounded-lg border border-blue-100 mb-3">
                     <span class="font-bold text-ukn-900">官方核定項目：${currentSearchData.official_term || currentSearchData.search_term}</span>
                 </div>
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 whitespace-pre-wrap text-sm leading-relaxed">
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 text-slate-800 whitespace-pre-wrap text-sm leading-relaxed">
 ${currentSearchData.answer}
                 </div>
             `;
@@ -1878,7 +1806,7 @@ ${currentSearchData.answer}
                 `).join('');
 
                 return `
-                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4 hover:shadow-md transition">
+                    <div class="bg-slate-50 rounded-lg p-5 border border-slate-200 space-y-4 hover:shadow-md transition">
                         <div class="flex items-start justify-between">
                             <div>
                                 <span class="text-[11px] font-bold bg-ukn-100 text-ukn-800 px-2.5 py-0.5 rounded-full">${item.category_name || '教務處'}</span>
@@ -1965,6 +1893,7 @@ ${currentSearchData.answer}
             const searchBar = document.getElementById('gdSearchBar');
             const emptyState = document.getElementById('gdEmptyState');
             const body = document.getElementById('gdDashboardBody');
+            const classPanel = document.getElementById('gdClassSummaryPanel');
             if (!searchBar || !currentUser) return;
 
             if (STAFF_LIKE_ROLES.includes(currentUser.role)) {
@@ -1975,8 +1904,15 @@ ${currentSearchData.answer}
                 if (input) {
                     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleGraduationSearch(); });
                 }
+                // 老師若有擔任導師的班級，直接載入班級總表，不用再一個個輸入學號查詢
+                if (currentUser.role === '老師' && currentUser.advised_class) {
+                    loadClassSummary(currentUser.advised_class);
+                } else if (classPanel) {
+                    classPanel.classList.add('hidden');
+                }
             } else if (['學生', '家長'].includes(currentUser.role)) {
                 searchBar.classList.add('hidden');
+                if (classPanel) classPanel.classList.add('hidden');
                 loadGraduationDashboard(null);
             }
         }
@@ -1989,6 +1925,42 @@ ${currentSearchData.answer}
                 return;
             }
             loadGraduationDashboard(sid);
+        }
+
+        // 導師班級總表：一次看到全班畢業學分與證照達成度，不用逐一輸入學號查詢
+        async function loadClassSummary(className) {
+            const panel = document.getElementById('gdClassSummaryPanel');
+            if (!panel) return;
+            try {
+                const res = await fetch(`/api/teacher/class-summary?class_name=${encodeURIComponent(className)}`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    renderClassSummary(data);
+                    panel.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error('Load class summary failed:', e);
+            }
+        }
+
+        function renderClassSummary(data) {
+            document.getElementById('gdClassNameText').textContent = data.class_name;
+            document.getElementById('gdClassStudentCount').textContent = data.students.length;
+            const tbody = document.getElementById('gdClassSummaryBody');
+            if (!tbody) return;
+            tbody.innerHTML = data.students.map(s => `
+                <tr class="hover:bg-slate-50 cursor-pointer transition" onclick="loadGraduationDashboard('${s.student_id}')">
+                    <td class="p-3 text-slate-500 font-mono text-xs">${s.student_id}</td>
+                    <td class="p-3 font-semibold text-slate-900">${s.full_name}</td>
+                    <td class="p-3 text-slate-700">${s.credits_earned} / ${s.credits_threshold}</td>
+                    <td class="p-3 text-slate-700">${s.certs_owned} / ${s.certs_required}</td>
+                    <td class="p-3">
+                        <span class="text-xs font-bold px-2 py-1 rounded-full ${s.overall_meets_graduation_requirement ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${s.overall_meets_graduation_requirement ? '已達標' : '未達標'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-right text-ukn-700 font-semibold text-xs">查看詳情 →</td>
+                </tr>`).join('');
         }
 
         async function loadGraduationDashboard(studentId) {
@@ -2100,7 +2072,7 @@ ${currentSearchData.answer}
             for (let i = 1; i <= certs.required; i++) {
                 const filled = i <= certs.owned_count;
                 badgesHtml += `
-                    <div class="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 ${filled ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-slate-200 bg-slate-50'}">
+                    <div class="flex-1 flex flex-col items-center gap-2 p-4 rounded-lg border-2 ${filled ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-slate-200 bg-slate-50'}">
                         <span class="text-2xl">${filled ? '🏅' : '⭕'}</span>
                         <span class="text-xs font-bold ${filled ? 'text-emerald-700' : 'text-slate-400'}">第 ${i} 張${filled ? '已取得' : '尚未取得'}</span>
                     </div>`;
@@ -2266,7 +2238,7 @@ ${currentSearchData.answer}
             const catColor = {
                 '選課': 'bg-blue-500', '抵免': 'bg-indigo-500', '獎助學金': 'bg-emerald-500',
                 '學習預警': 'bg-amber-500', '教學評量': 'bg-purple-500',
-                '考試': 'bg-purple-600', '教務': 'bg-slate-400'
+                '考試': 'bg-purple-600', '教師行政': 'bg-teal-500', '教務': 'bg-slate-400'
             };
             const urgencyColor = { 'urgent': 'bg-rose-500', 'soon': 'bg-amber-500', 'normal': 'bg-blue-500', 'past': 'bg-slate-300' };
 
@@ -2274,26 +2246,34 @@ ${currentSearchData.answer}
             // Previous month padding
             for (let i = firstDay - 1; i >= 0; i--) {
                 html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <div class="text-xs text-slate-300 font-medium">${daysInPrev - i}</div></div>`;
+                    <div class="text-sm text-slate-300 font-medium">${daysInPrev - i}</div></div>`;
             }
             // Current month days
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+                const dow = (firstDay + d - 1) % 7; // 0=日, 6=六
+                const isWeekend = dow === 0 || dow === 6;
                 const events = eventMap[dateStr] || [];
                 const endEvents = events.filter(e => e.end_date === dateStr && !e._rangeDay);
                 const dotHtml = endEvents.slice(0, 3).map(e => {
                     const col = e.urgency ? urgencyColor[e.urgency] : (catColor[e.category] || 'bg-slate-400');
                     return `<span class="cal-event-dot ${col}"></span>`;
                 }).join('');
-                const eventTitleHtml = endEvents.slice(0, 2).map(e =>
-                    `<div class="text-[9px] leading-tight text-slate-700 truncate font-medium">${e.title}</div>`
+                const eventTitleHtml = endEvents.slice(0, 1).map(e =>
+                    `<div class="text-xs leading-snug text-slate-700 truncate font-medium">${e.title}</div>`
                 ).join('');
-                const moreHtml = endEvents.length > 2 ? `<div class="text-[9px] text-slate-400">+${endEvents.length - 2} 更多</div>` : '';
+                const moreHtml = endEvents.length > 1 ? `<div class="text-xs text-slate-400">+${endEvents.length - 1} 更多</div>` : '';
                 const clickData = endEvents.length ? `onclick="showCalDayDetail('${dateStr}')" style="cursor:pointer"` : '';
-                html += `<div class="cal-day ${isToday ? 'today' : ''} p-1.5 rounded-xl border ${isToday ? 'border-ukn-400' : 'border-slate-100'} bg-white" ${clickData}>
-                    <div class="text-xs font-bold ${isToday ? 'text-ukn-800' : 'text-slate-600'} mb-1">${d}</div>
-                    <div class="flex flex-wrap gap-0.5 mb-0.5">${dotHtml}</div>
+                let cellBg = 'bg-white';
+                let cellBorder = 'border-slate-100';
+                if (!isToday && isWeekend) {
+                    cellBg = dow === 0 ? 'bg-rose-50/60' : 'bg-blue-50/60';
+                    cellBorder = dow === 0 ? 'border-rose-100' : 'border-blue-100';
+                }
+                html += `<div class="cal-day ${isToday ? 'today' : ''} p-2 rounded-xl border ${isToday ? 'border-ukn-400' : cellBorder} ${isToday ? '' : cellBg}" ${clickData}>
+                    <div class="text-base font-bold ${isToday ? 'text-ukn-800' : (isWeekend ? (dow === 0 ? 'text-rose-500' : 'text-blue-500') : 'text-slate-600')} mb-1">${d}</div>
+                    <div class="flex flex-wrap gap-1 mb-1">${dotHtml}</div>
                     ${eventTitleHtml}${moreHtml}
                 </div>`;
             }
@@ -2302,7 +2282,7 @@ ${currentSearchData.answer}
             const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
             for (let i = 1; i <= remaining; i++) {
                 html += `<div class="cal-day other-month p-1.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <div class="text-xs text-slate-300 font-medium">${i}</div></div>`;
+                    <div class="text-sm text-slate-300 font-medium">${i}</div></div>`;
             }
             grid.innerHTML = html;
         }
@@ -2311,18 +2291,26 @@ ${currentSearchData.answer}
         function showCalDayDetail(dateStr) {
             const events = calAllDeadlines.filter(d => d.end_date === dateStr);
             if (!events.length) return;
-            const urgencyLabel = { urgent: '🚨 緊急', soon: '⚠️ 近期', normal: '⏳ 尚有餘裕', past: '✅ 已過期' };
-            const items = events.map(e => `
-                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
-                    <div class="font-bold text-slate-900">${e.title}</div>
+            const urgencyLabel = { urgent: '緊急', soon: '近期', normal: '尚有餘裕', past: '已結束' };
+            const items = events.map(e => {
+                const isPast = e.urgency === 'past';
+                const actionHtml = isPast
+                    ? (e.contact_office
+                        ? `<p class="text-xs text-slate-500">事後仍需辦理請洽 <span class="font-semibold text-slate-600">${e.contact_office} ${e.contact_phone || ''}</span></p>`
+                        : '')
+                    : `<a href="${e.related_system_url || '#'}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-ukn-700 hover:underline">前往官方系統 ↗</a>`;
+                return `
+                <div class="p-3 rounded-lg border ${isPast ? 'border-slate-100 bg-slate-50/60 opacity-80' : 'border-slate-200 bg-slate-50'} space-y-1">
+                    <div class="font-bold ${isPast ? 'text-slate-500' : 'text-slate-900'}">${e.title}</div>
                     <div class="flex gap-2 text-xs">
                         <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">${e.category}</span>
                         <span>${urgencyLabel[e.urgency] || ''}</span>
                         ${e.days_left >= 0 ? `<span class="text-slate-500">剩 ${e.days_left} 天</span>` : '<span class="text-slate-400">已截止</span>'}
                     </div>
-                    <p class="text-xs text-slate-500">${e.description || ''}</p>
-                    <a href="${e.related_system_url || '#'}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-ukn-700 hover:underline">前往官方系統 ↗</a>
-                </div>`).join('');
+                    <p class="text-xs ${isPast ? 'text-slate-400' : 'text-slate-500'}">${e.description || ''}</p>
+                    ${actionHtml}
+                </div>`;
+            }).join('');
             const modal = document.getElementById('calDayModal');
             document.getElementById('calDayModalDate').textContent = dateStr;
             document.getElementById('calDayModalItems').innerHTML = items;
@@ -2337,42 +2325,48 @@ ${currentSearchData.answer}
         function renderRadarList(items) {
             const list = document.getElementById('calRadarList');
             if (!list) return;
-            const filtered = radarCurrentCat === 'all' ? items : items.filter(d => d.category === radarCurrentCat);
+            const filtered = radarCurrentCat === 'all' ? items
+                : radarCurrentCat === 'ended' ? items.filter(d => d.urgency === 'past')
+                : items.filter(d => d.category === radarCurrentCat);
             if (!filtered.length) {
                 list.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">此分類目前沒有期限項目。</div>`;
                 return;
             }
             const urgencyStyle = {
-                urgent: { badge: 'bg-rose-100 text-rose-800 border-rose-300', border: 'border-rose-200', left: 'bg-rose-500', label: '🚨 緊急', days: 'text-rose-700 font-black' },
-                soon:   { badge: 'bg-amber-100 text-amber-800 border-amber-300', border: 'border-amber-200', left: 'bg-amber-500', label: '⚠️ 近期', days: 'text-amber-700 font-black' },
-                normal: { badge: 'bg-blue-100 text-blue-800 border-blue-300', border: 'border-blue-200', left: 'bg-blue-500', label: '⏳ 進行中', days: 'text-blue-700 font-semibold' },
-                past:   { badge: 'bg-slate-100 text-slate-500 border-slate-300', border: 'border-slate-200', left: 'bg-slate-300', label: '✅ 已結束', days: 'text-slate-400 font-normal' }
+                urgent: { badge: 'bg-rose-100 text-rose-800 border-rose-300', border: 'border-rose-200', left: 'bg-rose-500', label: '緊急', days: 'text-rose-700 font-black' },
+                soon:   { badge: 'bg-amber-100 text-amber-800 border-amber-300', border: 'border-amber-200', left: 'bg-amber-500', label: '近期', days: 'text-amber-700 font-black' },
+                normal: { badge: 'bg-blue-100 text-blue-800 border-blue-300', border: 'border-blue-200', left: 'bg-blue-500', label: '進行中', days: 'text-blue-700 font-semibold' },
+                past:   { badge: 'bg-slate-50 text-slate-400 border-slate-200', border: 'border-slate-100', left: 'bg-slate-200', label: '已結束', days: 'text-slate-400 font-normal' }
             };
-            const catIcon = { '選課':'📚', '抵免':'🏆', '獎助學金':'💰', '學習預警':'⚠️', '考試':'📝', '教學評量':'📊', '教務':'🏫' };
             list.innerHTML = filtered.map(d => {
                 const s = urgencyStyle[d.urgency] || urgencyStyle.normal;
-                const daysText = d.days_left < 0 ? `已過 ${Math.abs(d.days_left)} 天` : d.days_left === 0 ? '今天截止！' : `剩 ${d.days_left} 天`;
+                const isPast = d.urgency === 'past';
+                const daysText = d.days_left < 0 ? `已過 ${Math.abs(d.days_left)} 天` : d.days_left === 0 ? '今天截止' : `剩 ${d.days_left} 天`;
+                const actionHtml = isPast
+                    ? (d.contact_office
+                        ? `<div class="text-[11px] text-slate-500 text-right leading-snug">事後仍需辦理請洽<br><span class="font-semibold text-slate-600">${d.contact_office} ${d.contact_phone || ''}</span></div>`
+                        : '')
+                    : `<a href="${d.related_system_url || '#'}" target="_blank" class="text-[11px] font-bold text-ukn-700 hover:text-ukn-900 bg-ukn-50 hover:bg-ukn-100 border border-ukn-200 px-3 py-1.5 rounded-lg transition">前往系統 ↗</a>`;
                 return `
-                <div class="deadline-card flex gap-0 rounded-2xl border ${s.border} bg-white overflow-hidden shadow-sm">
+                <div class="deadline-card flex gap-0 rounded-lg border ${s.border} ${isPast ? 'bg-slate-50/60' : 'bg-white'} overflow-hidden shadow-sm ${isPast ? 'opacity-80' : ''}">
                     <div class="w-1.5 flex-shrink-0 ${s.left}"></div>
                     <div class="flex-1 p-4">
                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 flex-wrap mb-1">
-                                    <span class="text-sm">${catIcon[d.category] || '📌'}</span>
-                                    <span class="font-bold text-slate-900">${d.title}</span>
+                                    <span class="font-bold ${isPast ? 'text-slate-500' : 'text-slate-900'}">${d.title}</span>
                                     <span class="text-[11px] font-semibold border px-2 py-0.5 rounded-full ${s.badge}">${s.label}</span>
                                     ${d.applies_to_dept_name ? `<span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">${d.applies_to_dept_name}</span>` : ''}
                                 </div>
-                                <p class="text-xs text-slate-500 leading-relaxed">${d.description || ''}</p>
+                                <p class="text-xs ${isPast ? 'text-slate-400' : 'text-slate-500'} leading-relaxed">${d.description || ''}</p>
                                 <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-400">
                                     ${d.start_date ? `<span>開始：${d.start_date}</span>` : ''}
-                                    <span>截止：<strong class="text-slate-700">${d.end_date}</strong></span>
+                                    <span>截止：<strong class="${isPast ? 'text-slate-500' : 'text-slate-700'}">${d.end_date}</strong></span>
                                 </div>
                             </div>
                             <div class="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1 flex-shrink-0">
                                 <div class="text-xl sm:text-2xl ${s.days}">${daysText}</div>
-                                <a href="${d.related_system_url || '#'}" target="_blank" class="text-[11px] font-bold text-ukn-700 hover:text-ukn-900 bg-ukn-50 hover:bg-ukn-100 border border-ukn-200 px-3 py-1.5 rounded-xl transition">前往系統 ↗</a>
+                                ${actionHtml}
                             </div>
                         </div>
                     </div>
@@ -2441,7 +2435,7 @@ ${currentSearchData.answer}
             list.innerHTML = items.map(d => {
                 const style = urgencyStyle[d.urgency] || urgencyStyle.normal;
                 return `
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 rounded-2xl border ${style.border} bg-slate-50/50">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 rounded-lg border ${style.border} bg-slate-50/50">
                         <span class="w-2.5 h-2.5 rounded-full ${style.dot} flex-shrink-0 sm:mt-0 mt-1.5"></span>
                         <div class="flex-1">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -2590,13 +2584,28 @@ ${currentSearchData.answer}
             }
         }
 
+        // 判斷該張證照是否還有科目待補考／未達標準，需要優先提醒使用者
+        function certNeedsAttention(status) {
+            return !!status && (status.includes('保留') || status.includes('未達標準'));
+        }
+
+        // 依考科狀態決定學科/術科成績要用「已通過」或「待補考」的顯示顏色
+        function certScoreColorClass(status, subject) {
+            status = status || '';
+            if (status.includes('未達標準')) return 'text-rose-600';
+            if (subject === 'theory' && status.includes('保留學科')) return 'text-rose-600';
+            if (subject === 'practical' && status.includes('保留術科')) return 'text-rose-600';
+            if (status.includes('核算中')) return 'text-slate-400';
+            return 'text-emerald-700';
+        }
+
         function renderCertificates(items) {
             const list = document.getElementById('certificateList');
             if (!list) return;
 
             if (!items.length) {
                 list.innerHTML = `
-                    <div class="text-center py-10 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                    <div class="text-center py-10 px-4 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50">
                         <span class="text-3xl block mb-1">📜</span>
                         <p class="text-sm font-bold text-slate-500">目前尚無登錄任何專業證照或檢定成績</p>
                         <p class="text-xs text-slate-400 mt-1">點擊上方「+ 新增證照紀錄」即可登錄並上傳 PDF 或照片</p>
@@ -2606,18 +2615,26 @@ ${currentSearchData.answer}
 
             const canDelete = currentUser && currentUser.role === '學生';
 
-            list.innerHTML = items.map(c => {
-                const isMOL = (c.issuing_org && c.issuing_org.includes('勞動部')) || 
+            // 有科目待補考／未達標準的證照排最前面，才能一眼看到還要補考什麼
+            const sortedItems = items.slice().sort((a, b) => {
+                const aFlag = certNeedsAttention(a.cert_status) ? 0 : 1;
+                const bFlag = certNeedsAttention(b.cert_status) ? 0 : 1;
+                return aFlag - bFlag;
+            });
+
+            list.innerHTML = sortedItems.map(c => {
+                const isMOL = (c.issuing_org && c.issuing_org.includes('勞動部')) ||
                               (c.cert_name && (c.cert_name.includes('技術士') || c.cert_name.includes('丙級') || c.cert_name.includes('乙級') || c.cert_name.includes('甲級')));
                 const molVerifyUrl = c.verify_url || 'https://eservice.wdasec.gov.tw/WWW/C101Q';
+                const needsAttention = certNeedsAttention(c.cert_status);
 
                 return `
-                <div class="p-5 rounded-2xl border ${isMOL ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'} shadow-sm hover:shadow-md transition space-y-3 relative">
+                <div class="p-5 rounded-lg border ${needsAttention ? 'border-rose-300 bg-rose-50/30' : (isMOL ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white')} shadow-sm hover:shadow-md transition space-y-3 relative">
                     <div class="flex items-start justify-between gap-2">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 flex-wrap">
-                                ${isMOL ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-ukn-950 border border-amber-300 shadow-xs">🏛️ 勞動部技術士</span>` : ''}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">${c.cert_status || '已取得'}</span>
+                                ${isMOL ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-ukn-950 border border-amber-300 shadow-xs">🏛️ 勞動部技術士</span>` : ''}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${needsAttention ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">${needsAttention ? '⚠ ' : ''}${c.cert_status || '已取得'}</span>
                                 <span class="text-xs text-slate-400">📅 ${c.issue_date}</span>
                             </div>
                             <h4 class="font-extrabold text-slate-900 text-base leading-snug">${c.cert_name}</h4>
@@ -2640,23 +2657,27 @@ ${currentSearchData.answer}
                             </span>
                         </div>
                         <div class="grid grid-cols-2 gap-2 text-xs pt-0.5">
-                            <div class="bg-white p-2 rounded-lg border border-amber-100">
-                                <span class="text-slate-400 text-[10px] block">學科測驗成績</span>
-                                <span class="font-black text-ukn-800 text-sm">${c.theory_score != null ? c.theory_score + ' 分' : '免試 / 未填'}</span>
+                            <div class="bg-white p-2 rounded-lg border ${certScoreColorClass(c.cert_status, 'theory') === 'text-rose-600' ? 'border-rose-200' : 'border-amber-100'}">
+                                <span class="text-slate-400 text-[10px] block">學科測驗成績${certScoreColorClass(c.cert_status, 'theory') === 'text-rose-600' ? '（待補考）' : ''}</span>
+                                <span class="font-black ${certScoreColorClass(c.cert_status, 'theory')} text-sm">${c.theory_score != null ? c.theory_score + ' 分' : '免試 / 未填'}</span>
                             </div>
-                            <div class="bg-white p-2 rounded-lg border border-amber-100">
-                                <span class="text-slate-400 text-[10px] block">術科實作成績</span>
-                                <span class="font-black text-emerald-700 text-sm">${c.practical_score != null ? c.practical_score + ' 分' : '免試 / 未填'}</span>
+                            <div class="bg-white p-2 rounded-lg border ${certScoreColorClass(c.cert_status, 'practical') === 'text-rose-600' ? 'border-rose-200' : 'border-amber-100'}">
+                                <span class="text-slate-400 text-[10px] block">術科實作成績${certScoreColorClass(c.cert_status, 'practical') === 'text-rose-600' ? '（待補考）' : ''}</span>
+                                <span class="font-black ${certScoreColorClass(c.cert_status, 'practical')} text-sm">${c.practical_score != null ? c.practical_score + ' 分' : '免試 / 未填'}</span>
                             </div>
                         </div>
                     </div>` : ''}
 
                     <!-- 勞動部官網即時查驗通道按鈕 -->
                     ${isMOL ? `
-                    <div class="pt-0.5">
+                    <div class="pt-0.5 flex flex-wrap gap-2">
                         <a href="${molVerifyUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 font-bold text-xs transition border border-amber-300/70">
                             <span>🏛️ 前往勞動部技能檢定中心官網查詢 ↗</span>
                         </a>
+                        ${needsAttention ? `
+                        <a href="https://etest.wdasec.gov.tw/eTest/Schedule" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 font-bold text-xs transition border border-rose-300/70">
+                            <span>📅 查詢補考測試日期與地點 ↗</span>
+                        </a>` : ''}
                     </div>` : ''}
 
                     <!-- 上傳檔案附件 (PDF 或 照片) -->
@@ -2803,13 +2824,13 @@ ${currentSearchData.answer}
         function getAwardRankBadge(title) {
             if (!title) return 'bg-amber-100 text-amber-900 border border-amber-300';
             if (title.includes('第一名') || title.includes('金獎') || title.includes('特優') || title.includes('冠軍')) {
-                return 'bg-gradient-to-r from-amber-400 to-amber-500 text-ukn-950 font-black border border-amber-300 shadow-xs';
+                return 'bg-amber-400 text-ukn-950 font-black border border-amber-300 shadow-xs';
             }
             if (title.includes('第二名') || title.includes('銀獎') || title.includes('亞軍')) {
-                return 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-900 font-black border border-slate-400 shadow-xs';
+                return 'bg-slate-200 text-slate-900 font-black border border-slate-400 shadow-xs';
             }
             if (title.includes('第三名') || title.includes('銅獎') || title.includes('季軍')) {
-                return 'bg-gradient-to-r from-orange-200 to-amber-300 text-orange-950 font-black border border-orange-400 shadow-xs';
+                return 'bg-orange-200 text-orange-950 font-black border border-orange-400 shadow-xs';
             }
             return 'bg-blue-100 text-blue-900 font-bold border border-blue-300';
         }
@@ -2820,7 +2841,7 @@ ${currentSearchData.answer}
 
             if (!items.length) {
                 list.innerHTML = `
-                    <div class="text-center py-10 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                    <div class="text-center py-10 px-4 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50">
                         <span class="text-3xl block mb-1">🥇</span>
                         <p class="text-sm font-bold text-slate-500">目前尚無登錄任何競賽獲獎獎狀</p>
                         <p class="text-xs text-slate-400 mt-1">點擊上方「+ 新增比賽獎狀」即可登錄並上傳獎狀 PDF 或現場照片</p>
@@ -2831,7 +2852,7 @@ ${currentSearchData.answer}
             const canDelete = currentUser && currentUser.role === '學生';
 
             list.innerHTML = items.map(c => `
-                <div class="p-5 rounded-2xl border border-blue-200 bg-blue-50/25 shadow-sm hover:shadow-md transition space-y-3 relative">
+                <div class="p-5 rounded-lg border border-blue-200 bg-blue-50/25 shadow-sm hover:shadow-md transition space-y-3 relative">
                     <div class="flex items-start justify-between gap-2">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -2963,9 +2984,9 @@ ${currentSearchData.answer}
             dlLink.setAttribute('download', fileName || 'download');
 
             if (type === 'pdf') {
-                bodyEl.innerHTML = `<iframe src="${url}" class="w-full h-[72vh] rounded-2xl border border-slate-200 bg-white shadow-inner"></iframe>`;
+                bodyEl.innerHTML = `<iframe src="${url}" class="w-full h-[72vh] rounded-lg border border-slate-200 bg-white shadow-inner"></iframe>`;
             } else {
-                bodyEl.innerHTML = `<img src="${url}" alt="${fileName}" class="max-h-[72vh] max-w-full object-contain rounded-2xl shadow-xl bg-slate-900">`;
+                bodyEl.innerHTML = `<img src="${url}" alt="${fileName}" class="max-h-[72vh] max-w-full object-contain rounded-lg shadow-sm bg-slate-900">`;
             }
 
             modal.classList.remove('hidden');
@@ -3023,7 +3044,7 @@ ${currentSearchData.answer}
                     : '';
 
                 return `
-                    <div class="p-5 rounded-2xl border ${borderClass} ${bgClass} space-y-3 transition relative">
+                    <div class="p-5 rounded-lg border ${borderClass} ${bgClass} space-y-3 transition relative">
                         <div class="flex items-start justify-between">
                             <div>
                                 <span class="text-xs font-mono font-bold text-ukn-700 bg-white px-2 py-0.5 rounded border border-slate-200">${c.course_id}</span>
@@ -3109,7 +3130,7 @@ ${currentSearchData.answer}
                         <h3 class="font-bold text-rose-950">學習提醒：${failedCourses.length} 門科目未通過</h3>
                         <p class="text-sm text-rose-800 mt-1">${alert.message || '建議優先確認重修與補救課程安排。'}</p>
                         ${statChips}
-                        <ul class="mt-3 bg-white/70 border border-rose-100 rounded-2xl px-4">${rows}</ul>
+                        <ul class="mt-3 bg-white/70 border border-rose-100 rounded-lg px-4">${rows}</ul>
                         <p class="text-xs text-rose-700 mt-3">此區只列出已有成績但未通過的科目；尚未修習課程不會列在這裡。</p>
                     </div>
                 </div>`;
@@ -3146,8 +3167,8 @@ ${currentSearchData.answer}
     <!-- ======================================================== -->
     <!-- 檔案即時檢視燈箱 (Modal Lightbox: 支援 PDF 閱讀與照片預覽) -->
     <!-- ======================================================== -->
-    <div id="filePreviewModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-6" onclick="handleModalBackdropClick(event)">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-white/20" onclick="event.stopPropagation()">
+    <div id="filePreviewModal" class="fixed inset-0 z-50 bg-slate-900/80 hidden flex items-center justify-center p-3 sm:p-6" onclick="handleModalBackdropClick(event)">
+        <div class="bg-white rounded-xl shadow-sm max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-white/20" onclick="event.stopPropagation()">
             <!-- 燈箱頂部 -->
             <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
                 <div class="flex items-center space-x-2.5 overflow-hidden">
