@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA：可加到手機主畫面 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#003377">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="康寧校園">
     <title>康寧大學 學生學習與校務服務系統 - 帳號登入</title>
-    <!-- Modern Fonts -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,56 +22,76 @@
             theme: {
                 extend: {
                     colors: {
+                        // 康寧大學官網色系：深藍為主色，橘色只用於細線與圓點點綴
                         ukn: {
-                            50: '#f0f4f9',
-                            100: '#dde6f2',
-                            700: '#274976',
-                            800: '#233f63',
-                            900: '#1b324f',
-                            950: '#101e31',
+                            50: '#f2f5fa',
+                            100: '#e1e8f3',
+                            200: '#b7cfe6',
+                            300: '#8fb0d6',
+                            400: '#5b86c0',
+                            500: '#2f64ad',
+                            600: '#124aa4',
+                            700: '#003c9d',
+                            800: '#003377',
+                            900: '#00295f',
+                            950: '#001d44',
+                        },
+                        accent: {
+                            50: '#fff4ef',
+                            500: '#ff5511',
                         }
                     },
                     fontFamily: {
-                        sans: ['"Noto Sans TC"', 'Outfit', 'sans-serif'],
+                        sans: ['"Microsoft JhengHei"', '"Noto Sans TC"', '"PingFang TC"', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
+    <style>
+        /* ---- 康寧大學官網風格 ---- */
+        body { color: #444; }
+        /* 頁首：深藍頂線 + 橘色細線 (比照官網) */
+        .ukn-header { background: #fff; border-top: 8px solid #003c9d; border-bottom: 1px solid #e2e8f0; }
+        .ukn-header::before { content: ""; position: absolute; left: 0; right: 0; top: 2px; height: 3px; background: #ff5511; }
+        /* 區塊標題：橘色圓點 */
+        .ukn-title { position: relative; padding-left: 16px; color: #003377; }
+        .ukn-title::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -3.5px; width: 7px; height: 7px; border-radius: 50%; background: #ff5511; }
+        /* 頁尾：深藍底白字 */
+        .ukn-footer { background: #003377; color: #fff; }
+        .ukn-footer a { color: #fff; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased text-slate-800 selection:bg-ukn-700 selection:text-white">
+<body class="bg-[#f5f6f8] min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-ukn-700 selection:text-white">
 
-    <!-- 頂部官方導覽列 -->
-    <header class="bg-ukn-900 text-white p-4 shadow-sm">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="/" class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center font-black text-ukn-950 text-lg shadow">
-                    UKN
-                </div>
-                <div>
-                    <span class="text-base sm:text-lg font-bold tracking-tight">康寧大學 學生學習與校務服務系統</span>
-                    <p class="text-xs text-slate-300">單一身分登入門戶 (Single Sign-On)</p>
-                </div>
+    <!-- 頁首 (比照康寧大學官網) -->
+    <header class="ukn-header relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center gap-4">
+            <a href="/" class="flex items-center gap-3 min-w-0">
+                <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
+                <span class="hidden sm:block border-l border-slate-300 pl-3 leading-tight">
+                    <span class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">單一身分登入</span>
+                </span>
             </a>
-            
-            <a href="/" class="text-xs text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-lg transition border border-white/10 flex items-center gap-1">
-                <span>直接瀏覽前台 ➔</span>
-            </a>
+            <a href="/" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">直接瀏覽前台 ➔</a>
         </div>
     </header>
 
     <!-- 主卡片登入區 -->
     <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
-        <div class="max-w-md w-full bg-white rounded-xl shadow-md border border-slate-200 p-6 sm:p-8 space-y-6">
+        <div class="max-w-md w-full bg-white rounded border border-slate-200 p-6 sm:p-8 space-y-6">
             
             <div class="text-center space-y-1">
-                <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">校務系統身分登入</h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-ukn-800">校務系統身分登入</h1>
                 <p class="text-xs text-slate-500">請輸入您的學號或教職員帳號進行身分驗證</p>
             </div>
 
             <!-- 分頁切換鈕 -->
-            <div class="flex bg-slate-100 p-1 rounded-lg text-xs sm:text-sm font-semibold">
-                <button onclick="switchLoginTab('member')" id="tabBtn-member" class="flex-1 py-2 rounded bg-white text-ukn-900 shadow-sm transition">
+            <div class="flex bg-slate-100 p-1 rounded text-xs sm:text-sm font-semibold">
+                <button onclick="switchLoginTab('member')" id="tabBtn-member" class="flex-1 py-2 rounded bg-white text-ukn-900 transition">
                     在校師生 / 家長
                 </button>
                 <button onclick="switchLoginTab('visitor')" id="tabBtn-visitor" class="flex-1 py-2 rounded text-slate-600 hover:text-slate-900 transition">
@@ -78,18 +105,18 @@
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">帳號 (學號 / 教職員代號)</label>
                         <input type="text" id="mUsername" placeholder="例如：student1 或 S112001" required
-                               class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                               class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">密碼</label>
                         <input type="password" id="mPassword" placeholder="預設密碼 123456" required
-                               class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                               class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
-                    <div id="loginErrorMsg" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
+                    <div id="loginErrorMsg" class="hidden p-3 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
 
-                    <button type="submit" id="loginBtn" class="w-full py-2.5 rounded-lg bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition shadow flex items-center justify-center space-x-1.5">
+                    <button type="submit" id="loginBtn" class="w-full py-2.5 rounded bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition flex items-center justify-center space-x-1.5">
                         <span>登入系統</span>
                         <span>➔</span>
                     </button>
@@ -99,20 +126,28 @@
                 <div class="pt-4 border-t border-slate-100 space-y-2">
                     <span class="text-[11px] font-semibold text-slate-500 block text-center">快捷填入測試帳號（點擊即填入）：</span>
                     <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
-                        <button onclick="fillAccount('student1', '123456')" class="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
-                            <div class="font-bold text-ukn-900">👨‍🎓 學生：王小明</div>
-                            <div class="text-[10px] text-slate-500 font-normal">S112001 (資科系)</div>
+                        <button onclick="fillAccount('student1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">學生：王小明</div>
+                            <div class="text-[10px] text-slate-500 font-normal">S112001 (資管四忠)</div>
                         </button>
-                        <button onclick="fillAccount('parent1', '123456')" class="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
-                            <div class="font-bold text-amber-900">👨‍👩‍👦 家長：王大明</div>
+                        <button onclick="fillAccount('S112004', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">學生：陳冠宇</div>
+                            <div class="text-[10px] text-slate-500 font-normal">學號登入 S112004 (全數及格)</div>
+                        </button>
+                        <button onclick="fillAccount('S112005', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">學生：林雨潔</div>
+                            <div class="text-[10px] text-slate-500 font-normal">學號登入 S112005 (資料結構未過)</div>
+                        </button>
+                        <button onclick="fillAccount('parent1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-amber-900">家長：王大明</div>
                             <div class="text-[10px] text-slate-500 font-normal">學生王小明之家長</div>
                         </button>
-                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
-                            <div class="font-bold text-ukn-900">👩‍🏫 導師：陳雅婷</div>
-                            <div class="text-[10px] text-slate-500 font-normal">資訊科技學系導師</div>
+                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">導師：陳雅婷</div>
+                            <div class="text-[10px] text-slate-500 font-normal">資管四忠導師</div>
                         </button>
-                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
-                            <div class="font-bold text-emerald-900">⚙️ 管理員：系統後台</div>
+                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-emerald-900">管理員：系統後台</div>
                             <div class="text-[10px] text-slate-500 font-normal">CMS 規章維護權限</div>
                         </button>
                     </div>
@@ -121,9 +156,8 @@
 
             <!-- 2. 訪客/未來學生/未來家長登記通道 -->
             <div id="panel-visitor" class="hidden space-y-4">
-                <div class="bg-amber-50 p-3.5 rounded-lg border border-amber-200 text-xs text-amber-950 space-y-1">
+                <div class="bg-amber-50 p-3.5 rounded border border-amber-200 text-xs text-amber-950 space-y-1">
                     <div class="font-bold flex items-center gap-1">
-                        <span>📌</span>
                         <span>訪客快速登記與校園諮詢</span>
                     </div>
                     <p class="text-amber-900 leading-relaxed">提供未來新生、家長與校外貴賓查閱本校規章、科系介紹與行政申辦資訊。</p>
@@ -133,11 +167,11 @@
                     <label class="block font-semibold text-slate-700 mb-1.5 text-xs sm:text-sm">您的身分 *</label>
                     <div class="grid grid-cols-2 gap-2" id="visitorTypeGroup">
                         <button type="button" data-type="未來學生" onclick="selectVisitorType('未來學生')"
-                            class="visitor-type-btn py-2 rounded-lg border-2 border-amber-500 bg-amber-50 text-amber-950 font-bold text-xs transition flex items-center justify-center gap-1.5">
+                            class="visitor-type-btn py-2 rounded border-2 border-amber-500 bg-amber-50 text-amber-950 font-bold text-xs transition flex items-center justify-center gap-1.5">
                             <span>未來學生</span>
                         </button>
                         <button type="button" data-type="未來家長" onclick="selectVisitorType('未來家長')"
-                            class="visitor-type-btn py-2 rounded-lg border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
+                            class="visitor-type-btn py-2 rounded border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
                             <span>未來家長</span>
                         </button>
                     </div>
@@ -147,19 +181,19 @@
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">姓名 / 稱謂 *</label>
                         <input type="text" id="vName" placeholder="例如：陳同學、林家長" required
-                               class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                               class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">聯絡手機 *</label>
                         <input type="tel" id="vPhone" placeholder="例如：0912-345-678" required
-                               class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                               class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">就讀 / 畢業學校 *</label>
                         <input type="text" id="vSchool" list="schoolOptions" placeholder="請選擇或輸入學校名稱" required
-                               class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                               class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                         <datalist id="schoolOptions">
                             <option value="台北市立南港高中">
                             <option value="台北市立內湖高工">
@@ -174,8 +208,8 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">來訪目的 *</label>
-                            <select id="vPurpose" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white text-xs">
-                                <option value="升學諮詢與系所探索">升學諮詢</option>
+                            <select id="vPurpose" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white text-xs">
+                                <option value="升學諮詢與科系探索">升學諮詢</option>
                                 <option value="五專免試入學諮詢">五專入學</option>
                                 <option value="校園環境參觀">校園參觀</option>
                                 <option value="洽公與交流活動">洽公交流</option>
@@ -184,19 +218,26 @@
                         </div>
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">感興趣科系</label>
-                            <select id="vTargetDept" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white text-xs">
-                                <option value="資訊科技與應用學系">資訊科技系</option>
-                                <option value="護理學系">護理學系</option>
-                                <option value="幼兒保育學系">幼兒保育系</option>
-                                <option value="應用外語學系">應用外語系</option>
-                                <option value="長期照護學系">長期照護系</option>
+                            <select id="vTargetDept" class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white text-xs">
+                                <optgroup label="護理健康學院">
+                                    <option value="長期照護學系">長期照護學系</option>
+                                    <option value="嬰幼兒保育學系">嬰幼兒保育學系</option>
+                                    <option value="護理科（五專）">護理科（五專）</option>
+                                    <option value="視光科（五專）">視光科（五專）</option>
+                                </optgroup>
+                                <optgroup label="商業資訊學院">
+                                    <option value="企業管理學系（科）">企業管理學系（科）</option>
+                                    <option value="資訊管理科（五專）" selected>資訊管理科（五專）</option>
+                                    <option value="數位影視動畫科（五專）">數位影視動畫科（五專）</option>
+                                    <option value="應用外語科（五專）">應用外語科（五專）</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
 
-                    <div id="visitorErrorMsg" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
+                    <div id="visitorErrorMsg" class="hidden p-3 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
 
-                    <button type="submit" id="visitorBtn" class="w-full py-2.5 rounded-lg bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition shadow flex items-center justify-center space-x-1.5">
+                    <button type="submit" id="visitorBtn" class="w-full py-2.5 rounded bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition flex items-center justify-center space-x-1.5">
                         <span>完成登記並進入系統</span>
                         <span>➔</span>
                     </button>
@@ -207,8 +248,9 @@
     </main>
 
     <!-- 頁尾 -->
-    <footer class="p-4 text-center text-xs text-slate-500">
-        康寧大學 學生學習與校務服務系統 · University of Kang Ning
+    <footer class="ukn-footer py-8 text-center text-xs sm:text-sm leading-7">
+        <p class="font-bold">康寧大學 學生學習與校務服務系統</p>
+        <p>地址：114 臺北市內湖區康寧路三段75巷137號 ｜ 電話：(02)2632-1181 ｜ 傳真：(02)2632-8744</p>
     </footer>
 
     <script>
@@ -231,13 +273,13 @@
             if (tab === 'member') {
                 document.getElementById('panel-member').classList.remove('hidden');
                 document.getElementById('panel-visitor').classList.add('hidden');
-                document.getElementById('tabBtn-member').className = 'flex-1 py-2 rounded bg-white text-ukn-900 shadow-sm transition font-bold';
+                document.getElementById('tabBtn-member').className = 'flex-1 py-2 rounded bg-white text-ukn-900  transition font-bold';
                 document.getElementById('tabBtn-visitor').className = 'flex-1 py-2 rounded text-slate-600 hover:text-slate-900 transition';
             } else {
                 document.getElementById('panel-member').classList.add('hidden');
                 document.getElementById('panel-visitor').classList.remove('hidden');
                 document.getElementById('tabBtn-member').className = 'flex-1 py-2 rounded text-slate-600 hover:text-slate-900 transition';
-                document.getElementById('tabBtn-visitor').className = 'flex-1 py-2 rounded bg-white text-ukn-900 shadow-sm transition font-bold';
+                document.getElementById('tabBtn-visitor').className = 'flex-1 py-2 rounded bg-white text-ukn-900  transition font-bold';
             }
         }
 
@@ -318,6 +360,12 @@
                 btn.disabled = false;
                 btn.innerHTML = `<span>完成登記並進入系統</span><span>➔</span>`;
             }
+        }
+    </script>
+    <script>
+        // PWA：註冊 Service Worker (需 https 或 localhost 才會生效)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW 註冊失敗', err)));
         }
     </script>
 </body>

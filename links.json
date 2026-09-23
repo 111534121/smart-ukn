@@ -1,0 +1,163 @@
+{
+  "_comment": "學生專區統一入口連結設定，依使用情境分類。url 為 \"#\" 代表尚未取得正確網址；todo 欄位記錄待辦事項，網址確認後請清空。可直接編輯本檔，或於校務管理後台「學生專區連結」分頁維護。",
+  "categories": [
+    {
+      "key": "study",
+      "name": "上課學習",
+      "icon": "📚"
+    },
+    {
+      "key": "life",
+      "name": "請假與生活",
+      "icon": "🏫"
+    },
+    {
+      "key": "finance",
+      "name": "費用與獎助",
+      "icon": "💰"
+    },
+    {
+      "key": "career",
+      "name": "實習與證照",
+      "icon": "🎓"
+    },
+    {
+      "key": "dorm",
+      "name": "宿舍",
+      "icon": "🛏️"
+    },
+    {
+      "key": "freshman",
+      "name": "新生專區",
+      "icon": "🎒"
+    }
+  ],
+  "links": [
+    {
+      "id": 2,
+      "category": "study",
+      "title": "學生教務系統",
+      "description": "選課、成績查詢、課表",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向課務組確認學生教務系統網址"
+    },
+    {
+      "id": 3,
+      "category": "study",
+      "title": "數位學習平台",
+      "description": "課程教材、線上作業繳交",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向教學發展中心確認數位學習平台網址"
+    },
+    {
+      "id": 4,
+      "category": "study",
+      "title": "教學意見調查（教學評量）",
+      "description": "期末填寫課程教學評量",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 確認教學意見調查系統網址"
+    },
+    {
+      "id": 8,
+      "category": "study",
+      "title": "校曆",
+      "description": "本學年度行事曆與重要日期",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 確認最新學年度校曆網址"
+    },
+    {
+      "id": 9,
+      "category": "life",
+      "title": "缺曠課與獎懲查詢",
+      "description": "查詢出缺勤紀錄與獎懲紀錄",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向生輔組確認缺曠課與獎懲查詢系統網址"
+    },
+    {
+      "id": 10,
+      "category": "life",
+      "title": "學生請假系統",
+      "description": "線上請假（病假、事假、公假）與查詢審核進度",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向生輔組確認學生請假系統網址"
+    },
+    {
+      "id": 5,
+      "category": "finance",
+      "title": "學雜費繳費入口",
+      "description": "列印繳費單、線上繳費",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向出納組確認學雜費繳費入口網址"
+    },
+    {
+      "id": 6,
+      "category": "finance",
+      "title": "獎助學金公告",
+      "description": "校內外獎助學金申請資格與期限",
+      "url": "#",
+      "group": "獎助學金：看完公告，直接線上申請",
+      "todo": "TODO: 向生輔組確認獎助學金公告頁網址"
+    },
+    {
+      "id": 7,
+      "category": "finance",
+      "title": "獎助學金線上申請系統",
+      "description": "線上填寫申請表、上傳證明文件",
+      "url": "#",
+      "group": "獎助學金：看完公告，直接線上申請",
+      "todo": "TODO: 向生輔組確認獎助學金線上申請系統網址"
+    },
+    {
+      "id": 11,
+      "category": "career",
+      "title": "實習媒合與實習日誌",
+      "description": "實習機會、實習合約與實習週誌繳交",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向實習就業輔導組確認實習系統網址"
+    },
+    {
+      "id": 12,
+      "category": "career",
+      "title": "證照登錄與獎勵申請",
+      "description": "登錄已取得證照、申請證照獎勵金",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 確認證照登錄系統網址（或改用本平台證照上傳功能）"
+    },
+    {
+      "id": 13,
+      "category": "dorm",
+      "title": "宿舍申請與床位查詢",
+      "description": "住宿申請、床位分配結果查詢",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向宿舍輔導組確認宿舍申請系統網址"
+    },
+    {
+      "id": 14,
+      "category": "dorm",
+      "title": "宿舍晚歸／外宿請假",
+      "description": "晚歸、外宿線上登記",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向宿舍輔導組確認晚歸外宿請假網址"
+    },
+    {
+      "id": 1,
+      "category": "freshman",
+      "title": "新生入學基本資料登錄",
+      "description": "新生報到前填寫個人基本資料、緊急聯絡人",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向註冊組確認新生資料登錄系統網址"
+    }
+  ]
+}

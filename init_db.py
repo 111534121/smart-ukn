@@ -313,7 +313,7 @@ def init_database():
               `phone` varchar(30) NOT NULL,
               `school_from` varchar(100) NOT NULL,
               `purpose` varchar(100) NOT NULL,
-              `target_dept` varchar(100) DEFAULT '資訊科技與應用學系',
+              `target_dept` varchar(100) DEFAULT '資訊管理科（五專）',
               `visited_at` timestamp NOT NULL DEFAULT current_timestamp(),
               `ip_address` varchar(50) DEFAULT '127.0.0.1',
               PRIMARY KEY (`log_id`)
@@ -354,8 +354,170 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 19. 建立學期校曆事項表 academic_calendar (首頁「本週可辦」橫幅)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `academic_calendar` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `event_name` varchar(100) NOT NULL,
+              `start_date` date NOT NULL,
+              `end_date` date NOT NULL,
+              `category` varchar(50) NOT NULL DEFAULT '教務',
+              `related_checklist_id` int(11) DEFAULT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_cal_dates` (`start_date`, `end_date`),
+              KEY `fk_cal_checklist` (`related_checklist_id`),
+              CONSTRAINT `fk_cal_checklist` FOREIGN KEY (`related_checklist_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 20. 建立搜尋紀錄表 search_logs (每次呼叫 /api/search 寫一筆，供未命中率統計)
+        #     搜尋回饋沿用第 13 項的 search_feedback (query_text / kb_id / is_helpful)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `search_logs` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `query` varchar(255) NOT NULL,
+              `matched` tinyint(1) NOT NULL,
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_search_created` (`created_at`),
+              KEY `idx_search_matched_query` (`matched`, `query`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 21. 建立申辦流程勾選進度表 checklist_progress (登入學生打勾的步驟，下次登入仍保留)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `checklist_progress` (
+              `student_id` varchar(20) NOT NULL,
+              `item_id` int(11) NOT NULL,
+              `step_index` int(11) NOT NULL,
+              `done` tinyint(1) NOT NULL DEFAULT 0,
+              PRIMARY KEY (`student_id`, `item_id`, `step_index`),
+              KEY `fk_cp_item` (`item_id`),
+              CONSTRAINT `fk_cp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_cp_item` FOREIGN KEY (`item_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 22. 建立缺曠課紀錄表 attendance_records (學校尚無 API，先以本表模擬)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `attendance_records` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `date` date NOT NULL,
+              `course_name` varchar(100) NOT NULL,
+              `type` enum('曠課','遲到','病假') NOT NULL,
+              `notified` tinyint(1) NOT NULL DEFAULT 0,
+              PRIMARY KEY (`id`),
+              KEY `idx_att_student_date` (`student_id`, `date`),
+              KEY `idx_att_notified` (`notified`),
+              CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 23-28. 個人化儀表板：課表、公告 (含已讀)、作業 (含繳交)、請假
+        #        學校尚無對應 API，先以本地資料表模擬；class_name 與 student_id 擇一 (整班 / 個人重補修)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_schedule` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `class_name` varchar(50) DEFAULT NULL,
+              `student_id` varchar(20) DEFAULT NULL,
+              `weekday` tinyint(4) NOT NULL COMMENT '1=週一 … 7=週日',
+              `period_start` tinyint(4) NOT NULL,
+              `period_end` tinyint(4) NOT NULL,
+              `course_name` varchar(100) NOT NULL,
+              `classroom` varchar(50) DEFAULT NULL,
+              `teacher` varchar(50) DEFAULT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_sched_class` (`class_name`, `weekday`),
+              KEY `idx_sched_student` (`student_id`, `weekday`),
+              CONSTRAINT `fk_sched_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `announcements` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `title` varchar(200) NOT NULL,
+              `content` text DEFAULT NULL,
+              `office` varchar(50) NOT NULL,
+              `publish_date` date NOT NULL,
+              `target_class` varchar(50) DEFAULT NULL COMMENT 'NULL = 全校公告',
+              `url` varchar(500) NOT NULL DEFAULT '#',
+              PRIMARY KEY (`id`),
+              KEY `idx_ann_date` (`publish_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `announcement_reads` (
+              `student_id` varchar(20) NOT NULL,
+              `announcement_id` int(11) NOT NULL,
+              `read_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`student_id`, `announcement_id`),
+              KEY `fk_ar_ann` (`announcement_id`),
+              CONSTRAINT `fk_ar_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_ar_ann` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `assignments` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `class_name` varchar(50) DEFAULT NULL,
+              `student_id` varchar(20) DEFAULT NULL,
+              `course_name` varchar(100) NOT NULL,
+              `title` varchar(200) NOT NULL,
+              `due_at` datetime NOT NULL,
+              `url` varchar(500) NOT NULL DEFAULT '#',
+              PRIMARY KEY (`id`),
+              KEY `idx_asg_class` (`class_name`),
+              KEY `idx_asg_student` (`student_id`),
+              CONSTRAINT `fk_asg_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `assignment_submissions` (
+              `student_id` varchar(20) NOT NULL,
+              `assignment_id` int(11) NOT NULL,
+              `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`student_id`, `assignment_id`),
+              KEY `fk_sub_asg` (`assignment_id`),
+              CONSTRAINT `fk_sub_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_sub_asg` FOREIGN KEY (`assignment_id`) REFERENCES `assignments` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `leave_requests` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `leave_type` enum('病假','事假','公假','喪假','生理假') NOT NULL,
+              `start_date` date NOT NULL,
+              `end_date` date NOT NULL,
+              `periods` varchar(50) DEFAULT NULL COMMENT '節次，例如 3-4',
+              `reason` varchar(255) DEFAULT NULL,
+              `status` enum('待審核','已核准','已退回') NOT NULL DEFAULT '待審核',
+              `review_note` varchar(255) NOT NULL DEFAULT '',
+              `submitted_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_leave_student` (`student_id`, `submitted_at`),
+              CONSTRAINT `fk_leave_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 校曆範例事項 (與 app.py 的 DEMO_ACADEMIC_CALENDAR 保持一致；
+        # related_checklist_id 需等 seed_data.py 匯入 checklist_items 後才有對應，未匯入前先設為 NULL)
+        cursor.execute("SELECT COUNT(*) FROM `checklist_items` WHERE `item_id` = 1")
+        withdraw_checklist_id = 1 if cursor.fetchone()[0] else None
+        cursor.executemany("""
+            INSERT IGNORE INTO `academic_calendar` (`id`, `event_name`, `start_date`, `end_date`, `category`, `related_checklist_id`)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, [
+            (1, '加退選', '2026-09-14', '2026-09-25', '教務', None),
+            (2, '學雜費繳費期限', '2026-09-01', '2026-09-30', '繳費', None),
+            (3, '獎助學金申請期限', '2026-09-21', '2026-10-16', '獎助', None),
+            (4, '停修申請', '2026-10-01', '2026-10-16', '教務', withdraw_checklist_id),
+            (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None),
+        ])
+
         conn.commit()
-        print("🎉 3NF 正規化資料庫共 18 張資料表建立成功！")
+        print("🎉 3NF 正規化資料庫共 29 張資料表建立成功！")
 
     except mysql.connector.Error as err:
         print(f"❌ 資料庫初始化錯誤: {err}")

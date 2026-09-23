@@ -7,56 +7,76 @@
     <!-- Fonts & Tailwind CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
+                        // 康寧大學官網色系：深藍為主色，橘色只用於細線與圓點點綴
                         ukn: {
-                            50: '#f0f4f9',
-                            100: '#dde6f2',
-                            700: '#274976',
-                            800: '#233f63',
-                            900: '#1b324f',
-                            950: '#101e31',
+                            50: '#f2f5fa',
+                            100: '#e1e8f3',
+                            200: '#b7cfe6',
+                            300: '#8fb0d6',
+                            400: '#5b86c0',
+                            500: '#2f64ad',
+                            600: '#124aa4',
+                            700: '#003c9d',
+                            800: '#003377',
+                            900: '#00295f',
+                            950: '#001d44',
+                        },
+                        accent: {
+                            50: '#fff4ef',
+                            500: '#ff5511',
                         }
                     },
                     fontFamily: {
-                        sans: ['"Noto Sans TC"', 'Outfit', 'sans-serif'],
+                        sans: ['"Microsoft JhengHei"', '"Noto Sans TC"', '"PingFang TC"', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
+    <style>
+        /* ---- 康寧大學官網風格 ---- */
+        body { color: #444; }
+        /* 頁首：深藍頂線 + 橘色細線 (比照官網) */
+        .ukn-header { background: #fff; border-top: 8px solid #003c9d; border-bottom: 1px solid #e2e8f0; }
+        .ukn-header::before { content: ""; position: absolute; left: 0; right: 0; top: 2px; height: 3px; background: #ff5511; }
+        /* 區塊標題：橘色圓點 */
+        .ukn-title { position: relative; padding-left: 16px; color: #003377; }
+        .ukn-title::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -3.5px; width: 7px; height: 7px; border-radius: 50%; background: #ff5511; }
+        /* 頁尾：深藍底白字 */
+        .ukn-footer { background: #003377; color: #fff; }
+        .ukn-footer a { color: #fff; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-[#f5f6f8] font-sans min-h-screen flex flex-col">
 
-    <!-- 頂部管理導覽列 -->
-    <header class="bg-ukn-900 text-white p-4 shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-500 text-ukn-950 flex items-center justify-center font-black text-lg shadow">
-                    UKN
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-base sm:text-lg font-bold tracking-tight">康寧大學 校務行政與規章管理控制台</h1>
-                        <span class="text-[10px] bg-slate-800 text-slate-300 font-semibold px-2 py-0.5 rounded border border-slate-700">校務管理端</span>
+    <!-- 頁首 (比照康寧大學官網) -->
+    <header class="ukn-header sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
+                <div class="hidden md:block border-l border-slate-300 pl-3 leading-tight">
+                    <div class="text-ukn-800 font-bold text-base flex items-center gap-2">校務行政與規章管理控制台
+                        <span class="text-[10px] border border-slate-300 text-slate-500 font-normal px-1.5 rounded">管理端</span>
                     </div>
-                    <p class="text-[11px] text-slate-300">規章條文維護 · 學生搜尋詞庫管理 · 行政申辦流程與重要日程設定</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">規章條文維護 · 學生搜尋詞庫管理 · 行政申辦流程與重要日程設定</p>
                 </div>
             </div>
-            
-            <div class="flex items-center space-x-3">
-                <div id="dbStatusBadge" class="hidden sm:flex items-center space-x-2 bg-ukn-950 px-3 py-1.5 rounded-lg text-xs text-slate-200 border border-ukn-800">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <div id="dbStatusBadge" class="hidden sm:flex items-center gap-1.5 text-xs text-slate-600">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span id="dbModeText">校務資料庫連線正常</span>
                 </div>
-                <a href="/" class="text-xs bg-amber-500 hover:bg-amber-400 text-ukn-950 font-bold px-3.5 py-2 rounded-lg transition shadow flex items-center gap-1">
-                    <span>開啟學生端前台 ↗</span>
-                </a>
+                <a href="/" class="text-xs bg-ukn-800 hover:bg-ukn-700 text-white font-bold px-3.5 py-2 rounded transition whitespace-nowrap">開啟學生端前台 ↗</a>
             </div>
         </div>
     </header>
@@ -65,83 +85,97 @@
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 flex-grow w-full">
         
         <!-- 數據統計總覽 -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">校規規章條文</div>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1" id="statRules">5</div>
                 <div class="text-[11px] text-slate-400 mt-1">法規主檔</div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">常用同義詞庫</div>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1" id="statSynonyms">14</div>
                 <div class="text-[11px] text-slate-400 mt-1">口語對照規則</div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-rose-700 font-semibold">學生未命中關鍵字</div>
                 <div class="text-2xl sm:text-3xl font-bold text-rose-600 mt-1" id="statUnmatched">5</div>
                 <div class="text-[11px] text-rose-500 mt-1">待補充條文/同義詞</div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">學生查詢滿意度</div>
                 <div class="text-2xl sm:text-3xl font-bold text-emerald-700 mt-1" id="statSatisfaction">92%</div>
                 <div class="text-[11px] text-slate-400 mt-1">有效解答回饋</div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">行政申辦流程</div>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1" id="statChecklists">5</div>
                 <div class="text-[11px] text-slate-400 mt-1">含處室位置與表單</div>
             </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-5 rounded border border-slate-200">
                 <div class="text-xs text-slate-500 font-semibold">重要日程與校曆</div>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1" id="statDeadlines">5</div>
                 <div class="text-[11px] text-slate-400 mt-1">學期連動事項</div>
             </div>
+            <div class="bg-white p-5 rounded border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">本週搜尋次數</div>
+                <div class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1" id="statWeekSearches">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="statWeekSince">自本週一起算</div>
+            </div>
+            <div class="bg-white p-5 rounded border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">本週未命中率</div>
+                <div class="text-2xl sm:text-3xl font-bold text-rose-600 mt-1" id="statUnmatchedRate">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="statUnmatchedDetail">查無結果 / 總搜尋</div>
+            </div>
         </div>
 
         <!-- 主控制面板 -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+        <div class="bg-white rounded border border-slate-200 p-6 space-y-6">
             
             <!-- 標題與操作列 -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                    <h2 class="text-lg sm:text-xl font-bold text-slate-900">校務規章資料庫與申辦流程維護</h2>
+                    <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900">校務規章資料庫與申辦流程維護</h2>
                     <p class="text-xs text-slate-500">管理學生常查詞彙、將未命中詞彙轉為同義詞、維護法規條文與行政申辦流程。</p>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="openModal('add')" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shadow flex items-center gap-1">
+                    <button onclick="openModal('add')" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded text-xs sm:text-sm font-semibold transition flex items-center gap-1">
                         <span>+ 新增規章條文</span>
                     </button>
-                    <button onclick="openSynonymModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shadow flex items-center gap-1">
+                    <button onclick="openSynonymModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded text-xs sm:text-sm font-semibold transition flex items-center gap-1">
                         <span>+ 新增同義詞</span>
                     </button>
                 </div>
             </div>
 
             <!-- 後台分頁切換 -->
-            <div class="flex space-x-2 border-b border-slate-200 pb-2 text-xs sm:text-sm font-semibold overflow-x-auto no-scrollbar">
-                <button onclick="switchTab('unmatched')" id="tabBtn-unmatched" class="px-4 py-2 rounded-lg bg-rose-100 text-rose-900 flex items-center gap-1.5 whitespace-nowrap">
-                    <span>🌱 學生未命中搜尋詞彙</span>
+            <div class="flex border-b border-slate-200 text-xs sm:text-sm overflow-x-auto no-scrollbar">
+                <button onclick="switchTab('unmatched')" id="tabBtn-unmatched" class="px-4 py-2.5 text-ukn-800 font-bold border-b-2 border-accent-500 whitespace-nowrap flex items-center gap-1.5">
+                    <span>學生未命中搜尋詞彙</span>
                     <span class="bg-rose-600 text-white text-[10px] px-1.5 py-0.2 rounded" id="unmatchedBadge">5</span>
                 </button>
-                <button onclick="switchTab('rules')" id="tabBtn-rules" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">校規規章條文</button>
-                <button onclick="switchTab('synonyms')" id="tabBtn-synonyms" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">常用同義詞對照</button>
-                <button onclick="switchTab('checklists')" id="tabBtn-checklists" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">行政申辦流程與處室</button>
-                <button onclick="switchTab('deadlines')" id="tabBtn-deadlines" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">校曆與重要日程</button>
-                <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap">搜尋滿意度回饋</button>
+                <button onclick="switchTab('missed')" id="tabBtn-missed" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生找不到的問題</button>
+                <button onclick="switchTab('rules')" id="tabBtn-rules" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校規規章條文</button>
+                <button onclick="switchTab('synonyms')" id="tabBtn-synonyms" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">常用同義詞對照</button>
+                <button onclick="switchTab('checklists')" id="tabBtn-checklists" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">行政申辦流程與處室</button>
+                <button onclick="switchTab('deadlines')" id="tabBtn-deadlines" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆與重要日程</button>
+                <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">搜尋滿意度回饋</button>
+                <button onclick="switchTab('links')" id="tabBtn-links" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生專區連結</button>
+                <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">缺曠課通知（模擬）</button>
+                <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
             </div>
 
             <!-- 分頁 0: 學生未命中搜尋與詞庫維護 -->
             <div id="panel-unmatched" class="space-y-4">
-                <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-xs text-amber-950 flex items-start justify-between">
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-950 flex items-start justify-between">
                     <div class="space-y-1">
                         <div class="font-bold flex items-center gap-1 text-amber-900">
-                            <span>📌</span> <span>學生搜尋詞庫主動維護：</span>
+                            <span>學生搜尋詞庫主動維護：</span>
                         </div>
                         <p>當學生在前端查詢查無規章時，系統自動彙整記錄於此清單。管理人員可直接點擊「轉為同義詞」或「新增法規」，持續豐富校務知識庫。</p>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -158,9 +192,31 @@
                 </div>
             </div>
 
+            <!-- 分頁 0b: 學生找不到的問題 (search_logs 查無結果 + search_feedback 👎) -->
+            <div id="panel-missed" class="hidden space-y-3">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    彙整學生搜尋「查無結果」的關鍵字，以及搜尋後按下 👎 的查詢，依次數由多到少排序。可直接將俗稱加為同義詞，或補上新的校規條文。
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">學生查詢</th>
+                                <th class="p-3">查無結果</th>
+                                <th class="p-3">👎 沒幫助</th>
+                                <th class="p-3">合計</th>
+                                <th class="p-3">最近一次</th>
+                                <th class="p-3 text-center">處理</th>
+                            </tr>
+                        </thead>
+                        <tbody id="missedTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- 分頁 1: 校規條文 -->
             <div id="panel-rules" class="hidden space-y-3">
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -179,7 +235,7 @@
 
             <!-- 分頁 2: 同義詞字典 -->
             <div id="panel-synonyms" class="hidden space-y-3">
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -196,7 +252,7 @@
 
             <!-- 分頁 3: 行政申辦流程與處室 -->
             <div id="panel-checklists" class="hidden space-y-3">
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -215,7 +271,7 @@
 
             <!-- 分頁 4: 校曆與重要日程 -->
             <div id="panel-deadlines" class="hidden space-y-3">
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -234,7 +290,7 @@
 
             <!-- 分頁 5: 搜尋滿意度回饋 -->
             <div id="panel-feedback" class="hidden space-y-3">
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -250,35 +306,112 @@
                 </div>
             </div>
 
+            <!-- 分頁 8: 缺曠課紀錄與通知 (學校尚無 API，模擬展示) -->
+            <div id="panel-attendance" class="hidden space-y-3">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <div class="space-y-1">
+                        <p>待通知紀錄：<strong id="attendancePending" class="text-amber-700 text-sm">0</strong> 筆 · 資料來源：<span id="attendanceSource">—</span> · 寄信方式：<span id="attendanceNotifyMode">—</span></p>
+                        <p class="text-slate-500">通知信每位學生一封，內容只有「您有新的缺曠課紀錄，請登入系統查看」，不含任何具體紀錄。</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="openAttendanceModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap">+ 模擬新增缺曠紀錄</button>
+                        <button onclick="sendAttendanceNotifications()" id="btnNotifyAttendance" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap disabled:opacity-50">立即發送通知</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">日期</th>
+                                <th class="p-3">學生</th>
+                                <th class="p-3">課程</th>
+                                <th class="p-3">類別</th>
+                                <th class="p-3">通知狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 7: 學期校曆事項 (首頁「本週可辦」橫幅) -->
+            <div id="panel-calendar" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>學生首頁「本週可辦」橫幅會顯示今天進行中與 14 天內即將開始的事項，剩 3 天以內以紅色標示。設定「關聯申辦流程」後，學生點擊即可跳到該流程清單。</p>
+                    <button onclick="openCalendarModal()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap">+ 新增校曆事項</button>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">事項名稱</th>
+                                <th class="p-3">分類</th>
+                                <th class="p-3">開始日期</th>
+                                <th class="p-3">結束日期</th>
+                                <th class="p-3">關聯申辦流程</th>
+                                <th class="p-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 6: 學生專區統一入口連結 -->
+            <div id="panel-links" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>前台「學生專區統一入口」的連結。網址尚未確定請填 <code class="bg-white px-1 rounded border">#</code>（前台顯示為「網址建置中」）；http:// 開頭的連結會提示未加密。同一「群組」的連結會放在一起顯示。</p>
+                    <button onclick="openLinkModal()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap">+ 新增連結</button>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">分類</th>
+                                <th class="p-3">連結名稱</th>
+                                <th class="p-3">網址</th>
+                                <th class="p-3">群組</th>
+                                <th class="p-3">待辦備註</th>
+                                <th class="p-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linkTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
 
     </main>
 
     <!-- 頁尾 -->
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        康寧大學 校務行政與規章管理系統 · 版權所有
+    <footer class="ukn-footer py-8 text-center text-xs sm:text-sm leading-7">
+        <p class="font-bold">康寧大學 校務行政與規章管理系統</p>
+        <p>地址：114 臺北市內湖區康寧路三段75巷137號 ｜ 電話：(02)2632-1181 ｜ 傳真：(02)2632-8744</p>
     </footer>
 
     <!-- 彈窗 Modal: 一鍵轉同義詞 -->
     <div id="convertSynonymModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-lg space-y-4">
-            <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span>📝</span> 將學生搜尋詞轉為同義詞對照
+        <div class="bg-white rounded max-w-md w-full p-6 space-y-4">
+            <h3 class="ukn-title text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                將學生搜尋詞轉為同義詞對照
             </h3>
             <p class="text-xs text-slate-500">設定完成後，日後學生輸入此口語詞彙將自動對應至官方標準條文。</p>
             <form id="convertSynonymForm" onsubmit="saveConvertSynonym(event)" class="space-y-3 text-xs sm:text-sm">
                 <input type="hidden" id="convQueryId">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">學生口語關鍵字 *</label>
-                    <input type="text" id="convUserKeyword" required class="w-full border rounded-lg p-2.5 font-bold bg-slate-50">
+                    <input type="text" id="convUserKeyword" required class="w-full border rounded p-2.5 font-bold bg-slate-50">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">對應官方標準名稱 *</label>
-                    <input type="text" id="convOfficialTerm" placeholder="例如：學雜費退費辦法、停修課程辦理規定..." required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-ukn-500">
+                    <input type="text" id="convOfficialTerm" placeholder="例如：學雜費退費辦法、停修課程辦理規定..." required class="w-full border rounded p-2.5 focus:ring-2 focus:ring-ukn-500">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">所屬業務大類</label>
-                    <select id="convCategory" class="w-full border rounded-lg p-2.5">
+                    <select id="convCategory" class="w-full border rounded p-2.5">
                         <option value="1">1. 教務學則與選課</option>
                         <option value="2">2. 學務生輔與請假</option>
                         <option value="3">3. 證照抵免與獎助</option>
@@ -286,8 +419,8 @@
                     </select>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3">
-                    <button type="button" onclick="closeConvertModal()" class="px-4 py-2 border rounded-lg">取消</button>
-                    <button type="submit" class="px-5 py-2 rounded-lg bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存並立即生效</button>
+                    <button type="button" onclick="closeConvertModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存並立即生效</button>
                 </div>
             </form>
         </div>
@@ -295,14 +428,14 @@
 
     <!-- 彈窗 Modal: 條文新增/編輯 -->
     <div id="ruleModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 id="modalTitle" class="text-lg font-bold text-slate-900">新增校規條文</h3>
             <form id="ruleForm" onsubmit="saveRule(event)" class="space-y-3 text-xs sm:text-sm">
                 <input type="hidden" id="ruleId">
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-slate-600 mb-1">所屬處室大類 *</label>
-                        <select id="mCategory" class="w-full border rounded-lg p-2.5">
+                        <select id="mCategory" class="w-full border rounded p-2.5">
                             <option value="1">1. 教務學則與選課</option>
                             <option value="2">2. 學務生輔與請假</option>
                             <option value="3">3. 證照抵免與獎助</option>
@@ -311,40 +444,40 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-600 mb-1">子項目分類 *</label>
-                        <input type="text" id="mSubcategory" placeholder="例如：停修/棄修手續" required class="w-full border rounded-lg p-2.5">
+                        <input type="text" id="mSubcategory" placeholder="例如：停修/棄修手續" required class="w-full border rounded p-2.5">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-semibold text-slate-600 mb-1">關鍵字 (常見俗稱) *</label>
-                        <input type="text" id="mKeyword" placeholder="例如：棄修" required class="w-full border rounded-lg p-2.5">
+                        <input type="text" id="mKeyword" placeholder="例如：棄修" required class="w-full border rounded p-2.5">
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-600 mb-1">官方標準名稱 *</label>
-                        <input type="text" id="mOfficialTerm" placeholder="例如：停修課程辦理規定" required class="w-full border rounded-lg p-2.5">
+                        <input type="text" id="mOfficialTerm" placeholder="例如：停修課程辦理規定" required class="w-full border rounded p-2.5">
                     </div>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">法規條文內容 (官方解答) *</label>
-                    <textarea id="mContent" rows="4" placeholder="請填寫依據核定校規之詳細條文與辦理說明..." required class="w-full border rounded-lg p-2.5"></textarea>
+                    <textarea id="mContent" rows="4" placeholder="請填寫依據核定校規之詳細條文與辦理說明..." required class="w-full border rounded p-2.5"></textarea>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <div class="col-span-2">
                         <label class="block font-semibold text-slate-600 mb-1">法規出處文件 *</label>
-                        <input type="text" id="mDocName" placeholder="例如：康寧大學學生學則.pdf" required class="w-full border rounded-lg p-2.5">
+                        <input type="text" id="mDocName" placeholder="例如：康寧大學學生學則.pdf" required class="w-full border rounded p-2.5">
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-600 mb-1">頁碼</label>
-                        <input type="number" id="mPage" value="1" min="1" class="w-full border rounded-lg p-2.5">
+                        <input type="number" id="mPage" value="1" min="1" class="w-full border rounded p-2.5">
                     </div>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">官方網站規章連結 (URL)</label>
-                    <input type="url" id="mUrl" value="https://www.ukn.edu.tw" class="w-full border rounded-lg p-2.5">
+                    <input type="url" id="mUrl" value="https://www.ukn.edu.tw" class="w-full border rounded p-2.5">
                 </div>
                 <div class="flex justify-end space-x-2 pt-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">取消</button>
-                    <button type="submit" class="px-5 py-2 rounded-lg bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存條文</button>
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存條文</button>
                 </div>
             </form>
         </div>
@@ -352,20 +485,20 @@
 
     <!-- 彈窗 Modal: 新增同義詞 -->
     <div id="synonymModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-lg space-y-4">
-            <h3 class="text-lg font-bold text-slate-900">新增常用同義詞對照</h3>
+        <div class="bg-white rounded max-w-md w-full p-6 space-y-4">
+            <h3 class="ukn-title text-lg font-bold text-slate-900">新增常用同義詞對照</h3>
             <form id="synonymForm" onsubmit="saveSynonym(event)" class="space-y-3 text-xs sm:text-sm">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">學生口語俗稱 (User Keyword) *</label>
-                    <input type="text" id="sKeyword" placeholder="例如：退選、不要修了、英檢抵免" required class="w-full border rounded-lg p-2.5">
+                    <input type="text" id="sKeyword" placeholder="例如：退選、不要修了、英檢抵免" required class="w-full border rounded p-2.5">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">官方標準名稱 (Official Term) *</label>
-                    <input type="text" id="sOfficial" placeholder="例如：停修課程辦理規定、語言證照抵免辦法" required class="w-full border rounded-lg p-2.5">
+                    <input type="text" id="sOfficial" placeholder="例如：停修課程辦理規定、語言證照抵免辦法" required class="w-full border rounded p-2.5">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">所屬業務大類</label>
-                    <select id="sCategory" class="w-full border rounded-lg p-2.5">
+                    <select id="sCategory" class="w-full border rounded p-2.5">
                         <option value="1">1. 教務學則與選課</option>
                         <option value="2">2. 學務生輔與請假</option>
                         <option value="3">3. 證照抵免與獎助</option>
@@ -373,8 +506,126 @@
                     </select>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3">
-                    <button type="button" onclick="closeSynonymModal()" class="px-4 py-2 border rounded-lg">取消</button>
-                    <button type="submit" class="px-5 py-2 rounded-lg bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存同義詞</button>
+                    <button type="button" onclick="closeSynonymModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存同義詞</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 彈窗 Modal: 模擬新增缺曠紀錄 -->
+    <div id="attendanceModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded max-w-md w-full p-6 space-y-4">
+            <h3 class="ukn-title text-lg font-bold text-slate-900">模擬新增缺曠紀錄</h3>
+            <p class="text-xs text-slate-500">新增後為「待通知」，按「立即發送通知」即會通知該學生。</p>
+            <form onsubmit="saveAttendanceRecord(event)" class="space-y-3 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">學生 *</label>
+                    <select id="attStudent" class="w-full border rounded p-2.5"></select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">課程名稱 *</label>
+                    <input type="text" id="attCourse" list="attCourseOptions" required class="w-full border rounded p-2.5">
+                    <datalist id="attCourseOptions"></datalist>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">類別 *</label>
+                        <select id="attType" class="w-full border rounded p-2.5"></select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">日期 *</label>
+                        <input type="date" id="attDate" required class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeAttendanceModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">新增紀錄</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 彈窗 Modal: 校曆事項新增/編輯 -->
+    <div id="calendarModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="calendarModalTitle" class="text-lg font-bold text-slate-900">新增校曆事項</h3>
+            <form id="calendarForm" onsubmit="saveCalendarEvent(event)" class="space-y-3 text-xs sm:text-sm">
+                <input type="hidden" id="calId">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="col-span-2">
+                        <label class="block font-semibold text-slate-600 mb-1">事項名稱 *</label>
+                        <input type="text" id="calEventName" placeholder="例如：停修申請" required class="w-full border rounded p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">分類 *</label>
+                        <input type="text" id="calCategory" list="calCategoryOptions" value="教務" required class="w-full border rounded p-2.5">
+                        <datalist id="calCategoryOptions">
+                            <option value="教務"></option>
+                            <option value="學務"></option>
+                            <option value="繳費"></option>
+                            <option value="獎助"></option>
+                            <option value="總務"></option>
+                        </datalist>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">開始日期 *</label>
+                        <input type="date" id="calStartDate" required class="w-full border rounded p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">結束日期 *</label>
+                        <input type="date" id="calEndDate" required class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">關聯申辦流程（選填）</label>
+                    <select id="calChecklist" class="w-full border rounded p-2.5"></select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeCalendarModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存事項</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 彈窗 Modal: 學生專區連結新增/編輯 -->
+    <div id="linkModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="linkModalTitle" class="text-lg font-bold text-slate-900">新增學生專區連結</h3>
+            <form id="linkForm" onsubmit="saveLink(event)" class="space-y-3 text-xs sm:text-sm">
+                <input type="hidden" id="linkId">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">分類 *</label>
+                        <select id="lCategory" class="w-full border rounded p-2.5"></select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">連結名稱 *</label>
+                        <input type="text" id="lTitle" placeholder="例如：學生教務系統" required class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">網址 *（尚未確定請填 #）</label>
+                    <input type="text" id="lUrl" value="#" required pattern="#|[hH][tT][tT][pP][sS]?://.+" title="請填 # 或以 http:// / https:// 開頭的網址" class="w-full border rounded p-2.5 font-mono">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">簡短說明</label>
+                    <input type="text" id="lDescription" placeholder="例如：選課、成績查詢、課表" class="w-full border rounded p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">群組（選填，同分類中群組名稱相同的連結會並排顯示）</label>
+                    <input type="text" id="lGroup" placeholder="例如：獎助學金：看完公告，直接線上申請" class="w-full border rounded p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">待辦備註 (TODO，前台不顯示)</label>
+                    <input type="text" id="lTodo" placeholder="例如：TODO: 向註冊組確認網址" class="w-full border rounded p-2.5">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeLinkModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">儲存連結</button>
                 </div>
             </form>
         </div>
@@ -388,6 +639,10 @@
         let unmatchedCache = [];
         let deadlinesCache = [];
         let feedbackCache = [];
+        let linksCache = [];
+        let linkCategories = [];
+        let calendarCache = [];
+        let missedCache = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             loadAllData();
@@ -400,8 +655,14 @@
                 loadChecklists(),
                 loadUnmatchedQueries(),
                 loadDeadlines(),
-                loadFeedbackStats()
+                loadFeedbackStats(),
+                loadLinks(),
+                loadMissedQueries(),
+                loadAttendance(),
+                loadSearchStats()
             ]);
+            // 關聯申辦流程名稱需要 checklistsCache，因此等上方載入完成後再載入校曆
+            await loadCalendarEvents();
         }
 
         async function loadUnmatchedQueries() {
@@ -424,10 +685,10 @@
                         <td class="p-3 text-xs text-slate-400">${u.last_searched_at || '剛剛'}</td>
                         <td class="p-3"><span class="text-xs ${u.status === '待處理' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-semibold px-2 py-0.5 rounded">${u.status}</span></td>
                         <td class="p-3 text-center space-x-1.5">
-                            <button onclick="openConvertModal(${u.query_id}, '${u.query_text}')" class="bg-amber-500 hover:bg-amber-600 text-ukn-950 font-bold px-2.5 py-1 rounded text-xs shadow-sm">
+                            <button onclick="openConvertModal(${u.query_id}, '${u.query_text}')" class="bg-ukn-800 hover:bg-ukn-700 text-white font-bold px-2.5 py-1 rounded text-xs">
                                 轉同義詞
                             </button>
-                            <button onclick="openAddRuleWithKeyword('${u.query_text}')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-2.5 py-1 rounded text-xs shadow-sm">
+                            <button onclick="openAddRuleWithKeyword('${u.query_text}')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-2.5 py-1 rounded text-xs">
                                 新增法規
                             </button>
                         </td>
@@ -612,9 +873,9 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback').forEach(b => {
-                b.className = 'px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 whitespace-nowrap';
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance').forEach(b => {
+                b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
             const activePanel = document.getElementById(`panel-${tab}`);
@@ -622,7 +883,7 @@
 
             const activeBtn = document.getElementById(`tabBtn-${tab}`);
             if (activeBtn) {
-                activeBtn.className = tab === 'unmatched' ? 'px-4 py-2 rounded-lg bg-rose-100 text-rose-900 font-bold flex items-center gap-1.5 whitespace-nowrap' : 'px-4 py-2 rounded-lg bg-ukn-100 text-ukn-900 font-bold whitespace-nowrap';
+                activeBtn.className = 'px-4 py-2.5 text-ukn-800 font-bold border-b-2 border-accent-500 whitespace-nowrap' + (tab === 'unmatched' ? ' flex items-center gap-1.5' : '');
             }
         }
 
@@ -727,6 +988,345 @@
                 await loadSynonyms();
             } catch (e) {
                 console.error(e);
+            }
+        }
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        async function loadLinks() {
+            try {
+                const res = await fetch('/api/links');
+                const data = await res.json();
+                linksCache = data.data || [];
+                linkCategories = data.categories || [];
+                document.getElementById('lCategory').innerHTML = linkCategories
+                    .map(c => `<option value="${escapeHtml(c.key)}">${escapeHtml(c.icon || '')} ${escapeHtml(c.name)}</option>`).join('');
+                const catName = key => (linkCategories.find(c => c.key === key) || {}).name || key;
+                const tbody = document.getElementById('linkTableBody');
+                tbody.innerHTML = '';
+                linksCache.forEach(l => {
+                    let urlBadge = '';
+                    if (l.url === '#') urlBadge = '<span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold">待補網址</span>';
+                    else if (l.url.toLowerCase().startsWith('http://')) urlBadge = '<span class="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[10px] font-semibold">未加密</span>';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-3 font-mono">${l.id}</td>
+                        <td class="p-3 font-bold text-ukn-700">${escapeHtml(catName(l.category))}</td>
+                        <td class="p-3 font-bold text-slate-900">${escapeHtml(l.title)}</td>
+                        <td class="p-3 text-xs font-mono text-slate-600 max-w-xs break-all">${escapeHtml(l.url)} ${urlBadge}</td>
+                        <td class="p-3 text-xs text-slate-500">${escapeHtml(l.group || '')}</td>
+                        <td class="p-3 text-xs text-amber-700">${escapeHtml(l.todo || '')}</td>
+                        <td class="p-3 text-center space-x-2 whitespace-nowrap">
+                            <button onclick="openLinkModal(${l.id})" class="text-ukn-700 hover:underline font-semibold">編輯</button>
+                            <button onclick="deleteLink(${l.id})" class="text-rose-600 hover:underline font-semibold">刪除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openLinkModal(id) {
+            document.getElementById('linkForm').reset();
+            document.getElementById('linkId').value = '';
+            document.getElementById('linkModalTitle').textContent = id ? '編輯學生專區連結' : '新增學生專區連結';
+            const l = id ? linksCache.find(x => x.id === id) : null;
+            if (l) {
+                document.getElementById('linkId').value = l.id;
+                document.getElementById('lCategory').value = l.category;
+                document.getElementById('lTitle').value = l.title || '';
+                document.getElementById('lUrl').value = l.url || '#';
+                document.getElementById('lDescription').value = l.description || '';
+                document.getElementById('lGroup').value = l.group || '';
+                document.getElementById('lTodo').value = l.todo || '';
+            }
+            document.getElementById('linkModal').classList.remove('hidden');
+        }
+
+        function closeLinkModal() {
+            document.getElementById('linkModal').classList.add('hidden');
+        }
+
+        async function saveLink(e) {
+            e.preventDefault();
+            const id = document.getElementById('linkId').value;
+            const payload = {
+                category: document.getElementById('lCategory').value,
+                title: document.getElementById('lTitle').value.trim(),
+                url: document.getElementById('lUrl').value.trim(),
+                description: document.getElementById('lDescription').value.trim(),
+                group: document.getElementById('lGroup').value.trim(),
+                todo: document.getElementById('lTodo').value.trim()
+            };
+            try {
+                const res = await fetch(id ? `/api/links/${id}` : '/api/links', {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert(data.message);
+                    return;
+                }
+                closeLinkModal();
+                await loadLinks();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteLink(id) {
+            if (!confirm('確定要刪除這筆連結嗎？')) return;
+            try {
+                const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.status !== 'success') alert(data.message);
+                await loadLinks();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        function checklistName(id) {
+            const c = checklistsCache.find(x => x.item_id === id);
+            return c ? c.business_name : `#${id}`;
+        }
+
+        async function loadCalendarEvents() {
+            try {
+                const res = await fetch('/api/academic-calendar');
+                const data = await res.json();
+                calendarCache = data.data || [];
+                const tbody = document.getElementById('calendarTableBody');
+                tbody.innerHTML = '';
+                calendarCache.forEach(ev => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-3 font-mono">${ev.id}</td>
+                        <td class="p-3 font-bold text-slate-900">${escapeHtml(ev.event_name)}</td>
+                        <td class="p-3 text-xs font-semibold text-ukn-700">${escapeHtml(ev.category)}</td>
+                        <td class="p-3 text-xs font-mono">${escapeHtml(ev.start_date)}</td>
+                        <td class="p-3 text-xs font-mono">${escapeHtml(ev.end_date)}</td>
+                        <td class="p-3 text-xs text-slate-600">${ev.related_checklist_id ? escapeHtml(checklistName(ev.related_checklist_id)) : '<span class="text-slate-400">—</span>'}</td>
+                        <td class="p-3 text-center space-x-2 whitespace-nowrap">
+                            <button onclick="openCalendarModal(${ev.id})" class="text-ukn-700 hover:underline font-semibold">編輯</button>
+                            <button onclick="deleteCalendarEvent(${ev.id})" class="text-rose-600 hover:underline font-semibold">刪除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openCalendarModal(id) {
+            document.getElementById('calendarForm').reset();
+            document.getElementById('calId').value = '';
+            document.getElementById('calendarModalTitle').textContent = id ? '編輯校曆事項' : '新增校曆事項';
+            document.getElementById('calChecklist').innerHTML = '<option value="">（不關聯）</option>' + checklistsCache
+                .map(c => `<option value="${c.item_id}">${escapeHtml(c.business_name)}</option>`).join('');
+            const ev = id ? calendarCache.find(x => x.id === id) : null;
+            if (ev) {
+                document.getElementById('calId').value = ev.id;
+                document.getElementById('calEventName').value = ev.event_name;
+                document.getElementById('calCategory').value = ev.category;
+                document.getElementById('calStartDate').value = ev.start_date;
+                document.getElementById('calEndDate').value = ev.end_date;
+                document.getElementById('calChecklist').value = ev.related_checklist_id || '';
+            }
+            document.getElementById('calendarModal').classList.remove('hidden');
+        }
+
+        function closeCalendarModal() {
+            document.getElementById('calendarModal').classList.add('hidden');
+        }
+
+        async function saveCalendarEvent(e) {
+            e.preventDefault();
+            const id = document.getElementById('calId').value;
+            const startDate = document.getElementById('calStartDate').value;
+            const endDate = document.getElementById('calEndDate').value;
+            if (endDate < startDate) {
+                alert('結束日期不可早於開始日期');
+                return;
+            }
+            const payload = {
+                event_name: document.getElementById('calEventName').value.trim(),
+                category: document.getElementById('calCategory').value.trim(),
+                start_date: startDate,
+                end_date: endDate,
+                related_checklist_id: document.getElementById('calChecklist').value || null
+            };
+            try {
+                const res = await fetch(id ? `/api/academic-calendar/${id}` : '/api/academic-calendar', {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert(data.message);
+                    return;
+                }
+                closeCalendarModal();
+                await loadCalendarEvents();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteCalendarEvent(id) {
+            if (!confirm('確定要刪除這筆校曆事項嗎？')) return;
+            try {
+                const res = await fetch(`/api/academic-calendar/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.status !== 'success') alert(data.message);
+                await loadCalendarEvents();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        async function loadSearchStats() {
+            try {
+                const res = await fetch('/api/admin/search-stats');
+                const data = await res.json();
+                if (data.status !== 'success') return;
+                document.getElementById('statWeekSearches').textContent = data.week_search_count;
+                document.getElementById('statWeekSince').textContent = `自 ${data.week_start}（週一）起算`;
+                document.getElementById('statUnmatchedRate').textContent = data.unmatched_rate === null ? '—' : `${data.unmatched_rate}%`;
+                document.getElementById('statUnmatchedDetail').textContent = `查無結果 ${data.week_unmatched_count} / ${data.week_search_count} 次`;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadMissedQueries() {
+            try {
+                const res = await fetch('/api/admin/missed-queries');
+                const data = await res.json();
+                missedCache = data.data || [];
+                const tbody = document.getElementById('missedTableBody');
+                tbody.innerHTML = missedCache.length ? '' : '<tr><td colspan="6" class="p-6 text-center text-slate-400">目前沒有學生找不到的問題 </td></tr>';
+                missedCache.forEach((m, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-900">${escapeHtml(m.query)}</td>
+                        <td class="p-3">${m.unmatched_count ? `<span class="bg-rose-100 text-rose-800 font-semibold px-2 py-0.5 rounded text-xs">${m.unmatched_count} 次</span>` : '<span class="text-slate-300">0</span>'}</td>
+                        <td class="p-3">${m.unhelpful_count ? `<span class="bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded text-xs">${m.unhelpful_count} 次</span>` : '<span class="text-slate-300">0</span>'}</td>
+                        <td class="p-3 font-bold">${m.total_count}</td>
+                        <td class="p-3 text-xs text-slate-400">${escapeHtml(m.last_at)}</td>
+                        <td class="p-3 text-center space-x-1.5 whitespace-nowrap">
+                            <button onclick="addMissedAsSynonym(${idx})" class="bg-ukn-800 hover:bg-ukn-700 text-white font-bold px-2.5 py-1 rounded text-xs">加為同義詞</button>
+                            <button onclick="addMissedAsRule(${idx})" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-2.5 py-1 rounded text-xs">新增校規條文</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 以索引取值，避免查詢文字含引號時破壞 onclick 屬性
+        function addMissedAsSynonym(idx) {
+            openSynonymModal();
+            document.getElementById('sKeyword').value = missedCache[idx].query;
+            document.getElementById('sOfficial').focus();
+        }
+
+        function addMissedAsRule(idx) {
+            openAddRuleWithKeyword(missedCache[idx].query);
+        }
+        let attendanceMeta = null;
+
+        async function loadAttendance() {
+            try {
+                const res = await fetch('/api/admin/attendance');
+                const data = await res.json();
+                if (data.status !== 'success') return;
+                attendanceMeta = data;
+                document.getElementById('attendancePending').textContent = data.pending_count;
+                document.getElementById('attendanceSource').textContent = data.source === 'mysql' ? 'MySQL attendance_records' : '記憶體示範資料 (MySQL 離線)';
+                document.getElementById('attendanceNotifyMode').textContent = data.notify_mode === 'smtp' ? 'SMTP 實際寄信' : 'demo 模式 (印在伺服器終端機)';
+                const tbody = document.getElementById('attendanceTableBody');
+                const nameOf = sid => (data.students.find(s => s.student_id === sid) || {}).full_name || '';
+                const typeClass = { '曠課': 'bg-rose-100 text-rose-800', '遲到': 'bg-amber-100 text-amber-800', '病假': 'bg-sky-100 text-sky-800' };
+                tbody.innerHTML = data.data.map(r => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono text-xs">${escapeHtml(r.date)}</td>
+                        <td class="p-3"><span class="font-mono text-xs">${escapeHtml(r.student_id)}</span> <span class="font-semibold text-slate-900">${escapeHtml(nameOf(r.student_id))}</span></td>
+                        <td class="p-3">${escapeHtml(r.course_name)}</td>
+                        <td class="p-3"><span class="${typeClass[r.type] || ''} font-semibold px-2 py-0.5 rounded text-xs">${escapeHtml(r.type)}</span></td>
+                        <td class="p-3 text-xs">${r.notified ? '<span class="text-emerald-700 font-semibold">✓ 已通知</span>' : '<span class="text-amber-700 font-semibold">待通知</span>'}</td>
+                    </tr>`).join('') || '<tr><td colspan="5" class="p-6 text-center text-slate-400">尚無缺曠紀錄</td></tr>';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openAttendanceModal() {
+            if (!attendanceMeta) return;
+            document.getElementById('attStudent').innerHTML = attendanceMeta.students
+                .map(s => `<option value="${escapeHtml(s.student_id)}">${escapeHtml(s.student_id)} ${escapeHtml(s.full_name)}</option>`).join('');
+            document.getElementById('attCourseOptions').innerHTML = attendanceMeta.course_names
+                .map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+            document.getElementById('attType').innerHTML = attendanceMeta.types
+                .map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            document.getElementById('attCourse').value = attendanceMeta.course_names[0] || '';
+            document.getElementById('attDate').value = new Date().toLocaleDateString('sv-SE');  // YYYY-MM-DD (本地時區)
+            document.getElementById('attendanceModal').classList.remove('hidden');
+        }
+
+        function closeAttendanceModal() {
+            document.getElementById('attendanceModal').classList.add('hidden');
+        }
+
+        async function saveAttendanceRecord(e) {
+            e.preventDefault();
+            try {
+                const res = await fetch('/api/admin/attendance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: document.getElementById('attStudent').value,
+                        course_name: document.getElementById('attCourse').value.trim(),
+                        type: document.getElementById('attType').value,
+                        date: document.getElementById('attDate').value
+                    })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert(data.message);
+                    return;
+                }
+                closeAttendanceModal();
+                await loadAttendance();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function sendAttendanceNotifications() {
+            const btn = document.getElementById('btnNotifyAttendance');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/admin/attendance/notify', { method: 'POST' });
+                const data = await res.json();
+                let msg = data.message;
+                (data.failed || []).forEach(f => { msg += `\n・${f.student_id}：${f.error}`; });
+                alert(msg);
+                await loadAttendance();
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
             }
         }
     </script>

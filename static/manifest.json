@@ -1,0 +1,16 @@
+{
+  "name": "康寧大學 智慧校園服務平台",
+  "short_name": "康寧校園",
+  "description": "康寧大學學生學習與校務服務：校規查詢、修課進度、缺曠、行事曆與校務系統入口",
+  "lang": "zh-TW",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#003377",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
