@@ -4,3 +4,7 @@ db_backups/
 
 # 個人真實資料 (import_my_data.py 用)，不可推上 GitHub
 my_data.json
+
+# 使用者上傳的證照/競賽檔案 (個人文件) 不進 git，只保留示範檔
+static/uploads/*
+!static/uploads/demo_*
