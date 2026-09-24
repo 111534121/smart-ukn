@@ -122,14 +122,14 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center gap-4 py-3">
                 <a href="/" onclick="switchTab('tab-home'); return false;" class="flex items-center gap-3 min-w-0">
-                    <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
+                    <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-8 sm:h-11 w-auto max-w-[36vw] sm:max-w-none object-contain object-left shrink-0">
                     <span class="hidden md:block border-l border-slate-300 pl-3 leading-tight">
                         <span class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
                         <span class="block text-[11px] text-slate-500 mt-0.5">教務修業檢核 · 規章與申辦指引 · 學生學習輔導</span>
                     </span>
                 </a>
 
-                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                     <!-- 通知鈴鐺按鈕 (Notification Bell) -->
                     <div class="relative" id="notificationDropdownContainer">
                         <button id="notificationBellBtn" onclick="toggleNotificationMenu(event)" class="relative p-2 rounded-full text-slate-600 hover:text-ukn-800 hover:bg-slate-100 transition focus:outline-none" aria-label="系統通知與提醒" aria-expanded="false" title="通知與待辦提醒">
@@ -141,7 +141,8 @@
                         </button>
 
                         <!-- 通知下拉卡片 (Notification Dropdown) -->
-                        <div id="notificationMenu" class="hidden absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden origin-top-right transition-all">
+                        <!-- 手機版改為貼齊螢幕左右邊距，避免卡片超出畫面 -->
+                        <div id="notificationMenu" class="hidden fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden origin-top-right transition-all">
                             <!-- 頂部標題與操作 -->
                             <div class="p-3.5 bg-gradient-to-r from-ukn-900 to-ukn-800 text-white flex items-center justify-between">
                                 <div class="flex items-center gap-2">
@@ -168,12 +169,12 @@
 
                     <div id="currentUserBadge" class="text-right text-xs">
                         <div class="font-bold text-slate-800 flex items-center justify-end gap-1.5">
-                            <span id="userFullName">訪客</span>
-                            <span id="userRoleTag" class="text-[10px] border border-ukn-200 text-ukn-700 px-1.5 rounded">未登入</span>
+                            <span id="userFullName" class="truncate max-w-[6rem] sm:max-w-none">訪客</span>
+                            <span id="userRoleTag" class="hidden sm:inline text-[10px] border border-ukn-200 text-ukn-700 px-1.5 rounded">未登入</span>
                         </div>
                         <div class="text-[11px] text-slate-500 hidden md:block" id="userSubInfo"></div>
                     </div>
-                    <a href="/login" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">切換帳號</a>
+                    <a href="/login" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-2 sm:px-3 py-1.5 rounded transition whitespace-nowrap">切換帳號</a>
                     <!-- 校務管理後台 (僅管理員與教職員顯示，學生/家長/訪客一律隱藏) -->
                     <a href="/admin" target="_blank" id="adminEntryLink" class="hidden bg-ukn-800 hover:bg-ukn-700 text-white text-xs font-bold px-3 py-1.5 rounded transition items-center gap-1 whitespace-nowrap">校務管理後台 ↗</a>
                 </div>
@@ -363,20 +364,10 @@
                     <span id="radarWeekText">本學期</span>
                 </span>
                 <span class="text-slate-600">本週重要申辦事項：</span>
-                <div id="radarActivePills" class="flex items-center gap-2 flex-wrap">
-                    <button onclick="jumpToChecklist(1)" class="bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded flex items-center gap-1 transition">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                        <span>停修申請受理中（倒數 14 天）</span>
-                    </button>
-                    <button onclick="switchTab('tab-warning')" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 px-2.5 py-0.5 rounded transition">
-                        <span>期中預警評量輔導</span>
-                    </button>
-                    <button onclick="switchTab('tab-graduation')" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 px-2.5 py-0.5 rounded transition">
-                        <span>應屆畢業生資格審查</span>
-                    </button>
-                </div>
+                <!-- 由 /api/calendar/current-week 的 active_highlights 產生 -->
+                <div id="radarActivePills" class="flex items-center gap-2 flex-wrap"></div>
             </div>
-            <div class="text-[11px] text-slate-500 flex items-center gap-2">
+            <div class="text-[11px] text-slate-500 flex items-center gap-2 shrink-0 whitespace-nowrap">
                 <span>校曆連動即時同步</span>
                 <span class="text-emerald-700">● 系統連線正常</span>
             </div>
@@ -2114,10 +2105,36 @@
                 if (data.status === 'success') {
                     document.getElementById('radarWeekText').textContent = `${data.semester_name} 第 ${data.current_week} 週`;
                     document.getElementById('calendarYearText').textContent = `${data.academic_year} 學年度`;
+                    renderRadarPills(data.active_highlights);
                 }
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        // 頂部橫條：本週要注意的校曆事項，點擊開啟行事曆上的該事項
+        function renderRadarPills(highlights) {
+            const el = document.getElementById('radarActivePills');
+            if (!highlights.length) {
+                el.innerHTML = '<span class="text-slate-400">本週沒有需要辦理的事項</span>';
+                return;
+            }
+            el.innerHTML = highlights.map(h => {
+                const style = h.is_urgent ? 'hover:bg-rose-50 text-rose-700 border-rose-200'
+                    : h.category === 'holiday' ? 'hover:bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'hover:bg-slate-50 text-slate-600 border-slate-300';
+                return `
+                    <button onclick="openRadarEvent(${Number(h.id)})" title="${escapeHtml(h.title)}" class="bg-white ${style} border px-2.5 py-0.5 rounded flex items-center gap-1 transition max-w-[18rem]">
+                        ${h.is_urgent ? '<span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>' : ''}
+                        <span class="truncate">${escapeHtml(h.title)}</span>
+                        <span class="shrink-0">（${escapeHtml(h.badge)}）</span>
+                    </button>`;
+            }).join('');
+        }
+
+        function openRadarEvent(id) {
+            switchTab('tab-calendar');
+            openSchoolCalEvent(id);
         }
 
         // 3. 載入分類選單

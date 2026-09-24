@@ -562,11 +562,11 @@ DEMO_DEADLINES = [
 
 # 學期校曆事項 (對應 academic_calendar 資料表，內容與 init_db.py 範例一致)
 DEMO_ACADEMIC_CALENDAR = [
-    {"id": 1, "event_name": "加退選", "start_date": "2026-09-14", "end_date": "2026-09-25", "category": "教務", "related_checklist_id": None},
-    {"id": 2, "event_name": "學雜費繳費期限", "start_date": "2026-09-01", "end_date": "2026-09-30", "category": "繳費", "related_checklist_id": None},
-    {"id": 3, "event_name": "獎助學金申請期限", "start_date": "2026-09-21", "end_date": "2026-10-16", "category": "獎助", "related_checklist_id": None},
-    {"id": 4, "event_name": "停修申請", "start_date": "2026-10-01", "end_date": "2026-10-16", "category": "教務", "related_checklist_id": 1},
-    {"id": 5, "event_name": "教學意見調查開放期間", "start_date": "2026-12-14", "end_date": "2027-01-15", "category": "教務", "related_checklist_id": None}
+    {"id": 1, "event_name": "網路加退選及重補修", "start_date": "2026-09-14", "end_date": "2026-09-20", "category": "教務", "related_checklist_id": None},
+    {"id": 2, "event_name": "就學貸款申請、學雜費減免收件", "start_date": "2026-09-14", "end_date": "2026-09-15", "category": "繳費", "related_checklist_id": None},
+    {"id": 3, "event_name": "弱勢助學金、學產基金申請", "start_date": "2026-09-16", "end_date": "2026-10-01", "category": "獎助", "related_checklist_id": None},
+    {"id": 4, "event_name": "受理棄選（停修）", "start_date": "2026-11-16", "end_date": "2026-12-04", "category": "教務", "related_checklist_id": 1},
+    {"id": 5, "event_name": "網路教學評量填寫", "start_date": "2026-12-14", "end_date": "2026-12-20", "category": "教務", "related_checklist_id": None}
 ]
 
 # 模擬缺曠課紀錄 (對應 attendance_records 資料表，內容與 seed_data.py 一致)
@@ -857,23 +857,56 @@ def current_academic_term(today):
         "name": f"{year} 學年度第 {semester} 學期"
     }
 
+# 頂部橫條：進行中的申請/考試，以及幾天內要開始的申請、考試、放假
+HIGHLIGHT_CATEGORIES = ("apply", "exam", "holiday")
+HIGHLIGHT_UPCOMING_DAYS = 7
+HIGHLIGHT_URGENT_DAYS = 3
+HIGHLIGHT_LIMIT = 4
+
+def calendar_highlights(events, today):
+    """從學校行事曆挑出本週要注意的事項，依緊急程度排序"""
+    ongoing, upcoming = [], []
+    for ev in events:
+        if ev["category"] not in HIGHLIGHT_CATEGORIES:
+            continue
+        start = datetime.strptime(ev["start_date"], "%Y-%m-%d").date()
+        end = datetime.strptime(ev["end_date"], "%Y-%m-%d").date()
+        days_to_end, days_to_start = (end - today).days, (start - today).days
+        if start <= today <= end and ev["category"] != "holiday":
+            badge = "今天截止" if days_to_end == 0 else f"進行中・剩 {days_to_end} 天"
+            ongoing.append({"id": ev["id"], "title": ev["title"], "category": ev["category"], "badge": badge,
+                            "is_urgent": days_to_end <= HIGHLIGHT_URGENT_DAYS, "sort": days_to_end})
+        elif 0 < days_to_start <= HIGHLIGHT_UPCOMING_DAYS:
+            when = "明天" if days_to_start == 1 else f"{days_to_start} 天後"
+            if ev["category"] == "holiday":
+                badge = f"{when}放假"
+            elif start == end and "截止" in ev["title"]:
+                badge = f"{when}截止"
+            else:
+                badge = f"{when}開始"
+            upcoming.append({"id": ev["id"], "title": ev["title"], "category": ev["category"], "badge": badge,
+                             "is_urgent": False, "sort": days_to_start})
+    ongoing.sort(key=lambda h: h["sort"])
+    upcoming.sort(key=lambda h: h["sort"])
+    return [{k: v for k, v in h.items() if k != "sort"} for h in (ongoing + upcoming)[:HIGHLIGHT_LIMIT]]
+
 @app.route("/api/calendar/current-week", methods=["GET"])
 def get_current_week():
-    """回傳當前學期、當週校曆週次與重要辦理事項"""
-    now = datetime.now()
-    term = current_academic_term(now.date())
+    """回傳當前學期、當週校曆週次與本週要注意的校曆事項 (可用 ?date=YYYY-MM-DD 模擬日期)"""
+    try:
+        today = datetime.strptime(request.args["date"], "%Y-%m-%d").date() if request.args.get("date") else datetime.now().date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "date 格式須為 YYYY-MM-DD"}), 400
+    term = current_academic_term(today)
+    calendar = school_calendar_sync.load()
     return jsonify({
         "status": "success",
         "academic_year": term["academic_year"],
         "semester": term["semester"],
         "semester_name": term["name"],
         "current_week": term["week"],
-        "current_date": now.strftime("%Y-%m-%d"),
-        "active_highlights": [
-            {"title": "課程停修申請", "badge": "本週受理中 (剩 3 天)", "office": "課務組", "url": "/#tab-checklist", "is_urgent": True},
-            {"title": "期中預警評量", "badge": "輔導進行中 (剩 5 天)", "office": "學務處", "url": "/#tab-warning", "is_urgent": True},
-            {"title": "大四學分預審", "badge": "審查中 (剩 35 天)", "office": "註冊組", "url": "/#tab-graduation", "is_urgent": False}
-        ]
+        "current_date": today.isoformat(),
+        "active_highlights": calendar_highlights(calendar["events"], today) if calendar else []
     }), 200
 
 @app.route("/api/deadlines", methods=["GET", "POST"])
