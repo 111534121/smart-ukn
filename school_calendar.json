@@ -1,0 +1,1032 @@
+{
+  "academic_year": 115,
+  "source_url": "https://daa.ukn.edu.tw/var/file/21/1021/img/218572111.pdf",
+  "source_page": "https://daa.ukn.edu.tw/p/412-1021-846.php?Lang=zh-tw",
+  "fetched_at": "2026-09-24 10:35",
+  "events": [
+    {
+      "id": 1,
+      "title": "115 學年度第 1 學期開始",
+      "start_date": "2026-08-01",
+      "end_date": "2026-08-01",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 2,
+      "title": "行政會議",
+      "start_date": "2026-08-26",
+      "end_date": "2026-08-26",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 3,
+      "title": "全校水塔清洗作業、全校消毒作業",
+      "start_date": "2026-08-29",
+      "end_date": "2026-08-30",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 4,
+      "title": "準備週、資教新生家長座談會",
+      "start_date": "2026-09-07",
+      "end_date": "2026-09-07",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 5,
+      "title": "公告課表、期初導師會議",
+      "start_date": "2026-09-09",
+      "end_date": "2026-09-09",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 6,
+      "title": "延修生註冊",
+      "start_date": "2026-09-09",
+      "end_date": "2026-09-10",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 7,
+      "title": "115 學年度新生定向",
+      "start_date": "2026-09-10",
+      "end_date": "2026-09-11",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 8,
+      "title": "專兼任共融會議(各系科主辦)",
+      "start_date": "2026-09-11",
+      "end_date": "2026-09-11",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 9,
+      "title": "在職專班開學",
+      "start_date": "2026-09-12",
+      "end_date": "2026-09-12",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 10,
+      "title": "臺北校區住宿生入住",
+      "start_date": "2026-09-13",
+      "end_date": "2026-09-13",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 11,
+      "title": "開學日、舊生註冊、學分抵免申請截止、上午三四節期初大掃除",
+      "start_date": "2026-09-14",
+      "end_date": "2026-09-14",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 12,
+      "title": "網路加退選及重補修課程",
+      "start_date": "2026-09-14",
+      "end_date": "2026-09-20",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 13,
+      "title": "大學部申請本學期提前畢業",
+      "start_date": "2026-09-14",
+      "end_date": "2026-09-24",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 14,
+      "title": "就學貸款申請截止、學雜費減免收件截止、轉復學生會議",
+      "start_date": "2026-09-15",
+      "end_date": "2026-09-15",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 15,
+      "title": "留察生期初說明會、住宿生大會",
+      "start_date": "2026-09-16",
+      "end_date": "2026-09-16",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 16,
+      "title": "115 學年度弱勢助學金、學產基金、台北市清寒午餐補助申請",
+      "start_date": "2026-09-16",
+      "end_date": "2026-10-01",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 17,
+      "title": "校課程委員會、社團博覽會",
+      "start_date": "2026-09-23",
+      "end_date": "2026-09-23",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 18,
+      "title": "中秋節(放假一天)",
+      "start_date": "2026-09-25",
+      "end_date": "2026-09-25",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 19,
+      "title": "孔子誕辰紀念日/教師節(放假一天)",
+      "start_date": "2026-09-28",
+      "end_date": "2026-09-28",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 20,
+      "title": "行政會議",
+      "start_date": "2026-09-30",
+      "end_date": "2026-09-30",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 21,
+      "title": "親師溝通座談會",
+      "start_date": "2026-10-03",
+      "end_date": "2026-10-03",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 22,
+      "title": "新生體檢",
+      "start_date": "2026-10-07",
+      "end_date": "2026-10-07",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 23,
+      "title": "班際 3 對 3 籃球鬥牛比賽 (預計 2 週)",
+      "start_date": "2026-10-07",
+      "end_date": "2026-10-07",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 24,
+      "title": "國慶日補假",
+      "start_date": "2026-10-09",
+      "end_date": "2026-10-09",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 25,
+      "title": "國慶日(放假一天)",
+      "start_date": "2026-10-10",
+      "end_date": "2026-10-10",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 26,
+      "title": "新生性平教育講座",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-23",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 27,
+      "title": "班際 3 對 3 籃球鬥牛比賽 (預計 2 週)",
+      "start_date": "2026-10-14",
+      "end_date": "2026-10-14",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 28,
+      "title": "教務會議",
+      "start_date": "2026-10-21",
+      "end_date": "2026-10-21",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 29,
+      "title": "休退學學雜費退還三分之二截止",
+      "start_date": "2026-10-24",
+      "end_date": "2026-10-24",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 30,
+      "title": "臺灣光復暨金門古寧頭大捷紀念日(放假一天)",
+      "start_date": "2026-10-25",
+      "end_date": "2026-10-25",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 31,
+      "title": "臺灣光復暨金門古寧頭大捷紀念日補假",
+      "start_date": "2026-10-26",
+      "end_date": "2026-10-26",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 32,
+      "title": "行政會議",
+      "start_date": "2026-10-28",
+      "end_date": "2026-10-28",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 33,
+      "title": "留察生暨嚴重缺曠學生期中座談會",
+      "start_date": "2026-11-04",
+      "end_date": "2026-11-04",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 34,
+      "title": "期中考試",
+      "start_date": "2026-11-07",
+      "end_date": "2026-11-13",
+      "tentative": false,
+      "category": "exam"
+    },
+    {
+      "id": 35,
+      "title": "期中考成績上網登錄",
+      "start_date": "2026-11-09",
+      "end_date": "2026-11-23",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 36,
+      "title": "申請下學期轉系(科)、輔系及雙主修",
+      "start_date": "2026-11-09",
+      "end_date": "2027-01-08",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 37,
+      "title": "校務會議",
+      "start_date": "2026-11-11",
+      "end_date": "2026-11-11",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 38,
+      "title": "1152 學雜費減免收件開始",
+      "start_date": "2026-11-16",
+      "end_date": "2026-11-16",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 39,
+      "title": "受理棄選(五專前三年除外)",
+      "start_date": "2026-11-16",
+      "end_date": "2026-12-04",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 40,
+      "title": "行政會議、班際啦啦隊(舞蹈)比賽",
+      "start_date": "2026-11-25",
+      "end_date": "2026-11-25",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 41,
+      "title": "休退學學雜費退還三分之一截止",
+      "start_date": "2026-12-05",
+      "end_date": "2026-12-05",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 42,
+      "title": "社團評鑑(暫定)",
+      "start_date": "2026-12-09",
+      "end_date": "2026-12-09",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 43,
+      "title": "58 週年校慶典禮(4/8 日間部補假)",
+      "start_date": "2026-12-12",
+      "end_date": "2026-12-12",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 44,
+      "title": "網路教學評量填寫",
+      "start_date": "2026-12-14",
+      "end_date": "2026-12-20",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 45,
+      "title": "遠距教學評議委員會、校課程委員會、教學品保會議、九宮格棒球擲準比賽",
+      "start_date": "2026-12-16",
+      "end_date": "2026-12-16",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 46,
+      "title": "下學期課程網路初選",
+      "start_date": "2026-12-21",
+      "end_date": "2026-12-27",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 47,
+      "title": "教務會議、期末導師會議",
+      "start_date": "2026-12-23",
+      "end_date": "2026-12-23",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 48,
+      "title": "行憲紀念日(放假一天)",
+      "start_date": "2026-12-25",
+      "end_date": "2026-12-25",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 49,
+      "title": "行政會議",
+      "start_date": "2026-12-30",
+      "end_date": "2026-12-30",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 50,
+      "title": "中華民國開國紀念日(放假一天)",
+      "start_date": "2027-01-01",
+      "end_date": "2027-01-01",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 51,
+      "title": "體育委員會議(併學務處期末聯合會議)、下午一二節期末大掃除",
+      "start_date": "2027-01-06",
+      "end_date": "2027-01-06",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 52,
+      "title": "本學期申請休學、退學截止日、申請次學期轉系(科)截止日",
+      "start_date": "2027-01-08",
+      "end_date": "2027-01-08",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 53,
+      "title": "期末考試",
+      "start_date": "2027-01-09",
+      "end_date": "2027-01-15",
+      "tentative": false,
+      "category": "exam"
+    },
+    {
+      "id": 54,
+      "title": "總務聯合會議",
+      "start_date": "2027-01-13",
+      "end_date": "2027-01-13",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 55,
+      "title": "學期成績上網登錄",
+      "start_date": "2027-01-13",
+      "end_date": "2027-01-25",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 56,
+      "title": "臺北校區住宿生期末離宿及封宿",
+      "start_date": "2027-01-15",
+      "end_date": "2027-01-15",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 57,
+      "title": "學期第 18 週結束",
+      "start_date": "2027-01-16",
+      "end_date": "2027-01-16",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 58,
+      "title": "寒假開始",
+      "start_date": "2027-01-18",
+      "end_date": "2027-01-18",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 59,
+      "title": "學生操評暨期末獎懲委員會",
+      "start_date": "2027-01-20",
+      "end_date": "2027-01-20",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 60,
+      "title": "行政會議",
+      "start_date": "2027-01-27",
+      "end_date": "2027-01-27",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 61,
+      "title": "115 學年度第 1 學期結束",
+      "start_date": "2027-01-31",
+      "end_date": "2027-01-31",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 62,
+      "title": "115 學年度第 2 學期開始",
+      "start_date": "2027-02-01",
+      "end_date": "2027-02-01",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 63,
+      "title": "小年夜",
+      "start_date": "2027-02-04",
+      "end_date": "2027-02-04",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 64,
+      "title": "春節初一~初三",
+      "start_date": "2027-02-06",
+      "end_date": "2027-02-08",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 65,
+      "title": "年初一、二遇例假日補假",
+      "start_date": "2027-02-09",
+      "end_date": "2027-02-10",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 66,
+      "title": "全校水塔清洗作業、全校消毒作業",
+      "start_date": "2027-02-13",
+      "end_date": "2027-02-14",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 67,
+      "title": "準備週",
+      "start_date": "2027-02-15",
+      "end_date": "2027-02-15",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 68,
+      "title": "公告課表、期初導師會議",
+      "start_date": "2027-02-17",
+      "end_date": "2027-02-17",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 69,
+      "title": "延修生註冊",
+      "start_date": "2027-02-17",
+      "end_date": "2027-02-18",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 70,
+      "title": "專兼任共融會議(各系科主辦)",
+      "start_date": "2027-02-19",
+      "end_date": "2027-02-19",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 71,
+      "title": "在職專班開學",
+      "start_date": "2027-02-20",
+      "end_date": "2027-02-20",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 72,
+      "title": "臺北校區住宿生入住",
+      "start_date": "2027-02-21",
+      "end_date": "2027-02-21",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 73,
+      "title": "開學日、舊生註冊、學分抵免申請截止、上午三四節期初大掃除",
+      "start_date": "2027-02-22",
+      "end_date": "2027-02-22",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 74,
+      "title": "網路加退選及重補修課程",
+      "start_date": "2027-02-22",
+      "end_date": "2027-02-28",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 75,
+      "title": "大學部申請本學期提前畢業",
+      "start_date": "2027-02-22",
+      "end_date": "2027-03-05",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 76,
+      "title": "就學貸款申請截止、學雜費減免收件截止、轉復學生會議",
+      "start_date": "2027-02-23",
+      "end_date": "2027-02-23",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 77,
+      "title": "學產基金、台北市清寒午餐補助申請",
+      "start_date": "2027-02-23",
+      "end_date": "2027-03-11",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 78,
+      "title": "行政會議",
+      "start_date": "2027-02-24",
+      "end_date": "2027-02-24",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 79,
+      "title": "和平紀念日(放假一天)",
+      "start_date": "2027-02-28",
+      "end_date": "2027-02-28",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 80,
+      "title": "和平紀念日補假",
+      "start_date": "2027-03-01",
+      "end_date": "2027-03-01",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 81,
+      "title": "留察生期初說明會",
+      "start_date": "2027-03-02",
+      "end_date": "2027-03-02",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 82,
+      "title": "校課程委員會",
+      "start_date": "2027-03-03",
+      "end_date": "2027-03-03",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 83,
+      "title": "康寧盃躲避球比賽 (預計 2 週)",
+      "start_date": "2027-03-17",
+      "end_date": "2027-03-17",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 84,
+      "title": "康寧盃躲避球比賽 (預計 2 週)",
+      "start_date": "2027-03-24",
+      "end_date": "2027-03-24",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 85,
+      "title": "行政會議、教務會議",
+      "start_date": "2027-03-31",
+      "end_date": "2027-03-31",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 86,
+      "title": "休退學學雜費退還三分之二截止",
+      "start_date": "2027-04-03",
+      "end_date": "2027-04-03",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 87,
+      "title": "兒童節",
+      "start_date": "2027-04-04",
+      "end_date": "2027-04-04",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 88,
+      "title": "清明節",
+      "start_date": "2027-04-05",
+      "end_date": "2027-04-05",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 89,
+      "title": "兒童節補假",
+      "start_date": "2027-04-06",
+      "end_date": "2027-04-06",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 90,
+      "title": "日間部教學成果發表會(各系科自行辦理)補假",
+      "start_date": "2027-04-07",
+      "end_date": "2027-04-07",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 91,
+      "title": "日間部 58 週年校慶典禮補假",
+      "start_date": "2027-04-08",
+      "end_date": "2027-04-08",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 92,
+      "title": "日間部畢業典禮補假",
+      "start_date": "2027-04-09",
+      "end_date": "2027-04-09",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 93,
+      "title": "留察生暨嚴重缺曠學生期中座談會、10 人齊腳向前趣味競賽",
+      "start_date": "2027-04-14",
+      "end_date": "2027-04-14",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 94,
+      "title": "期中考試",
+      "start_date": "2027-04-17",
+      "end_date": "2027-04-23",
+      "tentative": false,
+      "category": "exam"
+    },
+    {
+      "id": 95,
+      "title": "期中考成績上網登錄",
+      "start_date": "2027-04-19",
+      "end_date": "2027-05-03",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 96,
+      "title": "申請下學期轉系(科)、輔系及雙主修",
+      "start_date": "2027-04-19",
+      "end_date": "2027-06-18",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 97,
+      "title": "校務會議",
+      "start_date": "2027-04-21",
+      "end_date": "2027-04-21",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 98,
+      "title": "受理棄選(五專前三年除外)、1161 學雜費減免收件開始",
+      "start_date": "2027-04-26",
+      "end_date": "2027-05-14",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 99,
+      "title": "于斌盃羽球比賽(預計 2 週)",
+      "start_date": "2027-04-28",
+      "end_date": "2027-04-28",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 100,
+      "title": "行政會議、徵才博覽會",
+      "start_date": "2027-04-28",
+      "end_date": "2027-04-28",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 101,
+      "title": "勞動節補假",
+      "start_date": "2027-04-30",
+      "end_date": "2027-04-30",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 102,
+      "title": "勞動節",
+      "start_date": "2027-05-01",
+      "end_date": "2027-05-01",
+      "tentative": true,
+      "category": "holiday"
+    },
+    {
+      "id": 103,
+      "title": "于斌盃羽球比賽(預計 2 週)",
+      "start_date": "2027-05-05",
+      "end_date": "2027-05-05",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 104,
+      "title": "學生會三合一選舉週",
+      "start_date": "2027-05-10",
+      "end_date": "2027-05-14",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 105,
+      "title": "休退學學雜費退還三分之一截止",
+      "start_date": "2027-05-15",
+      "end_date": "2027-05-15",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 106,
+      "title": "暑修第一階段選課及繳費",
+      "start_date": "2027-05-17",
+      "end_date": "2027-05-21",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 107,
+      "title": "應屆畢業生申請本學期休學、退學截止日",
+      "start_date": "2027-05-21",
+      "end_date": "2027-05-21",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 108,
+      "title": "畢業生學期考試",
+      "start_date": "2027-05-22",
+      "end_date": "2027-05-28",
+      "tentative": false,
+      "category": "exam"
+    },
+    {
+      "id": 109,
+      "title": "網路教學評量填寫",
+      "start_date": "2027-05-24",
+      "end_date": "2027-05-30",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 110,
+      "title": "畢業班學期成績上網登錄",
+      "start_date": "2027-05-24",
+      "end_date": "2027-05-31",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 111,
+      "title": "行政會議、遠距教學評議委員會、校課程委員會、教學品保會議、體育委員會暨畢業生體育績優審查會議",
+      "start_date": "2027-05-26",
+      "end_date": "2027-05-26",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 112,
+      "title": "畢業班學生操評暨期末獎懲委員會",
+      "start_date": "2027-05-27",
+      "end_date": "2027-05-27",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 113,
+      "title": "下學期課程網路初選",
+      "start_date": "2027-05-31",
+      "end_date": "2027-06-06",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 114,
+      "title": "教務會議、期末導師會議",
+      "start_date": "2027-06-02",
+      "end_date": "2027-06-02",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 115,
+      "title": "端午節(放假一天)",
+      "start_date": "2027-06-09",
+      "end_date": "2027-06-09",
+      "tentative": false,
+      "category": "holiday"
+    },
+    {
+      "id": 116,
+      "title": "公告暑修第一階段開課明細",
+      "start_date": "2027-06-10",
+      "end_date": "2027-06-10",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 117,
+      "title": "畢業典禮(4/9 日間部補假)",
+      "start_date": "2027-06-12",
+      "end_date": "2027-06-12",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 118,
+      "title": "總務聯合會議、下午一二節期末大掃除、學務處期末聯合會議",
+      "start_date": "2027-06-16",
+      "end_date": "2027-06-16",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 119,
+      "title": "非應屆畢業生申請本學期休學、退學截止日、申請次學期轉系(科)截止",
+      "start_date": "2027-06-18",
+      "end_date": "2027-06-18",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 120,
+      "title": "期末考試",
+      "start_date": "2027-06-19",
+      "end_date": "2027-06-25",
+      "tentative": false,
+      "category": "exam"
+    },
+    {
+      "id": 121,
+      "title": "學期成績上網登錄",
+      "start_date": "2027-06-23",
+      "end_date": "2027-07-05",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 122,
+      "title": "臺北校區住宿生期末離宿及封宿",
+      "start_date": "2027-06-25",
+      "end_date": "2027-06-25",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 123,
+      "title": "學期第 18 週結束",
+      "start_date": "2027-06-26",
+      "end_date": "2027-06-26",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 124,
+      "title": "暑假開始",
+      "start_date": "2027-06-28",
+      "end_date": "2027-06-28",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 125,
+      "title": "行政會議、在校生學生操評暨期末獎懲委員會",
+      "start_date": "2027-06-30",
+      "end_date": "2027-06-30",
+      "tentative": false,
+      "category": "meeting"
+    },
+    {
+      "id": 126,
+      "title": "暑修第二階段選課及繳費",
+      "start_date": "2027-07-12",
+      "end_date": "2027-07-15",
+      "tentative": false,
+      "category": "apply"
+    },
+    {
+      "id": 127,
+      "title": "行政會議、公告暑修第二階段開課明細",
+      "start_date": "2027-07-28",
+      "end_date": "2027-07-28",
+      "tentative": false,
+      "category": "event"
+    },
+    {
+      "id": 128,
+      "title": "115 學年度第 2 學期結束",
+      "start_date": "2027-07-31",
+      "end_date": "2027-07-31",
+      "tentative": false,
+      "category": "event"
+    }
+  ]
+}
