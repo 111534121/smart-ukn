@@ -85,7 +85,7 @@
     <header class="ukn-header sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center gap-4 py-3">
-                <a href="/" onclick="switchTab('tab-ai'); return false;" class="flex items-center gap-3 min-w-0">
+                <a href="/" onclick="switchTab('tab-home'); return false;" class="flex items-center gap-3 min-w-0">
                     <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
                     <span class="hidden md:block border-l border-slate-300 pl-3 leading-tight">
                         <span class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
@@ -108,11 +108,13 @@
 
             <!-- 主選單 -->
             <nav class="flex overflow-x-auto no-scrollbar text-sm -mb-px">
-                <button onclick="switchTab('tab-ai')" id="tabBtn-ai" class="tab-btn active py-3 px-3 sm:px-4 whitespace-nowrap">校務規章與問答查詢</button>
+                <button onclick="switchTab('tab-home')" id="tabBtn-home" class="tab-btn active py-3 px-3 sm:px-4 whitespace-nowrap">首頁</button>
+                <button onclick="switchTab('tab-ai')" id="tabBtn-ai" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">校務規章與問答查詢</button>
                 <button onclick="switchTab('tab-course')" id="tabBtn-course" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">修業進度與課程地圖</button>
                 <button onclick="switchTab('tab-checklist')" id="tabBtn-checklist" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">行政申辦流程與進度</button>
                 <button onclick="switchTab('tab-graduation')" id="tabBtn-graduation" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">畢業資格預審</button>
                 <button onclick="switchTab('tab-warning')" id="tabBtn-warning" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">學業預警與個資授權</button>
+                <button onclick="switchTab('tab-scholarship')" id="tabBtn-scholarship" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">獎助學金</button>
                 <button onclick="switchTab('tab-calendar')" id="tabBtn-calendar" class="tab-btn py-3 px-3 sm:px-4 whitespace-nowrap">重要日程與校曆</button>
             </nav>
         </div>
@@ -150,9 +152,9 @@
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 mb-10">
 
         <!-- ======================================================== -->
-        <!-- 模組 1: 校務規章檢索、口語對照與問答查詢 (Tab 1) -->
+        <!-- 首頁：個人儀表板 (每天會變、跟「我」有關的資訊) -->
         <!-- ======================================================== -->
-        <div id="tab-ai" class="tab-content space-y-6">
+        <div id="tab-home" class="tab-content space-y-6">
 
             <!-- 今日儀表板 (登入學生/家長才顯示，資料來源 /api/student/dashboard) -->
             <section id="homeDashboard" class="hidden bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-5">
@@ -214,6 +216,15 @@
                 </div>
             </section>
 
+            <!-- 獎助學金摘要 (登入學生/家長才顯示，資料來源 /api/scholarships/match) -->
+            <section id="homeScholarship" class="hidden bg-white rounded border border-slate-200 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="ukn-title text-sm font-bold text-slate-900">獎助學金</h2>
+                    <p id="homeScholarshipText" class="text-sm text-slate-700 mt-1"></p>
+                </div>
+                <button onclick="switchTab('tab-scholarship')" class="shrink-0 text-xs text-ukn-700 hover:underline font-semibold">查看資格比對 ➔</button>
+            </section>
+
             <!-- 我進行中的申辦 (登入學生才顯示，資料來源 /api/student/my-applications) -->
             <section id="homeMyApplications" class="hidden bg-white rounded border border-slate-200 px-5 py-4 space-y-3">
                 <div class="flex items-center justify-between">
@@ -233,6 +244,33 @@
                 <div id="attCourseList" class="space-y-2.5"></div>
                 <p class="text-[11px] text-slate-400">依學則，單科曠課時數達授課總時數 1/3 即扣考（遲到、病假不計入）；每次曠課以該科每週授課時數計。</p>
             </section>
+
+            <!-- 學生專區統一入口 (連結由 /api/links 載入，於 links.json 或後台維護) -->
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                    <div>
+                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+                            學生專區統一入口
+                        </h2>
+                        <p class="text-slate-500 text-xs sm:text-sm mt-1">校務系統依使用情境分類，點擊即可直達（另開新視窗）；點 ☆ 可加入「我的常用」。</p>
+                    </div>
+                    <input type="search" id="linksSearch" placeholder="搜尋系統，例如：請假、宿舍、繳費" aria-label="搜尋校務系統"
+                        class="w-full sm:w-72 border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-ukn-500 focus:ring-1 focus:ring-ukn-500">
+                </div>
+                <div id="favLinksBox" class="rounded border border-accent-500/30 bg-accent-50 p-4 space-y-2">
+                    <h3 class="ukn-title font-bold">我的常用</h3>
+                    <div id="favLinksList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"></div>
+                </div>
+                <div id="studentLinksGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="text-xs text-slate-400">載入中...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- 模組 1: 校務規章檢索、口語對照與問答查詢 (Tab 1) -->
+        <!-- ======================================================== -->
+        <div id="tab-ai" class="tab-content hidden space-y-6">
 
             <!-- 查詢卡片 -->
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
@@ -354,26 +392,6 @@
 
             </section>
 
-            <!-- 學生專區統一入口 (連結由 /api/links 載入，於 links.json 或後台維護) -->
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-4">
-                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                    <div>
-                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-                            學生專區統一入口
-                        </h2>
-                        <p class="text-slate-500 text-xs sm:text-sm mt-1">校務系統依使用情境分類，點擊即可直達（另開新視窗）；點 ☆ 可加入「我的常用」。</p>
-                    </div>
-                    <input type="search" id="linksSearch" placeholder="搜尋系統，例如：請假、宿舍、繳費" aria-label="搜尋校務系統"
-                        class="w-full sm:w-72 border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-ukn-500 focus:ring-1 focus:ring-ukn-500">
-                </div>
-                <div id="favLinksBox" class="rounded border border-accent-500/30 bg-accent-50 p-4 space-y-2">
-                    <h3 class="ukn-title font-bold">我的常用</h3>
-                    <div id="favLinksList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"></div>
-                </div>
-                <div id="studentLinksGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="text-xs text-slate-400">載入中...</div>
-                </div>
-            </section>
         </div>
 
         <!-- ======================================================== -->
@@ -754,6 +772,43 @@
         </div>
 
         <!-- ======================================================== -->
+        <!-- 模組 5b: 獎助學金資格比對 (依登入學生資料逐筆比對；家長只能查看) -->
+        <!-- ======================================================== -->
+        <div id="tab-scholarship" class="tab-content hidden space-y-6">
+
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-8 space-y-2">
+                <h2 class="ukn-title text-lg sm:text-xl font-bold">獎助學金資格比對</h2>
+                <p id="schSummary" class="text-base sm:text-lg text-slate-800 font-semibold">載入中...</p>
+                <p id="schViewerNote" class="text-xs text-slate-500">依你的年級、科系、成績、操行與身分別自動比對；實際資格以各獎助學金公告及承辦單位審核為準。</p>
+            </section>
+
+            <div id="schResults" class="hidden space-y-6">
+                <section class="bg-white rounded border border-slate-200 p-6 sm:p-8 space-y-4">
+                    <h3 class="ukn-title text-base font-bold">符合 <span id="schEligibleCount" class="text-sm text-slate-500 font-normal"></span></h3>
+                    <div id="schEligible" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+
+                <section class="bg-white rounded border border-slate-200 p-6 sm:p-8 space-y-4">
+                    <div>
+                        <h3 class="ukn-title text-base font-bold">部分符合 <span id="schPartialCount" class="text-sm text-slate-500 font-normal"></span></h3>
+                        <p class="text-xs text-slate-500 mt-1 pl-4">科系、年級、身分別都符合，只差成績類條件。</p>
+                    </div>
+                    <div id="schPartial" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+
+                <section class="bg-white rounded border border-slate-200 p-6 sm:p-8 space-y-4">
+                    <h3 class="ukn-title text-base font-bold">已截止 <span id="schExpiredCount" class="text-sm text-slate-500 font-normal"></span></h3>
+                    <div id="schExpired" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+
+                <details class="bg-white rounded border border-slate-200 p-6 sm:p-8">
+                    <summary class="cursor-pointer text-sm font-bold text-slate-600">其他不符合的獎助學金 <span id="schIneligibleCount" class="font-normal text-slate-500"></span></summary>
+                    <div id="schIneligible" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"></div>
+                </details>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
         <!-- 模組 6: 重要日程與校曆 (Tab 6) -->
         <!-- ======================================================== -->
         <div id="tab-calendar" class="tab-content hidden space-y-6">
@@ -799,6 +854,8 @@
                 });
             }
 
+            if (location.hash.startsWith('#tab-')) switchTab(location.hash.slice(1));
+
             await loadCurrentUser();
             // 儀表板的「前往請假系統」連結取自統一入口設定，因此先載入連結
             loadStudentLinks().then(loadDashboard);
@@ -809,6 +866,7 @@
             await loadPersonalizedCourses();
             await loadMyApplications();
             loadMyAttendance();
+            loadScholarships();
             setupGraduationDashboard();
             await loadEarlyWarning();
             await loadDeadlines();
@@ -1131,6 +1189,113 @@
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        // 獎助學金資格比對 (/api/scholarships/match)；家長只能查看，不能申請
+        function scholarshipDaysText(r) {
+            if (r.days_left < 0) return '已截止';
+            return r.days_left === 0 ? '今天截止' : `剩 ${r.days_left} 天`;
+        }
+
+        function renderScholarshipCard(r, canApply, variant) {
+            const expired = variant === 'expired';
+            const urgent = r.is_urgent && !expired;
+            const deadlineBadge = expired
+                ? '<span class="shrink-0 text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">已截止</span>'
+                : `<span class="shrink-0 text-xs font-bold px-2 py-0.5 rounded ${urgent ? 'bg-rose-600 text-white' : 'bg-ukn-50 text-ukn-800 border border-ukn-200'}">${scholarshipDaysText(r)}</span>`;
+            const checks = r.checks.length
+                ? r.checks.map(c => `<span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded border ${c.passed ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-700'}">${c.passed ? '✓' : '✕'} ${escapeHtml(c.item)}</span>`).join('')
+                : '<span class="text-[11px] text-slate-500">無特殊資格限制</span>';
+            const missing = r.missing.length && variant !== 'eligible'
+                ? `<div class="rounded border ${variant === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-600'} px-3 py-2 text-xs space-y-0.5">
+                        <div class="font-bold">${variant === 'partial' ? '還差這些條件' : '不符合的原因'}</div>
+                        ${r.missing.map(m => `<div>• ${escapeHtml(m)}</div>`).join('')}
+                   </div>`
+                : '';
+            const linkBtn = (url, label, primary) => url && url !== '#'
+                ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="flex-1 text-center text-xs font-bold px-3 py-2 rounded transition ${primary ? 'bg-ukn-800 hover:bg-ukn-700 text-white' : 'border border-ukn-700 text-ukn-800 hover:bg-ukn-50'}">${label} ↗</a>`
+                : `<span class="flex-1 text-center text-xs px-3 py-2 rounded border border-dashed border-slate-300 text-slate-400">${label}（網址建置中）</span>`;
+            let applyBtn;
+            if (!canApply) {
+                applyBtn = '<span class="flex-1 text-center text-xs px-3 py-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" title="家長僅能查看，請由學生本人申請">前往申請系統（限學生本人）</span>';
+            } else if (expired) {
+                applyBtn = '<span class="flex-1 text-center text-xs px-3 py-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed">已截止，無法申請</span>';
+            } else if (r.apply_url) {
+                applyBtn = linkBtn(r.apply_url, '前往申請系統', true);
+            } else {
+                // 沒有線上申請系統的獎學金 (多為紙本送生輔組)，請學生看公告
+                applyBtn = '<span class="flex-1 text-center text-xs px-3 py-2 rounded border border-slate-200 bg-slate-50 text-slate-600">依公告方式申請</span>';
+            }
+            return `
+                <div class="rounded border ${urgent ? 'border-rose-300 border-l-4 border-l-rose-600' : 'border-slate-200'} ${expired ? 'bg-slate-50 opacity-80' : 'bg-white'} p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[11px] border border-slate-300 text-slate-600 px-1.5 rounded">${escapeHtml(r.provider || '')}</span>
+                                <span class="font-bold text-slate-900">${escapeHtml(r.name)}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">${r.amount ? `NT$ ${Number(r.amount).toLocaleString()} · ` : ''}截止 ${escapeHtml(r.deadline)}</div>
+                        </div>
+                        ${deadlineBadge}
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(r.description || '')}</p>
+                    <div class="flex flex-wrap gap-1.5">${checks}</div>
+                    ${missing}
+                    <div class="flex gap-2 pt-1">
+                        ${linkBtn(r.announcement_url, '查看公告', false)}
+                        ${applyBtn}
+                    </div>
+                </div>`;
+        }
+
+        function scholarshipSummaryHtml(data) {
+            const s = data.summary;
+            if (s.eligible_count) {
+                const when = s.nearest_deadline_days === 0 ? '今天截止' : `${s.nearest_deadline_days} 天後截止`;
+                return `你可能符合 <span class="text-ukn-800 font-bold">${s.eligible_count}</span> 項獎助學金，最近一筆<span class="${s.nearest_deadline_days <= 7 ? 'text-rose-600' : 'text-ukn-800'}">（${escapeHtml(s.nearest_deadline_name)}）${when}</span>`;
+            }
+            return s.partial_count
+                ? `目前沒有完全符合的獎助學金，另有 ${s.partial_count} 項只差部分條件`
+                : '目前沒有符合資格的獎助學金';
+        }
+
+        async function loadScholarships() {
+            const summary = document.getElementById('schSummary');
+            if (!isStudentLoggedIn()) {
+                summary.innerHTML = currentUser.role === '訪客'
+                    ? '請先 <a href="/login" class="text-ukn-800 underline">登入</a>，系統會依你的資料比對可申請的獎助學金。'
+                    : '獎助學金資格比對僅限學生本人與家長使用。';
+                return;
+            }
+            let data = null;
+            try {
+                const res = await fetch('/api/scholarships/match');
+                data = await res.json();
+            } catch (e) {
+                console.error(e);
+            }
+            if (!data || data.status !== 'success') {
+                summary.textContent = '獎助學金資料載入失敗，請稍後再試。';
+                return;
+            }
+            summary.innerHTML = scholarshipSummaryHtml(data);
+            document.getElementById('homeScholarshipText').innerHTML = scholarshipSummaryHtml(data);
+            document.getElementById('homeScholarship').classList.remove('hidden');
+            if (!data.can_apply) {
+                document.getElementById('schViewerNote').textContent = `家長檢視模式：以下為 ${data.student.full_name} 的比對結果，僅能查看。個人條件（GPA、操行、身分別等）只顯示符合／不符合；申請請由學生本人登入辦理。`;
+            }
+
+            const fill = (listId, countId, items, variant, emptyText) => {
+                document.getElementById(countId).textContent = `（${items.length} 項）`;
+                document.getElementById(listId).innerHTML = items.length
+                    ? items.map(r => renderScholarshipCard(r, data.can_apply, variant)).join('')
+                    : `<p class="text-sm text-slate-400">${emptyText}</p>`;
+            };
+            fill('schEligible', 'schEligibleCount', data.eligible, 'eligible', '目前沒有完全符合的獎助學金。');
+            fill('schPartial', 'schPartialCount', data.partial, 'partial', '沒有只差部分條件的獎助學金。');
+            fill('schExpired', 'schExpiredCount', data.expired, 'expired', '沒有已截止的獎助學金。');
+            fill('schIneligible', 'schIneligibleCount', data.ineligible, 'ineligible', '沒有其他獎助學金。');
+            document.getElementById('schResults').classList.remove('hidden');
         }
 
         async function loadDashboard() {
@@ -2068,8 +2233,11 @@
 
         // 分頁切換
         function switchTab(tabId) {
+            if (!document.getElementById(tabId)) tabId = 'tab-home';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
+            // 網址記住目前分頁，重新整理或分享連結時停在同一頁
+            history.replaceState(null, '', tabId === 'tab-home' ? location.pathname : `#${tabId}`);
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
