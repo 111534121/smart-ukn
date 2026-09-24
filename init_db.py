@@ -501,6 +501,46 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 獎助學金比對：students 補上需要的欄位 (既有資料庫升級用，已存在就略過)
+        #   grade_level 另外存放而非由入學年推算，因休學、延修會讓年級與入學年不一致
+        #   identity_type 為身分別 (低收入戶、中低收入戶、原住民、身心障礙)，多個以逗號分隔
+        for column, definition in (
+            ("grade_level", "tinyint(4) DEFAULT NULL"),
+            ("gpa", "decimal(3,2) DEFAULT NULL"),
+            ("conduct_score", "decimal(5,2) DEFAULT NULL"),
+            ("identity_type", "varchar(100) DEFAULT NULL"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `students` ADD COLUMN `{column}` {definition}")
+                print(f"✅ students 已新增 {column} 欄位")
+
+        # 獎助學金表 scholarships (含資格條件)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `scholarships` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `name` varchar(100) NOT NULL,
+              `provider` enum('校內','校外') NOT NULL DEFAULT '校內',
+              `amount` int(11) DEFAULT NULL,
+              `deadline` date NOT NULL,
+              `apply_url` varchar(300) DEFAULT NULL,
+              `announcement_url` varchar(300) DEFAULT NULL,
+              `description` text DEFAULT NULL,
+              `min_grade` tinyint(4) DEFAULT NULL,
+              `max_grade` tinyint(4) DEFAULT NULL,
+              `departments` varchar(200) DEFAULT NULL COMMENT '適用科系代碼，逗號分隔；NULL 代表全校',
+              `min_gpa` decimal(3,2) DEFAULT NULL,
+              `min_conduct` decimal(5,2) DEFAULT NULL,
+              `identity_required` varchar(100) DEFAULT NULL COMMENT '符合任一身分即可，逗號分隔；NULL 代表不限',
+              `no_fail_required` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否要求前學期無不及格',
+              PRIMARY KEY (`id`),
+              KEY `idx_scholarship_deadline` (`deadline`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
         # 校曆範例事項 (與 app.py 的 DEMO_ACADEMIC_CALENDAR 保持一致；
         # related_checklist_id 需等 seed_data.py 匯入 checklist_items 後才有對應，未匯入前先設為 NULL)
         cursor.execute("SELECT COUNT(*) FROM `checklist_items` WHERE `item_id` = 1")
@@ -517,7 +557,7 @@ def init_database():
         ])
 
         conn.commit()
-        print("🎉 3NF 正規化資料庫共 29 張資料表建立成功！")
+        print("🎉 3NF 正規化資料庫共 30 張資料表建立成功！")
 
     except mysql.connector.Error as err:
         print(f"❌ 資料庫初始化錯誤: {err}")

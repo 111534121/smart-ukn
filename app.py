@@ -22,6 +22,7 @@ from attendance.notify import send_pending_notifications, get_mailer
 from dashboard.sources import MemoryDashboardSource, MySQLDashboardSource
 from dashboard.summary import build_dashboard
 from dashboard import demo_data as dashboard_demo
+from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -780,9 +781,9 @@ def get_current_week():
         "current_week": term["week"],
         "current_date": now.strftime("%Y-%m-%d"),
         "active_highlights": [
-            {"title": "課程停修申請", "badge": "本週受理中 (剩 3 天)", "office": "課務組", "url": "/#tab-checklists", "is_urgent": True},
-            {"title": "期中預警評量", "badge": "輔導進行中 (剩 5 天)", "office": "學務處", "url": "/#tab-radar", "is_urgent": True},
-            {"title": "大四學分預審", "badge": "審查中 (剩 35 天)", "office": "註冊組", "url": "/#tab-courses", "is_urgent": False}
+            {"title": "課程停修申請", "badge": "本週受理中 (剩 3 天)", "office": "課務組", "url": "/#tab-checklist", "is_urgent": True},
+            {"title": "期中預警評量", "badge": "輔導進行中 (剩 5 天)", "office": "學務處", "url": "/#tab-warning", "is_urgent": True},
+            {"title": "大四學分預審", "badge": "審查中 (剩 35 天)", "office": "註冊組", "url": "/#tab-graduation", "is_urgent": False}
         ]
     }), 200
 
@@ -2280,6 +2281,184 @@ def update_or_delete_quick_link(link_id):
         target.update(item)
         save_quick_links(data)
     return jsonify({"status": "success", "message": "連結更新成功！", "data": target}), 200
+
+# ==========================================
+# 11h. 獎助學金資格比對 (/api/scholarships/match)
+#      依登入學生的年級、科系、GPA、操行、身分別與前學期成績逐筆比對。
+#      - 不符合：硬性條件 (年級、科系、身分別) 不符，本來就不是適用對象
+#      - 部分符合：硬性條件都符合，只差成績類門檻 (GPA、操行、前學期無不及格)
+#      家長可查看子女的比對結果，但個人條件只顯示符合／不符合，不顯示具體數值。
+# ==========================================
+
+SCHOLARSHIP_URGENT_DAYS = 7
+
+def _num(value):
+    """DECIMAL / 字串轉 float，None 保持 None"""
+    return float(value) if value not in (None, "") else None
+
+def _split_list(value):
+    return [x.strip() for x in str(value or "").split(",") if x.strip()]
+
+def _date_str(value):
+    return value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else value
+
+def load_scholarships():
+    rows = fetch_db_rows("SELECT * FROM scholarships ORDER BY deadline ASC")
+    if rows is None:
+        rows = DEMO_SCHOLARSHIPS
+    return [{**r, "deadline": _date_str(r["deadline"]), "min_gpa": _num(r.get("min_gpa")),
+             "min_conduct": _num(r.get("min_conduct"))} for r in rows]
+
+def load_scholarship_profile(student_id, today):
+    """比對用的學生資料：年級、科系、GPA、操行、身分別"""
+    rows = fetch_db_rows("""
+        SELECT student_id, full_name, dept_id, admission_year, grade_level, gpa, conduct_score, identity_type
+        FROM students WHERE student_id = %s
+    """, (student_id,))
+    if rows:
+        profile = dict(rows[0])
+    else:
+        student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+        if not student:
+            return None
+        profile = {k: student.get(k) for k in ("student_id", "full_name", "dept_id", "admission_year")}
+        profile.update(DEMO_SCHOLARSHIP_PROFILES.get(student_id, {}))
+    # 年級另外存放 (休學、延修會讓年級與入學年不一致)；沒填時才由入學學年度推算
+    if profile.get("grade_level") is None and profile.get("admission_year"):
+        profile["grade_level"] = current_academic_term(today)["academic_year"] - profile["admission_year"] + 1
+    profile["gpa"] = _num(profile.get("gpa"))
+    profile["conduct_score"] = _num(profile.get("conduct_score"))
+    return profile
+
+def latest_semester_fails(student_id):
+    """回傳 (最近一學期, 該學期不及格科目數)；沒有成績紀錄回傳 (None, 0)"""
+    rows = fetch_db_rows("SELECT semester, is_passed FROM student_credits WHERE student_id = %s", (student_id,))
+    if rows is None:
+        rows = [c for c in DEMO_STUDENT_CREDITS if c["student_id"] == student_id]
+    if not rows:
+        return None, 0
+    latest = max(r["semester"] for r in rows)
+    return latest, sum(1 for r in rows if r["semester"] == latest and not r["is_passed"])
+
+def department_names():
+    rows = fetch_db_rows("SELECT dept_id, dept_name FROM departments") or DEMO_DEPARTMENTS
+    return {r["dept_id"]: r["dept_name"] for r in rows}
+
+def _fmt(value):
+    return int(value) if float(value).is_integer() else value
+
+def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_personal):
+    """逐項比對條件；redact_personal=True (家長) 時個人條件不回傳具體數值"""
+    checks = []
+
+    def add(item, passed, reason, hard, personal):
+        checks.append({
+            "item": item,
+            "passed": passed,
+            "hard": hard,
+            # 家長只看得到符合／不符合；個人條件的詳細原因 (含數值) 不回傳
+            "reason": None if passed or (personal and redact_personal) else reason
+        })
+
+    grade = profile.get("grade_level")
+    if sch.get("min_grade") or sch.get("max_grade"):
+        lo, hi = sch.get("min_grade") or 1, sch.get("max_grade") or 5
+        add("年級", grade is not None and lo <= grade <= hi, f"限 {lo}～{hi} 年級，你目前 {grade} 年級", True, False)
+
+    allowed = _split_list(sch.get("departments"))
+    if allowed:
+        names = "、".join(dept_names.get(d, d) for d in allowed)
+        add("科系", profile.get("dept_id") in allowed, f"限 {names} 學生申請", True, False)
+
+    identities = _split_list(sch.get("identity_required"))
+    if identities:
+        mine = _split_list(profile.get("identity_type"))
+        add("身分別", bool(set(identities) & set(mine)), f"限 {'、'.join(identities)} 身分申請", True, True)
+
+    if sch.get("min_gpa") is not None:
+        gpa = profile.get("gpa")
+        add("GPA", gpa is not None and gpa >= sch["min_gpa"],
+            f"GPA 需 {_fmt(sch['min_gpa'])}，你目前 {gpa if gpa is not None else '無資料'}", False, True)
+
+    if sch.get("min_conduct") is not None:
+        conduct = profile.get("conduct_score")
+        add("操行成績", conduct is not None and conduct >= sch["min_conduct"],
+            f"操行成績需 {_fmt(sch['min_conduct'])} 分，你目前 {_fmt(conduct) if conduct is not None else '無資料'} 分", False, True)
+
+    if sch.get("no_fail_required"):
+        semester, fails = fail_info
+        add("前學期無不及格", fails == 0, f"需前學期無不及格科目，你在 {semester} 學期有 {fails} 科不及格", False, True)
+
+    failed = [c for c in checks if not c["passed"]]
+    if not failed:
+        status = "符合"
+    elif any(c["hard"] for c in failed):
+        status = "不符合"
+    else:
+        status = "部分符合"
+
+    days_left = (datetime.strptime(sch["deadline"], "%Y-%m-%d").date() - today).days
+    return {
+        "id": sch["id"],
+        "name": sch["name"],
+        "provider": sch.get("provider"),
+        "amount": sch.get("amount"),
+        "deadline": sch["deadline"],
+        "days_left": days_left,
+        "is_urgent": 0 <= days_left <= SCHOLARSHIP_URGENT_DAYS,
+        "apply_url": sch.get("apply_url"),
+        "announcement_url": sch.get("announcement_url"),
+        "description": sch.get("description"),
+        "status": status,
+        "checks": [{k: c[k] for k in ("item", "passed", "reason")} for c in checks],
+        # 不符合的條件；家長看不到個人條件的原因時以「XX：不符合」表示
+        "missing": [c["reason"] or f"{c['item']}：不符合" for c in failed]
+    }
+
+@app.route("/api/scholarships/match", methods=["GET"])
+def match_scholarships():
+    """依登入學生 (家長為其子女) 的資料逐筆比對獎助學金資格；可用 ?date=YYYY-MM-DD 模擬日期"""
+    if "username" not in session:
+        return jsonify({"status": "error", "message": "請先登入"}), 401
+    student_id = current_student_id()
+    if not student_id:
+        return jsonify({"status": "error", "message": "獎助學金資格比對僅限學生本人與家長使用"}), 403
+    try:
+        today = datetime.strptime(request.args["date"], "%Y-%m-%d").date() if request.args.get("date") else datetime.now().date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "date 格式須為 YYYY-MM-DD"}), 400
+
+    profile = load_scholarship_profile(student_id, today)
+    if not profile:
+        return jsonify({"status": "error", "message": "查無學生資料"}), 404
+
+    is_parent = session.get("role") == "家長"
+    fail_info = latest_semester_fails(student_id)
+    dept_names = department_names()
+    results = [evaluate_scholarship(s, profile, fail_info, dept_names, today, is_parent) for s in load_scholarships()]
+    results.sort(key=lambda r: r["deadline"])
+
+    open_items = [r for r in results if r["days_left"] >= 0]
+    eligible = [r for r in open_items if r["status"] == "符合"]
+    partial = [r for r in open_items if r["status"] == "部分符合"]
+    return jsonify({
+        "status": "success",
+        "today": today.isoformat(),
+        "viewer_role": session.get("role"),
+        "can_apply": not is_parent,   # 家長只能查看，不能操作申請
+        "student": {"student_id": student_id, "full_name": profile.get("full_name")},
+        "summary": {
+            "eligible_count": len(eligible),
+            "partial_count": len(partial),
+            "nearest_deadline_days": eligible[0]["days_left"] if eligible else None,
+            "nearest_deadline_name": eligible[0]["name"] if eligible else None
+        },
+        "eligible": eligible,
+        "partial": partial,
+        "ineligible": [r for r in open_items if r["status"] == "不符合"],
+        # 已截止的不列入符合清單，另外放在已截止區
+        "expired": [r for r in results if r["days_left"] < 0]
+    }), 200
 
 @app.route("/api/health", methods=["GET"])
 def health_check():

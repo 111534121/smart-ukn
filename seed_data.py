@@ -3,6 +3,7 @@ import os
 import sys
 from werkzeug.security import generate_password_hash
 from dashboard import demo_data as dashboard_demo
+from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
 
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try: sys.stdout.reconfigure(encoding='utf-8')
@@ -333,6 +334,22 @@ def seed_data():
             cursor.execute("UPDATE `academic_calendar` SET `related_checklist_id` = 1 WHERE `id` = 4 AND `related_checklist_id` IS NULL")
         except mysql.connector.Error:
             print("⚠️ 尚未建立 academic_calendar，請先執行 init_db.py")
+
+        # 19. 獎助學金示範資料 (學生年級/GPA/操行/身分別與 app.py 的 DEMO_SCHOLARSHIP_PROFILES 一致)
+        try:
+            for student_id, p in DEMO_SCHOLARSHIP_PROFILES.items():
+                cursor.execute(
+                    "UPDATE `students` SET `grade_level` = %s, `gpa` = %s, `conduct_score` = %s, `identity_type` = %s WHERE `student_id` = %s",
+                    (p["grade_level"], p["gpa"], p["conduct_score"], p["identity_type"], student_id))
+            cursor.executemany("""
+                INSERT INTO `scholarships` (`id`, `name`, `provider`, `amount`, `deadline`, `apply_url`, `announcement_url`, `description`,
+                    `min_grade`, `max_grade`, `departments`, `min_gpa`, `min_conduct`, `identity_required`, `no_fail_required`)
+                VALUES (%(id)s, %(name)s, %(provider)s, %(amount)s, %(deadline)s, %(apply_url)s, %(announcement_url)s, %(description)s,
+                    %(min_grade)s, %(max_grade)s, %(departments)s, %(min_gpa)s, %(min_conduct)s, %(identity_required)s, %(no_fail_required)s)
+                ON DUPLICATE KEY UPDATE `apply_url` = VALUES(`apply_url`), `announcement_url` = VALUES(`announcement_url`)
+            """, DEMO_SCHOLARSHIPS)
+        except mysql.connector.Error:
+            print("⚠️ 尚未建立 scholarships 或 students 新欄位，請先執行 init_db.py")
 
         conn.commit()
         print("🎉 完整測試資料（含 7 大升級功能模組）匯入成功！")

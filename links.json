@@ -1,5 +1,5 @@
 {
-  "_comment": "學生專區統一入口連結設定，依使用情境分類。url 為 \"#\" 代表尚未取得正確網址；todo 欄位記錄待辦事項，網址確認後請清空。可直接編輯本檔，或於校務管理後台「學生專區連結」分頁維護。",
+  "_comment": "學生專區統一入口連結設定，依使用情境分類。網址取自學校官網「學生專區」https://www.ukn.edu.tw/p/412-1000-381.php（2026-09-24 查核）。url 為 \"#\" 代表尚未取得正確網址（前台顯示「網址建置中」）；todo 欄位記錄待辦事項，網址確認後請清空。可直接編輯本檔，或於校務管理後台「學生專區連結」分頁維護。",
   "categories": [
     {
       "key": "study",
@@ -41,101 +41,119 @@
     {
       "id": 2,
       "category": "study",
-      "title": "學生教務系統",
-      "description": "選課、成績查詢、課表",
-      "url": "#",
+      "title": "網路選課系統",
+      "description": "加退選、選課結果查詢",
+      "url": "http://talk.ukn.edu.tw/class_redi/class.php",
       "group": "",
-      "todo": "TODO: 向課務組確認學生教務系統網址"
+      "todo": ""
     },
     {
       "id": 3,
       "category": "study",
-      "title": "數位學習平台",
+      "title": "Moodle 數位學習平台",
       "description": "課程教材、線上作業繳交",
-      "url": "#",
+      "url": "https://moodle.ukn.edu.tw/",
       "group": "",
-      "todo": "TODO: 向教學發展中心確認數位學習平台網址"
+      "todo": ""
     },
     {
       "id": 4,
       "category": "study",
-      "title": "教學意見調查（教學評量）",
+      "title": "網路教學評量系統",
       "description": "期末填寫課程教學評量",
-      "url": "#",
+      "url": "http://web2.ukn.edu.tw/campus/ques/knjcques/ques_stu_login.asp",
       "group": "",
-      "todo": "TODO: 確認教學意見調查系統網址"
+      "todo": ""
     },
     {
       "id": 8,
       "category": "study",
       "title": "校曆",
       "description": "本學年度行事曆與重要日期",
-      "url": "#",
+      "url": "https://www.ukn.edu.tw/p/406-1000-30956,r344.php?Lang=zh-tw",
       "group": "",
-      "todo": "TODO: 確認最新學年度校曆網址"
+      "todo": ""
+    },
+    {
+      "id": 15,
+      "category": "study",
+      "title": "課表查詢",
+      "description": "查詢班級與個人課表",
+      "url": "https://ec.ukn.edu.tw/Schedule/queryschedule.aspx",
+      "group": "",
+      "todo": ""
+    },
+    {
+      "id": 16,
+      "category": "study",
+      "title": "作業傳繳系統",
+      "description": "繳交老師指定的作業檔案",
+      "url": "http://hw.ukn.edu.tw/",
+      "group": "",
+      "todo": ""
     },
     {
       "id": 9,
       "category": "life",
-      "title": "缺曠課與獎懲查詢",
-      "description": "查詢出缺勤紀錄與獎懲紀錄",
-      "url": "#",
+      "title": "學生資訊系統（成績、獎懲、缺曠）",
+      "description": "查詢成績、獎懲與出缺勤紀錄",
+      "url": "http://203.71.63.13/academic/",
       "group": "",
-      "todo": "TODO: 向生輔組確認缺曠課與獎懲查詢系統網址"
+      "todo": ""
     },
     {
       "id": 10,
       "category": "life",
       "title": "學生請假系統",
       "description": "線上請假（病假、事假、公假）與查詢審核進度",
-      "url": "#",
+      "url": "https://ec.ukn.edu.tw/AskLeave/login.aspx",
       "group": "",
-      "todo": "TODO: 向生輔組確認學生請假系統網址"
+      "todo": ""
     },
     {
       "id": 5,
       "category": "finance",
-      "title": "學雜費繳費入口",
-      "description": "列印繳費單、線上繳費",
-      "url": "#",
+      "title": "康寧付款記錄查詢",
+      "description": "查詢學雜費等繳費紀錄",
+      "url": "https://eacc.ukn.edu.tw/KNJBUS/",
       "group": "",
-      "todo": "TODO: 向出納組確認學雜費繳費入口網址"
+      "todo": ""
     },
     {
       "id": 6,
       "category": "finance",
-      "title": "獎助學金公告",
-      "description": "校內外獎助學金申請資格與期限",
-      "url": "#",
+      "title": "獎助學金訊息",
+      "description": "校內外獎助學金申請資格與期限（學務處）",
+      "url": "https://sa.ukn.edu.tw/p/412-1003-4377.php?Lang=zh-tw",
       "group": "獎助學金：看完公告，直接線上申請",
-      "todo": "TODO: 向生輔組確認獎助學金公告頁網址"
+      "todo": ""
     },
     {
       "id": 7,
       "category": "finance",
-      "title": "獎助學金線上申請系統",
+      "title": "學雜費減免暨弱勢助學金申請",
       "description": "線上填寫申請表、上傳證明文件",
-      "url": "#",
+      "url": "https://ec2.ukn.edu.tw/WebRemit/login.aspx",
       "group": "獎助學金：看完公告，直接線上申請",
-      "todo": "TODO: 向生輔組確認獎助學金線上申請系統網址"
+      "todo": ""
     },
     {
       "id": 11,
       "category": "career",
-      "title": "實習媒合與實習日誌",
-      "description": "實習機會、實習合約與實習週誌繳交",
-      "url": "#",
+      "title": "實習週記管理系統",
+      "description": "實習週記填寫與繳交",
+      "url": "https://oes3.ukn.edu.tw/~intern/",
       "group": "",
-      "todo": "TODO: 向實習就業輔導組確認實習系統網址"
+      "todo": ""
     },
     {
       "id": 12,
       "category": "career",
-      "title": "證照登錄與獎勵申請",
-      "description": "登錄已取得證照、申請證照獎勵金",
-      "url": "#",
+      "title": "學生證照上傳管理",
+      "description": "登錄已取得證照、上傳證照影本",
+      "url": "https://oes3.ukn.edu.tw/~license/",
       "group": "",
-      "todo": "TODO: 確認證照登錄系統網址（或改用本平台證照上傳功能）"
+      "todo": ""
     },
     {
       "id": 13,
@@ -144,28 +162,37 @@
       "description": "住宿申請、床位分配結果查詢",
       "url": "#",
       "group": "",
-      "todo": "TODO: 向宿舍輔導組確認宿舍申請系統網址"
+      "todo": "TODO: 官網學生專區未列出宿舍申請系統，需向宿舍輔導組確認網址"
     },
     {
       "id": 14,
       "category": "dorm",
-      "title": "宿舍晚歸／外宿請假",
+      "title": "學生宿舍臨時請假系統",
       "description": "晚歸、外宿線上登記",
-      "url": "#",
+      "url": "https://oes3.ukn.edu.tw/~dorm2/",
       "group": "",
-      "todo": "TODO: 向宿舍輔導組確認晚歸外宿請假網址"
+      "todo": ""
     },
     {
       "id": 1,
       "category": "freshman",
       "title": "新生入學基本資料登錄",
-      "description": "新生報到前填寫個人基本資料、緊急聯絡人",
-      "url": "#",
+      "description": "新生開學前填寫個人基本資料、緊急聯絡人",
+      "url": "https://ec.ukn.edu.tw/nb/login",
       "group": "",
-      "todo": "TODO: 向註冊組確認新生資料登錄系統網址"
+      "todo": ""
     },
     {
-      "id": 15,
+      "id": 17,
+      "category": "freshman",
+      "title": "新生專區",
+      "description": "新生入學須知與報到資訊",
+      "url": "https://ec.ukn.edu.tw/NewStd/",
+      "group": "",
+      "todo": ""
+    },
+    {
+      "id": 18,
       "category": "campus",
       "title": "學餐線上點餐",
       "description": "直接連到學餐點餐頁面，不用再跳轉",
@@ -174,7 +201,7 @@
       "todo": "TODO: 向總務處確認學餐合作的線上點餐網址"
     },
     {
-      "id": 16,
+      "id": 19,
       "category": "campus",
       "title": "學餐今日菜單",
       "description": "各攤位今日供餐與價格",
@@ -183,7 +210,7 @@
       "todo": "TODO: 向總務處確認學餐菜單公告網址"
     },
     {
-      "id": 17,
+      "id": 20,
       "category": "campus",
       "title": "校園書店 / 教科書訂購",
       "description": "上課用書線上預訂、到校取書",
@@ -192,7 +219,7 @@
       "todo": "TODO: 向總務處確認教科書訂購系統網址"
     },
     {
-      "id": 18,
+      "id": 21,
       "category": "campus",
       "title": "Microsoft 365 校園授權",
       "description": "Word、Excel、PowerPoint 學生免費使用",
@@ -201,7 +228,7 @@
       "todo": "TODO: 向電算中心確認校園授權申請網址"
     },
     {
-      "id": 19,
+      "id": 22,
       "category": "campus",
       "title": "LibreOffice 免費辦公室軟體",
       "description": "可開啟與編輯 Word / Excel 檔案的免費軟體",
@@ -210,7 +237,7 @@
       "todo": ""
     },
     {
-      "id": 20,
+      "id": 23,
       "category": "campus",
       "title": "Visual Studio Code",
       "description": "寫程式用的免費編輯器",
@@ -219,7 +246,7 @@
       "todo": ""
     },
     {
-      "id": 21,
+      "id": 24,
       "category": "campus",
       "title": "GIMP 免費修圖軟體",
       "description": "免費的影像編輯工具",
