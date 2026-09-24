@@ -27,6 +27,7 @@ from school_calendar.actions import match_actions as match_calendar_actions
 from moodle_sync.client import MoodleClient, MoodleError, get_token as get_moodle_token
 from moodle_sync.assignments import MoodleMergedSource, get_cached_assignments, clear_cache as clear_moodle_cache
 from moodle_sync.store import MoodleLinkStore
+from curriculum.audit import load_curriculum, audit as audit_curriculum
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -1651,6 +1652,28 @@ def get_personalized_courses():
             "total_passed_credits": sum(c["credits"] for c in passed_courses)
         }
     }), 200
+
+@app.route("/api/student/graduation-audit", methods=["GET"])
+def graduation_audit():
+    """畢業缺課檢核：依學生入學年度的修業科目表 (curriculum/<dept_id>_<入學年>.json) 比對已通過與修課中的課程；
+    沒有該屆修業科目表時回傳 available=False，前端改顯示擋修試算"""
+    student_id = current_student_id()
+    if not student_id:
+        return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
+    rows = fetch_db_rows("SELECT dept_id, admission_year, class_name FROM students WHERE student_id = %s", (student_id,))
+    stu = rows[0] if rows else next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+    curriculum = load_curriculum(stu["dept_id"], stu["admission_year"]) if stu else None
+    if not curriculum:
+        return jsonify({"status": "success", "available": False}), 200
+
+    course_by_id = {c["course_id"]: c for c in load_course_map()}
+    passed = [{"course_name": course_by_id[r["course_id"]]["course_name"], "credits": course_by_id[r["course_id"]]["credits"],
+               "semester": r["semester"]}
+              for r in load_student_credits(student_id) if r["is_passed"] and r["course_id"] in course_by_id]
+    current = [c["course_name"] for c in get_dashboard_source().list_schedule(stu["class_name"], student_id)]
+    term = current_academic_term(datetime.now().date())
+    result = audit_curriculum(curriculum, passed, current, f"{term['academic_year']}-{term['semester']}")
+    return jsonify({"status": "success", "available": True, **result}), 200
 
 @app.route("/api/courses/what-if", methods=["POST"])
 def what_if_course_failed():

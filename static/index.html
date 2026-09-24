@@ -404,9 +404,38 @@
                         <ol id="dashScheduleList" class="space-y-2"></ol>
                     </div>
                     <div id="dashAssignmentCard" class="rounded border border-slate-200 p-4 space-y-3">
-                        <h3 class="font-bold text-slate-900 text-sm">待繳作業</h3>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center justify-between gap-2">
+                            <span>待繳作業</span>
+                            <!-- Moodle 連結狀態 (renderMoodleStatus) -->
+                            <span id="dashMoodleStatus" class="text-[11px] font-normal text-slate-500 flex items-center gap-2"></span>
+                        </h3>
+                        <p id="dashMoodleError" class="hidden text-xs rounded border border-amber-200 bg-amber-50 text-amber-900 px-2.5 py-1.5"></p>
                         <ul id="dashAssignmentList" class="space-y-2"></ul>
                     </div>
+
+                    <!-- 連結 Moodle：帳密只用來向 Moodle 換取權杖，本系統不保存密碼 -->
+                    <dialog id="moodleLinkDialog" class="rounded-lg p-0 w-[calc(100%-2rem)] max-w-sm backdrop:bg-slate-900/40">
+                        <form onsubmit="submitMoodleLink(event)" class="p-5 space-y-4 text-sm">
+                            <div>
+                                <h3 class="ukn-title text-base font-bold text-slate-900">連結 Moodle 數位學習平台</h3>
+                                <p class="text-xs text-slate-500 mt-1">連結後會自動同步 Moodle 上的作業與繳交狀態，交完的作業會自動從待繳清單移除。</p>
+                            </div>
+                            <label class="block space-y-1">
+                                <span class="text-xs font-semibold text-slate-700">Moodle 帳號</span>
+                                <input id="moodleUsername" autocomplete="username" required class="w-full border border-slate-300 rounded px-3 py-2 focus:outline-none focus:border-ukn-600">
+                            </label>
+                            <label class="block space-y-1">
+                                <span class="text-xs font-semibold text-slate-700">Moodle 密碼</span>
+                                <input id="moodlePassword" type="password" autocomplete="current-password" required class="w-full border border-slate-300 rounded px-3 py-2 focus:outline-none focus:border-ukn-600">
+                            </label>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">🔒 密碼只用來向 moodle.ukn.edu.tw 換取一組同步用的權杖（與 Moodle 手機 App 相同方式），本系統不會保存你的密碼。隨時可以解除連結。</p>
+                            <p id="moodleLinkError" class="hidden text-xs text-rose-700"></p>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="document.getElementById('moodleLinkDialog').close()" class="px-4 py-2 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">取消</button>
+                                <button id="moodleLinkSubmit" type="submit" class="px-4 py-2 rounded bg-ukn-800 hover:bg-ukn-700 text-white font-semibold">連結</button>
+                            </div>
+                        </form>
+                    </dialog>
                     <div id="dashAnnouncementCard" class="rounded border border-slate-200 p-4 space-y-3">
                         <h3 class="font-bold text-slate-900 text-sm flex items-center justify-between">
                             <span>校園公告</span>
@@ -660,8 +689,29 @@
                 </div>
             </div>
 
+            <!-- 畢業缺課檢核 (有該屆修業科目表的學生才顯示，取代下方的擋修試算；資料來源 /api/student/graduation-audit) -->
+            <section id="gradAuditSection" class="hidden bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="ukn-title text-lg font-bold text-slate-900">畢業缺課檢核</h3>
+                            <span class="text-[10px] bg-ukn-50 text-ukn-800 border border-ukn-200 font-bold px-2 py-0.5 rounded">依官方修業科目表</span>
+                        </div>
+                        <p id="gradAuditSource" class="text-xs text-slate-500 mt-1"></p>
+                    </div>
+                    <div id="gradAuditTotal" class="text-sm text-slate-700"></div>
+                </div>
+                <div id="gradAuditTodo" class="space-y-2"></div>
+                <div id="gradAuditCategories" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"></div>
+                <div id="gradAuditElective" class="rounded border border-slate-200 p-4 text-xs text-slate-700 space-y-2"></div>
+                <details class="rounded border border-slate-200">
+                    <summary class="cursor-pointer px-4 py-2.5 text-sm font-semibold text-slate-800">查看全部必修科目對照</summary>
+                    <div id="gradAuditAll" class="px-4 pb-4 overflow-x-auto"></div>
+                </details>
+            </section>
+
             <!-- 先修課程影響試算器 (清晰教學導向) -->
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
+            <section id="whatIfSection" class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
                         <div class="flex items-center gap-2">
@@ -1560,6 +1610,7 @@
             await loadDeadlines();
             renderNotifications();
             runWhatIfSimulation();
+            loadGraduationAudit();
         });
 
         // 學生專區統一入口：依分類渲染連結卡片
@@ -1820,13 +1871,15 @@
                     const title = escapeHtml(i.title);
                     const linked = i.url && i.url !== '#'
                         ? `<a href="${escapeHtml(i.url)}" target="_blank" rel="noopener noreferrer" class="hover:underline">${title} ↗</a>` : title;
+                    const badge = i.source === 'moodle' ? '<span class="ml-1.5 align-middle text-[10px] font-medium border border-orange-300 text-orange-700 px-1 rounded">Moodle</span>' : '';
                     return `
                         <li class="rounded border ${i.overdue ? 'border-rose-200 bg-rose-50/60' : 'border-slate-200'} px-3 py-2">
-                            <div class="text-sm font-semibold text-slate-900">${linked}</div>
+                            <div class="text-sm font-semibold text-slate-900">${linked}${badge}</div>
                             <div class="text-xs text-slate-500 flex justify-between gap-2"><span>${escapeHtml(i.course_name)}</span><span>${formatDue(i)}</span></div>
                         </li>`;
                 }).join('')
                 : '<li class="text-xs text-slate-400">目前沒有待繳作業 👍</li>';
+            renderMoodleStatus(d.moodle);
 
             // 公告：未讀在前，點開標記已讀
             document.getElementById('dashAnnouncementList').innerHTML = ann.items.length
@@ -1989,7 +2042,72 @@
             document.getElementById('schResults').classList.remove('hidden');
         }
 
-        async function loadDashboard() {
+        // Moodle 作業同步：未連結顯示連結按鈕；已連結顯示最後同步時間、立即更新與解除連結
+        function renderMoodleStatus(m) {
+            const el = document.getElementById('dashMoodleStatus');
+            const err = document.getElementById('dashMoodleError');
+            if (!m || (!m.linked && !m.can_link)) {
+                el.innerHTML = '';
+                err.classList.add('hidden');
+                return;
+            }
+            const btn = 'text-ukn-700 hover:text-ukn-900 hover:underline';
+            if (!m.linked) {
+                el.innerHTML = `<button onclick="openMoodleLinkDialog()" class="${btn} font-semibold">🔗 連結 Moodle</button>`;
+            } else {
+                el.innerHTML = `
+                    <span title="${escapeHtml(m.moodle_fullname || m.moodle_username || '')}">Moodle 同步 ${m.synced_at ? escapeHtml(m.synced_at.slice(11)) : '—'}</span>
+                    <button onclick="loadDashboard(true)" class="${btn}">立即更新</button>
+                    ${m.can_link ? `<button onclick="unlinkMoodle()" class="text-slate-400 hover:text-rose-700 hover:underline">解除</button>` : ''}`;
+            }
+            err.textContent = m.error || '';
+            err.classList.toggle('hidden', !m.error);
+        }
+
+        function openMoodleLinkDialog() {
+            document.getElementById('moodleLinkError').classList.add('hidden');
+            document.getElementById('moodlePassword').value = '';
+            document.getElementById('moodleLinkDialog').showModal();
+        }
+
+        async function submitMoodleLink(e) {
+            e.preventDefault();
+            const submit = document.getElementById('moodleLinkSubmit');
+            const errorEl = document.getElementById('moodleLinkError');
+            const password = document.getElementById('moodlePassword');
+            submit.disabled = true;
+            submit.textContent = '連結中…';
+            try {
+                const res = await fetch('/api/student/moodle/link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: document.getElementById('moodleUsername').value.trim(), password: password.value })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    errorEl.textContent = data.message || '連結失敗，請稍後再試';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('moodleLinkDialog').close();
+                await loadDashboard(true);
+            } catch (err) {
+                errorEl.textContent = '連線失敗，請稍後再試';
+                errorEl.classList.remove('hidden');
+            } finally {
+                password.value = '';
+                submit.disabled = false;
+                submit.textContent = '連結';
+            }
+        }
+
+        async function unlinkMoodle() {
+            if (!confirm('確定要解除 Moodle 連結嗎？Moodle 上的作業將不再同步到這裡。')) return;
+            await fetch('/api/student/moodle/link', { method: 'DELETE' });
+            loadDashboard();
+        }
+
+        async function loadDashboard(refreshMoodle = false) {
             const section = document.getElementById('homeDashboard');
             const guest = document.getElementById('homeDashboardGuest');
             if (!isStudentLoggedIn()) {
@@ -1998,7 +2116,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/student/dashboard');
+                const res = await fetch(`/api/student/dashboard${refreshMoodle === true ? '?refresh_moodle=1' : ''}`);
                 const data = await res.json();
                 if (data.status !== 'success') return;
                 dashboardCanMarkRead = data.can_mark_read;
@@ -2015,6 +2133,10 @@
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && isStudentLoggedIn()) loadDashboard();
         });
+        // 網頁開著時每 5 分鐘更新一次 (Moodle 新作業、繳交狀態)；背景分頁不更新
+        setInterval(() => {
+            if (document.visibilityState === 'visible' && isStudentLoggedIn()) loadDashboard();
+        }, 5 * 60 * 1000);
 
         // 我的缺曠課摘要 (登入學生才顯示；扣考門檻依學則：曠課時數達授課總時數 1/3)
         async function loadMyAttendance() {
@@ -2433,6 +2555,87 @@
         }
 
         // 7. 骨牌擋修模擬試算
+        // 畢業缺課檢核：有該屆修業科目表時取代擋修試算 (資管科沒有先修擋修規定，改看還缺哪些課)
+        const GRAD_STATUS = {
+            passed: ['已通過', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+            in_progress: ['本學期修課中', 'bg-ukn-50 text-ukn-800 border-ukn-200'],
+            planned: ['尚未開課', 'bg-slate-50 text-slate-600 border-slate-200'],
+            missing: ['未通過・需重補修', 'bg-rose-50 text-rose-800 border-rose-300']
+        };
+        const termLabel = t => `${t.slice(0, 3)} 學年第 ${t.slice(4)} 學期`;
+
+        async function loadGraduationAudit() {
+            if (!isStudentLoggedIn()) return;
+            let d;
+            try {
+                d = await (await fetch('/api/student/graduation-audit')).json();
+            } catch (e) {
+                console.error(e);
+                return;
+            }
+            if (d.status !== 'success' || !d.available) return;
+            document.getElementById('whatIfSection').classList.add('hidden');
+            document.getElementById('gradAuditSection').classList.remove('hidden');
+
+            document.getElementById('gradAuditSource').innerHTML =
+                `${escapeHtml(d.title)}（<a href="${escapeHtml(d.source_url)}" target="_blank" rel="noopener noreferrer" class="text-ukn-700 hover:underline">資管科官網 PDF ↗</a>）・資管科沒有先修擋修規定，未通過的必修需重補修`;
+            document.getElementById('gradAuditTotal').innerHTML =
+                `已通過 <strong class="text-ukn-900 text-lg">${d.total.earned}</strong> / ${d.total.required} 學分・必修 ${d.required.earned}/${d.required.required}・選修 ${d.elective.earned}/${d.elective.required}`;
+
+            const todo = d.requirements.filter(r => r.status !== 'passed')
+                .sort((a, b) => ['missing', 'in_progress', 'planned'].indexOf(a.status) - ['missing', 'in_progress', 'planned'].indexOf(b.status));
+            document.getElementById('gradAuditTodo').innerHTML = todo.length
+                ? `<h4 class="text-sm font-bold text-slate-900">還沒完成的必修（${todo.length} 科，${todo.reduce((s, r) => s + r.remaining, 0)} 學分）</h4>` +
+                  todo.map(r => {
+                      const [label, style] = GRAD_STATUS[r.status];
+                      const when = r.status === 'missing' ? `原排在 ${termLabel(r.term)}` : r.status === 'planned' ? `排在 ${termLabel(r.term)}` : '';
+                      return `
+                        <div class="flex items-center justify-between gap-3 rounded border ${style} px-3 py-2">
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold">${escapeHtml(r.name)}</div>
+                                <div class="text-[11px] opacity-80">${escapeHtml(r.category)}・還差 ${r.remaining} 學分${when ? '・' + when : ''}</div>
+                            </div>
+                            <span class="shrink-0 text-[11px] font-bold">${label}</span>
+                        </div>`;
+                  }).join('')
+                : '<p class="text-sm text-emerald-700 font-semibold">🎉 所有必修都已通過！</p>';
+
+            document.getElementById('gradAuditCategories').innerHTML = d.categories.map(c => `
+                <div class="rounded border ${c.done === c.count ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'} px-3 py-2">
+                    <div class="text-[11px] text-slate-500">${escapeHtml(c.category)}</div>
+                    <div class="text-sm font-bold text-slate-900">${c.earned} / ${c.credits} 學分</div>
+                    <div class="text-[11px] text-slate-500">${c.done} / ${c.count} 科完成</div>
+                </div>`).join('') + `
+                <div class="rounded border ${d.elective.earned >= d.elective.required ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'} px-3 py-2">
+                    <div class="text-[11px] text-slate-500">專業選修</div>
+                    <div class="text-sm font-bold text-slate-900">${d.elective.earned} / ${d.elective.required} 學分</div>
+                    <div class="text-[11px] text-slate-500">還差 ${Math.max(0, d.elective.required - d.elective.earned)} 學分</div>
+                </div>`;
+
+            const e = d.elective;
+            const list = items => items.map(i => `${escapeHtml(i.course_name)} ${i.credits}`).join('、') || '無';
+            const progressCredits = e.in_progress.reduce((s, i) => s + (i.credits || 0), 0);
+            document.getElementById('gradAuditElective').innerHTML = `
+                <div class="font-bold text-slate-900 text-sm">選修學分明細</div>
+                <div>科內選修：${list(e.in_dept)}</div>
+                <div>跨科選修（最多採計 ${e.cross_dept_cap} 學分，目前 ${e.cross_dept_earned}）：${list(e.cross_dept)}</div>
+                ${e.in_progress.length ? `<div>本學期修課中：${e.in_progress.map(i => `${escapeHtml(i.course_name)}${i.credits ? ' ' + i.credits : ''}${i.cross_dept ? '（跨科／學分依課程而定）' : ''}`).join('、')}</div>` : ''}
+                <div class="text-slate-500">全部通過後預估選修 ${e.earned + progressCredits}${e.in_progress.some(i => !i.credits) ? ' 以上' : ''} / ${e.required} 學分</div>`;
+
+            document.getElementById('gradAuditAll').innerHTML = `
+                <table class="w-full text-xs mt-2">
+                    <thead><tr class="text-left text-slate-500 border-b border-slate-200"><th class="py-1.5 pr-2">類別</th><th class="pr-2">科目</th><th class="pr-2">學分</th><th class="pr-2">對應到的修課紀錄</th><th>狀態</th></tr></thead>
+                    <tbody>${d.requirements.map(r => `
+                        <tr class="border-b border-slate-100 align-top">
+                            <td class="py-1.5 pr-2 text-slate-500 whitespace-nowrap">${escapeHtml(r.category)}</td>
+                            <td class="pr-2 font-semibold text-slate-800">${escapeHtml(r.name)}</td>
+                            <td class="pr-2 whitespace-nowrap">${r.earned}/${r.credits}</td>
+                            <td class="pr-2 text-slate-600">${r.matched.map(m => `${escapeHtml(m.course_name)}（${escapeHtml(m.semester)}）`).join('、') || '—'}</td>
+                            <td class="whitespace-nowrap">${GRAD_STATUS[r.status][0]}</td>
+                        </tr>`).join('')}</tbody>
+                </table>`;
+        }
+
         async function runWhatIfSimulation() {
             const courseCode = document.getElementById('whatIfCourseSelect').value;
             try {
@@ -3821,6 +4024,10 @@
                             desc: `${a.course_name}，截止時間 ${a.due_at}，請儘快補交。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
                     } else if (a.hours_left <= 48) {
                         list.push({ id: `hw-${a.id}-soon`, level: 'warning', icon: '⏰', title: `作業即將截止：${a.title}`,
+                            desc: `${a.course_name}，截止時間 ${a.due_at}。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
+                    } else if (a.source === 'moodle') {
+                        // Moodle 同步進來的新作業：看過 (已讀) 後就不再出現，快截止時再以上面的規則提醒
+                        list.push({ id: `hw-${a.id}-new`, level: 'info', icon: '📚', title: `Moodle 新作業：${a.title}`,
                             desc: `${a.course_name}，截止時間 ${a.due_at}。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
                     }
                 });
