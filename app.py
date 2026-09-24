@@ -13,6 +13,7 @@ import json
 import uuid
 import csv
 import threading
+import time
 from io import StringIO
 from datetime import datetime, timedelta
 from attendance.sources import MemoryAttendanceSource, MySQLAttendanceSource, VALID_TYPES as ATTENDANCE_TYPES
@@ -40,6 +41,11 @@ app = Flask(
     static_url_path=""
 )
 app.secret_key = os.getenv("SECRET_KEY", "smart_ukn_secret_session_key_2026")
+# 登入時勾選「記住我」：30 天內不用再登入 (session.permanent)
+app.permanent_session_lifetime = timedelta(days=30)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 # 允許跨網域與跨裝置請求，並支援 session cookies
 CORS(app, supports_credentials=True)
@@ -98,14 +104,23 @@ DB_CONFIG = {
     "charset": "utf8mb4"
 }
 
+# MySQL 連不上時，Windows 每次試連本機關閉的連接埠要等約 2 秒；
+# 失敗後 DB_RETRY_SECONDS 內不再重試，直接用示範資料，避免每支 API 都卡 2 秒以上
+DB_RETRY_SECONDS = 30
+_db_unavailable_until = 0.0
+
 def get_db_connection():
     """嘗試取得 MySQL 連線，若失敗回傳 None 以供示範模式無縫接管"""
+    global _db_unavailable_until
+    if time.monotonic() < _db_unavailable_until:
+        return None
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = mysql.connector.connect(**DB_CONFIG, connection_timeout=3)
         if conn.is_connected():
             return conn
     except Exception:
-        return None
+        pass
+    _db_unavailable_until = time.monotonic() + DB_RETRY_SECONDS
     return None
 
 def is_db_available():
@@ -668,6 +683,7 @@ def auth_login():
 
     if user_record:
         session.clear()
+        session.permanent = data.get("remember", True) is not False
         session["user_id"] = user_record["user_id"]
         session["username"] = user_record["username"]
         session["role"] = user_record["role"]
@@ -2466,7 +2482,33 @@ def mark_announcement_read(announcement_id):
     return jsonify({"status": "success"}), 200
 
 # ==========================================
-# 13. 伺服器主入口
+# 13. 校園生活新功能 (campus 套件)：行事曆月曆、選課檢查、證照審核、科上通知、論壇、租借、天氣、桌寵…
+# ==========================================
+
+import campus
+from types import SimpleNamespace
+
+campus.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    fetch_calendar_events=fetch_calendar_events,
+    load_course_map=load_course_map,
+    load_student_credits=load_student_credits,
+    summarize_credits=summarize_credits,
+    get_dashboard_source=get_dashboard_source,
+    save_uploaded_file=save_uploaded_file,
+    graduation_threshold=GRADUATION_CREDIT_THRESHOLD,
+    students=DEMO_STUDENTS,
+    checklists=DEMO_CHECKLISTS,
+    deadlines=DEMO_DEADLINES,
+    knowledge_base=DEMO_KNOWLEDGE_BASE,
+    synonyms=DEMO_SYNONYMS,
+    categories=DEMO_CATEGORIES,
+    certificates=DEMO_CERTIFICATES,
+    class_schedule=dashboard_demo.DEMO_CLASS_SCHEDULE,
+))
+
+# ==========================================
+# 14. 伺服器主入口
 # ==========================================
 
 if __name__ == "__main__":

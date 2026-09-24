@@ -30,6 +30,11 @@
       "key": "freshman",
       "name": "新生專區",
       "icon": "🎒"
+    },
+    {
+      "key": "campus",
+      "name": "學餐、購書與好用軟體",
+      "icon": "🍱"
     }
   ],
   "links": [
@@ -158,6 +163,69 @@
       "url": "#",
       "group": "",
       "todo": "TODO: 向註冊組確認新生資料登錄系統網址"
+    },
+    {
+      "id": 15,
+      "category": "campus",
+      "title": "學餐線上點餐",
+      "description": "直接連到學餐點餐頁面，不用再跳轉",
+      "url": "#",
+      "group": "學餐",
+      "todo": "TODO: 向總務處確認學餐合作的線上點餐網址"
+    },
+    {
+      "id": 16,
+      "category": "campus",
+      "title": "學餐今日菜單",
+      "description": "各攤位今日供餐與價格",
+      "url": "#",
+      "group": "學餐",
+      "todo": "TODO: 向總務處確認學餐菜單公告網址"
+    },
+    {
+      "id": 17,
+      "category": "campus",
+      "title": "校園書店 / 教科書訂購",
+      "description": "上課用書線上預訂、到校取書",
+      "url": "#",
+      "group": "",
+      "todo": "TODO: 向總務處確認教科書訂購系統網址"
+    },
+    {
+      "id": 18,
+      "category": "campus",
+      "title": "Microsoft 365 校園授權",
+      "description": "Word、Excel、PowerPoint 學生免費使用",
+      "url": "#",
+      "group": "好用軟體",
+      "todo": "TODO: 向電算中心確認校園授權申請網址"
+    },
+    {
+      "id": 19,
+      "category": "campus",
+      "title": "LibreOffice 免費辦公室軟體",
+      "description": "可開啟與編輯 Word / Excel 檔案的免費軟體",
+      "url": "https://zh-tw.libreoffice.org/",
+      "group": "好用軟體",
+      "todo": ""
+    },
+    {
+      "id": 20,
+      "category": "campus",
+      "title": "Visual Studio Code",
+      "description": "寫程式用的免費編輯器",
+      "url": "https://code.visualstudio.com/",
+      "group": "好用軟體",
+      "todo": ""
+    },
+    {
+      "id": 21,
+      "category": "campus",
+      "title": "GIMP 免費修圖軟體",
+      "description": "免費的影像編輯工具",
+      "url": "https://www.gimp.org/",
+      "group": "好用軟體",
+      "todo": ""
     }
   ]
 }

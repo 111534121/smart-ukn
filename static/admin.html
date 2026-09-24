@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>康寧大學 校務法規與行政申辦管理系統 - UKN Admin</title>
+    <link rel="icon" type="image/png" href="/img/icon-192.png">
     <!-- Fonts & Tailwind CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,6 +163,7 @@
                 <button onclick="switchTab('links')" id="tabBtn-links" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生專區連結</button>
                 <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">缺曠課通知（模擬）</button>
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
+                <button onclick="switchTab('campus')" id="tabBtn-campus" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校園生活管理</button>
             </div>
 
             <!-- 分頁 0: 學生未命中搜尋與詞庫維護 -->
@@ -356,6 +358,38 @@
                         <tbody id="calendarTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費、論壇檢舉、學生意見) -->
+            <div id="panel-campus" class="hidden space-y-5">
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm">同步康寧官網行事曆</h3>
+                            <p class="text-xs text-slate-500">從官網行事曆頁嵌入的公開 Google 日曆匯入學校事項，顯示在前台月曆。國定假日會自動抓取，不需要同步。</p>
+                        </div>
+                        <button onclick="syncUknCalendar(this)" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold text-xs whitespace-nowrap">立即同步</button>
+                    </div>
+                    <div id="campusSyncResult" class="text-xs text-slate-600"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">教室借用審核</h3>
+                    <div id="campusBookings" class="space-y-2 text-sm"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">櫃子租借：現場繳費確認</h3>
+                    <p class="text-xs text-slate-500">學生線上保留後需在期限內到出納組繳費，收款後按「已繳費」；逾期未繳會自動釋出。</p>
+                    <div id="campusLockers" class="overflow-x-auto"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">匿名論壇：被檢舉的文章</h3>
+                    <p class="text-xs text-slate-500">論壇不保存作者帳號，這裡只看得到內容。被 3 人以上檢舉的文章會自動隱藏。</p>
+                    <div id="campusForum" class="space-y-2 text-sm"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">學生意見箱（來自桌寵）</h3>
+                    <div id="campusFeedback" class="space-y-2 text-sm"></div>
+                </section>
             </div>
 
             <!-- 分頁 6: 學生專區統一入口連結 -->
@@ -663,6 +697,117 @@
             ]);
             // 關聯申辦流程名稱需要 checklistsCache，因此等上方載入完成後再載入校曆
             await loadCalendarEvents();
+            loadCampusAdmin();
+        }
+
+        // ---------- 校園生活管理 (campus 套件的管理功能) ----------
+        async function campusApi(url, body) {
+            const res = await fetch(url, body === undefined ? {} : {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.status === 'error') throw new Error(data.message || `連線失敗 (${res.status})`);
+            return data;
+        }
+
+        function loadCampusAdmin() {
+            loadCampusBookings();
+            loadCampusLockers();
+            loadCampusForum();
+            loadCampusFeedback();
+        }
+
+        async function syncUknCalendar(btn) {
+            const box = document.getElementById('campusSyncResult');
+            btn.disabled = true;
+            box.textContent = '同步中…';
+            try {
+                const r = await campusApi('/api/campus/calendar/sync', {});
+                box.textContent = `${r.message}（官網資料最新到 ${r.latest_date || '—'}）`;
+            } catch (e) {
+                box.textContent = e.message;
+            }
+            btn.disabled = false;
+        }
+
+        async function loadCampusBookings() {
+            const box = document.getElementById('campusBookings');
+            try {
+                const items = (await campusApi('/api/campus/rooms/bookings?scope=all')).data;
+                const pending = items.filter(b => b.status === '審核中');
+                box.innerHTML = pending.length ? pending.map(b => `
+                    <div class="flex flex-wrap items-center justify-between gap-2 border border-slate-200 rounded px-3 py-2">
+                        <div><strong>${escapeHtml(b.room_name)}</strong> · ${escapeHtml(b.date)} 第 ${b.period_start}${b.period_end !== b.period_start ? `-${b.period_end}` : ''} 節 · ${escapeHtml(b.purpose)} (${b.people} 人)
+                            <div class="text-xs text-slate-500">申請人：${escapeHtml(b.applicant)}${b.contact ? ` · ${escapeHtml(b.contact)}` : ''} · 管理：${escapeHtml(b.managed_by)}</div></div>
+                        <div class="flex gap-2">
+                            <button onclick="reviewBooking(${b.id}, 'approve')" class="bg-emerald-700 text-white text-xs px-3 py-1 rounded">核准</button>
+                            <button onclick="reviewBooking(${b.id}, 'reject')" class="border border-rose-300 text-rose-700 text-xs px-3 py-1 rounded">不核准</button>
+                        </div>
+                    </div>`).join('') : '<div class="text-xs text-slate-500">目前沒有待審核的借用申請。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function reviewBooking(id, action) {
+            const note = action === 'reject' ? prompt('不核准原因：') : '';
+            if (note === null) return;
+            try { await campusApi(`/api/campus/rooms/bookings/${id}`, { action, note }); loadCampusBookings(); }
+            catch (e) { alert(e.message); }
+        }
+
+        async function loadCampusLockers() {
+            const box = document.getElementById('campusLockers');
+            try {
+                const rows = (await campusApi('/api/campus/lockers/admin')).data;
+                box.innerHTML = rows.length ? `
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead><tr class="bg-slate-50 text-slate-600"><th class="p-2">櫃號</th><th class="p-2">區域</th><th class="p-2">學號</th><th class="p-2">狀態</th><th class="p-2">繳費期限</th><th class="p-2"></th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">${rows.map(r => `<tr>
+                            <td class="p-2 font-mono">${escapeHtml(r.locker_id)}</td><td class="p-2">${escapeHtml(r.area)}</td><td class="p-2">${escapeHtml(r.holder)}</td>
+                            <td class="p-2">${escapeHtml(r.status)}</td><td class="p-2">${escapeHtml(r.pay_deadline || '—')}</td>
+                            <td class="p-2 text-right">${r.status === '保留中' ? `<button onclick="markLockerPaid('${escapeHtml(r.locker_id)}', ${r.fee})" class="bg-ukn-800 text-white text-xs px-3 py-1 rounded">已繳費 ${r.fee} 元</button>` : ''}</td>
+                        </tr>`).join('')}</tbody>
+                    </table>` : '<div class="text-xs text-slate-500">目前沒有線上保留的櫃子。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function markLockerPaid(id, fee) {
+            if (!confirm(`確認 ${id} 已收到 ${fee} 元？`)) return;
+            try { await campusApi(`/api/campus/lockers/${id}/paid`, {}); loadCampusLockers(); }
+            catch (e) { alert(e.message); }
+        }
+
+        async function loadCampusForum() {
+            const box = document.getElementById('campusForum');
+            try {
+                const items = (await campusApi('/api/campus/forum/moderation')).data;
+                box.innerHTML = items.length ? items.map(p => `
+                    <div class="border ${p.hidden ? 'border-rose-200 bg-rose-50/50' : 'border-slate-200'} rounded px-3 py-2 space-y-1">
+                        <div class="text-xs text-slate-500">${escapeHtml(p.board)} · ${escapeHtml(p.created_at)} · 被檢舉 ${p.report_count} 次${p.hidden ? ' · 已自動隱藏' : ''}</div>
+                        <div class="whitespace-pre-line break-words">${escapeHtml(p.content)}</div>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="moderatePost(${p.id}, 'restore')" class="border border-slate-300 text-xs px-3 py-1 rounded">沒問題，恢復顯示</button>
+                            <button onclick="moderatePost(${p.id}, 'delete')" class="border border-rose-300 text-rose-700 text-xs px-3 py-1 rounded">刪除</button>
+                        </div>
+                    </div>`).join('') : '<div class="text-xs text-slate-500">目前沒有被檢舉的文章。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function moderatePost(id, action) {
+            if (action === 'delete' && !confirm('確定刪除這篇文章？')) return;
+            try { await campusApi(`/api/campus/forum/moderation/${id}`, { action }); loadCampusForum(); }
+            catch (e) { alert(e.message); }
+        }
+
+        async function loadCampusFeedback() {
+            const box = document.getElementById('campusFeedback');
+            try {
+                const items = (await campusApi('/api/campus/feedback')).data;
+                box.innerHTML = items.length ? items.slice(0, 50).map(f => `
+                    <div class="border border-slate-200 rounded px-3 py-2">
+                        <div class="text-xs text-slate-500">${escapeHtml(f.created_at)} · ${escapeHtml(f.role)}</div>
+                        <div class="whitespace-pre-line break-words">${escapeHtml(f.content)}</div>
+                    </div>`).join('') : '<div class="text-xs text-slate-500">還沒有學生意見。</div>';
+            } catch (e) { box.textContent = e.message; }
         }
 
         async function loadUnmatchedQueries() {
@@ -873,8 +1018,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-campus').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-campus').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
