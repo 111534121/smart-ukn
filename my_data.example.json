@@ -5,7 +5,7 @@
     "dept_id：CS 資管科、NUR 護理科、ENG 應外科、ANI 動畫科、OPT 視光科、BA 企管、ECE 嬰幼兒保育、LTC 長照",
     "identity_type (獎學金比對用)：沒有就填 null；可填 低收入戶、中低收入戶、原住民、身心障礙，多個用逗號分隔",
     "credits 的 course_id 要存在課程地圖；課程地圖沒有的課先寫在 courses 區塊",
-    "schedule：weekday 1=週一…7=週日；節次 1~9 (第 1 節 08:10 開始)。會取代整個班級的課表",
+    "schedule：weekday 1=週一…7=週日；節次 1~9 (第 1 節 08:30 開始)。會取代整個班級的課表",
     "attendance 的 type：曠課、遲到、病假；leave_requests 的 status：待審核、已核准、已退回"
   ],
   "student": {

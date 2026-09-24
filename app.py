@@ -1471,6 +1471,15 @@ def current_student_id():
         return session.get("student_id")
     return None
 
+DEMO_COURSE_IDS = {c["course_id"] for c in DEMO_COURSES}
+
+def hide_untaken_demo_courses(courses, taken_ids):
+    """用 import_my_data.py 匯入真實成績的學生 (修過示範以外的課) 不列出沒修過的示範課程；
+    示範帳號的成績全是示範課程，清單不變"""
+    if not set(taken_ids) - DEMO_COURSE_IDS:
+        return courses
+    return [c for c in courses if c["course_id"] not in DEMO_COURSE_IDS or c["course_id"] in taken_ids]
+
 def summarize_credits(credit_records):
     """整理成績：同一科重修時以最近一次成績為準，任何一次及格即視為通過"""
     passed, latest = set(), {}
@@ -1506,6 +1515,7 @@ def check_courses_prerequisites():
             return jsonify({"status": "error", "message": "請先登入學生帳號，或改用手動模擬模式"}), 401
         mode = "student"
         passed_ids, failed_ids, latest = summarize_credits(load_student_credits(student_id))
+        courses = hide_untaken_demo_courses(courses, latest)
         student = {"student_id": student_id, "full_name": session.get("full_name", ""), "dept_name": session.get("dept_name", "")}
 
     total_passed_credits = 0
