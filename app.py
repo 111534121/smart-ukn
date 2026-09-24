@@ -24,6 +24,9 @@ from dashboard import demo_data as dashboard_demo
 from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
 from school_calendar import sync as school_calendar_sync
 from school_calendar.actions import match_actions as match_calendar_actions
+from moodle_sync.client import MoodleClient, MoodleError, get_token as get_moodle_token
+from moodle_sync.assignments import MoodleMergedSource, get_cached_assignments, clear_cache as clear_moodle_cache
+from moodle_sync.store import MoodleLinkStore
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -3137,6 +3140,53 @@ def get_dashboard_source():
     source = MySQLDashboardSource(get_db_connection)
     return source if source.is_available() else DEMO_DASHBOARD_SOURCE
 
+# ---------- Moodle 數位學習平台串接 (作業與繳交狀態) ----------
+#   學生輸入 Moodle 帳密 → 換成權杖後只存權杖；儀表板開啟時同步 (moodle_sync/assignments.py 有 3 分鐘快取)
+
+MOODLE_URL = os.getenv("MOODLE_URL", "https://moodle.ukn.edu.tw").rstrip("/")
+MOODLE_LINKS = MoodleLinkStore(get_db_connection)
+
+def moodle_error_message(error):
+    if not error:
+        return None
+    if error.code == "invalidtoken":
+        return "Moodle 連結已失效 (可能改過密碼)，請重新連結"
+    if error.code == "network":
+        return "暫時連不上 Moodle，顯示的是上次同步的資料"
+    return f"Moodle 同步失敗：{error}"
+
+def moodle_status_for(student_id):
+    link = MOODLE_LINKS.get(student_id)
+    if not link:
+        return {"linked": False, "can_link": session.get("role") == "學生"}
+    return {"linked": True, "can_link": session.get("role") == "學生",
+            "moodle_username": link["moodle_username"], "moodle_fullname": link.get("moodle_fullname")}
+
+@app.route("/api/student/moodle/link", methods=["POST", "DELETE"])
+@role_required("學生")
+def link_moodle():
+    """POST：用 Moodle 帳密換權杖並保存 (不保存密碼)；DELETE：解除連結"""
+    student_id = session.get("student_id")
+    if request.method == "DELETE":
+        MOODLE_LINKS.delete(student_id)
+        clear_moodle_cache(student_id)
+        return jsonify({"status": "success", "message": "已解除 Moodle 連結"}), 200
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", ""))
+    if not username or not password:
+        return jsonify({"status": "error", "message": "請輸入 Moodle 帳號與密碼"}), 400
+    try:
+        token = get_moodle_token(MOODLE_URL, username, password)
+        info = MoodleClient(MOODLE_URL, token).site_info()
+    except MoodleError as e:
+        status = 401 if e.code == "invalidlogin" else 502
+        return jsonify({"status": "error", "message": str(e)}), status
+    MOODLE_LINKS.save(student_id, info.get("username") or username, info.get("fullname"), token)
+    clear_moodle_cache(student_id)
+    return jsonify({"status": "success", "message": f"已連結 Moodle 帳號：{info.get('fullname') or username}"}), 200
+
 def student_class_name(student_id):
     rows = fetch_db_rows("SELECT class_name FROM students WHERE student_id = %s", (student_id,))
     if rows:
@@ -3165,8 +3215,16 @@ def get_student_dashboard():
         return jsonify({"status": "error", "message": "日期時間格式須為 date=YYYY-MM-DD、time=HH:MM"}), 400
 
     source = get_dashboard_source()
+    moodle = moodle_status_for(student_id)
+    if moodle["linked"]:
+        link = MOODLE_LINKS.get(student_id)
+        items, synced_at, error = get_cached_assignments(student_id, MOODLE_URL, link["token"], now,
+                                                         force=request.args.get("refresh_moodle") == "1")
+        source = MoodleMergedSource(source, items)
+        moodle.update({"synced_at": synced_at, "count": len(items), "error": moodle_error_message(error)})
     class_name = student_class_name(student_id)
     data = build_dashboard(source, class_name, student_id, now)
+    data["moodle"] = moodle
 
     attendance = summarize_attendance(get_attendance_source().list_records(student_id), course_weekly_hours())
     data["attendance"] = {

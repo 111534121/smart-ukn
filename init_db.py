@@ -1,6 +1,7 @@
 import mysql.connector
 import os
 import sys
+from moodle_sync.store import CREATE_TABLE_SQL as MOODLE_LINKS_TABLE_SQL
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -414,6 +415,9 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 22b. Moodle 連結 moodle_links (只存 Moodle App 權杖，不存密碼；app 第一次使用時也會自動建立)
+        cursor.execute(MOODLE_LINKS_TABLE_SQL)
+
         # 23-28. 個人化儀表板：課表、公告 (含已讀)、作業 (含繳交)、請假
         #        學校尚無對應 API，先以本地資料表模擬；class_name 與 student_id 擇一 (整班 / 個人重補修)
         cursor.execute("""
@@ -557,7 +561,7 @@ def init_database():
         ])
 
         conn.commit()
-        print("🎉 3NF 正規化資料庫共 30 張資料表建立成功！")
+        print("🎉 3NF 正規化資料庫共 31 張資料表建立成功！")
 
     except mysql.connector.Error as err:
         print(f"❌ 資料庫初始化錯誤: {err}")
