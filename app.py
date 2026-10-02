@@ -148,6 +148,20 @@ def role_required(*allowed_roles):
         return wrapper
     return decorator
 
+def write_roles_required(*allowed_roles):
+    """GET 公開讀取；POST/PUT/DELETE 等寫入操作限特定身分"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if request.method not in ("GET", "HEAD", "OPTIONS"):
+                if "username" not in session:
+                    return jsonify({"status": "error", "message": "請先登入系統"}), 401
+                if session.get("role") not in allowed_roles:
+                    return jsonify({"status": "error", "message": "權限不足"}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
 # ==========================================
 # 2. 示範模式 3NF 資料引擎 (Demo Fallback Storage)
 #    保證即使 MySQL 離線也能 100% 完整展示！
@@ -914,6 +928,7 @@ def get_current_week():
     }), 200
 
 @app.route("/api/deadlines", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_deadlines():
     global DEMO_DEADLINES
     conn = get_db_connection()
@@ -933,8 +948,6 @@ def manage_deadlines():
         return jsonify({"status": "success", "data": DEMO_DEADLINES}), 200
 
     if request.method == "POST":
-        if session.get("role") not in ("管理員", "教職員"):
-            return jsonify({"status": "error", "message": "權限不足"}), 403
         data = request.get_json(silent=True) or {}
         title = data.get("title", "").strip()
         category = data.get("category", "課務組")
@@ -1043,13 +1056,12 @@ def get_calendar_now():
     }), 200
 
 @app.route("/api/academic-calendar", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_academic_calendar():
     global DEMO_ACADEMIC_CALENDAR
     if request.method == "GET":
         return jsonify({"status": "success", "data": fetch_calendar_events()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
-        return jsonify({"status": "error", "message": "權限不足"}), 403
     item, error = parse_calendar_payload(request.get_json(silent=True) or {})
     if error:
         return jsonify({"status": "error", "message": error}), 400
@@ -1740,75 +1752,6 @@ def what_if_course_failed():
     }), 200
 
 # ==========================================
-# 8. 畢業學分預審與門檻細拆 API (功能 5)
-# ==========================================
-
-@app.route("/api/student/graduation-audit", methods=["GET"])
-def get_graduation_audit():
-    """畢業學分預審：拆解總學分 220、必修、選修、通識、英文門檻與專題缺口 (功能 5)"""
-    student_id = request.args.get("student_id") or session.get("student_id") or "S112001"
-    student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), DEMO_STUDENTS[0])
-    dept_req = DEMO_GRADUATION_REQUIREMENTS.get(student["dept_id"], DEMO_GRADUATION_REQUIREMENTS["CS"])
-
-    # 統計學分
-    credit_records = [c for c in DEMO_STUDENT_CREDITS if c["student_id"] == student_id and c["is_passed"] == 1]
-    course_dict = {c["course_id"]: c for c in DEMO_COURSES}
-
-    passed_courses = [course_dict[r["course_id"]] for r in credit_records if r["course_id"] in course_dict]
-    total_earned = sum(c["credits"] for c in passed_courses)
-    major_req_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") == "專業必修")
-    major_elec_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") == "專業選修")
-    gen_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") in ("通識教育", "共同必修"))
-
-    # 英文門檻判定（例如通過基礎英文或證照）
-    has_english = any("英文" in c["course_name"] for c in passed_courses) or len([c for c in DEMO_CERTIFICATES if c["student_id"] == student_id]) > 0
-
-    return jsonify({
-        "status": "success",
-        "student": student,
-        "graduation_threshold": dept_req["total_credits_req"],
-        "total_earned": total_earned,
-        "total_remaining": max(0, dept_req["total_credits_req"] - total_earned),
-        "overall_progress_percent": round(min(100, (total_earned / dept_req["total_credits_req"]) * 100), 1),
-        "breakdown": [
-            {
-                "category": "科專業必修",
-                "required": dept_req["major_required_req"],
-                "earned": major_req_earned,
-                "remaining": max(0, dept_req["major_required_req"] - major_req_earned),
-                "is_met": major_req_earned >= dept_req["major_required_req"],
-                "icon": "📘"
-            },
-            {
-                "category": "科專業選修",
-                "required": dept_req["major_elective_req"],
-                "earned": major_elec_earned,
-                "remaining": max(0, dept_req["major_elective_req"] - major_elec_earned),
-                "is_met": major_elec_earned >= dept_req["major_elective_req"],
-                "icon": "📙"
-            },
-            {
-                "category": "通識與共同必修",
-                "required": dept_req["general_req"],
-                "earned": gen_earned,
-                "remaining": max(0, dept_req["general_req"] - gen_earned),
-                "is_met": gen_earned >= dept_req["general_req"],
-                "icon": "📗"
-            },
-            {
-                "category": "英文畢業門檻",
-                "required": 1,
-                "earned": 1 if has_english else 0,
-                "remaining": 0 if has_english else 1,
-                "is_met": has_english,
-                "detail": dept_req["english_threshold_name"],
-                "status_text": "已通過 (多益 550 或基礎外語及格)" if has_english else "未通過 (需繳驗證書或修畢進階英文)",
-                "icon": "🔤"
-            }
-        ]
-    }), 200
-
-# ==========================================
 # 8b. 畢業門檻儀表板 API (學分進度環、證照門檻、同屆證照統計)
 #     /api/student/graduation/dashboard、/api/student/graduation/export.csv、/api/teacher/class-summary
 #     五專畢業學分 220、專業證照畢業門檻 2 張
@@ -2144,19 +2087,27 @@ def get_my_applications():
 # ==========================================
 
 @app.route("/api/student/privacy-consent", methods=["GET", "POST"])
+@role_required("學生", "家長")
 def manage_privacy_consent():
-    """管理學生本人對家長/導師預警推播的個資授權 (功能 6)"""
+    """管理學生本人對家長/導師預警推播的個資授權 (功能 6)；家長只能查看，只有學生本人能修改"""
     global DEMO_PRIVACY_SETTINGS
-    student_id = session.get("student_id") or "S112001"
+    student_id = current_student_id()
+    if not student_id:
+        return jsonify({"status": "error", "message": "查無綁定學號，請確認登入身分"}), 400
 
     if request.method == "GET":
         settings = DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
         return jsonify({"status": "success", "student_id": student_id, "settings": settings}), 200
 
     if request.method == "POST":
+        if session.get("role") != "學生":
+            return jsonify({"status": "error", "message": "僅學生本人可修改個資授權設定"}), 403
         data = request.get_json(silent=True) or {}
-        parent_consent = 1 if data.get("parent_alert_consent") in (1, True, "1", "true") else 0
-        advisor_consent = 1 if data.get("advisor_alert_consent") in (1, True, "1", "true") else 0
+        # 前端送 consent_parent / consent_advisor，舊版欄位名稱一併相容
+        parent_raw = data.get("parent_alert_consent", data.get("consent_parent"))
+        advisor_raw = data.get("advisor_alert_consent", data.get("consent_advisor"))
+        parent_consent = 1 if parent_raw in (1, True, "1", "true") else 0
+        advisor_consent = 1 if advisor_raw in (1, True, "1", "true") else 0
 
         DEMO_PRIVACY_SETTINGS[student_id] = {
             "parent_alert_consent": parent_consent,
@@ -2170,11 +2121,19 @@ def manage_privacy_consent():
         }), 200
 
 @app.route("/api/student/early-warning", methods=["GET"])
+@login_required
 def get_student_early_warning():
-    """學業二一與擋修風險預警（附帶個資法授權保護）(功能 6)"""
-    role = session.get("role", "訪客")
-    student_id = request.args.get("student_id") or session.get("student_id") or "S112001"
-    student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), DEMO_STUDENTS[0])
+    """學業二一與擋修風險預警（附帶個資法授權保護）(功能 6)
+    學生/家長只能看自己 (子女)；老師只能看自己導師班學生；教職員/管理員需指定學號"""
+    role = session.get("role")
+    student_id, err = _resolve_graduation_target_student(role, session.get("student_id"), request.args.get("student_id", "").strip() or None)
+    if err:
+        return jsonify({"status": "error", "message": err[0]}), err[1]
+    if role == "老師" and not teacher_can_view_student(student_id):
+        return jsonify({"status": "error", "message": "老師僅能查詢自己班級學生的資料"}), 403
+    student = _load_student_info(student_id)
+    if not student:
+        return jsonify({"status": "error", "message": "查無此學號之學生資料"}), 404
 
     # 檢查個資授權
     privacy = DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
@@ -2183,6 +2142,13 @@ def get_student_early_warning():
             "status": "consent_restricted",
             "is_authorized": False,
             "message": "⚠️ 學生本人尚未開啟【家長學業預警同步授權】。依《個人資料保護法》及校園隱私政策，系統已保護學業警示明細。請與子女溝通後於學生端開啟授權。",
+            "student_name": student["full_name"]
+        }), 200
+    if role == "老師" and not privacy.get("advisor_alert_consent"):
+        return jsonify({
+            "status": "consent_restricted",
+            "is_authorized": False,
+            "message": "⚠️ 學生本人尚未開啟【導師學業預警同步授權】，依《個人資料保護法》系統已保護學業警示明細。",
             "student_name": student["full_name"]
         }), 200
 
@@ -2235,6 +2201,7 @@ def get_categories():
     return jsonify({"status": "success", "data": DEMO_CATEGORIES}), 200
 
 @app.route("/api/checklists", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_checklists():
     global DEMO_CHECKLISTS
     role = session.get("role", "訪客")
@@ -2258,8 +2225,6 @@ def manage_checklists():
         return jsonify({"status": "success", "data": DEMO_CHECKLISTS}), 200
 
     if request.method == "POST":
-        if session.get("role") not in ("管理員", "教職員"):
-            return jsonify({"status": "error", "message": "權限不足"}), 403
         data = request.get_json(silent=True) or {}
         new_id = max([c["item_id"] for c in DEMO_CHECKLISTS], default=0) + 1
         item = {
@@ -2282,13 +2247,12 @@ def manage_checklists():
         return jsonify({"status": "success", "message": "申辦指引流程新增成功！", "data": item}), 201
 
 @app.route("/api/synonyms", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_synonyms():
     global DEMO_SYNONYMS
     if request.method == "GET":
         return jsonify({"status": "success", "data": DEMO_SYNONYMS}), 200
     if request.method == "POST":
-        if session.get("role") not in ("管理員", "教職員"):
-            return jsonify({"status": "error", "message": "權限不足"}), 403
         data = request.get_json(silent=True) or {}
         uk = data.get("user_keyword", "").strip()
         ot = data.get("official_term", "").strip()
@@ -2316,13 +2280,12 @@ def delete_synonym(synonym_id):
 # ==========================================
 
 @app.route("/api/rules", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_rules():
     global DEMO_KNOWLEDGE_BASE
     if request.method == "GET":
         return jsonify({"status": "success", "data": DEMO_KNOWLEDGE_BASE}), 200
     if request.method == "POST":
-        if session.get("role") not in ("管理員", "教職員"):
-            return jsonify({"status": "error", "message": "權限不足"}), 403
         data = request.get_json(silent=True) or {}
         new_id = max([r["id"] for r in DEMO_KNOWLEDGE_BASE], default=0) + 1
         item = {
@@ -2405,12 +2368,11 @@ def parse_link_payload(data, categories):
     }, None
 
 @app.route("/api/links", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_quick_links():
     if request.method == "GET":
         data = load_quick_links()
         return jsonify({"status": "success", "categories": data["categories"], "data": data["links"]}), 200
-    if session.get("role") not in ("管理員", "教職員"):
-        return jsonify({"status": "error", "message": "權限不足"}), 403
     with links_lock:
         data = load_quick_links()
         item, error = parse_link_payload(request.get_json(silent=True) or {}, data["categories"])
