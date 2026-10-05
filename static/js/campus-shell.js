@@ -194,25 +194,41 @@ window.addEventListener('hashchange', () => switchTab(tabFromHash(), { updateHas
 
 // ---------- 首頁：主視覺輪播 ----------
 
+// 校園照片取自 Wikimedia Commons (CC 授權，依授權條款須標示作者與授權；已縮小尺寸)
+const HERO_PHOTOS = {
+    gate2017: { src: '/img/hero/campus-gate-2017.jpg', credit: 'Solomon203', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/', source: 'https://commons.wikimedia.org/wiki/File:Taipei_Campus,_University_of_Kang_Ning_20170806.jpg' },
+    gate2016: { src: '/img/hero/campus-gate-2016.jpg', credit: 'Padai', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/', source: 'https://commons.wikimedia.org/wiki/File:Taipei_Campus,_University_of_Kang_Ning_20160925.jpg' },
+    gate2012: { src: '/img/hero/campus-gate-2012.jpg', credit: '玄史生', license: 'CC0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', source: 'https://commons.wikimedia.org/wiki/File:Kang-Ning_Junior_College_of_Medical_Care_and_Management_20120929.jpg' },
+};
+
+// tint：疊在照片上的半透明色 (左深右淺)，讓白字在照片上也看得清楚；pos：照片裁切位置
 const HERO_SLIDES = [
-    { tab: 'tab-calendar', kicker: '行事曆', title: '假日、申辦期限、我的行程，一張月曆看完', text: '點開事項就知道要準備什麼，已截止的自動變灰。', bg: 'linear-gradient(120deg,#003377 0%,#124aa4 55%,#2f64ad 100%)', art: '📅' },
-    { tab: 'tab-plan', kicker: '選課檢查', title: '選課前先檢查：學分夠不夠、會不會撞修', text: '以畢業 220 學分試算，衝堂、重複修習、擋修一次抓出來。', bg: 'linear-gradient(120deg,#001d44 0%,#003c9d 60%,#5b86c0 100%)', art: '🧮' },
-    { tab: 'tab-certs', kicker: '證照與競賽', title: '證照獎狀線上上傳，班導確認就算數', text: '還能看看同年級有多少人拿到同一張證照。', bg: 'linear-gradient(120deg,#7c2d12 0%,#c2410c 55%,#ff5511 100%)', art: '🏅' },
-    { tab: 'tab-map', kicker: '新生專區', title: '找教室、找老師，不再迷路', text: '校園地圖搜尋教室代碼，還看得到老師現在有沒有課。', bg: 'linear-gradient(120deg,#064e3b 0%,#047857 55%,#10b981 100%)', art: '🗺️' },
+    { tab: 'tab-calendar', kicker: '行事曆', title: '假日、申辦期限、我的行程，一張月曆看完', text: '點開事項就知道要準備什麼，已截止的自動變灰。', tint: '0,51,119', photo: 'gate2017', pos: 'center 40%' },
+    { tab: 'tab-plan', kicker: '選課檢查', title: '選課前先檢查：學分夠不夠、會不會撞修', text: '以畢業 220 學分試算，衝堂、重複修習、擋修一次抓出來。', tint: '0,29,68', photo: 'gate2012', pos: 'center 55%' },
+    { tab: 'tab-certs', kicker: '證照與競賽', title: '證照獎狀線上上傳，班導確認就算數', text: '還能看看同年級有多少人拿到同一張證照。', tint: '124,45,18', photo: 'gate2016', pos: 'center 55%' },
+    { tab: 'tab-map', kicker: '新生專區', title: '找教室、找老師，不再迷路', text: '校園地圖搜尋教室代碼，還看得到老師現在有沒有課。', tint: '6,78,59', photo: 'gate2017', pos: 'right 60%' },
 ];
+
+function heroBackground(s) {
+    const p = HERO_PHOTOS[s.photo];
+    return `linear-gradient(90deg, rgba(${s.tint},.88) 0%, rgba(${s.tint},.55) 50%, rgba(${s.tint},.15) 100%), url('${p.src}') ${s.pos} / cover no-repeat, rgb(${s.tint})`;
+}
 let heroIndex = 0, heroTimer = null;
 
 function renderHero() {
-    document.getElementById('heroTrack').innerHTML = HERO_SLIDES.map((s, i) => `
-        <div class="hero-slide" style="background:${s.bg}" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${HERO_SLIDES.length}">
-            <span aria-hidden="true" class="absolute right-[6%] top-1/2 -translate-y-1/2 text-[120px] sm:text-[180px] opacity-25 select-none">${s.art}</span>
+    document.getElementById('heroTrack').innerHTML = HERO_SLIDES.map((s, i) => {
+        const p = HERO_PHOTOS[s.photo];
+        return `
+        <div class="hero-slide" style="background:${heroBackground(s)}" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${HERO_SLIDES.length}">
+            <div class="hero-credit">照片：<a href="${p.source}" target="_blank" rel="noopener noreferrer">${p.credit} / Wikimedia Commons</a>，<a href="${p.licenseUrl}" target="_blank" rel="noopener noreferrer">${p.license}</a></div>
             <div class="max-w-7xl mx-auto w-full px-6 sm:px-10 pb-12 sm:pb-14 space-y-2">
                 <div class="inline-block text-xs font-bold bg-accent-500 px-2 py-0.5 rounded">${s.kicker}</div>
                 <h2 class="text-xl sm:text-3xl font-bold leading-snug max-w-2xl">${s.title}</h2>
                 <p class="text-sm sm:text-base opacity-90 max-w-2xl">${s.text}</p>
                 <button type="button" onclick="switchTab('${s.tab}')" class="mt-2 inline-block border border-white/80 hover:bg-white hover:text-ukn-900 text-sm font-semibold px-4 py-1.5 rounded transition">立即使用 ➔</button>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
     document.getElementById('heroDots').innerHTML = HERO_SLIDES.map((_, i) =>
         `<button type="button" class="hero-dot" aria-label="第 ${i + 1} 張" onclick="heroGo(${i}, true)"></button>`).join('');
     heroGo(0, true);

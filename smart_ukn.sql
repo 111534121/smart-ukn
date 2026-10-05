@@ -26,6 +26,7 @@ DROP TABLE IF EXISTS `certificates`;
 DROP TABLE IF EXISTS `visitor_logs`;
 DROP TABLE IF EXISTS `friction_reports`;
 DROP TABLE IF EXISTS `deadlines`;
+DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `students`;
 DROP TABLE IF EXISTS `course_map`;
@@ -375,19 +376,37 @@ CREATE TABLE `deadlines` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='跨系統期限雷達表';
 
 INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`) VALUES
-(1, '加退選截止', '選課', '2026-09-14', '2026-09-20', 'all', NULL, 'https://www.ukn.edu.tw/', '逾期未完成加退選者，選課結果將依原排課確定生效。'),
-(2, '語言證照學分抵免申請截止', '抵免', NULL, '2026-09-30', '學生', NULL, 'https://www.ukn.edu.tw/', '須檢附證書正影本與歷年成績單向教務處註冊組申請。'),
-(3, '書卷獎與學海獎助學金申請截止', '獎助學金', NULL, '2026-10-15', '學生', NULL, 'https://www.ukn.edu.tw/', '依前一學期成績與家庭狀況審核，逾期不受理。'),
-(4, '期中學業預警名單公告與輔導期', '學習預警', '2026-11-01', '2026-11-05', 'all', NULL, 'https://www.ukn.edu.tw/', '被列入預警名單者將由導師安排面談，家長可同步關注。'),
-(5, '資訊管理科（五專）專題期中審查', '選課', NULL, '2026-11-10', '學生', 'CS', 'https://www.ukn.edu.tw/', '專題小組須完成期中進度報告並提交指導教師審核。'),
-(6, '停修（棄修）申請截止（第10-12週）', '選課', '2026-11-09', '2026-11-20', '學生', NULL, 'https://www.ukn.edu.tw/', '逾期不受理，停修後修習學分不得低於最低應修學分。'),
-(7, '教學評量填寫期間截止', '教學評量', '2026-12-15', '2026-12-25', '學生', NULL, 'https://www.ukn.edu.tw/', '完成填寫始可查詢學期成績，請於期末考前完成。'),
-(8, '導師班務座談會', '教師行政', NULL, '2026-10-15', '老師', NULL, 'https://www.ukn.edu.tw/', '各班導師與學務處生輔組召開期初班務座談，說明本學期預警與輔導重點。'),
-(9, '期中教學研討會議', '教師行政', NULL, '2026-11-12', '老師', NULL, 'https://www.ukn.edu.tw/', '全校教師參加，說明期中預警名單與教學評量作業重點。'),
-(10, '期中成績繳交截止', '教師行政', NULL, '2026-11-18', '老師', NULL, 'https://www.ukn.edu.tw/', '請於期限內至教師成績登錄系統完成期中成績輸入。'),
-(11, '期末成績繳交截止', '教師行政', NULL, '2027-01-15', '老師', NULL, 'https://www.ukn.edu.tw/', '請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。'),
-(12, '期中考試週', '考試', '2026-11-23', '2026-11-27', 'all', NULL, 'https://www.ukn.edu.tw/', '期中考試週期間，請留意各科考試時間與地點公告。'),
-(13, '期末考試週', '考試', '2027-01-05', '2027-01-09', 'all', NULL, 'https://www.ukn.edu.tw/', '期末考試週期間，請留意各科考試時間與地點公告。');
+(1, '加退選截止', '選課', '2026-09-14', '2026-09-20', 'all', NULL, 'http://talk.ukn.edu.tw/class_redi/class.php', '逾期未完成加退選者，選課結果將依原排課確定生效。'),
+(2, '語言證照學分抵免申請截止', '抵免', NULL, '2026-09-30', '學生', NULL, 'http://203.71.63.13/academic/', '須檢附證書正影本與歷年成績單向教務處註冊組申請。'),
+(3, '書卷獎與學海獎助學金申請截止', '獎助學金', NULL, '2026-10-15', '學生', NULL, 'https://sa.ukn.edu.tw/p/412-1003-4377.php?Lang=zh-tw', '依前一學期成績與家庭狀況審核，逾期不受理。'),
+(4, '期中學業預警名單公告與輔導期', '學習預警', '2026-11-01', '2026-11-05', 'all', NULL, 'http://203.71.63.13/academic/', '被列入預警名單者將由導師安排面談，家長可同步關注。'),
+(5, '資訊管理科（五專）專題期中審查', '選課', NULL, '2026-11-10', '學生', 'CS', 'https://moodle.ukn.edu.tw/', '專題小組須完成期中進度報告並提交指導教師審核。'),
+(6, '停修（棄修）申請截止（第10-12週）', '選課', '2026-11-09', '2026-11-20', '學生', NULL, 'http://talk.ukn.edu.tw/class_redi/class.php', '逾期不受理，停修後修習學分不得低於最低應修學分。'),
+(7, '教學評量填寫期間截止', '教學評量', '2026-12-15', '2026-12-25', '學生', NULL, 'http://web2.ukn.edu.tw/campus/ques/knjcques/ques_stu_login.asp', '完成填寫始可查詢學期成績，請於期末考前完成。'),
+(8, '導師班務座談會', '教師行政', NULL, '2026-10-15', '老師', NULL, 'https://www.ukn.edu.tw/p/406-1000-30956,r344.php?Lang=zh-tw', '各班導師與學務處生輔組召開期初班務座談，說明本學期預警與輔導重點。'),
+(9, '期中教學研討會議', '教師行政', NULL, '2026-11-12', '老師', NULL, 'https://www.ukn.edu.tw/p/406-1000-30956,r344.php?Lang=zh-tw', '全校教師參加，說明期中預警名單與教學評量作業重點。'),
+(10, '期中成績繳交截止', '教師行政', NULL, '2026-11-18', '老師', NULL, NULL, '請於期限內至教師成績登錄系統完成期中成績輸入。'),
+(11, '期末成績繳交截止', '教師行政', NULL, '2027-01-15', '老師', NULL, NULL, '請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。'),
+(12, '期中考試週', '考試', '2026-11-23', '2026-11-27', 'all', NULL, 'https://www.ukn.edu.tw/p/406-1000-30956,r344.php?Lang=zh-tw', '期中考試週期間，請留意各科考試時間與地點公告。'),
+(13, '期末考試週', '考試', '2027-01-05', '2027-01-09', 'all', NULL, 'https://www.ukn.edu.tw/p/406-1000-30956,r344.php?Lang=zh-tw', '期末考試週期間，請留意各科考試時間與地點公告。');
+
+-- --------------------------------------------------------
+-- 13. 修改紀錄表 `audit_logs`
+--     後台新增/修改/刪除規章、同義詞、期限、申辦流程、連結時，記錄誰在何時改了什麼
+-- --------------------------------------------------------
+CREATE TABLE `audit_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '紀錄唯一碼 (PK)',
+  `table_name` varchar(50) NOT NULL COMMENT '被修改的資料表',
+  `record_id` varchar(50) NOT NULL COMMENT '被修改的資料編號',
+  `action` varchar(20) NOT NULL COMMENT '新增/修改/刪除',
+  `changed_by` varchar(50) NOT NULL COMMENT '修改者姓名',
+  `changed_by_role` varchar(20) DEFAULT NULL COMMENT '修改者身分',
+  `before_json` longtext DEFAULT NULL COMMENT '修改前內容 (JSON)',
+  `after_json` longtext DEFAULT NULL COMMENT '修改後內容 (JSON)',
+  `changed_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '修改時間',
+  PRIMARY KEY (`log_id`),
+  KEY `idx_audit_table_record` (`table_name`, `record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='後台修改紀錄表';
 
 COMMIT;
 

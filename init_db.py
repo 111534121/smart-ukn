@@ -354,6 +354,23 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 18b. 建立修改紀錄表 audit_logs (R5：規章/同義詞/期限/申辦流程/連結的新增、修改、刪除皆留下可追溯紀錄)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `audit_logs` (
+              `log_id` int(11) NOT NULL AUTO_INCREMENT,
+              `table_name` varchar(50) NOT NULL,
+              `record_id` varchar(50) NOT NULL,
+              `action` varchar(20) NOT NULL,
+              `changed_by` varchar(50) NOT NULL,
+              `changed_by_role` varchar(20) DEFAULT NULL,
+              `before_json` longtext DEFAULT NULL,
+              `after_json` longtext DEFAULT NULL,
+              `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`log_id`),
+              KEY `idx_audit_table_record` (`table_name`, `record_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
         # 19. 建立學期校曆事項表 academic_calendar (首頁「本週可辦」橫幅)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `academic_calendar` (

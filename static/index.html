@@ -91,6 +91,10 @@
         .hero-slide { min-width: 100%; height: clamp(220px, 34vw, 380px); position: relative; color: #fff; display: flex; align-items: flex-end; }
         .hero-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,20,50,.72), rgba(0,20,50,0) 60%); }
         .hero-slide > div { position: relative; z-index: 1; }
+        .hero-slide h2, .hero-slide p { text-shadow: 0 1px 3px rgba(0,0,0,.45); }
+        /* 照片授權標示 (CC BY-SA 須標示作者與授權) */
+        .hero-slide > .hero-credit { position: absolute; right: 10px; top: 6px; font-size: 10px; line-height: 1.4; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+        .hero-credit a { color: inherit; text-decoration: underline; }
         .hero-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 9999px; background: rgba(255,255,255,.2); color: #fff; font-size: 26px; line-height: 38px; z-index: 2; }
         .hero-arrow:hover { background: rgba(255,255,255,.4); }
         .hero-dot { width: 10px; height: 10px; border-radius: 9999px; background: rgba(255,255,255,.5); }
@@ -876,6 +880,22 @@
                 <div class="border-b border-slate-100 pb-4">
                     <h2 class="ukn-title text-xl font-bold text-slate-900"><span id="calendarYearText">本學年度</span>重要日程與申辦期限</h2>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">連動本學期行事曆，即時列出各項行政申請截止日期與重要教務日程。</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <p id="deadlinesRadarSummary" class="text-slate-600"></p>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <label class="flex items-center gap-1.5 text-slate-600">排序
+                            <select id="deadlinesRadarSort" onchange="renderDeadlines()" class="border border-slate-300 rounded px-2 py-1 bg-white">
+                                <option value="upcoming">即將到期優先</option>
+                                <option value="asc">截止日：早 → 晚</option>
+                                <option value="desc">截止日：晚 → 早</option>
+                            </select>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="deadlinesRadarShowOverdue" onchange="renderDeadlines()" checked class="accent-rose-600"> 顯示已逾期
+                        </label>
+                    </div>
                 </div>
 
                 <div id="deadlinesRadarList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2342,38 +2362,84 @@
         }
 
         // 11. 重要日程與校曆
+        const DEADLINE_SOON_DAYS = 5;  // 剩幾天內算「即將到期」(橘色)
+        let deadlinesCache = [];
+
         async function loadDeadlines() {
             try {
                 const res = await fetch('/api/deadlines');
                 const data = await res.json();
                 const list = data.data || data.deadlines;
                 if (data.status === 'success' && list) {
-                    const container = document.getElementById('deadlinesRadarList');
-                    const today = new Date().toISOString().slice(0, 10);
-                    const dayDiff = (a, b) => Math.round((new Date(a) - new Date(b)) / 86400000);
-                    // 未截止的依截止日排前面，已截止的排最後並變灰
-                    const items = list.map(dl => {
-                        const end = String(dl.end_date || dl.deadline_date || '').slice(0, 10);
-                        const start = String(dl.start_date || end).slice(0, 10);
-                        const expired = end < today;
-                        const left = dayDiff(end, today);
-                        const status = expired ? '已截止' : start > today ? `${dayDiff(start, today)} 天後開放` : left === 0 ? '今天截止' : `進行中 · 剩 ${left} 天`;
-                        return { ...dl, end, start, expired, left, status };
-                    }).sort((a, b) => (a.expired - b.expired) || a.end.localeCompare(b.end));
-                    container.innerHTML = items.map(dl => `
-                        <div class="p-4 rounded border space-y-2 ${dl.expired ? 'bg-slate-100 border-slate-200 opacity-60' : 'bg-slate-50 border-slate-200'}">
-                            <div class="flex justify-between items-start gap-2">
-                                <span class="font-bold text-sm ${dl.expired ? 'text-slate-500 line-through' : 'text-slate-900'}">${escapeHtml(dl.title)}</span>
-                                <span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded ${dl.expired ? 'bg-slate-200 text-slate-500' : dl.left <= 5 ? 'bg-rose-100 text-rose-800' : 'bg-ukn-100 text-ukn-800'}">${dl.status}</span>
-                            </div>
-                            <div class="text-xs text-slate-600">${escapeHtml(dl.category || '')} · ${dl.start.slice(5).replace('-', '/')} – ${dl.end.slice(5).replace('-', '/')}</div>
-                            <p class="text-xs text-slate-500">${escapeHtml(dl.description || '請依各承辦處室規定於期限內完成辦理手續。')}</p>
-                            ${dl.related_system_url && !dl.expired ? `<a href="${escapeHtml(dl.related_system_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-ukn-700 font-semibold hover:underline">前往線上系統 ↗</a>` : ''}
-                        </div>`).join('');
+                    deadlinesCache = list;
+                    renderDeadlines();
                 }
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        function renderDeadlines() {
+            const container = document.getElementById('deadlinesRadarList');
+            // 用本地日期，toISOString() 是 UTC，台灣早上 8 點前會變成前一天
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const dayDiff = (a, b) => Math.round((new Date(a) - new Date(b)) / 86400000);
+            const items = deadlinesCache.map(dl => {
+                const end = String(dl.end_date || dl.deadline_date || '').slice(0, 10);
+                const start = String(dl.start_date || end).slice(0, 10);
+                const overdue = end < today;
+                const left = dayDiff(end, today);
+                const notOpen = !overdue && start > today;
+                const status = overdue ? `已逾期 ${-left} 天` : notOpen ? `${dayDiff(start, today)} 天後開放` : left === 0 ? '今天截止' : `剩 ${left} 天`;
+                const level = overdue ? 'overdue' : notOpen ? 'later' : left <= DEADLINE_SOON_DAYS ? 'soon' : 'open';
+                return { ...dl, end, start, overdue, left, status, level };
+            });
+
+            const sortMode = document.getElementById('deadlinesRadarSort').value;
+            items.sort((a, b) => {
+                if (sortMode === 'desc') return b.end.localeCompare(a.end);
+                if (sortMode === 'asc') return a.end.localeCompare(b.end);
+                // 即將到期優先：未逾期的依截止日由近到遠，逾期的排在後面 (最近逾期的在前)
+                return (a.overdue - b.overdue) || (a.overdue ? b.end.localeCompare(a.end) : a.end.localeCompare(b.end));
+            });
+
+            const overdueCount = items.filter(d => d.overdue).length;
+            const soonCount = items.filter(d => d.level === 'soon').length;
+            document.getElementById('deadlinesRadarSummary').innerHTML =
+                `共 ${items.length} 項 · <span class="text-amber-700 font-semibold">${DEADLINE_SOON_DAYS} 天內到期 ${soonCount} 項</span> · <span class="text-rose-700 font-semibold">已逾期 ${overdueCount} 項</span>`;
+
+            const showOverdue = document.getElementById('deadlinesRadarShowOverdue').checked;
+            const visible = showOverdue ? items : items.filter(d => !d.overdue);
+            if (!visible.length) {
+                container.innerHTML = `<div class="col-span-full text-sm text-slate-500 text-center py-6">${items.length ? '目前沒有未到期的事項。' : '目前沒有申辦期限。'}</div>`;
+                return;
+            }
+
+            const cardStyle = {
+                overdue: 'bg-rose-50 border-rose-300 border-l-4 border-l-rose-600',
+                soon: 'bg-amber-50/60 border-amber-200',
+                open: 'bg-slate-50 border-slate-200',
+                later: 'bg-white border-slate-200'
+            };
+            const badgeStyle = {
+                overdue: 'bg-rose-600 text-white',
+                soon: 'bg-amber-100 text-amber-800',
+                open: 'bg-ukn-100 text-ukn-800',
+                later: 'bg-slate-100 text-slate-600'
+            };
+            container.innerHTML = visible.map(dl => `
+                <div class="p-4 rounded border space-y-2 ${cardStyle[dl.level]}">
+                    <div class="flex justify-between items-start gap-2">
+                        <span class="font-bold text-sm ${dl.overdue ? 'text-rose-800' : 'text-slate-900'}">${escapeHtml(dl.title)}</span>
+                        <span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded ${badgeStyle[dl.level]}">${dl.status}</span>
+                    </div>
+                    <div class="text-xs ${dl.overdue ? 'text-rose-700' : 'text-slate-600'}">${escapeHtml(dl.category || '')} · ${dl.start.slice(5).replace('-', '/')} – <span class="font-semibold">${dl.end.slice(5).replace('-', '/')} 截止</span></div>
+                    <p class="text-xs text-slate-500">${escapeHtml(dl.description || '請依各承辦處室規定於期限內完成辦理手續。')}</p>
+                    ${dl.overdue
+                        ? '<p class="text-xs text-rose-700 font-semibold">已超過截止日，如需補辦請洽承辦處室。</p>'
+                        : dl.related_system_url ? `<a href="${escapeHtml(dl.related_system_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-ukn-700 font-semibold hover:underline">前往線上系統 ↗</a>` : ''}
+                </div>`).join('');
         }
 
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)

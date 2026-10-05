@@ -163,23 +163,23 @@ def seed_data():
             INSERT IGNORE INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `office_location`, `contact_phone`, `form_download_url`, `system_url`, `deadline_week_info`, `related_kb_id`, `audience`) VALUES
             (1, 1, '課務組', '課程停修申請', 
              '[\"至校務資訊系統登入『停修申請表』\", \"列印紙本停修申請單\", \"親自送請任課教師簽章同意\", \"送請班級導師及科主任簽章\", \"於第12週五前送交教務處課務組核備\"]', 
-             '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form.pdf', 'https://sys.ukn.edu.tw/cos_withdraw', '第 10-12 週 (本週受理中)', 1, '學生'),
+             '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form.pdf', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
             
             (2, 2, '生輔組', '學生請假申請 (病假/事假)', 
              '[\"登入學生資訊系統填寫請假單\", \"上傳就醫證明或相關佐證文件圖檔\", \"送出後通知導師進行線上簽核\", \"請假超過3日由生輔組組長複核\", \"系統顯示審核通過即完成登錄\"]', 
-             '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form.pdf', 'https://sys.ukn.edu.tw/student_leave', '請假日當日起 3 日內', 2, '學生'),
+             '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form.pdf', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
             
             (3, 3, '通識中心', '外語證照免修與學分抵免', 
              '[\"填寫通識外語抵免申請表\", \"備妥多益/英檢/雅思成績單正本及影本各一份\", \"送交通識教育中心辦公室查驗正本\", \"教務處課務組複審學分折抵\", \"次學期初於歷年成績單確認抵免註記\"]', 
-             '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form.pdf', 'https://sys.ukn.edu.tw/credit_waive', '開學前至加退選截止 (已截止)', 3, '學生'),
+             '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form.pdf', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
              
             (4, 1, '註冊組', '學士班畢業學分資格預審', 
              '[\"登入畢業審查系統列印學分檢核表\", \"核對科專業必修、選修與通識學分缺口\", \"確認英文畢業門檻與專題通過證明\", \"至科辦公室請科主任初審簽章\", \"送交教務處註冊組進行畢業資格決審\"]', 
-             '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form.pdf', 'https://sys.ukn.edu.tw/grad_audit', '大四第 8-16 週 (進行中)', 4, '學生'),
+             '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form.pdf', 'http://203.71.63.13/academic/', '大四第 8-16 週 (進行中)', 4, '學生'),
              
             (5, 3, '研發處', '專業證照與競賽獲獎獎勵金申請', 
              '[\"登入研發處證照獎勵申請平台\", \"填寫證照/競賽名稱、證書字號與發證單位\", \"上傳證書正反面與郵局存摺封面圖檔\", \"列印紙本印領清冊並親筆簽名\", \"送交研發處實習就業組審核並撥款\"]', 
-             '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form.pdf', 'https://sys.ukn.edu.tw/cert_reward', '每學期第 1-5 週', 5, '學生')
+             '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form.pdf', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
         """)
 
         # 10. 寫入申辦進度種子 (功能 3: 我的申辦進度)
@@ -231,11 +231,11 @@ def seed_data():
         # 15. 寫入跨系統校曆雷達與期限 (功能 2: 校曆連動雷達)
         cursor.execute("""
             INSERT IGNORE INTO `deadlines` (`deadline_id`, `title`, `category`, `semester_week`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`, `status_badge`) VALUES
-            (1, '115-1 學期課程停修申請', '教務處課務組', 11, '2026-10-01', '2026-10-18', '學生', 'CS', 'https://sys.ukn.edu.tw/cos_withdraw', '學期第 10-12 週開放停修申請，每人以 2 科為限，須完成導師與主任簽章。', '進行中 (剩 3 天)'),
-            (2, '期中預警評量與導師學習輔導訪談', '學務處/教務處', 11, '2026-10-05', '2026-10-20', '學生,老師,家長', 'CS', 'https://sys.ukn.edu.tw/early_warning', '期中成績不及格達 1/2 者列入預警，導師將安排個別學習輔導與座談。', '進行中 (剩 5 天)'),
-            (3, '大四應屆畢業生學分資格預審', '教務處註冊組', 11, '2026-09-15', '2026-11-30', '學生', 'CS', 'https://sys.ukn.edu.tw/grad_audit', '大四學生請至註冊組核對必選修、通識與外語門檻缺口。', '進行中 (剩 35 天)'),
-            (4, '共同外語與證照學分抵免申請', '通識教育中心', 3, '2026-09-01', '2026-09-15', '學生', 'all', 'https://sys.ukn.edu.tw/credit_waive', '大一共同外語抵免申請已截止，逾期者請於下學期初辦理。', '已截止'),
-            (5, '暑期重補修意願登記與開班調查', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', 'CS', 'https://sys.ukn.edu.tw/summer_courses', '先修科目不及格需重修者，可預先登記暑期課程開班意願。', '尚未開放')
+            (1, '115-1 學期課程停修申請', '教務處課務組', 11, '2026-10-01', '2026-10-18', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '學期第 10-12 週開放停修申請，每人以 2 科為限，須完成導師與主任簽章。', '進行中 (剩 3 天)'),
+            (2, '期中預警評量與導師學習輔導訪談', '學務處/教務處', 11, '2026-10-05', '2026-10-20', '學生,老師,家長', 'CS', 'http://203.71.63.13/academic/', '期中成績不及格達 1/2 者列入預警，導師將安排個別學習輔導與座談。', '進行中 (剩 5 天)'),
+            (3, '大四應屆畢業生學分資格預審', '教務處註冊組', 11, '2026-09-15', '2026-11-30', '學生', 'CS', 'http://203.71.63.13/academic/', '大四學生請至註冊組核對必選修、通識與外語門檻缺口。', '進行中 (剩 35 天)'),
+            (4, '共同外語與證照學分抵免申請', '通識教育中心', 3, '2026-09-01', '2026-09-15', '學生', NULL,'http://203.71.63.13/academic/', '大一共同外語抵免申請已截止，逾期者請於下學期初辦理。', '已截止'),
+            (5, '暑期重補修意願登記與開班調查', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '先修科目不及格需重修者，可預先登記暑期課程開班意願。', '尚未開放')
         """)
 
         # 16. 寫入申辦流程勾選進度 checklist_progress (與 app.py 的 DEMO_CHECKLIST_PROGRESS 一致)
@@ -287,6 +287,20 @@ def seed_data():
             cursor.execute("UPDATE `deadlines` SET `title` = '115-1 學期課程停修申請' WHERE `title` = '113-1 學期課程停修申請'")
         except mysql.connector.Error as err:
             print(f"⚠️ 科系名稱修正未完成：{err}")
+
+        # 17b. 系統入口改成 links.json 中對應的康寧官方系統 (舊版為不存在的 sys.ukn.edu.tw 示意網址)
+        try:
+            for old, new in [('https://sys.ukn.edu.tw/cos_withdraw', 'http://talk.ukn.edu.tw/class_redi/class.php'),
+                             ('https://sys.ukn.edu.tw/summer_courses', 'http://talk.ukn.edu.tw/class_redi/class.php'),
+                             ('https://sys.ukn.edu.tw/student_leave', 'https://ec.ukn.edu.tw/AskLeave/login.aspx'),
+                             ('https://sys.ukn.edu.tw/credit_waive', 'http://203.71.63.13/academic/'),
+                             ('https://sys.ukn.edu.tw/grad_audit', 'http://203.71.63.13/academic/'),
+                             ('https://sys.ukn.edu.tw/early_warning', 'http://203.71.63.13/academic/'),
+                             ('https://sys.ukn.edu.tw/cert_reward', 'https://oes3.ukn.edu.tw/~license/')]:
+                cursor.execute("UPDATE `deadlines` SET `related_system_url` = %s WHERE `related_system_url` = %s", (new, old))
+                cursor.execute("UPDATE `checklist_items` SET `system_url` = %s WHERE `system_url` = %s", (new, old))
+        except mysql.connector.Error as err:
+            print(f"⚠️ 系統入口網址更新未完成：{err}")
 
         # 17c. 學生證照 (與 app.py 的 DEMO_CERTIFICATES 一致，供畢業門檻儀表板的同屆證照統計)
         try:
