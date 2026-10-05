@@ -162,6 +162,7 @@
                 <button onclick="switchTab('links')" id="tabBtn-links" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生專區連結</button>
                 <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">缺曠課通知（模擬）</button>
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
+                <button onclick="switchTab('auditlog')" id="tabBtn-auditlog" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">修改歷程</button>
             </div>
 
             <!-- 分頁 0: 學生未命中搜尋與詞庫維護 -->
@@ -354,6 +355,35 @@
                             </tr>
                         </thead>
                         <tbody id="calendarTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁: 修改歷程 (CMS 新增/修改/刪除紀錄，R5 可追溯性要求) -->
+            <div id="panel-auditlog" class="hidden space-y-3">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600 flex items-center justify-between gap-2">
+                    <p>規章、同義詞、期限、申辦流程的每一次新增／修改／刪除都會記錄在這裡，無法刪改。</p>
+                    <select id="auditTableFilter" onchange="loadAuditLogs()" class="border rounded px-2 py-1.5 text-xs">
+                        <option value="">全部資料表</option>
+                        <option value="knowledge_base">校規規章條文</option>
+                        <option value="synonym_dictionary">同義詞對照</option>
+                        <option value="deadlines">期限雷達</option>
+                        <option value="checklist_items">申辦流程</option>
+                    </select>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">時間</th>
+                                <th class="p-3">操作者</th>
+                                <th class="p-3">資料表</th>
+                                <th class="p-3">記錄 ID</th>
+                                <th class="p-3">動作</th>
+                                <th class="p-3">內容</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
             </div>
@@ -873,8 +903,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-auditlog').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-auditlog').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -884,6 +914,45 @@
             const activeBtn = document.getElementById(`tabBtn-${tab}`);
             if (activeBtn) {
                 activeBtn.className = 'px-4 py-2.5 text-ukn-800 font-bold border-b-2 border-accent-500 whitespace-nowrap' + (tab === 'unmatched' ? ' flex items-center gap-1.5' : '');
+            }
+            if (tab === 'auditlog') loadAuditLogs();
+        }
+
+        const AUDIT_TABLE_LABELS = {
+            knowledge_base: '校規規章條文', synonym_dictionary: '同義詞對照',
+            deadlines: '期限雷達', checklist_items: '申辦流程'
+        };
+        const AUDIT_ACTION_STYLE = {
+            '新增': 'bg-emerald-100 text-emerald-800', '修改': 'bg-amber-100 text-amber-800', '刪除': 'bg-rose-100 text-rose-800'
+        };
+
+        async function loadAuditLogs() {
+            try {
+                const tableFilter = document.getElementById('auditTableFilter').value;
+                const url = tableFilter ? `/api/admin/audit-logs?table_name=${encodeURIComponent(tableFilter)}` : '/api/admin/audit-logs';
+                const res = await fetch(url);
+                const data = await res.json();
+                const logs = data.data || [];
+                const tbody = document.getElementById('auditLogTableBody');
+                if (!logs.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">目前還沒有任何修改紀錄</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = logs.map(l => {
+                    const summary = l.action === '刪除' ? (l.before_json?.title || l.before_json?.keyword || l.before_json?.business_name || l.before_json?.official_term || '-')
+                        : (l.after_json?.title || l.after_json?.keyword || l.after_json?.business_name || l.after_json?.official_term || '-');
+                    return `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 font-mono text-slate-500 whitespace-nowrap">${l.changed_at}</td>
+                            <td class="p-3 font-semibold text-slate-700">${escapeHtml(l.changed_by)}${l.changed_by_role ? ` <span class="text-slate-400 font-normal">(${escapeHtml(l.changed_by_role)})</span>` : ''}</td>
+                            <td class="p-3 text-slate-600">${AUDIT_TABLE_LABELS[l.table_name] || l.table_name}</td>
+                            <td class="p-3 font-mono text-slate-400">${l.record_id}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${AUDIT_ACTION_STYLE[l.action] || 'bg-slate-100 text-slate-700'}">${l.action}</span></td>
+                            <td class="p-3 text-slate-600 max-w-xs truncate">${escapeHtml(summary)}</td>
+                        </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error(e);
             }
         }
 

@@ -181,6 +181,7 @@ def init_database():
               `doc_name` varchar(255) NOT NULL,
               `page` int(11) DEFAULT 1,
               `url` varchar(500) NOT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
               PRIMARY KEY (`id`),
               KEY `fk_kb_category` (`category_id`),
               CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE
@@ -220,6 +221,23 @@ def init_database():
               PRIMARY KEY (`item_id`),
               KEY `fk_chk_cat` (`category_id`),
               CONSTRAINT `fk_chk_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 10b. 建立修改紀錄表 audit_logs (R5：規章/同義詞/期限/申辦流程的新增、修改、刪除皆留下可追溯紀錄)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `audit_logs` (
+              `log_id` int(11) NOT NULL AUTO_INCREMENT,
+              `table_name` varchar(50) NOT NULL,
+              `record_id` varchar(50) NOT NULL,
+              `action` varchar(20) NOT NULL,
+              `changed_by` varchar(50) NOT NULL,
+              `changed_by_role` varchar(20) DEFAULT NULL,
+              `before_json` longtext DEFAULT NULL,
+              `after_json` longtext DEFAULT NULL,
+              `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`log_id`),
+              KEY `idx_audit_table_record` (`table_name`, `record_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 

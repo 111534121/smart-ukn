@@ -116,6 +116,56 @@ def is_db_available():
         return True
     return False
 
+DEMO_AUDIT_LOGS = []  # 示範模式下的修改紀錄 (MySQL 連不上時使用)
+_audit_log_seq = 0
+
+def write_audit_log(table_name, record_id, action, before=None, after=None):
+    """每次新增/修改/刪除規章、同義詞、期限、申辦流程時留下紀錄：誰、何時、改了什麼（R5 可追溯性要求）"""
+    global _audit_log_seq
+    changed_by = session.get("full_name") or session.get("username") or "未登入"
+    role = session.get("role") or "訪客"
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO audit_logs (table_name, record_id, action, changed_by, changed_by_role, before_json, after_json) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (
+                    table_name, str(record_id), action, changed_by, role,
+                    json.dumps(before, ensure_ascii=False) if before is not None else None,
+                    json.dumps(after, ensure_ascii=False) if after is not None else None
+                )
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return
+        except Exception:
+            if conn: conn.close()
+
+    _audit_log_seq += 1
+    DEMO_AUDIT_LOGS.append({
+        "log_id": _audit_log_seq,
+        "table_name": table_name,
+        "record_id": str(record_id),
+        "action": action,
+        "changed_by": changed_by,
+        "changed_by_role": role,
+        "before_json": before,
+        "after_json": after,
+        "changed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+def format_updated_at(value):
+    """統一把規章的「最後更新日期」轉成 YYYY-MM-DD 字串；MySQL 回傳 datetime/date 物件，示範資料則已是字串"""
+    if value is None:
+        return None
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%d")
+    return str(value)[:10]
+
 # ==========================================
 # 權限控管裝飾器
 # ==========================================
@@ -204,7 +254,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。",
         "doc_name": "康寧大學學生學則.pdf",
         "page": 12,
-        "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw",
+        "updated_at": "2026-08-15"
     },
     {
         "id": 2,
@@ -216,7 +267,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生因病無法到校上課，應於請假日當日起 3 日內（含例假日）登入校務系統提出線上請假申請，並檢附健保特約醫療院所開立之就醫證明或診斷書，經導師核准後始完成請假手續。",
         "doc_name": "康寧大學學生請假規則.pdf",
         "page": 5,
-        "url": "https://www.ukn.edu.tw/p/412-1000-382.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-382.php?Lang=zh-tw",
+        "updated_at": "2026-08-20"
     },
     {
         "id": 3,
@@ -228,7 +280,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生取得多益測驗 (TOEIC) 550 分以上、全民英檢 (GEPT) 中級複試通過或同等級國際外語證照者，得於每學期開學後至加退選截止前，檢附成績單正本與影本至通識教育中心申請抵免大一共同外語「基礎英文(一)」及「基礎英文(二)」共 4 學分。",
         "doc_name": "康寧大學共同外語學分抵免辦法.pdf",
         "page": 3,
-        "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw",
+        "updated_at": "2026-07-30"
     },
     {
         "id": 4,
@@ -240,7 +293,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "本校各科系必修課程若訂有先修科目限制（例如：程式設計(一) 為 資料結構 之先修科目），學生該先修科目未達及格標準（60 分）者，電腦選課系統將自動擋修，不得修習後續先修關聯課程，需待先修科目重修及格後始得修習。",
         "doc_name": "康寧大學課程選修要點.pdf",
         "page": 8,
-        "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw",
+        "updated_at": "2026-09-01"
     },
     {
         "id": 5,
@@ -252,7 +306,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，請至研發處實習就業組辦理。",
         "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
         "page": 2,
-        "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw",
+        "updated_at": "2026-08-01"
     }
 ]
 
@@ -771,13 +826,64 @@ def get_current_week():
         ]
     }), 200
 
+def _deadline_visible_to_role(applies_to_role, viewer_role):
+    """判斷某期限項目是否該顯示給目前角色；'all' 或未設定一律顯示，否則須完全比對身分清單，
+    避免未登入或不相關身分看到無關期限（R4 角色過濾）"""
+    if not applies_to_role or str(applies_to_role).strip().lower() == "all":
+        return True
+    allowed = [r.strip() for r in str(applies_to_role).split(",") if r.strip()]
+    return viewer_role in allowed
+
+def _compute_deadline_status(item, today):
+    """依今天日期動態算出期限狀態文字、剩餘天數與是否緊急，取代建立資料當下就寫死存進去的舊文字
+    （R4：逾期項目清楚標示，天數不會隨時間經過而失準）"""
+    row = dict(item)
+    end_date, start_date = row.get("end_date"), row.get("start_date")
+    if hasattr(end_date, "isoformat"):
+        end_date = end_date.isoformat()
+    if hasattr(start_date, "isoformat"):
+        start_date = start_date.isoformat()
+    row["end_date"], row["start_date"] = end_date, start_date
+
+    try:
+        end = datetime.strptime(str(end_date), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return row
+    start = None
+    if start_date:
+        try:
+            start = datetime.strptime(str(start_date), "%Y-%m-%d").date()
+        except ValueError:
+            start = None
+
+    days_left = (end - today).days
+    row["countdown_days"] = days_left
+    if start and today < start:
+        row["status_badge"] = f"尚未開放（{(start - today).days} 天後開始）"
+        row["is_urgent"] = False
+    elif days_left < 0:
+        row["status_badge"] = f"已逾期（過期 {abs(days_left)} 天）"
+        row["is_urgent"] = False
+    elif days_left == 0:
+        row["status_badge"] = "今天截止"
+        row["is_urgent"] = True
+    else:
+        row["status_badge"] = f"進行中（剩 {days_left} 天）"
+        row["is_urgent"] = days_left <= 7
+    return row
+
 @app.route("/api/deadlines", methods=["GET", "POST"])
 def manage_deadlines():
     global DEMO_DEADLINES
     conn = get_db_connection()
-    role = request.args.get("role") or session.get("role", "all")
+    session_role = session.get("role")
+    requested_role = request.args.get("role")
+    # 僅管理員/教職員可用 ?role= 預覽其他身分看到的內容；一般使用者一律只依自己登入的身分過濾，
+    # 避免任何人靠改網址參數就看到不屬於自己的期限（未登入者 session_role 為 None，只會看到 'all'）
+    role = requested_role if (requested_role and session_role in ("管理員", "教職員")) else session_role
 
     if request.method == "GET":
+        today = datetime.now().date()
         if conn:
             try:
                 cursor = conn.cursor(dictionary=True)
@@ -785,10 +891,12 @@ def manage_deadlines():
                 rows = cursor.fetchall()
                 cursor.close()
                 conn.close()
-                return jsonify({"status": "success", "data": rows}), 200
+                visible = [r for r in rows if _deadline_visible_to_role(r.get("applies_to_role"), role)]
+                return jsonify({"status": "success", "data": [_compute_deadline_status(r, today) for r in visible]}), 200
             except Exception:
                 if conn: conn.close()
-        return jsonify({"status": "success", "data": DEMO_DEADLINES}), 200
+        visible = [d for d in DEMO_DEADLINES if _deadline_visible_to_role(d.get("applies_to_role"), role)]
+        return jsonify({"status": "success", "data": [_compute_deadline_status(d, today) for d in visible]}), 200
 
     if request.method == "POST":
         if session.get("role") not in ("管理員", "教職員"):
@@ -811,11 +919,11 @@ def manage_deadlines():
             "applies_to_role": data.get("applies_to_role", "all"),
             "applies_to_dept": data.get("applies_to_dept", "all"),
             "related_system_url": data.get("related_system_url", ""),
-            "description": data.get("description", ""),
-            "status_badge": "進行中"
+            "description": data.get("description", "")
         }
         DEMO_DEADLINES.append(item)
-        return jsonify({"status": "success", "message": "期限項目新增成功！", "data": item}), 201
+        write_audit_log("deadlines", new_id, "新增", before=None, after=item)
+        return jsonify({"status": "success", "message": "期限項目新增成功！", "data": _compute_deadline_status(item, datetime.now().date())}), 201
 
 # ---------- 學期校曆事項 (academic_calendar) ----------
 
@@ -1097,6 +1205,7 @@ def search_knowledge():
             "source_doc": best_match["doc_name"],
             "page_num": best_match.get("page", 1),
             "source_url": best_match.get("url", "https://www.ukn.edu.tw"),
+            "last_updated": format_updated_at(best_match.get("updated_at")),
             "category_name": best_match.get("category_name", "教務學則與選課"),
             "subcategory": best_match.get("subcategory", "規章辦法"),
             "related_checklist": related_chk,
@@ -1297,6 +1406,25 @@ def get_search_feedback_stats():
         "satisfaction_rate": rate,
         "recent_feedbacks": sorted(feedbacks, key=lambda x: x.get("created_at", ""), reverse=True)[:10]
     }), 200
+
+@app.route("/api/admin/audit-logs", methods=["GET"])
+@role_required("管理員", "教職員")
+def get_audit_logs():
+    """修改歷程查詢：誰在何時新增/修改/刪除了規章、同義詞、期限、申辦流程等資料（R5 可追溯性要求）"""
+    rows = fetch_db_rows("SELECT * FROM audit_logs ORDER BY changed_at DESC LIMIT 200")
+    if rows is None:
+        rows = sorted(DEMO_AUDIT_LOGS, key=lambda x: x["log_id"], reverse=True)[:200]
+    else:
+        for r in rows:
+            r["changed_at"] = str(r["changed_at"])
+            for key in ("before_json", "after_json"):
+                if isinstance(r.get(key), str):
+                    try: r[key] = json.loads(r[key])
+                    except Exception: pass
+    table_filter = request.args.get("table_name")
+    if table_filter:
+        rows = [r for r in rows if r.get("table_name") == table_filter]
+    return jsonify({"status": "success", "data": rows}), 200
 
 # ==========================================
 # 7. 個人化課程地圖、擋修修復與骨牌被當試算 (功能 1 & 功能 5)
@@ -2105,6 +2233,7 @@ def manage_checklists():
             "audience": data.get("audience", "學生")
         }
         DEMO_CHECKLISTS.append(item)
+        write_audit_log("checklist_items", new_id, "新增", before=None, after=item)
         return jsonify({"status": "success", "message": "申辦指引流程新增成功！", "data": item}), 201
 
 @app.route("/api/synonyms", methods=["GET", "POST"])
@@ -2122,19 +2251,24 @@ def manage_synonyms():
         if not uk or not ot:
             return jsonify({"status": "error", "message": "俗稱關鍵字與官方標準名稱為必填"}), 400
         new_id = max([s["synonym_id"] for s in DEMO_SYNONYMS], default=0) + 1
-        DEMO_SYNONYMS.append({
+        item = {
             "synonym_id": new_id,
             "category_id": cid,
             "user_keyword": uk,
             "official_term": ot
-        })
+        }
+        DEMO_SYNONYMS.append(item)
+        write_audit_log("synonym_dictionary", new_id, "新增", before=None, after=item)
         return jsonify({"status": "success", "message": "同義詞新增成功！", "id": new_id}), 201
 
 @app.route("/api/synonyms/<int:synonym_id>", methods=["DELETE"])
 @role_required("管理員", "教職員")
 def delete_synonym(synonym_id):
     global DEMO_SYNONYMS
+    target = next((s for s in DEMO_SYNONYMS if s["synonym_id"] == synonym_id), None)
     DEMO_SYNONYMS = [s for s in DEMO_SYNONYMS if s["synonym_id"] != synonym_id]
+    if target:
+        write_audit_log("synonym_dictionary", synonym_id, "刪除", before=target, after=None)
     return jsonify({"status": "success", "message": "同義詞刪除成功！"}), 200
 
 # ==========================================
@@ -2161,9 +2295,11 @@ def manage_rules():
             "content": data.get("content", ""),
             "doc_name": data.get("doc_name", "康寧大學法規.pdf"),
             "page": int(data.get("page", 1)),
-            "url": data.get("url", "https://www.ukn.edu.tw")
+            "url": data.get("url", "https://www.ukn.edu.tw"),
+            "updated_at": datetime.now().strftime("%Y-%m-%d")
         }
         DEMO_KNOWLEDGE_BASE.append(item)
+        write_audit_log("knowledge_base", new_id, "新增", before=None, after=item)
         return jsonify({"status": "success", "message": "校規條文新增成功！", "data": item}), 201
 
 @app.route("/api/rules/<int:rule_id>", methods=["PUT", "DELETE"])
@@ -2171,20 +2307,26 @@ def manage_rules():
 def update_or_delete_rule(rule_id):
     global DEMO_KNOWLEDGE_BASE
     if request.method == "DELETE":
+        target = next((r for r in DEMO_KNOWLEDGE_BASE if r["id"] == rule_id), None)
         DEMO_KNOWLEDGE_BASE = [r for r in DEMO_KNOWLEDGE_BASE if r["id"] != rule_id]
+        if target:
+            write_audit_log("knowledge_base", rule_id, "刪除", before=target, after=None)
         return jsonify({"status": "success", "message": "條文已成功刪除！"}), 200
     if request.method == "PUT":
         data = request.get_json(silent=True) or {}
         for r in DEMO_KNOWLEDGE_BASE:
             if r["id"] == rule_id:
+                before = dict(r)
                 r.update({
                     "keyword": data.get("keyword", r["keyword"]),
                     "official_term": data.get("official_term", r["official_term"]),
                     "content": data.get("content", r["content"]),
                     "doc_name": data.get("doc_name", r["doc_name"]),
                     "page": int(data.get("page", r["page"])),
-                    "url": data.get("url", r["url"])
+                    "url": data.get("url", r["url"]),
+                    "updated_at": datetime.now().strftime("%Y-%m-%d")
                 })
+                write_audit_log("knowledge_base", rule_id, "修改", before=before, after=r)
                 return jsonify({"status": "success", "message": "條文更新成功！", "data": r}), 200
         return jsonify({"status": "error", "message": "找不到該條文"}), 404
 

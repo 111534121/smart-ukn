@@ -246,6 +246,7 @@ CREATE TABLE `knowledge_base` (
   `doc_name` varchar(255) NOT NULL COMMENT '出處法規檔名',
   `page` int(11) DEFAULT 1 COMMENT '官方規章頁碼',
   `url` varchar(500) NOT NULL COMMENT '規章下載或公告連結',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '最後更新日期',
   PRIMARY KEY (`id`),
   KEY `fk_kb_category` (`category_id`),
   CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE
@@ -315,6 +316,23 @@ INSERT INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `busin
 (6, 1, '課務組', '教師調（代）課申請', '[\"1. 登入教師端系統線上填寫調（代）課申請表\", \"2. 敘明異動原因、代課教師與異動堂數\", \"3. 經科主任核章後送教務處課務組備查\", \"4. 至遲於異動日前 3 天完成申請，調代課完成後於系統登錄異動紀錄\"]', '調（代）課申請表（科主任簽核）', '週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)', '老師'),
 (7, 1, '註冊組', '學生成績登錄與更正申請', '[\"1. 學期成績需於規定期限內至教師成績登錄系統輸入\", \"2. 如需更正已送出之成績，填寫成績更正申請單並經科主任核章\", \"3. 送註冊組於次學期開始前完成更正\", \"4. 更正後成績將重新產出正式成績單\"]', '成績更正申請單（科主任簽章）', '週一至週五 09:00 - 16:30', '02-2632-1181 分機 310 (註冊組)', '老師'),
 (8, 2, '學務處', '導師班務通報與期中期末座談', '[\"1. 每學期至少安排一次班會或個別晤談\", \"2. 將學生出缺勤、獎懲及輔導紀錄填寫於導師手冊系統\", \"3. 期中預警名單公告後，需於輔導期內完成受輔導學生之面談紀錄\", \"4. 學期末提交班級輔導總結報告\"]', '導師輔導紀錄表', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)', '老師');
+
+-- --------------------------------------------------------
+-- 9b. 修改紀錄表 `audit_logs` (R5：誰在何時新增/修改/刪除了什麼資料)
+-- --------------------------------------------------------
+CREATE TABLE `audit_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '紀錄唯一碼 (PK)',
+  `table_name` varchar(50) NOT NULL COMMENT '被異動的資料表名稱',
+  `record_id` varchar(50) NOT NULL COMMENT '被異動的資料主鍵',
+  `action` varchar(20) NOT NULL COMMENT '新增/修改/刪除',
+  `changed_by` varchar(50) NOT NULL COMMENT '操作者姓名/帳號',
+  `changed_by_role` varchar(20) DEFAULT NULL COMMENT '操作者身分',
+  `before_json` longtext DEFAULT NULL COMMENT '修改前內容 (JSON)',
+  `after_json` longtext DEFAULT NULL COMMENT '修改後內容 (JSON)',
+  `changed_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '異動時間',
+  PRIMARY KEY (`log_id`),
+  KEY `idx_audit_table_record` (`table_name`, `record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 修改紀錄表';
 
 -- --------------------------------------------------------
 -- 10. 訪客/未來學生登記入校留痕表 `visitor_logs`

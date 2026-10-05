@@ -342,7 +342,10 @@
                                 <span id="resultCategoryBadge" class="text-[11px] bg-ukn-100 text-ukn-900 font-bold px-2 py-0.5 rounded">教務規章</span>
                                 <h3 class="ukn-title text-lg font-bold text-slate-900 mt-1" id="resultCardTitle">官方規章條文內容</h3>
                             </div>
-                            <div class="text-xs text-slate-500" id="resultSourceInfo">出處：康寧大學學生學則</div>
+                            <div class="text-xs text-slate-500 sm:text-right">
+                                <div id="resultSourceInfo">出處：康寧大學學生學則</div>
+                                <div id="resultLastUpdated" class="text-slate-400 mt-0.5"></div>
+                            </div>
                         </div>
 
                         <!-- 答案內文 -->
@@ -1506,7 +1509,11 @@
                         office_phone: chk ? chk.contact_phone : '',
                         content: data.answer,
                         related_checklist_id: chk ? chk.item_id : null,
-                        checklist_title: chk ? chk.business_name : ''
+                        checklist_title: chk ? chk.business_name : '',
+                        source_doc: data.source_doc,
+                        page_num: data.page_num,
+                        source_url: data.source_url,
+                        last_updated: data.last_updated
                     }, query);
                 } else {
                     document.getElementById('successResultCard').classList.add('hidden');
@@ -1534,7 +1541,16 @@
 
             document.getElementById('resultCardTitle').textContent = rule.title;
             document.getElementById('resultCategoryBadge').textContent = rule.category_name || '校務規章';
-            document.getElementById('resultSourceInfo').textContent = `主管處室：${rule.office_name || '教務處'} · 法規編號 #${rule.rule_id}`;
+            const sourceLabel = rule.source_doc
+                ? `出處：${rule.source_doc}${rule.page_num ? `（第 ${rule.page_num} 頁）` : ''}`
+                : `主管處室：${rule.office_name || '教務處'} · 法規編號 #${rule.rule_id}`;
+            const sourceInfoEl = document.getElementById('resultSourceInfo');
+            if (rule.source_url) {
+                sourceInfoEl.innerHTML = `${sourceLabel} <a href="${rule.source_url}" target="_blank" rel="noopener" class="text-ukn-700 underline hover:text-ukn-900">查看原文 ↗</a>`;
+            } else {
+                sourceInfoEl.textContent = sourceLabel;
+            }
+            document.getElementById('resultLastUpdated').textContent = rule.last_updated ? `最後更新日期：${rule.last_updated}` : '';
             document.getElementById('resultAnswerBody').innerHTML = (rule.content || '').replace(/\n/g, '<br>');
 
             // 關聯申辦流程導航
