@@ -35,6 +35,29 @@ class DashboardSource:
         """該生請假紀錄 (新到舊)"""
         raise NotImplementedError
 
+    def add_leave_request(self, student_id, leave_type, start_date, end_date, periods, reason):
+        """新增一筆待審核假單，回傳新紀錄"""
+        raise NotImplementedError
+
+    def get_leave_request(self, leave_id):
+        """單筆假單；不存在回傳 None"""
+        raise NotImplementedError
+
+    def list_leave_requests_for_review(self, student_ids=None, status=None):
+        """審核用清單：student_ids 為 None 代表全校；status 為 None 代表不限狀態 (新到舊)"""
+        raise NotImplementedError
+
+    def review_leave_request(self, leave_id, status, review_note):
+        """審核待審核的假單；假單不是待審核狀態時回傳 False (避免重複審核)"""
+        raise NotImplementedError
+
+    def cancel_leave_request(self, leave_id, student_id):
+        """學生撤回自己尚未審核的假單；回傳是否撤回成功"""
+        raise NotImplementedError
+
+
+LEAVE_PENDING = "待審核"
+
 
 def _fmt(value, with_time=False):
     if isinstance(value, datetime):
@@ -94,6 +117,40 @@ class MemoryDashboardSource(DashboardSource):
     def list_leave_requests(self, student_id):
         rows = [dict(r) for r in self._leave_requests if r["student_id"] == student_id]
         return sorted(rows, key=lambda r: r["submitted_at"], reverse=True)
+
+    def add_leave_request(self, student_id, leave_type, start_date, end_date, periods, reason):
+        record = {
+            "id": max((r["id"] for r in self._leave_requests), default=0) + 1,
+            "student_id": student_id, "leave_type": leave_type, "start_date": start_date, "end_date": end_date,
+            "periods": periods, "reason": reason, "status": LEAVE_PENDING, "review_note": "",
+            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
+        self._leave_requests.append(record)
+        return dict(record)
+
+    def get_leave_request(self, leave_id):
+        row = next((r for r in self._leave_requests if r["id"] == leave_id), None)
+        return dict(row) if row else None
+
+    def list_leave_requests_for_review(self, student_ids=None, status=None):
+        rows = [dict(r) for r in self._leave_requests
+                if (student_ids is None or r["student_id"] in student_ids) and (status is None or r["status"] == status)]
+        return sorted(rows, key=lambda r: r["submitted_at"], reverse=True)
+
+    def review_leave_request(self, leave_id, status, review_note):
+        row = next((r for r in self._leave_requests if r["id"] == leave_id), None)
+        if not row or row["status"] != LEAVE_PENDING:
+            return False
+        row.update(status=status, review_note=review_note)
+        return True
+
+    def cancel_leave_request(self, leave_id, student_id):
+        row = next((r for r in self._leave_requests
+                    if r["id"] == leave_id and r["student_id"] == student_id and r["status"] == LEAVE_PENDING), None)
+        if not row:
+            return False
+        self._leave_requests.remove(row)
+        return True
 
 
 class MySQLDashboardSource(DashboardSource):
@@ -170,16 +227,73 @@ class MySQLDashboardSource(DashboardSource):
         """, (student_id, class_name, student_id))
         return [{**r, "due_at": _fmt(r["due_at"], with_time=True), "submitted": bool(r["submitted"])} for r in rows]
 
-    def list_leave_requests(self, student_id):
-        rows = self._query("""
-            SELECT id, student_id, leave_type, start_date, end_date, periods, reason, status, review_note, submitted_at
-            FROM leave_requests
-            WHERE student_id = %s
-            ORDER BY submitted_at DESC
-        """, (student_id,))
-        return [{
+    _LEAVE_COLUMNS = "id, student_id, leave_type, start_date, end_date, periods, reason, status, review_note, submitted_at"
+
+    @staticmethod
+    def _leave_row(r):
+        return {
             **r,
             "start_date": _fmt(r["start_date"]),
             "end_date": _fmt(r["end_date"]),
             "submitted_at": _fmt(r["submitted_at"], with_time=True)
-        } for r in rows]
+        }
+
+    def list_leave_requests(self, student_id):
+        rows = self._query(f"""
+            SELECT {self._LEAVE_COLUMNS}
+            FROM leave_requests
+            WHERE student_id = %s
+            ORDER BY submitted_at DESC
+        """, (student_id,))
+        return [self._leave_row(r) for r in rows]
+
+    def add_leave_request(self, student_id, leave_type, start_date, end_date, periods, reason):
+        conn = self._connect()
+        if not conn:
+            raise ConnectionError("MySQL 無法連線")
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO leave_requests (student_id, leave_type, start_date, end_date, periods, reason, status, submitted_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            """, (student_id, leave_type, start_date, end_date, periods, reason, LEAVE_PENDING))
+            conn.commit()
+            new_id = cursor.lastrowid
+            cursor.close()
+        finally:
+            conn.close()
+        return self.get_leave_request(new_id)
+
+    def get_leave_request(self, leave_id):
+        rows = self._query(f"SELECT {self._LEAVE_COLUMNS} FROM leave_requests WHERE id = %s", (leave_id,))
+        return self._leave_row(rows[0]) if rows else None
+
+    def list_leave_requests_for_review(self, student_ids=None, status=None):
+        if student_ids is not None and not student_ids:
+            return []
+        where, params = [], []
+        if student_ids is not None:
+            where.append(f"student_id IN ({', '.join(['%s'] * len(student_ids))})")
+            params.extend(student_ids)
+        if status is not None:
+            where.append("status = %s")
+            params.append(status)
+        rows = self._query(f"""
+            SELECT {self._LEAVE_COLUMNS} FROM leave_requests
+            {'WHERE ' + ' AND '.join(where) if where else ''}
+            ORDER BY submitted_at DESC
+        """, tuple(params))
+        return [self._leave_row(r) for r in rows]
+
+    def review_leave_request(self, leave_id, status, review_note):
+        # WHERE status = 待審核：兩位審核者同時送出時只有第一位生效
+        return self._query(
+            "UPDATE leave_requests SET status = %s, review_note = %s WHERE id = %s AND status = %s",
+            (status, review_note, leave_id, LEAVE_PENDING), write=True
+        ) == 1
+
+    def cancel_leave_request(self, leave_id, student_id):
+        return self._query(
+            "DELETE FROM leave_requests WHERE id = %s AND student_id = %s AND status = %s",
+            (leave_id, student_id, LEAVE_PENDING), write=True
+        ) == 1
