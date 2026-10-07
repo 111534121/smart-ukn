@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 db_backups/
 data/
+.pytest_cache/
+static/forms/
+.env
