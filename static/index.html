@@ -132,6 +132,9 @@
                 <div class="flex items-center gap-3 min-w-0">
                     <span id="radarWeekText" class="whitespace-nowrap">本學期</span>
                     <button type="button" onclick="switchTab('tab-traffic')" id="topbarWeather" class="hidden sm:inline-flex items-center gap-1 hover:underline whitespace-nowrap" title="查看天氣與交通"></button>
+                    <button type="button" onclick="openDeptScopeDialog()" id="deptScopeBtn" class="inline-flex items-center gap-1 hover:underline whitespace-nowrap min-w-0" title="設定我的科系與顯示範圍">
+                        🏫 <span id="deptScopeText" class="truncate max-w-[9rem] sm:max-w-none">選擇科系</span>
+                    </button>
                 </div>
                 <div class="flex items-center gap-3 sm:gap-4 shrink-0">
                     <button type="button" onclick="switchTab('tab-map')" class="hidden md:inline hover:underline">校園地圖</button>
@@ -272,10 +275,45 @@
                         <ul id="dashAnnouncementList" class="space-y-1.5"></ul>
                     </div>
                     <div id="dashLeaveCard" class="rounded border border-slate-200 p-4 space-y-3">
-                        <h3 class="font-bold text-slate-900 text-sm">我的請假</h3>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center justify-between">
+                            <span>我的請假</span>
+                            <button type="button" id="leaveFormToggle" onclick="toggleLeaveForm()" class="hidden text-xs font-semibold text-ukn-700 hover:underline">＋ 線上請假</button>
+                        </h3>
+                        <form id="leaveForm" onsubmit="submitLeaveRequest(event)" class="hidden space-y-2 rounded border border-ukn-200 bg-ukn-50/50 p-3 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">假別</span>
+                                    <select id="leaveType" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-white">
+                                        <option>病假</option><option>事假</option><option>公假</option><option>喪假</option><option>生理假</option>
+                                    </select></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">節次 (選填)</span>
+                                    <input id="leavePeriods" placeholder="例如 3-4" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">開始日期</span>
+                                    <input id="leaveStart" type="date" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">結束日期</span>
+                                    <input id="leaveEnd" type="date" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                            </div>
+                            <label class="block space-y-1"><span class="block font-semibold text-slate-700">事由</span>
+                                <input id="leaveReason" required maxlength="255" placeholder="例如：發燒就醫" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                            <p id="leaveFormMsg" class="hidden"></p>
+                            <button type="submit" class="w-full py-2 rounded bg-ukn-800 hover:bg-ukn-900 text-white font-bold">送出假單</button>
+                        </form>
                         <ul id="dashLeaveList" class="space-y-2"></ul>
                     </div>
                 </div>
+            </section>
+
+            <!-- 請假審核 (老師：導師班；教職員/管理員：全校) -->
+            <section id="homeLeaveReview" class="hidden bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900">請假審核</h2>
+                        <p class="text-xs text-slate-500 mt-1" id="leaveReviewScope"></p>
+                    </div>
+                    <select id="leaveReviewFilter" onchange="loadLeaveReview()" class="text-xs border border-slate-300 rounded px-2 py-1.5 self-start sm:self-auto">
+                        <option value="待審核">待審核</option><option value="已核准">已核准</option><option value="已退回">已退回</option><option value="all">全部</option>
+                    </select>
+                </div>
+                <ul id="leaveReviewList" class="space-y-2"></ul>
             </section>
 
             <!-- 未登入：說明登入後可看到的個人化資訊 -->
@@ -1096,6 +1134,42 @@
             </section>
         </div>
 
+        <!-- 教師專長查詢 (faculty.js) -->
+        <div id="tab-faculty" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">教師專長查詢</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">找專題指導老師、想請教某個領域的問題？輸入關鍵字（例如 AI、資安、長照、多益），或用領域篩選。</p>
+                    </div>
+                    <button type="button" id="facultyEditMineBtn" onclick="openMyFacultyProfile()" class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-3 py-1.5 font-semibold whitespace-nowrap">✏️ 編輯我的專長</button>
+                </div>
+                <div id="facultyBody"></div>
+            </section>
+        </div>
+
+        <!-- 學期學習自評表 (self-review.js) -->
+        <div id="tab-selfreview" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">學期學習自評表</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">每學期一份，替自己的學習打分數、寫下收穫與目標。內容只有你自己看得到，寫到一半會自動存成草稿，下次登入還在，也可以刪除。</p>
+                </div>
+                <div id="selfReviewBody"></div>
+            </section>
+        </div>
+
+        <!-- AI 申辦小幫手 (assistant.js) -->
+        <div id="tab-assistant" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">AI 申辦小幫手</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">用一句話描述你的狀況，小幫手會從學校的申辦流程與規章資料庫找出要辦什麼、步驟、要帶的文件和去哪裡辦。</p>
+                </div>
+                <div id="assistantBody"></div>
+            </section>
+        </div>
+
     </main>
 
     <!-- 頁尾 (版型參考臺大官網：多欄連結 + 聯絡資訊) -->
@@ -1105,6 +1179,7 @@
                 <img src="/img/ukn-logo.png" alt="康寧大學" class="h-10 w-auto bg-white rounded px-2 py-1">
                 <p class="font-bold">學生學習與校務服務系統</p>
                 <p class="text-white/70 text-xs leading-6">114 臺北市內湖區康寧路三段75巷137號<br>電話 (02)2632-1181 ｜ 傳真 (02)2632-8744</p>
+                <button type="button" onclick="startSiteTour()" class="text-xs text-white/80 hover:text-white underline">🧭 重新觀看網站導覽</button>
             </div>
             <div id="footerCol1" class="space-y-2"></div>
             <div id="footerCol2" class="space-y-2"></div>
@@ -1152,10 +1227,16 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadCurrentUser();
+            // 我的科系與顯示範圍 (dept-scope.js)：要先載入，期限、課程等資料才會依科系過濾
+            await loadDeptPref();
             // 選單、首頁與新功能 (campus-shell.js)；網址 #xxx 直接開到對應分頁
             campusInit();
+            // 第一次來的人顯示網站導覽 (tour.js)，結束後 (或沒有導覽時) 再請登入者確認科系
+            if (!maybeStartSiteTour()) maybePromptDept();
+            else window.addEventListener('ukn-tour-finished', maybePromptDept, { once: true });
             // 儀表板的「前往請假系統」連結取自統一入口設定，因此先載入連結
             loadStudentLinks().then(loadDashboard);
+            loadLeaveReview();
             loadCalendarNow();
             await loadChecklists();
             await loadCalendarWeek();
@@ -1464,7 +1545,8 @@
                                 <span class="text-sm font-semibold text-slate-900">${escapeHtml(r.leave_type)} · ${range}${r.periods ? ` 第 ${escapeHtml(r.periods)} 節` : ''}</span>
                                 <span class="text-[11px] border rounded px-1.5 py-0.5 whitespace-nowrap ${leaveTone[r.status] || ''}">${escapeHtml(r.status)}</span>
                             </div>
-                            <div class="text-xs text-slate-500">${escapeHtml(r.reason || '')}</div>
+                            <div class="text-xs text-slate-500 flex justify-between gap-2"><span>${escapeHtml(r.reason || '')}</span>
+                                ${r.status === '待審核' && dashboardCanMarkRead ? `<button type="button" onclick="cancelLeaveRequest(${Number(r.id)})" class="text-slate-500 hover:text-rose-700 whitespace-nowrap">撤回</button>` : ''}</div>
                             ${r.review_note ? `<div class="text-xs text-rose-700 mt-0.5">審核意見：${escapeHtml(r.review_note)}</div>` : ''}
                         </li>`;
                 }).join('')
@@ -1500,10 +1582,109 @@
                 if (data.status !== 'success') return;
                 dashboardCanMarkRead = data.can_mark_read;
                 renderDashboard(data);
+                // 只有學生本人可以線上請假，家長僅能查看
+                document.getElementById('leaveFormToggle').classList.toggle('hidden', currentUser.role !== '學生');
                 section.classList.remove('hidden');
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        // 線上請假 (學生) 與請假審核 (老師/教職員/管理員)
+        const LEAVE_REVIEW_ROLES = ['老師', '教職員', '管理員'];
+
+        function toggleLeaveForm() {
+            const form = document.getElementById('leaveForm');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden') && !document.getElementById('leaveStart').value) {
+                document.getElementById('leaveStart').value = new Date().toLocaleDateString('sv-SE');
+            }
+        }
+
+        function showLeaveFormMsg(text, ok) {
+            const msg = document.getElementById('leaveFormMsg');
+            msg.textContent = text;
+            msg.className = `rounded px-2 py-1.5 ${ok ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-700'}`;
+        }
+
+        async function submitLeaveRequest(e) {
+            e.preventDefault();
+            const payload = {
+                leave_type: document.getElementById('leaveType').value,
+                start_date: document.getElementById('leaveStart').value,
+                end_date: document.getElementById('leaveEnd').value || document.getElementById('leaveStart').value,
+                periods: document.getElementById('leavePeriods').value.trim(),
+                reason: document.getElementById('leaveReason').value.trim()
+            };
+            try {
+                const res = await fetch('/api/student/leave-requests', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                showLeaveFormMsg(data.message || (res.ok ? '已送出' : '送出失敗'), res.ok);
+                if (res.ok) {
+                    e.target.reset();
+                    loadDashboard();
+                }
+            } catch (err) {
+                showLeaveFormMsg('無法連線至伺服器', false);
+            }
+        }
+
+        async function cancelLeaveRequest(id) {
+            if (!confirm('確定要撤回這張假單嗎？')) return;
+            const res = await fetch(`/api/student/leave-requests/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) alert(data.message || '撤回失敗');
+            loadDashboard();
+        }
+
+        async function loadLeaveReview() {
+            const section = document.getElementById('homeLeaveReview');
+            if (!LEAVE_REVIEW_ROLES.includes(currentUser.role)) return;
+            const status = document.getElementById('leaveReviewFilter').value;
+            try {
+                const res = await fetch(`/api/leave-requests/review?status=${encodeURIComponent(status)}`);
+                const data = await res.json();
+                if (data.status !== 'success') return;
+                section.classList.remove('hidden');
+                document.getElementById('leaveReviewScope').textContent =
+                    `審核範圍：${data.scope || '—'}${status === '待審核' ? `，共 ${data.data.length} 張待審核` : ''}`;
+                const tone = { '待審核': 'text-amber-900 bg-amber-50 border-amber-200', '已核准': 'text-emerald-800 bg-emerald-50 border-emerald-200', '已退回': 'text-rose-800 bg-rose-50 border-rose-200' };
+                document.getElementById('leaveReviewList').innerHTML = data.data.length ? data.data.map(r => {
+                    const range = r.start_date === r.end_date ? r.start_date : `${r.start_date} – ${r.end_date}`;
+                    return `
+                        <li class="rounded border border-slate-200 px-3 py-2.5 space-y-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-sm font-semibold text-slate-900">${escapeHtml(r.full_name)} <span class="font-mono text-xs text-slate-500">${escapeHtml(r.student_id)}</span></span>
+                                <span class="text-[11px] border rounded px-1.5 py-0.5 ${tone[r.status] || ''}">${escapeHtml(r.status)}</span>
+                            </div>
+                            <div class="text-xs text-slate-700">${escapeHtml(r.leave_type)} · ${range}${r.periods ? ` 第 ${escapeHtml(r.periods)} 節` : ''} · ${escapeHtml(r.reason || '')}</div>
+                            <div class="text-[11px] text-slate-400">送出時間 ${escapeHtml(r.submitted_at)}</div>
+                            ${r.review_note ? `<div class="text-xs text-slate-600">審核意見：${escapeHtml(r.review_note)}</div>` : ''}
+                            ${r.status === '待審核' ? `
+                                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                                    <input id="leaveNote-${Number(r.id)}" placeholder="審核意見 (退回時必填)" maxlength="255" class="flex-1 text-xs border border-slate-300 rounded px-2 py-1.5">
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="reviewLeave(${Number(r.id)}, '已核准')" class="text-xs font-bold px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white">核准</button>
+                                        <button type="button" onclick="reviewLeave(${Number(r.id)}, '已退回')" class="text-xs font-bold px-3 py-1.5 rounded border border-rose-300 text-rose-700 hover:bg-rose-50">退回</button>
+                                    </div>
+                                </div>` : ''}
+                        </li>`;
+                }).join('') : '<li class="text-xs text-slate-400">目前沒有符合條件的假單。</li>';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function reviewLeave(id, status) {
+            const note = document.getElementById(`leaveNote-${id}`).value.trim();
+            const res = await fetch(`/api/leave-requests/${id}/review`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, review_note: note })
+            });
+            const data = await res.json();
+            if (!res.ok) return alert(data.message || '審核失敗');
+            loadLeaveReview();
         }
 
         // 從背景切回 (例如手機桌面再次打開) 時更新儀表板，讓「上課中」與截止倒數保持正確
@@ -2308,37 +2489,49 @@
             try {
                 const res = await fetch('/api/student/early-warning');
                 const data = await res.json();
-                if (data.status === 'success') {
-                    document.getElementById('consentParentToggle').checked = data.consent_parent;
-                    document.getElementById('consentAdvisorToggle').checked = data.consent_advisor;
+                const panel = document.getElementById('earlyWarningPanel');
+                if (data.status !== 'success') {
+                    panel.innerHTML = `<div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded">${escapeHtml(data.message || '無法取得學業預警資料')}</div>`;
+                    return;
+                }
+                const isStudent = currentUser && currentUser.role === '學生';
+                ['consentParentToggle', 'consentAdvisorToggle'].forEach(id => document.getElementById(id).disabled = !isStudent);
+                document.getElementById('consentParentToggle').checked = data.consent_parent;
+                document.getElementById('consentAdvisorToggle').checked = data.consent_advisor;
 
-                    const panel = document.getElementById('earlyWarningPanel');
-                    panel.innerHTML = `
-                        <div class="bg-white p-5 rounded border border-slate-200 space-y-3">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                <div>
-                                    <h4 class="font-bold text-slate-900 text-sm sm:text-base">本學期學業輔導與成績評量狀態</h4>
-                                    <p class="text-xs text-slate-500">學則規定：連續兩學期學分不及格達 1/2 即達二一退學門檻。</p>
-                                </div>
-                                <span class="text-xs font-bold px-2.5 py-1 rounded ${data.risk_level === '正常' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">${data.risk_level}</span>
+                const tone = { '正常': 'bg-emerald-100 text-emerald-800', '注意': 'bg-sky-100 text-sky-800', '二一預警': 'bg-amber-100 text-amber-900', '三二預警': 'bg-rose-100 text-rose-800' };
+                const list = (title, items) => items.length ? `
+                    <div><div class="text-xs font-bold text-slate-700 mb-1">${title}</div>
+                    <ul class="text-xs text-slate-700 space-y-1">${items.map(i => `<li class="rounded border border-slate-200 px-3 py-1.5">${i}</li>`).join('')}</ul></div>` : '';
+                const office = data.counselling_office;
+                panel.innerHTML = `
+                    <div class="bg-white p-5 rounded border border-slate-200 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base">${escapeHtml(data.warning_title)}</h4>
+                                <p class="text-xs text-slate-500">${data.semester ? `依 ${escapeHtml(data.semester)} 學期成績計算；` : ''}不及格學分達修習學分 1/2 為二一、2/3 為三二。</p>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                                <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                                    <div class="text-slate-500">本學期修習學分</div>
-                                    <div class="text-lg font-bold text-slate-800 mt-0.5">${data.current_credits || 18} 學分</div>
-                                </div>
-                                <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                                    <div class="text-slate-500">期中不及格學分</div>
-                                    <div class="text-lg font-bold text-rose-700 mt-0.5">${data.failed_credits || 3} 學分</div>
-                                </div>
-                                <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                                    <div class="text-slate-500">導師關懷晤談狀態</div>
-                                    <div class="text-lg font-bold text-slate-800 mt-0.5">${data.advisor_session || '已排定晤談'}</div>
-                                </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded ${tone[data.risk_level] || ''}">${escapeHtml(data.risk_level)}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                <div class="text-slate-500">該學期修習學分</div>
+                                <div class="text-lg font-bold text-slate-800 mt-0.5">${data.current_credits} 學分</div>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                <div class="text-slate-500">不及格學分</div>
+                                <div class="text-lg font-bold ${data.failed_credits ? 'text-rose-700' : 'text-slate-800'} mt-0.5">${data.failed_credits} 學分</div>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                <div class="text-slate-500">導師晤談建議</div>
+                                <div class="text-lg font-bold text-slate-800 mt-0.5">${escapeHtml(data.advisor_session)}</div>
                             </div>
                         </div>
-                    `;
-                }
+                        ${list('不及格科目', data.failed_courses.map(c => `${escapeHtml(c.course_name)} · ${c.score ?? '—'} 分 · ${c.credits} 學分`))}
+                        ${list('因先修未過而擋修', data.blocked_courses.map(c => `${escapeHtml(c.course_name)}（需先通過 ${escapeHtml(c.blocked_by)}）`))}
+                        ${data.warning_level !== 'normal' ? `<p class="text-xs text-slate-600">輔導窗口：${escapeHtml(office.office_name)}（${escapeHtml(office.location)}，${escapeHtml(office.phone)}）${office.advisor_name ? `・導師 ${escapeHtml(office.advisor_name)}` : ''}</p>` : ''}
+                    </div>
+                `;
             } catch (e) {
                 console.error(e);
             }
@@ -2348,14 +2541,16 @@
             const consentParent = document.getElementById('consentParentToggle').checked;
             const consentAdvisor = document.getElementById('consentAdvisorToggle').checked;
             try {
-                await fetch('/api/student/privacy-consent', {
+                const res = await fetch('/api/student/privacy-consent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        consent_parent: consentParent,
-                        consent_advisor: consentAdvisor
+                        parent_alert_consent: consentParent,
+                        advisor_alert_consent: consentAdvisor
                     })
                 });
+                const data = await res.json();
+                if (!res.ok) alert(data.message || '授權設定更新失敗');
             } catch (e) {
                 console.error(e);
             }
@@ -2367,7 +2562,7 @@
 
         async function loadDeadlines() {
             try {
-                const res = await fetch('/api/deadlines');
+                const res = await fetch(withScope('/api/deadlines'));
                 const data = await res.json();
                 const list = data.data || data.deadlines;
                 if (data.status === 'success' && list) {
@@ -2447,6 +2642,12 @@
     <script src="/js/campus-shell.js"></script>
     <script src="/js/campus-features.js"></script>
     <script src="/js/campus-life.js"></script>
+    <script src="/js/dept-scope.js"></script>
+    <script src="/js/faculty.js"></script>
+    <script src="/js/self-review.js"></script>
+    <script src="/js/assistant.js"></script>
+    <script src="/js/tour.js"></script>
+    <script src="/js/anniversary.js"></script>
     <script>
         // PWA：註冊 Service Worker (需 https 或 localhost 才會生效)
         if ('serviceWorker' in navigator) {

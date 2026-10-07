@@ -3,11 +3,12 @@ from flask_cors import CORS
 # pyrefly: ignore [missing-import]
 from werkzeug.security import check_password_hash
 # pyrefly: ignore [missing-import]
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, safe_join
 from functools import wraps
 # pyrefly: ignore [missing-import]
 import mysql.connector
 import os
+import re
 import sys
 import json
 import uuid
@@ -18,11 +19,12 @@ from io import StringIO
 from datetime import datetime, timedelta
 from attendance.sources import MemoryAttendanceSource, MySQLAttendanceSource, VALID_TYPES as ATTENDANCE_TYPES
 from attendance.policy import summarize_attendance
-from attendance.notify import send_pending_notifications, get_mailer
+from attendance.notify import send_pending_notifications, get_mailer, campus_email
 from dashboard.sources import MemoryDashboardSource, MySQLDashboardSource
 from dashboard.summary import build_dashboard
 from dashboard import demo_data as dashboard_demo
 from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
+import preferences
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -41,15 +43,36 @@ app = Flask(
     static_folder="static",
     static_url_path=""
 )
-app.secret_key = os.getenv("SECRET_KEY", "smart_ukn_secret_session_key_2026")
+def load_secret_key():
+    """SECRET_KEY 環境變數優先；未設定時第一次啟動產生隨機金鑰存到 data/.secret_key (已 gitignore)，重啟後登入狀態不會失效"""
+    if os.getenv("SECRET_KEY"):
+        return os.getenv("SECRET_KEY")
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", ".secret_key")
+    try:
+        with open(path, encoding="utf-8") as f:
+            key = f.read().strip()
+        if key:
+            return key
+    except FileNotFoundError:
+        pass
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    key = uuid.uuid4().hex + uuid.uuid4().hex
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(key)
+    return key
+
+app.secret_key = load_secret_key()
 # 登入時勾選「記住我」：30 天內不用再登入 (session.permanent)
 app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
-# 允許跨網域與跨裝置請求，並支援 session cookies
-CORS(app, supports_credentials=True)
+# 前端與 API 同一個網域時不需要 CORS；另有前端網域時以 CORS_ORIGINS (逗號分隔) 指定，
+# 不可開放所有網域攜帶 session cookie，否則任何網站都能以登入者身分呼叫 API
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if CORS_ORIGINS:
+    CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
 
 # 檔案上傳設定 (支援 PDF 檔與證照、比賽照片)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
@@ -86,7 +109,10 @@ def serve_uploaded_file(filename):
 @app.route("/forms/<path:filename>")
 def serve_form_file(filename):
     """提供申辦表單下載，若檔案不存在則動態生成示範表單以供下載"""
-    target_path = os.path.join(FORMS_FOLDER, filename)
+    # safe_join 擋掉 ../ 路徑穿越；只替不存在的 .pdf 表單產生示範檔
+    target_path = safe_join(FORMS_FOLDER, filename)
+    if target_path is None or (not os.path.exists(target_path) and not filename.endswith(".pdf")):
+        return jsonify({"status": "error", "message": "找不到該表單"}), 404
     if not os.path.exists(target_path):
         with open(target_path, "w", encoding="utf-8") as f:
             f.write(f"【康寧大學官方行政申辦表單範本】\n表單代碼：{filename}\n說明：請填妥本表後送交相關處室核章。\n下載時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -649,9 +675,7 @@ DEMO_CERTIFICATES = [
     {"cert_id": 5, "student_id": "S112004", "cert_name": "乙級電腦軟體應用技術士", "issuing_org": "勞動部勞動力發展署", "cert_number": "114-CS-009010", "theory_score": 88.00, "practical_score": 90.00, "cert_status": "及格發證", "issue_date": "2026-08-15"}
 ]
 
-DEMO_COMPETITIONS = []
 DEMO_VISITOR_LOGS = []
-DEMO_FRICTION_REPORTS = []
 
 CAMPUS_CONTACT_DIRECTORY = [
     {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
@@ -782,6 +806,52 @@ def auth_me():
         }), 200
     return jsonify({"status": "success", "is_authenticated": False, "user": None}), 200
 
+@app.route("/api/visitor/register", methods=["POST"])
+def register_visitor():
+    """訪客/未來學生快速登記 (visitor_logs)，登記後以「訪客」身分進入系統"""
+    data = request.get_json(silent=True) or {}
+    vname = str(data.get("visitor_name", "")).strip()[:50]
+    phone = str(data.get("phone", "")).strip()[:30]
+    school = str(data.get("school_from", "")).strip()[:100]
+    purpose = str(data.get("purpose", "")).strip()[:100]
+    target_dept = str(data.get("target_dept", "")).strip()[:100] or "資訊管理科（五專）"
+    visitor_type = data.get("visitor_type") if data.get("visitor_type") in ("未來學生", "未來家長") else "未來學生"
+    ip = request.remote_addr or "127.0.0.1"
+
+    if not vname or not phone or not school or not purpose:
+        return jsonify({"status": "error", "message": "姓名、手機號碼、畢業學校與來訪目的為必填欄位！"}), 400
+
+    try:
+        saved = db_execute(
+            "INSERT INTO visitor_logs (visitor_name, phone, school_from, purpose, target_dept, ip_address) VALUES (%s, %s, %s, %s, %s, %s)",
+            (vname, phone, school, purpose, target_dept, ip))
+    except Exception:
+        saved = None
+    if saved:
+        new_id = saved["lastrowid"]
+    else:
+        new_id = max((v["log_id"] for v in DEMO_VISITOR_LOGS), default=0) + 1
+        DEMO_VISITOR_LOGS.insert(0, {
+            "log_id": new_id, "visitor_name": vname, "phone": phone, "school_from": school, "purpose": purpose,
+            "target_dept": target_dept, "visited_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "ip_address": ip
+        })
+
+    session.clear()
+    session["user_id"] = 999000 + new_id
+    session["username"] = f"visitor_{new_id}"
+    session["role"] = "訪客"
+    session["visitor_type"] = visitor_type
+    session["full_name"] = f"{vname} ({visitor_type})"
+    session["student_id"] = None
+    session["dept_name"] = target_dept
+    session["class_name"] = school
+
+    return jsonify({
+        "status": "success",
+        "message": f"歡迎蒞臨康寧大學，{vname}！系統已完成入校登記。",
+        "visitor": {"log_id": new_id, "visitor_name": vname, "role": "訪客", "visitor_type": visitor_type, "target_dept": target_dept}
+    }), 201
+
 # ==========================================
 # 5. 校曆連動與期限雷達 API (功能 2)
 # ==========================================
@@ -845,9 +915,10 @@ def normalize_deadline_row(row):
 def manage_deadlines():
     if request.method == "GET":
         rows = fetch_db_rows("SELECT * FROM deadlines ORDER BY end_date ASC")
-        if rows is None:
-            return jsonify({"status": "success", "data": DEMO_DEADLINES}), 200
-        return jsonify({"status": "success", "data": [normalize_deadline_row(r) for r in rows]}), 200
+        rows = DEMO_DEADLINES if rows is None else [normalize_deadline_row(r) for r in rows]
+        # ?scope=mine：只留全校與「我的科系」的期限
+        rows = preferences.scope_filter(rows, lambda d: [d["applies_to_dept"]] if d.get("applies_to_dept") else [])
+        return jsonify({"status": "success", "data": rows}), 200
 
     if session.get("role") not in ("管理員", "教職員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
@@ -1429,6 +1500,65 @@ def get_audit_logs():
         rows = [r for r in rows if r.get("table_name") == table_filter]
     return jsonify({"status": "success", "data": rows}), 200
 
+def load_visitor_logs(days):
+    """最近 days 天的訪客登記 (新到舊)；MySQL 離線時讀記憶體"""
+    since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    rows = fetch_db_rows("SELECT * FROM visitor_logs WHERE visited_at >= %s ORDER BY visited_at DESC, log_id DESC", (since,))
+    if rows is None:
+        rows = [dict(v) for v in DEMO_VISITOR_LOGS if v["visited_at"] >= since]
+    for r in rows:
+        r["visited_at"] = str(r["visited_at"])[:19]
+    return rows
+
+def mask_phone(phone):
+    """列表只顯示手機前 4 碼與末 3 碼，完整號碼需匯出 CSV (會留修改紀錄)"""
+    digits = re.sub(r"\D", "", phone or "")
+    return f"{digits[:4]}-***-{digits[-3:]}" if len(digits) >= 8 else "***"
+
+def _visitor_days():
+    try:
+        return min(max(int(request.args.get("days", 30)), 1), 365)
+    except ValueError:
+        return 30
+
+@app.route("/api/admin/visitor-logs", methods=["GET"])
+@role_required("管理員", "教職員")
+def get_visitor_logs():
+    """訪客登記紀錄與統計 (來訪目的、感興趣科系、每日人數)，供招生與公關參考"""
+    days = _visitor_days()
+    rows = load_visitor_logs(days)
+    count_by = lambda key: sorted(
+        ({"name": k, "count": sum(1 for r in rows if r[key] == k)} for k in {r[key] for r in rows}),
+        key=lambda x: -x["count"])
+    daily = {}
+    for r in rows:
+        daily[r["visited_at"][:10]] = daily.get(r["visited_at"][:10], 0) + 1
+    return jsonify({
+        "status": "success",
+        "days": days,
+        "total": len(rows),
+        "by_purpose": count_by("purpose"),
+        "by_dept": count_by("target_dept"),
+        "daily": [{"date": d, "count": daily[d]} for d in sorted(daily)],
+        "data": [{**{k: r[k] for k in ("log_id", "visitor_name", "school_from", "purpose", "target_dept", "visited_at")},
+                  "phone": mask_phone(r["phone"])} for r in rows]
+    }), 200
+
+@app.route("/api/admin/visitor-logs/export.csv", methods=["GET"])
+@role_required("管理員", "教職員")
+def export_visitor_logs():
+    days = _visitor_days()
+    rows = load_visitor_logs(days)
+    buf = StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["編號", "登記時間", "姓名", "手機", "學校", "來訪目的", "感興趣科系"])
+    for r in rows:
+        writer.writerow([r["log_id"], r["visited_at"], r["visitor_name"], r["phone"], r["school_from"], r["purpose"], r["target_dept"]])
+    # 匯出含完整手機號碼，留下誰在何時匯出的紀錄
+    write_audit_log("visitor_logs", f"export-{days}d", "匯出", after={"days": days, "count": len(rows)})
+    return Response("﻿" + buf.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename=visitor_logs_{datetime.now():%Y%m%d}.csv"})
+
 @app.route("/api/admin/search-feedback/stats", methods=["GET"])
 @role_required("管理員", "教職員")
 def get_search_feedback_stats():
@@ -1465,6 +1595,9 @@ COURSE_MAP_SQL = """
     ORDER BY c.course_id ASC
 """
 
+# 全校共同的課程類別，「只看本科」時仍會顯示
+PUBLIC_COURSE_TYPES = ("通識教育", "共同必修")
+
 def load_course_map():
     """課程地圖：有連 MySQL 時讀 course_map，離線或資料表為空時回退 DEMO_COURSES"""
     rows = fetch_db_rows(COURSE_MAP_SQL)
@@ -1499,8 +1632,10 @@ def summarize_credits(credit_records):
 
 @app.route("/api/courses", methods=["GET"])
 def get_all_courses():
-    """取得完整課程地圖（優先讀取 MySQL，離線回退 DEMO_COURSES）"""
-    return jsonify({"status": "success", "data": load_course_map()}), 200
+    """取得完整課程地圖（優先讀取 MySQL，離線回退 DEMO_COURSES）；?scope=mine 時只留通識、共同必修與本科課程"""
+    courses = preferences.scope_filter(
+        load_course_map(), lambda c: [] if c.get("course_type") in PUBLIC_COURSE_TYPES else [c.get("dept_id")])
+    return jsonify({"status": "success", "data": courses}), 200
 
 @app.route("/api/courses/check", methods=["POST", "GET"])
 def check_courses_prerequisites():
@@ -1978,8 +2113,10 @@ def _get_class_student_ids(class_name):
 @app.route("/api/teacher/class-summary", methods=["GET"])
 @role_required("老師", "教職員", "管理員")
 def teacher_class_summary():
-    """導師班級總表：老師預設看自己帶的班，教職員/管理員可用 ?class_name= 指定班級"""
+    """導師班級總表：老師只能看自己帶的班，教職員/管理員可用 ?class_name= 指定班級"""
     class_name = request.args.get("class_name") or session.get("advised_class")
+    if session.get("role") == "老師" and class_name != session.get("advised_class"):
+        return jsonify({"status": "error", "message": "老師僅能查看自己的導師班"}), 403
     if not class_name:
         return jsonify({"status": "error", "message": "請提供欲查詢之班級名稱 (class_name)"}), 400
     student_ids = _get_class_student_ids(class_name)
@@ -2123,86 +2260,158 @@ def get_my_applications():
 # 10. 導師/家長預警通知與個資授權同意 API (功能 6)
 # ==========================================
 
+def load_privacy_settings(student_id):
+    """讀取學生個資授權 (student_privacy_settings)；沒有紀錄時預設兩項皆同意"""
+    rows = fetch_db_rows(
+        "SELECT parent_alert_consent, advisor_alert_consent FROM student_privacy_settings WHERE student_id = %s",
+        (student_id,))
+    if rows:
+        return {k: int(v) for k, v in rows[0].items()}
+    if rows is None:
+        return DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
+    return {"parent_alert_consent": 1, "advisor_alert_consent": 1}
+
 @app.route("/api/student/privacy-consent", methods=["GET", "POST"])
 def manage_privacy_consent():
-    """管理學生本人對家長/導師預警推播的個資授權 (功能 6)"""
-    global DEMO_PRIVACY_SETTINGS
-    student_id = session.get("student_id") or "S112001"
+    """管理學生本人對家長/導師預警推播的個資授權 (功能 6)；家長可查看，只有學生本人可修改"""
+    student_id = current_student_id()
+    if not student_id:
+        return jsonify({"status": "error", "message": "請先以學生帳號登入"}), 401
 
     if request.method == "GET":
-        settings = DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
-        return jsonify({"status": "success", "student_id": student_id, "settings": settings}), 200
+        return jsonify({"status": "success", "student_id": student_id, "settings": load_privacy_settings(student_id)}), 200
 
     if request.method == "POST":
+        if session.get("role") != "學生":
+            return jsonify({"status": "error", "message": "個資授權只能由學生本人修改"}), 403
         data = request.get_json(silent=True) or {}
-        parent_consent = 1 if data.get("parent_alert_consent") in (1, True, "1", "true") else 0
-        advisor_consent = 1 if data.get("advisor_alert_consent") in (1, True, "1", "true") else 0
-
-        DEMO_PRIVACY_SETTINGS[student_id] = {
-            "parent_alert_consent": parent_consent,
-            "advisor_alert_consent": advisor_consent
+        consent = lambda *keys: 1 if next((data[k] for k in keys if k in data), 1) in (1, True, "1", "true") else 0
+        settings = {
+            "parent_alert_consent": consent("parent_alert_consent", "consent_parent"),
+            "advisor_alert_consent": consent("advisor_alert_consent", "consent_advisor")
         }
+
+        saved = db_execute(
+            "INSERT INTO student_privacy_settings (student_id, parent_alert_consent, advisor_alert_consent) VALUES (%s, %s, %s) "
+            "ON DUPLICATE KEY UPDATE parent_alert_consent = VALUES(parent_alert_consent), advisor_alert_consent = VALUES(advisor_alert_consent)",
+            (student_id, settings["parent_alert_consent"], settings["advisor_alert_consent"]))
+        if saved is None:
+            DEMO_PRIVACY_SETTINGS[student_id] = settings
 
         return jsonify({
             "status": "success",
             "message": "個資授權設定更新成功！依個人資料保護法規定已生效。",
-            "settings": DEMO_PRIVACY_SETTINGS[student_id]
+            "settings": settings
         }), 200
+
+def find_class_advisor(class_name):
+    """班級導師姓名 (users.advised_class)；查無時回傳 None"""
+    rows = fetch_db_rows("SELECT full_name FROM users WHERE role = '老師' AND advised_class = %s LIMIT 1", (class_name,))
+    if rows:
+        return rows[0]["full_name"]
+    return next((u["full_name"] for u in DEMO_USERS if u["role"] == "老師" and u.get("advised_class") == class_name), None)
+
+def compute_early_warning(student_id):
+    """依最近一學期成績計算二一/三二預警：不及格學分達修習學分 1/2 為二一、2/3 為三二；並列出因不及格而擋修的課程"""
+    records = load_student_credits(student_id)
+    course_by_id = {c["course_id"]: c for c in load_course_map()}
+    _, failed_ids, _ = summarize_credits(records)
+
+    current_semester = max((r["semester"] for r in records), default=None)
+    current = [r for r in records if r["semester"] == current_semester]
+    credits_of = lambda r: int(course_by_id.get(r["course_id"], {}).get("credits") or 0)
+    current_credits = sum(credits_of(r) for r in current)
+    failed_now = [r for r in current if not r["is_passed"]]
+    failed_credits = sum(credits_of(r) for r in failed_now)
+    ratio = failed_credits / current_credits if current_credits else 0
+
+    if ratio >= 2 / 3:
+        level, risk_level, title = "critical", "三二預警", "🚨 三二退學高風險預警"
+    elif ratio >= 1 / 2:
+        level, risk_level, title = "warning", "二一預警", "⚠️ 二一學業預警"
+    elif failed_ids:
+        level, risk_level, title = "notice", "注意", "有科目尚未通過，請規劃重補修"
+    else:
+        level, risk_level, title = "normal", "正常", "學業狀況良好"
+
+    def course_label(cid):
+        return course_by_id.get(cid, {}).get("course_name", cid)
+
+    failed_courses = [{
+        "course_id": r["course_id"], "course_name": course_label(r["course_id"]),
+        "semester": r["semester"], "score": r["score"], "credits": credits_of(r)
+    } for r in failed_now]
+    blocked_courses = [{
+        "course_id": c["course_id"], "course_name": c["course_name"], "blocked_by": course_label(c["prerequisite_id"])
+    } for c in course_by_id.values() if c.get("prerequisite_id") in failed_ids]
+
+    details = []
+    if failed_courses:
+        details.append(f"{current_semester} 學期不及格 {failed_credits} / {current_credits} 學分："
+                       + "、".join(f"{c['course_name']} ({c['score']:g} 分)" if c["score"] is not None else c["course_name"] for c in failed_courses))
+    if blocked_courses:
+        details.append("因先修科目未通過而擋修：" + "、".join(f"{c['course_name']} (需先通過 {c['blocked_by']})" for c in blocked_courses))
+    if level in ("warning", "critical"):
+        details.append("建議儘速與導師預約晤談，並規劃下學期重補修。")
+
+    return {
+        "warning_level": level,
+        "risk_level": risk_level,
+        "warning_title": title,
+        "semester": current_semester,
+        "current_credits": current_credits,
+        "failed_credits": failed_credits,
+        "failed_course_count": len(failed_courses),
+        "failed_courses": failed_courses,
+        "blocked_courses": blocked_courses,
+        "warning_details": details,
+        "advisor_session": "建議預約晤談" if level in ("warning", "critical") else "目前無需晤談"
+    }
 
 @app.route("/api/student/early-warning", methods=["GET"])
 def get_student_early_warning():
-    """學業二一與擋修風險預警（附帶個資法授權保護）(功能 6)"""
-    role = session.get("role", "訪客")
-    student_id = request.args.get("student_id") or session.get("student_id") or "S112001"
-    student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), DEMO_STUDENTS[0])
+    """學業二一與擋修風險預警（附帶個資法授權保護）(功能 6)
+    學生/家長只能看本人 (綁定) 學號；老師只能看自己導師班學生；教職員/管理員可用 ?student_id= 查詢"""
+    role = session.get("role")
+    if role in ("學生", "家長"):
+        student_id = session.get("student_id")
+    elif role in ("老師", "教職員", "管理員"):
+        student_id = (request.args.get("student_id") or "").strip().upper()
+        if not student_id:
+            return jsonify({"status": "error", "message": "請提供學號 (student_id)"}), 400
+    else:
+        return jsonify({"status": "error", "message": "請先登入系統"}), 401
 
-    # 檢查個資授權
-    privacy = DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
-    if role == "家長" and not privacy.get("parent_alert_consent"):
+    student = _load_student_info(student_id) if student_id else None
+    if not student:
+        return jsonify({"status": "error", "message": "查無此學生"}), 404
+    if role == "老師" and student["class_name"] != session.get("advised_class"):
+        return jsonify({"status": "error", "message": "僅能查看自己導師班的學生"}), 403
+
+    # 檢查個資授權：家長、導師需學生本人同意才能看到明細
+    privacy = load_privacy_settings(student_id)
+    if (role == "家長" and not privacy["parent_alert_consent"]) or (role == "老師" and not privacy["advisor_alert_consent"]):
+        who = "家長" if role == "家長" else "導師"
         return jsonify({
             "status": "consent_restricted",
             "is_authorized": False,
-            "message": "⚠️ 學生本人尚未開啟【家長學業預警同步授權】。依《個人資料保護法》及校園隱私政策，系統已保護學業警示明細。請與子女溝通後於學生端開啟授權。",
+            "message": f"⚠️ 學生本人尚未開啟【{who}學業預警同步授權】。依《個人資料保護法》及校園隱私政策，系統已保護學業警示明細。",
             "student_name": student["full_name"]
         }), 200
 
-    # 計算預警狀態
-    credit_records = [c for c in DEMO_STUDENT_CREDITS if c["student_id"] == student_id]
-    failed_courses = [c for c in credit_records if c["is_passed"] == 0]
-    total_enrolled_credits = sum(3 for _ in credit_records) or 1
-    failed_credits = sum(3 for _ in failed_courses)
-
-    is_half_failed = (failed_credits / total_enrolled_credits) >= 0.5
-    is_two_thirds_failed = (failed_credits / total_enrolled_credits) >= 0.66
-
-    warning_level = "normal"
-    warning_title = "學業狀況良好"
-    warning_details = []
-
-    if is_two_thirds_failed:
-        warning_level = "critical"
-        warning_title = "🚨 三二退學極高風險預警"
-        warning_details.append("本學期不及格學分已達修習總數三分之二，面臨校規退學處分風險。")
-    elif is_half_failed or len(failed_courses) >= 1:
-        warning_level = "warning"
-        warning_title = "⚠️ 二一學業預警與擋修中斷警示"
-        warning_details.append(f"本學期目前有 {len(failed_courses)} 門必修科目不及格（程式設計(一) 55分），已連帶造成資料結構擋修。")
-        warning_details.append("建議導師儘速安排課後輔導訪談，並協助規劃下學期重補修。")
-
+    advisor = find_class_advisor(student["class_name"])
     return jsonify({
         "status": "success",
         "is_authorized": True,
-        "student": student,
-        "warning_level": warning_level,
-        "warning_title": warning_title,
-        "failed_course_count": len(failed_courses),
-        "failed_credits": failed_credits,
-        "warning_details": warning_details,
+        "student": {k: student.get(k) for k in ("student_id", "full_name", "class_name", "dept_name")},
+        "consent_parent": bool(privacy["parent_alert_consent"]),
+        "consent_advisor": bool(privacy["advisor_alert_consent"]),
+        **compute_early_warning(student_id),
         "counselling_office": {
-            "office_name": "學務處生輔組 / 資訊系導師室",
-            "location": "行政大樓 1 樓 / 專業教室 3 樓",
+            "office_name": "學務處生輔組",
+            "location": "行政大樓 1 樓",
             "phone": "02-2632-1181 分機 211",
-            "advisor_name": "陳雅婷 老師"
+            "advisor_name": advisor
         }
     }), 200
 
@@ -2647,7 +2856,8 @@ def match_scholarships():
     is_parent = session.get("role") == "家長"
     fail_info = latest_semester_fails(student_id)
     dept_names = department_names()
-    results = [evaluate_scholarship(s, profile, fail_info, dept_names, today, is_parent) for s in load_scholarships()]
+    scholarships = preferences.scope_filter(load_scholarships(), lambda s: _split_list(s.get("departments")))
+    results = [evaluate_scholarship(s, profile, fail_info, dept_names, today, is_parent) for s in scholarships]
     results.sort(key=lambda r: r["deadline"])
 
     open_items = [r for r in results if r["days_left"] >= 0]
@@ -2873,6 +3083,115 @@ def mark_announcement_read(announcement_id):
     return jsonify({"status": "success"}), 200
 
 # ==========================================
+# 15b. 線上請假：學生送出假單 → 導師 (或生輔組教職員) 審核 → 通知學生
+#      老師只能審核自己導師班學生的假單；教職員/管理員可審核全校
+# ==========================================
+
+LEAVE_TYPES = ("病假", "事假", "公假", "喪假", "生理假")
+LEAVE_REVIEW_RESULTS = ("已核准", "已退回")
+LEAVE_REVIEW_ROLES = ("老師", "教職員", "管理員")
+LEAVE_NOTIFY_SUBJECT = "【康寧大學】請假審核結果通知"
+LEAVE_NOTIFY_BODY = "您的請假申請已有審核結果，請登入系統查看"
+
+def reviewable_student_ids():
+    """目前登入者可審核的學號；None 代表全校"""
+    if session.get("role") == "老師":
+        return _get_class_student_ids(session.get("advised_class") or "")
+    return None
+
+def notify_leave_result(student_id):
+    """通知學生審核結果 (與缺曠通知相同，信件不含假別、日期等個資)；寄送失敗不影響審核"""
+    try:
+        get_mailer().send(campus_email(student_id), LEAVE_NOTIFY_SUBJECT, LEAVE_NOTIFY_BODY)
+        return True
+    except Exception:
+        return False
+
+@app.route("/api/student/leave-requests", methods=["POST"])
+@role_required("學生")
+def submit_leave_request():
+    data = request.get_json(silent=True) or {}
+    leave_type = str(data.get("leave_type", "")).strip()
+    start_date = str(data.get("start_date", "")).strip()
+    end_date = str(data.get("end_date", "")).strip() or start_date
+    periods = str(data.get("periods", "")).strip() or None
+    reason = str(data.get("reason", "")).strip()
+
+    if leave_type not in LEAVE_TYPES:
+        return jsonify({"status": "error", "message": f"假別須為 {'/'.join(LEAVE_TYPES)}"}), 400
+    try:
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "日期格式須為 YYYY-MM-DD"}), 400
+    if end < start:
+        return jsonify({"status": "error", "message": "結束日期不可早於開始日期"}), 400
+    if (end - start).days > 30:
+        return jsonify({"status": "error", "message": "單次請假不可超過 30 天，長期請假請洽生輔組"}), 400
+    if periods and not re.fullmatch(r"\d{1,2}(-\d{1,2})?", periods):
+        return jsonify({"status": "error", "message": "節次格式例如 3 或 3-4"}), 400
+    if not reason:
+        return jsonify({"status": "error", "message": "請填寫請假事由"}), 400
+
+    try:
+        record = get_dashboard_source().add_leave_request(
+            session["student_id"], leave_type, start_date, end_date, periods, reason[:255])
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"送出失敗：{e}"}), 500
+    return jsonify({"status": "success", "message": "假單已送出，等待導師審核", "data": record}), 201
+
+@app.route("/api/student/leave-requests/<int:leave_id>", methods=["DELETE"])
+@role_required("學生")
+def cancel_leave_request(leave_id):
+    if not get_dashboard_source().cancel_leave_request(leave_id, session["student_id"]):
+        return jsonify({"status": "error", "message": "只能撤回自己尚未審核的假單"}), 400
+    return jsonify({"status": "success", "message": "假單已撤回"}), 200
+
+@app.route("/api/leave-requests/review", methods=["GET"])
+@role_required(*LEAVE_REVIEW_ROLES)
+def list_leave_requests_for_review():
+    status = request.args.get("status", "待審核")
+    if status == "all":
+        status = None
+    elif status not in ("待審核",) + LEAVE_REVIEW_RESULTS:
+        return jsonify({"status": "error", "message": "status 須為 待審核/已核准/已退回/all"}), 400
+    rows = get_dashboard_source().list_leave_requests_for_review(reviewable_student_ids(), status)
+    names = {s["student_id"]: s["full_name"] for s in list_students()}
+    return jsonify({
+        "status": "success",
+        "scope": session.get("advised_class") if session.get("role") == "老師" else "全校",
+        "data": [{**r, "full_name": names.get(r["student_id"], "")} for r in rows]
+    }), 200
+
+@app.route("/api/leave-requests/<int:leave_id>/review", methods=["POST"])
+@role_required(*LEAVE_REVIEW_ROLES)
+def review_leave_request(leave_id):
+    data = request.get_json(silent=True) or {}
+    result = str(data.get("status", "")).strip()
+    note = str(data.get("review_note", "")).strip()[:255]
+    if result not in LEAVE_REVIEW_RESULTS:
+        return jsonify({"status": "error", "message": "審核結果須為 已核准 或 已退回"}), 400
+    if result == "已退回" and not note:
+        return jsonify({"status": "error", "message": "退回假單請填寫原因，讓學生知道如何補件"}), 400
+
+    source = get_dashboard_source()
+    record = source.get_leave_request(leave_id)
+    allowed = reviewable_student_ids()
+    if not record or (allowed is not None and record["student_id"] not in allowed):
+        return jsonify({"status": "error", "message": "找不到該假單或無權審核"}), 404
+    if not source.review_leave_request(leave_id, result, note):
+        return jsonify({"status": "error", "message": "此假單已審核過"}), 409
+
+    write_audit_log("leave_requests", leave_id, "修改", before={"status": record["status"]},
+                    after={"status": result, "review_note": note})
+    notified = notify_leave_result(record["student_id"])
+    return jsonify({
+        "status": "success",
+        "message": f"假單已{result[1:]}" + ("，已通知學生" if notified else "（通知寄送失敗）"),
+        "data": source.get_leave_request(leave_id)
+    }), 200
+
+# ==========================================
 # 13. 校園生活新功能 (campus 套件)：行事曆月曆、選課檢查、證照審核、科上通知、論壇、租借、天氣、桌寵…
 # ==========================================
 
@@ -2898,6 +3217,61 @@ campus.init_app(app, SimpleNamespace(
     class_schedule=dashboard_demo.DEMO_CLASS_SCHEDULE,
 ))
 
+# 我的科系與顯示範圍 (preferences 套件；其他 API 以 preferences.scope_filter 過濾)
+preferences.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    departments=DEMO_DEPARTMENTS,
+    students=DEMO_STUDENTS,
+))
+
+# 教師專長查詢 (faculty 套件)
+import faculty
+
+faculty.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    write_audit_log=write_audit_log,
+))
+
+# 學期學習自評表 (self_review 套件)
+import self_review
+
+self_review.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    current_semester=lambda: "{academic_year}-{semester}".format(**current_academic_term(datetime.now().date())),
+))
+
+# AI 申辦小幫手 (assistant 套件)：先查資料庫，有設定 Claude 時再由 Claude 整理成口語回答
+import assistant
+
+def load_rules_for_assistant():
+    rows = fetch_db_rows("SELECT k.*, c.category_name FROM knowledge_base k LEFT JOIN knowledge_categories c ON k.category_id = c.category_id")
+    return rows if rows else DEMO_KNOWLEDGE_BASE
+
+def load_synonyms_for_assistant():
+    rows = fetch_db_rows("SELECT user_keyword, official_term FROM synonym_dictionary")
+    return {r["user_keyword"]: r["official_term"] for r in (rows if rows else DEMO_SYNONYMS)}
+
+assistant.init_app(app, SimpleNamespace(
+    load_checklists=load_checklists,
+    load_rules=load_rules_for_assistant,
+    load_synonyms=load_synonyms_for_assistant,
+    log_search=log_search,
+    record_unmatched_query=record_unmatched_query,
+    contacts=CAMPUS_CONTACT_DIRECTORY,
+))
+
+# 校慶跑馬燈與匿名祝福 (anniversary 套件)
+import anniversary
+
+anniversary.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    write_audit_log=write_audit_log,
+))
+
 # ==========================================
 # 14. 伺服器主入口
 # ==========================================
@@ -2919,4 +3293,8 @@ if __name__ == "__main__":
     print("🛡️ 個資授權預警 API:   http://127.0.0.1:8000/api/student/early-warning")
     print("=" * 65)
 
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    # debug 模式的除錯頁可執行任意程式碼，只在本機開發時以 FLASK_DEBUG=1 開啟
+    debug = os.getenv("FLASK_DEBUG") == "1"
+    if debug:
+        print("⚠️ FLASK_DEBUG=1：除錯模式已開啟，請勿在對外開放的伺服器使用")
+    app.run(host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", 8000)), debug=debug)

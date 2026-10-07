@@ -4,6 +4,8 @@ import sys
 from werkzeug.security import generate_password_hash
 from dashboard import demo_data as dashboard_demo
 from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
+from anniversary import DEMO_EVENTS as DEMO_ANNIVERSARY_EVENTS
+from faculty import DEMO_PROFILES as DEMO_FACULTY_PROFILES
 
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try: sys.stdout.reconfigure(encoding='utf-8')
@@ -182,17 +184,6 @@ def seed_data():
              '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form.pdf', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
         """)
 
-        # 10. 寫入申辦進度種子 (功能 3: 我的申辦進度)
-        cursor.execute("""
-            INSERT IGNORE INTO `application_progress` (`progress_id`, `student_id`, `item_id`, `step_index`, `step_title`, `is_completed`, `status_note`) VALUES
-            (1, 'S112001', 1, 0, '至校務資訊系統登入『停修申請表』', 1, '已於系統線上填單完成'),
-            (2, 'S112001', 1, 1, '列印紙本停修申請單', 1, '已列印紙本'),
-            (3, 'S112001', 1, 2, '親自送請任課教師簽章同意', 0, '等候任課教師簽章中'),
-            (4, 'S112001', 1, 3, '送請班級導師及科主任簽章', 0, '未完成'),
-            (5, 'S112001', 1, 4, '於第12週五前送交教務處課務組核備', 0, '未完成'),
-            (6, 'S112001', 3, 0, '填寫通識外語抵免申請表', 1, '已填寫表單')
-        """)
-
         # 11. 寫入未命中關鍵字種子 (功能 4: 詞庫自動成長)
         cursor.execute("""
             INSERT IGNORE INTO `unmatched_queries` (`query_id`, `query_text`, `search_count`, `status`, `resolved_term`) VALUES
@@ -278,7 +269,6 @@ def seed_data():
                              ('核對系專業必修', '核對科專業必修'),
                              ('至系辦公室請系主任初審簽章', '至科辦公室請科主任初審簽章')]:
                 cursor.execute("UPDATE `checklist_items` SET `steps_json` = REPLACE(`steps_json`, %s, %s)", (old, new))
-                cursor.execute("UPDATE `application_progress` SET `step_title` = REPLACE(`step_title`, %s, %s)", (old, new))
             cursor.execute("UPDATE `knowledge_base` SET `content` = REPLACE(`content`, '本校各系所必修課程', '本校各科系必修課程')")
             for old, new in [('資訊科技與應用學系', '資訊管理科（五專）'), ('護理學系', '護理科（五專）'), ('應用外語學系', '應用外語科（五專）')]:
                 cursor.execute("UPDATE `visitor_logs` SET `target_dept` = %s WHERE `target_dept` = %s", (new, old))
@@ -364,6 +354,24 @@ def seed_data():
             """, DEMO_SCHOLARSHIPS)
         except mysql.connector.Error:
             print("⚠️ 尚未建立 scholarships 或 students 新欄位，請先執行 init_db.py")
+
+        # 20. 校慶跑馬燈範例活動 (日期為示範值，請到後台「校慶跑馬燈」改成實際校慶日期；不預先放入祝福)
+        try:
+            cursor.executemany("""
+                INSERT IGNORE INTO `anniversary_events` (`id`, `name_zh`, `name_en`, `name_ja`, `start_date`, `end_date`, `announce_days`, `require_approval`, `is_enabled`)
+                VALUES (%(id)s, %(name_zh)s, %(name_en)s, %(name_ja)s, %(start_date)s, %(end_date)s, %(announce_days)s, %(require_approval)s, %(is_enabled)s)
+            """, DEMO_ANNIVERSARY_EVENTS)
+        except mysql.connector.Error:
+            print("⚠️ 尚未建立 anniversary_events，請先執行 init_db.py")
+
+        # 21. 教師專長示範資料 (與校園地圖示範老師同名)
+        try:
+            cursor.executemany("""
+                INSERT IGNORE INTO `faculty_profiles` (`id`, `name`, `title`, `dept_name`, `email`, `fields`, `expertise`, `research_summary`, `accepts_projects`, `is_public`)
+                VALUES (%(id)s, %(name)s, %(title)s, %(dept_name)s, %(email)s, %(fields)s, %(expertise)s, %(research_summary)s, %(accepts_projects)s, %(is_public)s)
+            """, DEMO_FACULTY_PROFILES)
+        except mysql.connector.Error:
+            print("⚠️ 尚未建立 faculty_profiles，請先執行 init_db.py")
 
         conn.commit()
         print("🎉 完整測試資料（含 7 大升級功能模組）匯入成功！")

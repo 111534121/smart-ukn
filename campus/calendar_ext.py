@@ -13,6 +13,8 @@ from datetime import date, datetime, timedelta
 
 from flask import Blueprint, request
 
+from preferences import scope_filter
+
 from .common import DATA_DIR, deps, error, ok, require, store, next_id, now_str, user_key, current_user
 
 bp = Blueprint("campus_calendar", __name__)
@@ -238,7 +240,7 @@ def calendar_month():
                            "start_date": s.isoformat(), "end_date": e.isoformat(), "expired": e < today,
                            "detail": {"checklist": checklist_detail(chk)}})
 
-    for dl in load_deadlines():
+    for dl in scope_filter(load_deadlines(), lambda d: [d["applies_to_dept"]] if d.get("applies_to_dept") else []):
         s = _to_date(dl.get("start_date") or dl["end_date"])
         e = _to_date(dl["end_date"])
         if overlaps(s, e):

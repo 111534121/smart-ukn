@@ -9,6 +9,9 @@ const FEATURES = [
     { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看' },
     { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認' },
     { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權' },
+    { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在' },
+    { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
+    { key: 'assistant', tab: 'tab-assistant', name: 'AI 申辦小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦' },
     { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
     { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦' },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
@@ -445,7 +448,7 @@ async function loadHomeUpcoming() {
     try {
         const results = await Promise.all([0, 1].map(k => {
             const d = new Date(now.getFullYear(), now.getMonth() + k, 1);
-            return api(`/api/campus/calendar/month?year=${d.getFullYear()}&month=${d.getMonth() + 1}`);
+            return api(withScope(`/api/campus/calendar/month?year=${d.getFullYear()}&month=${d.getMonth() + 1}`));
         }));
         const today = results[0].today;
         const seen = new Set();

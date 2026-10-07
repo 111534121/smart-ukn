@@ -76,7 +76,7 @@ async function refreshCalendar() {
     if (calYear === null) return;
     document.getElementById('calMonthTitle').textContent = `${calYear} 年 ${calMonth} 月`;
     try {
-        calData = await api(`/api/campus/calendar/month?year=${calYear}&month=${calMonth}`);
+        calData = await api(withScope(`/api/campus/calendar/month?year=${calYear}&month=${calMonth}`));
         renderCalendar();
     } catch (e) {
         document.getElementById('calGrid').innerHTML = `<div class="col-span-7 bg-white p-6 text-center text-sm text-rose-700">${esc(e.message)}</div>`;
@@ -480,7 +480,7 @@ let planOfferings = [], planChosen = new Set(), planManualPassed = new Set(), pl
 async function loadPlan() {
     const body = document.getElementById('planBody');
     try {
-        const [off, courses] = await Promise.all([api('/api/campus/course-plan/offerings'), api('/api/courses')]);
+        const [off, courses] = await Promise.all([api('/api/campus/course-plan/offerings'), api(withScope('/api/courses'))]);
         planOfferings = off.data;
         planCourses = courses.data;
     } catch (e) { body.innerHTML = `<div class="text-rose-700 text-sm">${esc(e.message)}</div>`; return; }
