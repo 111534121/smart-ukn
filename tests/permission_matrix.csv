@@ -151,3 +151,15 @@ PUT,/api/admin/anniversary/events/<int:event_id>,/api/admin/anniversary/events/9
 DELETE,/api/admin/anniversary/events/<int:event_id>,/api/admin/anniversary/events/999999,,刪除校慶活動,401,403,403,403,403,OK,OK,
 PUT,/api/admin/anniversary/wishes/<int:wish_id>,/api/admin/anniversary/wishes/999999,,審核祝福,401,403,403,403,403,OK,OK,
 DELETE,/api/admin/anniversary/wishes/<int:wish_id>,/api/admin/anniversary/wishes/999999,,刪除祝福,401,403,403,403,403,OK,OK,
+POST,/api/admin/self-check,/api/admin/self-check,,全站自動檢測,401,403,403,403,403,403,OK,只限管理員；測試中以假的檢測代替，不會真的跑整套
+GET,/api/campus/certs/exemption-reminder,/api/campus/certs/exemption-reminder,,證照抵免提醒,401,403,OK,403,403,403,403,
+GET,/api/campus/reports/categories,/api/campus/reports/categories,,報表分類,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/reports,/api/campus/reports,,報表列表,OK,OK,OK,OK,OK,OK,OK,依每份報表的 allowed_roles 過濾，只回傳該身分看得到的
+GET,/api/campus/reports/my/favorites,/api/campus/reports/my/favorites,,我的收藏報表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/reports/<int:file_id>,/api/campus/reports/999999,,報表詳細,OK,OK,OK,OK,OK,OK,OK,權限依報表的 allowed_roles 判斷 (個別資料層級)
+POST,/api/campus/reports,/api/campus/reports,,上傳報表,401,403,403,403,OK,OK,OK,⚠️ 老師也能上傳；報表資料存在 campus_store.json，不在 MySQL
+DELETE,/api/campus/reports/<int:file_id>,/api/campus/reports/999999,,刪除報表,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能刪除任何人上傳的報表，待討論
+GET,/api/campus/reports/<int:file_id>/download,/api/campus/reports/999999/download,,下載報表,OK,OK,OK,OK,OK,OK,OK,身分不符回 403 (個別資料層級)；下載紀錄存在 campus_store.json
+POST,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favorite,,收藏報表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+DELETE,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favorite,,取消收藏,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/reports/<int:file_id>/stats,/api/campus/reports/999999/stats,,報表下載統計,401,403,403,403,OK,OK,OK,

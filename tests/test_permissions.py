@@ -22,6 +22,7 @@ import csv
 import json
 import os
 import sys
+import types
 import urllib.request
 
 import pytest
@@ -97,6 +98,8 @@ def client(monkeypatch, tmp_path):
     def no_network(*a, **k):
         raise OSError("測試中不連外網")
     monkeypatch.setattr(urllib.request, "urlopen", no_network)
+    # 後台「全站自動檢測」只測權限，不真的跑整套檢測
+    monkeypatch.setitem(sys.modules, "self_check", types.SimpleNamespace(run_all=lambda: {}))
     # AI 小幫手不呼叫 Claude
     for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ASSISTANT_AI"):
         monkeypatch.delenv(key, raising=False)

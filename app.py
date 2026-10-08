@@ -300,7 +300,7 @@ DEMO_KNOWLEDGE_BASE = [
         "doc_name": "康寧大學學生學則.pdf",
         "page": 12,
         "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw",
-        "updated_at": "2026-08-15"
+        "updated_at": "2026-08-20"
     },
     {
         "id": 2,
@@ -326,7 +326,7 @@ DEMO_KNOWLEDGE_BASE = [
         "doc_name": "康寧大學共同外語學分抵免辦法.pdf",
         "page": 3,
         "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw",
-        "updated_at": "2026-07-30"
+        "updated_at": "2026-09-01"
     },
     {
         "id": 4,
@@ -352,7 +352,7 @@ DEMO_KNOWLEDGE_BASE = [
         "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
         "page": 2,
         "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw",
-        "updated_at": "2026-08-01"
+        "updated_at": "2026-09-10"
     }
 ]
 
@@ -1568,6 +1568,15 @@ def get_audit_logs():
         rows = [r for r in rows if r.get("table_name") == table_filter]
     return jsonify({"status": "success", "data": rows}), 200
 
+@app.route("/api/admin/self-check", methods=["POST"])
+@role_required("管理員")
+def run_self_check():
+    """一鍵執行全站自動檢測 (self_check.py)：強制切換離線示範模式跑完所有功能測試後自動還原，
+    回傳每一項功能的測試結果與整體完成度，過程中建立的測試資料會自動清理。"""
+    import self_check
+    report = self_check.run_all()
+    return jsonify({"status": "success", **report}), 200
+
 def load_visitor_logs(days):
     """最近 days 天的訪客登記 (新到舊)；MySQL 離線時讀記憶體"""
     since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
@@ -2648,9 +2657,10 @@ def manage_rules():
     except Exception as e:
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
     if result:
-        item = {"id": result["lastrowid"], **item}
+        item = {"id": result["lastrowid"], **item, "updated_at": datetime.now().strftime("%Y-%m-%d")}
     else:
-        item = {"id": max([r["id"] for r in DEMO_KNOWLEDGE_BASE], default=0) + 1, **item}
+        item = {"id": max([r["id"] for r in DEMO_KNOWLEDGE_BASE], default=0) + 1, **item,
+                "updated_at": datetime.now().strftime("%Y-%m-%d")}
         DEMO_KNOWLEDGE_BASE.append(item)
     write_audit_log("knowledge_base", item["id"], "新增", after=item)
     return jsonify({"status": "success", "message": "校規條文新增成功！", "data": item}), 201
@@ -2684,6 +2694,7 @@ def update_or_delete_rule(rule_id):
         )
     except Exception as e:
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+    item["updated_at"] = datetime.now().strftime("%Y-%m-%d")
     if result is None:
         target.update(item)
     item = {"id": rule_id, **item}
@@ -3275,6 +3286,7 @@ campus.init_app(app, SimpleNamespace(
     summarize_credits=summarize_credits,
     get_dashboard_source=get_dashboard_source,
     save_uploaded_file=save_uploaded_file,
+    write_audit_log=write_audit_log,
     graduation_threshold=GRADUATION_CREDIT_THRESHOLD,
     students=DEMO_STUDENTS,
     checklists=DEMO_CHECKLISTS,

@@ -7,35 +7,54 @@
 // =====================================================================
 
 let scholarshipData = [];
+let scholarshipAuto = null;
+let scholarshipCategory = '';
 
 async function loadScholarships() {
     const body = document.getElementById('scholarshipBody');
     try {
         const r = await api('/api/campus/scholarships');
         scholarshipData = r.data;
-        const applyLink = (typeof studentLinksCache !== 'undefined' ? studentLinksCache : []).find(l => l.title.includes('獎助學金線上申請'));
-        body.innerHTML = (r.auto?.avg != null ? `<div class="md:col-span-2 text-xs text-slate-600 bg-ukn-50 border border-ukn-100 rounded px-3 py-2">已依你的成績自動判斷部分條件（上學期平均 ${r.auto.avg} 分），其他請自己勾選。</div>` : '') +
-            scholarshipData.map((s, si) => `
-            <div class="rounded border ${s.expired ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-slate-200 bg-white'} p-4 space-y-3" data-sch="${si}">
-                <div class="flex items-start justify-between gap-2">
-                    <div><div class="font-bold text-slate-900">${esc(s.name)}</div><div class="text-xs text-slate-500">${esc(s.office)} · ${esc(s.amount)}</div></div>
-                    ${s.expired ? statusBadge('已截止', 'gray') : statusBadge(`${mmdd(s.deadline)} 截止`, 'amber')}
-                </div>
-                <div class="space-y-1.5">${s.criteria.map((c, ci) => `
-                    <label class="flex items-start gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" data-crit="${ci}" onchange="updateScholarship(${si})" ${c.auto_value ? 'checked' : ''} class="mt-1 h-4 w-4">
-                        <span>${esc(c.text)}${c.auto_value != null ? `<span class="text-[10px] ${c.auto_value ? 'text-emerald-700' : 'text-rose-700'} ml-1">（系統判斷：${c.auto_value ? '符合' : '不符合'}）</span>` : ''}</span>
-                    </label>`).join('')}</div>
-                <div data-sch-result class="text-sm font-semibold"></div>
-                ${!s.expired && applyLink && applyLink.url !== '#' ? `<a href="${esc(applyLink.url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs bg-ukn-800 text-white rounded px-3 py-1.5">前往線上申請 ↗</a>` : ''}
-            </div>`).join('') +
-            '<p class="md:col-span-2 text-[11px] text-slate-400">獎助學金項目為示範資料，實際條件與金額以生輔組公告為準。</p>';
-        scholarshipData.forEach((_, i) => updateScholarship(i));
+        scholarshipAuto = r.auto;
+        renderScholarships();
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-function updateScholarship(i) {
-    const card = document.querySelector(`[data-sch="${i}"]`);
+function filterScholarshipCategory(cat) {
+    scholarshipCategory = cat;
+    renderScholarships();
+}
+
+function renderScholarships() {
+    const body = document.getElementById('scholarshipBody');
+    const cats = [...new Set(scholarshipData.map(s => s.category).filter(Boolean))];
+    const shown = scholarshipCategory ? scholarshipData.filter(s => s.category === scholarshipCategory) : scholarshipData;
+    const catBar = cats.length ? `<div class="md:col-span-2 flex flex-wrap items-center gap-1.5 mb-1">
+        <button type="button" onclick="filterScholarshipCategory('')" class="text-xs font-bold px-3 py-1.5 rounded-full ${!scholarshipCategory ? 'bg-ukn-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">全部</button>
+        ${cats.map(c => `<button type="button" onclick="filterScholarshipCategory('${esc(c)}')" class="text-xs font-bold px-3 py-1.5 rounded-full ${scholarshipCategory === c ? 'bg-ukn-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${esc(c)}</button>`).join('')}
+        </div>` : '';
+    const applyLink = (typeof studentLinksCache !== 'undefined' ? studentLinksCache : []).find(l => l.title.includes('獎助學金線上申請'));
+    body.innerHTML = catBar + (scholarshipAuto?.avg != null ? `<div class="md:col-span-2 text-xs text-slate-600 bg-ukn-50 border border-ukn-100 rounded px-3 py-2">已依你的成績自動判斷部分條件（上學期平均 ${scholarshipAuto.avg} 分），其他請自己勾選。</div>` : '') +
+        shown.map(s => `
+        <div class="rounded border ${s.expired ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-slate-200 bg-white'} p-4 space-y-3" data-sch="${s.id}">
+            <div class="flex items-start justify-between gap-2">
+                <div><div class="font-bold text-slate-900">${esc(s.name)}${s.category ? ` <span class="text-[10px] font-normal text-ukn-700 border border-ukn-200 rounded-full px-2 py-0.5 ml-1">${esc(s.category)}</span>` : ''}</div><div class="text-xs text-slate-500">${esc(s.office)} · ${esc(s.amount)}</div></div>
+                ${s.expired ? statusBadge('已截止', 'gray') : statusBadge(`${mmdd(s.deadline)} 截止`, 'amber')}
+            </div>
+            <div class="space-y-1.5">${s.criteria.map((c, ci) => `
+                <label class="flex items-start gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" data-crit="${ci}" onchange="updateScholarship('${s.id}')" ${c.auto_value ? 'checked' : ''} class="mt-1 h-4 w-4">
+                    <span>${esc(c.text)}${c.auto_value != null ? `<span class="text-[10px] ${c.auto_value ? 'text-emerald-700' : 'text-rose-700'} ml-1">（系統判斷：${c.auto_value ? '符合' : '不符合'}）</span>` : ''}</span>
+                </label>`).join('')}</div>
+            <div data-sch-result class="text-sm font-semibold"></div>
+            ${!s.expired && applyLink && applyLink.url !== '#' ? `<a href="${esc(applyLink.url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs bg-ukn-800 text-white rounded px-3 py-1.5">前往線上申請 ↗</a>` : ''}
+        </div>`).join('') +
+        '<p class="md:col-span-2 text-[11px] text-slate-400">獎助學金項目為示範資料，實際條件與金額以生輔組或各主辦機關最新公告為準。</p>';
+    shown.forEach(s => updateScholarship(s.id));
+}
+
+function updateScholarship(id) {
+    const card = document.querySelector(`[data-sch="${id}"]`);
     const boxes = [...card.querySelectorAll('[data-crit]')];
     const miss = boxes.filter(b => !b.checked).length;
     const el = card.querySelector('[data-sch-result]');
