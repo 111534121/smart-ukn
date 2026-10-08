@@ -168,6 +168,7 @@
                 <button onclick="switchTab('anniversary')" id="tabBtn-anniversary" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校慶跑馬燈</button>
                 <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">訪客登記</button>
                 <button onclick="switchTab('audit')" id="tabBtn-audit" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">修改紀錄</button>
+                <button onclick="switchTab('selfcheck')" id="tabBtn-selfcheck" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">自動功能檢測</button>
             </div>
 
             <!-- 分頁 0: 學生未命中搜尋與詞庫維護 -->
@@ -576,6 +577,16 @@
                         <tbody id="auditTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- 分頁：自動功能檢測 -->
+            <div id="panel-selfcheck" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>一鍵對全站功能跑一輪自動檢測（登入、權限、上傳下載、收藏通知、請假、報表權限稽核…）。檢測一律使用離線示範模式與假信箱，不會動到真正資料庫或寄出真實 Email，過程中建立的測試資料結束後會自動清除，可重複執行。</p>
+                    <button onclick="runSelfCheck()" id="selfCheckBtn" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded text-xs sm:text-sm font-semibold transition whitespace-nowrap shrink-0">執行自動檢測</button>
+                </div>
+                <div id="selfCheckSummary" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                <div id="selfCheckResults" class="space-y-4 text-xs sm:text-sm"></div>
             </div>
 
         </div>
@@ -1176,8 +1187,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -1506,6 +1517,80 @@
                 console.error(e);
                 tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-600">無法連線到伺服器</td></tr>';
             }
+        }
+
+        // ---------- 自動功能檢測 ----------
+        async function runSelfCheck() {
+            const btn = document.getElementById('selfCheckBtn');
+            const summaryBox = document.getElementById('selfCheckSummary');
+            const resultsBox = document.getElementById('selfCheckResults');
+            btn.disabled = true;
+            btn.textContent = '檢測中…（約數秒，請稍候）';
+            resultsBox.innerHTML = '<div class="text-slate-500 p-4">執行中，請稍候…</div>';
+            summaryBox.classList.add('hidden');
+            try {
+                const res = await fetch('/api/admin/self-check', { method: 'POST' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status !== 'success') {
+                    resultsBox.innerHTML = `<div class="p-4 text-rose-600">檢測失敗：${escapeHtml(data.message || `HTTP ${res.status}`)}</div>`;
+                    return;
+                }
+                renderSelfCheck(data);
+            } catch (e) {
+                console.error(e);
+                resultsBox.innerHTML = '<div class="p-4 text-rose-600">無法連線到伺服器</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '執行自動檢測';
+            }
+        }
+
+        function renderSelfCheck(report) {
+            const summaryBox = document.getElementById('selfCheckSummary');
+            const resultsBox = document.getElementById('selfCheckResults');
+            summaryBox.classList.remove('hidden');
+            const pct = report.completion_percent;
+            const pctColor = pct >= 100 ? 'text-emerald-700' : pct >= 80 ? 'text-amber-600' : 'text-rose-600';
+            summaryBox.innerHTML = `
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">完成度</div>
+                    <div class="text-2xl font-bold mt-1 ${pctColor}">${pct}%</div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">檢測項目</div>
+                    <div class="text-2xl font-bold mt-1 text-slate-900">${report.total}</div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">通過 / 未通過</div>
+                    <div class="text-2xl font-bold mt-1 text-slate-900">${report.passed} <span class="text-rose-600">/ ${report.failed_count}</span></div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">執行時間</div>
+                    <div class="text-sm font-bold mt-1 text-slate-700">${escapeHtml(report.generated_at)}</div>
+                </div>`;
+
+            const byFeature = {};
+            report.results.forEach(r => {
+                (byFeature[r.feature] = byFeature[r.feature] || []).push(r);
+            });
+            const icon = { pass: '✅', fail: '❌', error: '💥' };
+            resultsBox.innerHTML = Object.entries(byFeature).map(([feature, items]) => {
+                const okCount = items.filter(i => i.status === 'pass').length;
+                return `<div class="rounded border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-3 py-2 font-bold text-slate-800 flex items-center justify-between">
+                        <span>${escapeHtml(feature)}</span>
+                        <span class="text-xs ${okCount === items.length ? 'text-emerald-700' : 'text-rose-600'}">${okCount}/${items.length}</span>
+                    </div>
+                    <table class="w-full text-left border-collapse">
+                        <tbody>${items.map(i => `<tr class="border-t border-slate-100 align-top">
+                            <td class="p-2 w-8 text-center">${icon[i.status] || '?'}</td>
+                            <td class="p-2 font-semibold text-slate-700 whitespace-nowrap">${escapeHtml(i.name)}</td>
+                            <td class="p-2 text-slate-600 break-all">${escapeHtml((i.detail || '').split('\\n')[0])}</td>
+                            <td class="p-2 text-slate-400 text-right whitespace-nowrap">${i.ms}ms</td>
+                        </tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
         }
 
         // 從修改前/後內容挑一個看得懂的名稱當作「項目」欄

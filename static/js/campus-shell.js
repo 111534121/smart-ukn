@@ -17,6 +17,7 @@ const FEATURES = [
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
     { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合' },
     { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查' },
+    { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子' },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線' },
@@ -510,6 +511,19 @@ async function enablePushNotifications() {
     }
 }
 
+// ---------- 首頁：證照可抵免學分提醒 ----------
+
+async function loadHomeCertReminder() {
+    if (currentUser.role !== '學生') return;
+    try {
+        const items = (await api('/api/campus/certs/exemption-reminder')).data;
+        if (!items.length) return;
+        document.getElementById('homeCertReminderList').innerHTML = items.map(r =>
+            `<li>・<strong>${escapeHtml(r.label)}</strong> → 可抵免「${escapeHtml(r.exempts_course)}」${r.credits} 學分</li>`).join('');
+        document.getElementById('homeCertReminderCard').classList.remove('hidden');
+    } catch (e) { /* 非必要功能，失敗就不顯示 */ }
+}
+
 // ---------- 桌寵小工具 ----------
 
 let petState = null;
@@ -563,6 +577,7 @@ function campusInit() {
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
     loadPetWidget();
+    loadHomeCertReminder();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
 }

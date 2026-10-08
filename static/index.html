@@ -239,6 +239,14 @@
                         </div>
                         <ul id="homeUpcomingList" class="space-y-2 text-sm"></ul>
                     </section>
+                    <!-- 證照可抵免學分提醒 (僅學生登入且有尚未取得的可抵免證照時顯示) -->
+                    <section id="homeCertReminderCard" class="hidden bg-white rounded border border-ukn-200 p-5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h2 class="ukn-title font-bold text-slate-900">📣 證照學分抵免提醒</h2>
+                            <button type="button" onclick="switchTab('tab-certs')" class="text-xs text-ukn-700 hover:underline">看詳情 ➔</button>
+                        </div>
+                        <ul id="homeCertReminderList" class="space-y-1.5 text-xs text-slate-700"></ul>
+                    </section>
                 </div>
             </div>
 
@@ -1145,6 +1153,17 @@
                     <button type="button" id="facultyEditMineBtn" onclick="openMyFacultyProfile()" class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-3 py-1.5 font-semibold whitespace-nowrap">✏️ 編輯我的專長</button>
                 </div>
                 <div id="facultyBody"></div>
+            </section>
+        </div>
+
+        <!-- 報表與文件庫 (reports.js) -->
+        <div id="tab-reports" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">報表與文件下載</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">公告、表單、活動資料下載；可收藏分類，有新資料上架會寄信通知你。</p>
+                </div>
+                <div id="reportsBody"></div>
             </section>
         </div>
 
@@ -2645,6 +2664,7 @@
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js"></script>
     <script src="/js/self-review.js"></script>
+    <script src="/js/reports.js"></script>
     <script src="/js/assistant.js"></script>
     <script src="/js/tour.js"></script>
     <script src="/js/anniversary.js"></script>

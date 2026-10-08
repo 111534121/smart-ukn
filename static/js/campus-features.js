@@ -597,6 +597,7 @@ async function loadCerts() {
     if (isStaff()) { loadCertReview('待審核'); return; }
     if (currentUser.role === '家長') { body.innerHTML = '<div class="text-sm text-slate-500">家長帳號可在「畢業門檻」查看子女的證照進度。</div>'; return; }
     body.innerHTML = `
+        <div id="certExemptionReminder"></div>
         <form onsubmit="submitCert(event)" class="rounded border border-slate-200 bg-slate-50 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">類別</label>
                 <select name="kind" onchange="document.getElementById('certAwardRow').classList.toggle('hidden', this.value !== '競賽')" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
@@ -611,8 +612,30 @@ async function loadCerts() {
             <div class="sm:col-span-2 flex items-center justify-between gap-2"><span class="text-[11px] text-slate-500">送出後由班導確認，確認通過才會列入畢業門檻。</span>
                 <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出給班導確認</button></div>
         </form>
+        <details class="rounded border border-amber-200 bg-amber-50 p-4 text-sm">
+            <summary class="cursor-pointer font-bold text-amber-900">💡 小提醒：證照可以怎麼寫進自傳／履歷？</summary>
+            <ul class="list-disc pl-5 mt-2 space-y-1 text-xs text-amber-900">
+                <li>寫出具體分數／級別與取得日期，比只寫證照名稱更有說服力（例如「多益 650 分，2026/10 取得」）。</li>
+                <li>搭配一句你實際「用這項技能做過什麼」，例如做過的作業、專題或打工經驗，讓證照跟能力連起來。</li>
+                <li>想考自己想要的證照（不一定是班導要求的）也可以上傳在這裡，之後寫自傳、找實習都用得到。</li>
+            </ul>
+        </details>
         <div><h3 class="font-bold text-slate-900 mb-2">我的紀錄</h3><div id="myCertList" class="space-y-2"></div></div>`;
     loadMyCerts();
+    loadCertExemptionReminder();
+}
+
+async function loadCertExemptionReminder() {
+    const box = document.getElementById('certExemptionReminder');
+    if (!box) return;
+    try {
+        const items = (await api('/api/campus/certs/exemption-reminder')).data;
+        if (!items.length) { box.innerHTML = ''; return; }
+        box.innerHTML = `<div class="rounded border border-ukn-200 bg-ukn-50 p-4 text-sm space-y-1.5">
+            <div class="font-bold text-ukn-900">📣 這些證照現在就有管道可以考，考到還能申請學分抵免：</div>
+            ${items.map(r => `<div class="text-xs text-ukn-800">・<strong>${esc(r.label)}</strong> → 可抵免「${esc(r.exempts_course)}」共 ${r.credits} 學分（${esc(r.note)}申請請洽 ${esc(r.office)}）</div>`).join('')}
+        </div>`;
+    } catch (e) { /* 非必要功能，失敗就不顯示 */ }
 }
 
 const CERT_TONE = { '已通過': 'green', '待審核': 'amber', '已退回': 'red' };

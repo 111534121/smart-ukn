@@ -291,7 +291,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。",
         "doc_name": "康寧大學學生學則.pdf",
         "page": 12,
-        "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw",
+        "updated_at": "2026-08-20"
     },
     {
         "id": 2,
@@ -303,7 +304,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生因病無法到校上課，應於請假日當日起 3 日內（含例假日）登入校務系統提出線上請假申請，並檢附健保特約醫療院所開立之就醫證明或診斷書，經導師核准後始完成請假手續。",
         "doc_name": "康寧大學學生請假規則.pdf",
         "page": 5,
-        "url": "https://www.ukn.edu.tw/p/412-1000-382.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-382.php?Lang=zh-tw",
+        "updated_at": "2026-07-15"
     },
     {
         "id": 3,
@@ -315,7 +317,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生取得多益測驗 (TOEIC) 550 分以上、全民英檢 (GEPT) 中級複試通過或同等級國際外語證照者，得於每學期開學後至加退選截止前，檢附成績單正本與影本至通識教育中心申請抵免大一共同外語「基礎英文(一)」及「基礎英文(二)」共 4 學分。",
         "doc_name": "康寧大學共同外語學分抵免辦法.pdf",
         "page": 3,
-        "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw",
+        "updated_at": "2026-09-01"
     },
     {
         "id": 4,
@@ -327,7 +330,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "本校各科系必修課程若訂有先修科目限制（例如：程式設計(一) 為 資料結構 之先修科目），學生該先修科目未達及格標準（60 分）者，電腦選課系統將自動擋修，不得修習後續先修關聯課程，需待先修科目重修及格後始得修習。",
         "doc_name": "康寧大學課程選修要點.pdf",
         "page": 8,
-        "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw",
+        "updated_at": "2026-08-01"
     },
     {
         "id": 5,
@@ -339,7 +343,8 @@ DEMO_KNOWLEDGE_BASE = [
         "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，請至研發處實習就業組辦理。",
         "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
         "page": 2,
-        "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw"
+        "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw",
+        "updated_at": "2026-09-10"
     }
 ]
 
@@ -1313,6 +1318,7 @@ def search_knowledge():
             "source_doc": best_match["doc_name"],
             "page_num": best_match.get("page", 1),
             "source_url": best_match.get("url", "https://www.ukn.edu.tw"),
+            "updated_at": str(best_match.get("updated_at") or "")[:10],
             "category_name": best_match.get("category_name", "教務學則與選課"),
             "subcategory": best_match.get("subcategory", "規章辦法"),
             "related_checklist": related_chk,
@@ -1499,6 +1505,15 @@ def get_audit_logs():
     if table_filter:
         rows = [r for r in rows if r.get("table_name") == table_filter]
     return jsonify({"status": "success", "data": rows}), 200
+
+@app.route("/api/admin/self-check", methods=["POST"])
+@role_required("管理員")
+def run_self_check():
+    """一鍵執行全站自動檢測 (self_check.py)：強制切換離線示範模式跑完所有功能測試後自動還原，
+    回傳每一項功能的測試結果與整體完成度，過程中建立的測試資料會自動清理。"""
+    import self_check
+    report = self_check.run_all()
+    return jsonify({"status": "success", **report}), 200
 
 def load_visitor_logs(days):
     """最近 days 天的訪客登記 (新到舊)；MySQL 離線時讀記憶體"""
@@ -2579,9 +2594,10 @@ def manage_rules():
     except Exception as e:
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
     if result:
-        item = {"id": result["lastrowid"], **item}
+        item = {"id": result["lastrowid"], **item, "updated_at": datetime.now().strftime("%Y-%m-%d")}
     else:
-        item = {"id": max([r["id"] for r in DEMO_KNOWLEDGE_BASE], default=0) + 1, **item}
+        item = {"id": max([r["id"] for r in DEMO_KNOWLEDGE_BASE], default=0) + 1, **item,
+                "updated_at": datetime.now().strftime("%Y-%m-%d")}
         DEMO_KNOWLEDGE_BASE.append(item)
     write_audit_log("knowledge_base", item["id"], "新增", after=item)
     return jsonify({"status": "success", "message": "校規條文新增成功！", "data": item}), 201
@@ -2615,6 +2631,7 @@ def update_or_delete_rule(rule_id):
         )
     except Exception as e:
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+    item["updated_at"] = datetime.now().strftime("%Y-%m-%d")
     if result is None:
         target.update(item)
     item = {"id": rule_id, **item}
@@ -3206,6 +3223,7 @@ campus.init_app(app, SimpleNamespace(
     summarize_credits=summarize_credits,
     get_dashboard_source=get_dashboard_source,
     save_uploaded_file=save_uploaded_file,
+    write_audit_log=write_audit_log,
     graduation_threshold=GRADUATION_CREDIT_THRESHOLD,
     students=DEMO_STUDENTS,
     checklists=DEMO_CHECKLISTS,

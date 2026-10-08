@@ -2,14 +2,14 @@
 
 app.py 最後呼叫 campus.init_app(app, deps) 註冊所有 blueprint；deps 為 app.py 既有的資料與函式。
 """
-from . import calendar_ext, certificates, courses_ext, facilities, forum, info, messaging, pet, rules_ext, services
+from . import calendar_ext, certificates, courses_ext, facilities, forum, info, messaging, pet, reports, rules_ext, services
 from .common import deps as _deps
 
 
 def init_app(app, deps):
     _deps.__dict__.update(deps.__dict__)
     for module in (calendar_ext, courses_ext, rules_ext, certificates, messaging, forum,
-                   facilities, info, services, pet):
+                   facilities, info, services, pet, reports):
         app.register_blueprint(module.bp)
     with app.app_context():
         certificates.init_sync()
