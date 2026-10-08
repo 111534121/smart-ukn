@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面 (校務申請、校園生活與社群)：獎助學金檢核、宿舍與總務、教室 / 櫃子租借、
-// 校園地圖與老師辦公室、天氣交通、人流、科上通知、匿名論壇、桌寵。
+// 校園地圖與老師辦公室、天氣交通、人流、科上通知、桌寵。
 // 依賴 campus-shell.js 與 campus-features.js 的共用函式 (api、toast、esc、statusBadge…)。
 
 // =====================================================================
@@ -677,88 +677,6 @@ async function createClass(event) {
 async function resetClassPassword(form) {
     try { const r = await api('/api/campus/classes/password', { json: { class_name: noticeSelectedClass, password: form.password.value } }); toast(`${noticeSelectedClass}：${r.message}`); }
     catch (e) { toast(e.message, 'error'); }
-}
-
-// =====================================================================
-// 匿名論壇 (表白牆)
-// =====================================================================
-
-let forumBoard = '';
-
-async function loadForum() {
-    const body = document.getElementById('forumBody');
-    try {
-        const r = await api(`/api/campus/forum/posts${forumBoard ? `?board=${encodeURIComponent(forumBoard)}` : ''}`);
-        body.innerHTML = `
-            <div class="flex flex-wrap gap-2">${['', ...r.boards].map(b => `<button type="button" onclick="forumBoard='${b}'; loadForum()" class="rounded-full border px-3 py-1 text-sm ${b === forumBoard ? 'bg-ukn-800 border-ukn-800 text-white' : 'border-slate-300 hover:border-ukn-400'}">${b || '全部'}</button>`).join('')}</div>
-            ${isLoggedIn() ? `
-                <form onsubmit="createPost(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-2">
-                    <div class="flex gap-2"><select name="board" class="border border-slate-300 rounded px-2 py-1.5 text-sm bg-white">${r.boards.map(b => `<option ${b === forumBoard ? 'selected' : ''}>${b}</option>`).join('')}</select>
-                        <span class="text-xs text-slate-500 self-center">🕶️ 以匿名身分發文</span></div>
-                    <textarea name="content" required minlength="2" maxlength="1000" rows="3" placeholder="想說什麼？不會有人知道是你寫的" class="w-full border border-slate-300 rounded px-3 py-2 text-sm"></textarea>
-                    <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-1.5 text-sm">匿名發佈</button></div>
-                </form>` : loginPrompt('登入後才能發文（發文仍然是匿名的）。')}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${r.data.length ? r.data.map(forumCard).join('') : '<div class="text-sm text-slate-500">還沒有文章，來當第一個吧！</div>'}</div>`;
-    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
-}
-
-const BOARD_TONE = { '表白': 'bg-pink-50 border-pink-200', '心情': 'bg-white border-slate-200', '問問題': 'bg-ukn-50/50 border-ukn-100', '失物招領': 'bg-amber-50/60 border-amber-200', '校園建議': 'bg-emerald-50/60 border-emerald-200' };
-
-function forumCard(p) {
-    return `
-        <div class="rounded border ${BOARD_TONE[p.board] || 'border-slate-200'} p-4 space-y-2">
-            <div class="flex items-center justify-between text-[11px] text-slate-500"><span>${esc(p.alias)} · ${esc(p.board)}${p.is_mine ? ' · <span class="text-ukn-700 font-semibold">我發的</span>' : ''}</span><span>${esc(p.created_at.slice(5, 16).replace('-', '/'))}</span></div>
-            <p class="text-sm text-slate-800 whitespace-pre-line break-words">${esc(p.content)}</p>
-            <div class="flex items-center gap-3 text-xs text-slate-600 pt-1">
-                <button type="button" onclick="likePost(${p.id}, this)" class="${p.liked ? 'text-rose-600 font-bold' : 'hover:text-rose-600'}">${p.liked ? '♥' : '♡'} <span>${p.like_count}</span></button>
-                <button type="button" onclick="openPost(${p.id})" class="hover:text-ukn-700">💬 ${p.comment_count} 則留言</button>
-                <span class="flex-1"></span>
-                ${p.is_mine ? `<button type="button" onclick="deletePost(${p.id})" class="text-slate-400 hover:text-rose-700">刪除</button>` : isLoggedIn() ? `<button type="button" onclick="reportPost(${p.id})" class="text-slate-400 hover:text-rose-700">檢舉</button>` : ''}
-            </div>
-        </div>`;
-}
-
-async function createPost(event) {
-    event.preventDefault();
-    try { const r = await api('/api/campus/forum/posts', { json: Object.fromEntries(new FormData(event.target)) }); toast(r.message); loadForum(); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-async function likePost(id, btn) {
-    if (!isLoggedIn()) { toast('登入後才能按讚', 'error'); return; }
-    try {
-        const r = await api(`/api/campus/forum/posts/${id}/like`, { method: 'POST' });
-        btn.innerHTML = `${r.liked ? '♥' : '♡'} <span>${r.like_count}</span>`;
-        btn.className = r.liked ? 'text-rose-600 font-bold' : 'hover:text-rose-600';
-    } catch (e) { toast(e.message, 'error'); }
-}
-
-async function openPost(id) {
-    try {
-        const p = (await api(`/api/campus/forum/posts/${id}`)).data;
-        openModal(`${p.alias} · ${p.board}`, `
-            <p class="whitespace-pre-line break-words">${esc(p.content)}</p>
-            <div class="border-t border-slate-200 pt-3 space-y-2">${p.comments.length ? p.comments.map(c => `
-                <div class="rounded bg-slate-50 px-3 py-2"><div class="text-[11px] text-slate-500">${c.is_op ? '<span class="text-accent-500 font-bold">原PO</span>' : '匿名同學'}${c.is_mine ? '（我）' : ''} · ${esc(c.created_at.slice(5, 16).replace('-', '/'))}</div>
-                    <div class="text-sm break-words">${esc(c.content)}</div></div>`).join('') : '<div class="text-xs text-slate-500">還沒有留言</div>'}</div>
-            ${isLoggedIn() ? `<form onsubmit="commentPost(event, ${p.id})" class="flex gap-2"><input name="content" required maxlength="300" placeholder="匿名留言…" class="flex-1 border border-slate-300 rounded px-3 py-2"><button class="bg-ukn-800 text-white rounded px-4 font-bold">送出</button></form>` : ''}`);
-    } catch (e) { toast(e.message, 'error'); }
-}
-
-async function commentPost(event, id) {
-    event.preventDefault();
-    try { await api(`/api/campus/forum/posts/${id}/comments`, { json: { content: new FormData(event.target).get('content') } }); openPost(id); loadForum(); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-async function deletePost(id) {
-    if (!confirm('確定刪除這篇文章？')) return;
-    try { await api(`/api/campus/forum/posts/${id}`, { method: 'DELETE' }); toast('已刪除'); loadForum(); } catch (e) { toast(e.message, 'error'); }
-}
-
-async function reportPost(id) {
-    if (!confirm('檢舉這篇文章？多人檢舉後會自動隱藏，等待管理員處理。')) return;
-    try { const r = await api(`/api/campus/forum/posts/${id}/report`, { method: 'POST' }); toast(r.message); loadForum(); } catch (e) { toast(e.message, 'error'); }
 }
 
 // =====================================================================

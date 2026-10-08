@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面：行事曆月曆、AI 智慧校規、選課檢查、證照審核、獎助學金、宿舍與總務、
-// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、科上通知、匿名論壇、桌寵。
+// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、科上通知、桌寵。
 // 依賴 campus-shell.js (api、toast、openModal、tabLoaders…) 與 index.html (currentUser、escapeHtml…)。
 
 const WEEKDAY_TEXT = ['', '一', '二', '三', '四', '五', '六', '日'];
@@ -17,7 +17,6 @@ function campusFeaturesInit() {
         'tab-traffic': () => { loadWeatherDetail(); loadTransport(); },
         'tab-crowd': loadCrowd,
         'tab-notices': loadNotices,
-        'tab-forum': loadForum,
         'tab-pet': loadPetPage,
     });
     setupRuleSuggest();

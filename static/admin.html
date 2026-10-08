@@ -364,7 +364,7 @@
                 </div>
             </div>
 
-            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費、論壇檢舉、學生意見) -->
+            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費、學生意見) -->
             <div id="panel-campus" class="hidden space-y-5">
                 <section class="rounded border border-slate-200 p-4 space-y-2">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -384,11 +384,6 @@
                     <h3 class="font-bold text-slate-900 text-sm">櫃子租借：現場繳費確認</h3>
                     <p class="text-xs text-slate-500">學生線上保留後需在期限內到出納組繳費，收款後按「已繳費」；逾期未繳會自動釋出。</p>
                     <div id="campusLockers" class="overflow-x-auto"></div>
-                </section>
-                <section class="rounded border border-slate-200 p-4 space-y-2">
-                    <h3 class="font-bold text-slate-900 text-sm">匿名論壇：被檢舉的文章</h3>
-                    <p class="text-xs text-slate-500">論壇不保存作者帳號，這裡只看得到內容。被 3 人以上檢舉的文章會自動隱藏。</p>
-                    <div id="campusForum" class="space-y-2 text-sm"></div>
                 </section>
                 <section class="rounded border border-slate-200 p-4 space-y-2">
                     <h3 class="font-bold text-slate-900 text-sm">學生意見箱（來自桌寵）</h3>
@@ -875,7 +870,6 @@
         function loadCampusAdmin() {
             loadCampusBookings();
             loadCampusLockers();
-            loadCampusForum();
             loadCampusFeedback();
         }
 
@@ -935,28 +929,6 @@
         async function markLockerPaid(id, fee) {
             if (!confirm(`確認 ${id} 已收到 ${fee} 元？`)) return;
             try { await campusApi(`/api/campus/lockers/${id}/paid`, {}); loadCampusLockers(); }
-            catch (e) { alert(e.message); }
-        }
-
-        async function loadCampusForum() {
-            const box = document.getElementById('campusForum');
-            try {
-                const items = (await campusApi('/api/campus/forum/moderation')).data;
-                box.innerHTML = items.length ? items.map(p => `
-                    <div class="border ${p.hidden ? 'border-rose-200 bg-rose-50/50' : 'border-slate-200'} rounded px-3 py-2 space-y-1">
-                        <div class="text-xs text-slate-500">${escapeHtml(p.board)} · ${escapeHtml(p.created_at)} · 被檢舉 ${p.report_count} 次${p.hidden ? ' · 已自動隱藏' : ''}</div>
-                        <div class="whitespace-pre-line break-words">${escapeHtml(p.content)}</div>
-                        <div class="flex gap-2 pt-1">
-                            <button onclick="moderatePost(${p.id}, 'restore')" class="border border-slate-300 text-xs px-3 py-1 rounded">沒問題，恢復顯示</button>
-                            <button onclick="moderatePost(${p.id}, 'delete')" class="border border-rose-300 text-rose-700 text-xs px-3 py-1 rounded">刪除</button>
-                        </div>
-                    </div>`).join('') : '<div class="text-xs text-slate-500">目前沒有被檢舉的文章。</div>';
-            } catch (e) { box.textContent = e.message; }
-        }
-
-        async function moderatePost(id, action) {
-            if (action === 'delete' && !confirm('確定刪除這篇文章？')) return;
-            try { await campusApi(`/api/campus/forum/moderation/${id}`, { action }); loadCampusForum(); }
             catch (e) { alert(e.message); }
         }
 

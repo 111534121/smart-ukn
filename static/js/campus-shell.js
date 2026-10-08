@@ -23,7 +23,6 @@ const FEATURES = [
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰' },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統' },
     { key: 'notices', tab: 'tab-notices', name: '科上通知', icon: '📣', group: '社群', desc: '老師整班或個別通知' },
-    { key: 'forum', tab: 'tab-forum', name: '匿名論壇', icon: '💌', group: '社群', desc: '表白牆，完全匿名' },
     { key: 'pet', tab: 'tab-pet', name: '我的桌寵', icon: '🐱', group: '社群', desc: '答題賺積分幫桌寵換裝' },
 ];
 const HOME_TAB = 'tab-home';
