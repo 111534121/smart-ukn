@@ -114,6 +114,11 @@
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
+                    <label class="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="mRemember" checked class="h-4 w-4 rounded border-slate-300">
+                        <span>記住我（30 天內不用再登入，公用電腦請取消勾選）</span>
+                    </label>
+
                     <div id="loginErrorMsg" class="hidden p-3 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
 
                     <button type="submit" id="loginBtn" class="w-full py-2.5 rounded bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition flex items-center justify-center space-x-1.5">
@@ -303,7 +308,7 @@
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
+                    body: JSON.stringify({ username: u, password: p, remember: document.getElementById('mRemember').checked })
                 });
                 const data = await res.json();
 
@@ -368,5 +373,6 @@
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW 註冊失敗', err)));
         }
     </script>
+    <script src="/js/anniversary.js"></script>
 </body>
 </html>
