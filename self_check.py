@@ -352,19 +352,6 @@ def t_cms_checklists(c):
     return f"共 {len(data['data'])} 個申辦流程"
 
 
-@check("學生專區連結", "常用連結清單含「巨匠電腦」示範合作欄位")
-def t_links_juguang(c):
-    data = _j(c.anon.get("/api/links"))
-    links = data.get("data", {}).get("links") if isinstance(data.get("data"), dict) else data.get("links")
-    if links is None:
-        # 兼容 data 直接是 list 的情況
-        links = data.get("data") if isinstance(data.get("data"), list) else []
-    found = next((l for l in links if "巨匠電腦" in (l.get("title") or "")), None)
-    assert found is not None, "常用連結中應能找到巨匠電腦（東區分校）示範欄位"
-    assert found.get("url") == "#" and found.get("todo"), "巨匠電腦目前應標示為示範欄位 (url=#，且有 todo 待確認合作內容)"
-    return "巨匠電腦示範欄位存在且正確標示為未確認合作"
-
-
 # ============================================================
 # 8. 管理後台分析與權限
 # ============================================================
@@ -708,7 +695,7 @@ def t_lockers(c):
 
 
 # ============================================================
-# 16. 科上通知、匿名論壇
+# 16. 科上通知
 # ============================================================
 
 @check("科上通知", "班級與通知清單查詢（唯讀，不建立新通知避免累積測試資料）")
@@ -720,41 +707,9 @@ def t_messaging_readonly(c):
     return "班級清單、已發通知、收件匣查詢皆正常"
 
 
-@check("匿名論壇", "發文、按讚、留言、檢舉、自行刪除（正常，含清理）")
-def t_forum_flow(c):
-    r = c.student.post("/api/campus/forum/posts", json={"board": "心情", "content": f"SELFCHECK {RUN_TAG} 測試文章"})
-    data = _j(r)
-    assert r.status_code == 200, data
-    pid = data["data"]["id"]
-    try:
-        r2 = c.student.post(f"/api/campus/forum/posts/{pid}/like")
-        assert r2.status_code == 200
-        r3 = c.student2.post(f"/api/campus/forum/posts/{pid}/comments", json={"content": "SELFCHECK 留言"})
-        assert r3.status_code == 200
-        r4 = c.student2.post(f"/api/campus/forum/posts/{pid}/report")
-        assert r4.status_code == 200
-        return "發文、按讚、留言、檢舉皆正常"
-    finally:
-        c.student.delete(f"/api/campus/forum/posts/{pid}")
-
-
-@check("匿名論壇", "學生不能看檢舉後台（權限異常）")
-def t_forum_moderation_denied(c):
-    r = c.student.get("/api/campus/forum/moderation")
-    assert r.status_code in (401, 403)
-    return f"學生查看檢舉後台正確被拒（{r.status_code}）"
-
-
 # ============================================================
-# 17. 校園寵物、校園資訊、AI 小幫手
+# 17. 校園資訊、AI 小幫手
 # ============================================================
-
-@check("校園寵物小工具", "查看寵物狀態")
-def t_pet_state(c):
-    r = c.student.get("/api/campus/pet")
-    assert r.status_code == 200, _j(r)
-    return "寵物小工具狀態查詢正常"
-
 
 @check("校園資訊", "天氣與交通資訊（需要外部網路）")
 def t_campus_info(c):

@@ -115,10 +115,9 @@
         .cal-cat-放假 { background: #fff1f2; border-left: 3px solid #e11d48; color: #9f1239; }
         .cal-cat-活動, .cal-cat-教務, .cal-cat-獎助 { background: #e1e8f3; border-left: 3px solid #003c9d; color: #00295f; }
         .cal-cat-個人 { background: #fefce8; border-left: 3px solid #ca8a04; color: #854d0e; }
+        .cal-cat-班務 { background: #ecfeff; border-left: 3px solid #0891b2; color: #155e75; }
         .cal-ev.expired { background: #f1f5f9 !important; border-left-color: #cbd5e1 !important; color: #94a3b8 !important; text-decoration: line-through; }
-        .pet-float { animation: petBob 3s ease-in-out infinite; }
-        @keyframes petBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-        @media (prefers-reduced-motion: reduce) { .pet-float { animation: none; } #heroTrack { transition: none; } }
+        @media (prefers-reduced-motion: reduce) { #heroTrack { transition: none; } }
     </style>
 </head>
 
@@ -195,17 +194,6 @@
                 <button type="button" onclick="heroGo(1)" class="hero-arrow right-3" aria-label="下一張">›</button>
                 <div id="heroDots" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"></div>
             </section>
-
-            <!-- 巨匠電腦合作入口 (示範欄位，合作內容尚未正式確認) -->
-            <button type="button" onclick="openJuguangModal()"
-                class="w-full flex items-center gap-4 rounded border border-rose-700 bg-rose-600 hover:bg-rose-700 transition text-white px-5 py-4 text-left">
-                <span class="shrink-0 w-11 h-11 rounded-full bg-white text-rose-700 font-extrabold text-xl flex items-center justify-center">G</span>
-                <span class="flex-1 min-w-0">
-                    <span class="block font-bold text-base">巨匠電腦（東區分校）證照培訓合作</span>
-                    <span class="block text-xs text-rose-100 mt-0.5">短期證照培訓課程，點這裡看看有哪些｜合作內容洽談中，僅供參考</span>
-                </span>
-                <span class="shrink-0 text-xs bg-white/20 px-2 py-1 rounded">了解更多 ➔</span>
-            </button>
 
             <!-- 常用服務 (可置頂) -->
             <section class="bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-4">
@@ -860,7 +848,7 @@
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
                 <div class="border-b border-slate-100 pb-4">
                     <div class="flex items-center gap-2">
-                        <h2 class="ukn-title text-xl font-bold text-slate-900">學業預警與個資隱私授權設定</h2>
+                        <h2 id="warningTitle" class="ukn-title text-xl font-bold text-slate-900">學業預警與個資隱私授權設定</h2>
                         <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded border border-slate-300">個人資料保護法合規</span>
                     </div>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">
@@ -869,7 +857,7 @@
                 </div>
 
                 <!-- 學生端個資授權開關卡片 -->
-                <div class="bg-slate-50 border border-slate-200 p-5 rounded space-y-4">
+                <div id="warningConsentCard" class="bg-slate-50 border border-slate-200 p-5 rounded space-y-4">
                     <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                         <span>學生個人隱私與預警通知授權開關：</span>
                     </div>
@@ -897,6 +885,9 @@
                     </div>
                 </div>
 
+                <!-- 老師 / 行政人員：導師班預警總覽或依學號查詢 -->
+                <div id="staffWarningPanel" class="hidden space-y-4"></div>
+
                 <!-- 即時學業預警面板 -->
                 <div id="earlyWarningPanel" class="space-y-4">
                     <!-- 動態渲染預警狀態 -->
@@ -920,7 +911,8 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
                         <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-rose-100 border border-rose-300"></span>假日</span>
-                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm cal-cat-申辦"></span>申辦</span>
+                        <span class="flex items-center gap-1" data-cal-student><span class="w-3 h-3 rounded-sm cal-cat-申辦"></span>申辦</span>
+                        <span class="hidden items-center gap-1" data-cal-staff><span class="w-3 h-3 rounded-sm cal-cat-班務"></span>班務</span>
                         <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm cal-cat-考試"></span>考試</span>
                         <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm cal-cat-活動"></span>活動</span>
                         <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm cal-cat-個人"></span>我的行程</span>
@@ -1058,7 +1050,7 @@
                         <p class="text-xs sm:text-sm text-slate-500 mt-1">輸入教室代碼、處室或老師名字，地圖會標出在哪一棟。</p>
                     </div>
                     <div class="flex gap-2">
-                        <input type="search" id="mapSearch" placeholder="例如 A402、註冊組、陳雅婷" class="border border-slate-300 rounded px-3 py-2 text-sm w-56">
+                        <input type="search" id="mapSearch" placeholder="例如 A402、註冊組、彭賓鈺" class="border border-slate-300 rounded px-3 py-2 text-sm w-56">
                         <button type="button" onclick="findOnMap()" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold px-4 py-2 rounded">找</button>
                     </div>
                 </div>
@@ -1134,16 +1126,6 @@
             </section>
         </div>
 
-        <!-- 桌寵 -->
-        <div id="tab-pet" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">我的桌寵</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">每天回答學校規定或證照小問題賺積分，給學校意見也能拿積分，積分可以幫桌寵換衣服。</p>
-                </div>
-                <div id="petBody"></div>
-            </section>
-        </div>
 
         <!-- 教師專長查詢 (faculty.js) -->
         <div id="tab-faculty" class="tab-content hidden space-y-6">
@@ -1156,6 +1138,22 @@
                     <button type="button" id="facultyEditMineBtn" onclick="openMyFacultyProfile()" class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-3 py-1.5 font-semibold whitespace-nowrap">✏️ 編輯我的專長</button>
                 </div>
                 <div id="facultyBody"></div>
+            </section>
+        </div>
+
+        <!-- 我的課表 (老師專用，campus-features.js loadMySchedule) -->
+        <div id="tab-myschedule" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">我的課表</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">學校教師課表系統的正式課表，下方另有現在狀態與 Office Hour。</p>
+                    </div>
+                    <a id="schoolScheduleLink" href="#" target="_blank" rel="noopener noreferrer"
+                        class="text-xs text-slate-500 hover:text-ukn-700 hover:underline self-start sm:self-auto">在新分頁開啟 ↗</a>
+                </div>
+                <iframe id="schoolScheduleFrame" title="學校教師課表" class="w-full h-[75vh] rounded border border-slate-200 bg-white"></iframe>
+                <div id="myScheduleBody"></div>
             </section>
         </div>
 
@@ -1227,14 +1225,6 @@
     </div>
     <div id="uiToast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white text-sm px-4 py-2.5 rounded shadow-lg max-w-[90vw]"></div>
 
-    <!-- 桌寵 (登入後出現在右下角) -->
-    <button type="button" id="petWidget" onclick="petWidgetClick()" class="hidden fixed bottom-4 right-4 z-40 pet-float" aria-label="我的桌寵">
-        <span id="petBubble" class="hidden absolute bottom-full right-0 mb-2 w-52 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 text-xs text-left text-slate-700"></span>
-        <span class="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-ukn-200 shadow-lg text-4xl">
-            <span id="petWidgetEmoji">🐱</span>
-            <span id="petWidgetOutfit" class="absolute -top-2 -right-1 text-2xl"></span>
-        </span>
-    </button>
 
 
     <!-- ======================================================== -->
@@ -1766,7 +1756,7 @@
                 const data = await res.json();
                 if (data.is_authenticated && data.user) {
                     currentUser = data.user;
-                    document.getElementById('userFullName').textContent = currentUser.full_name;
+                    document.getElementById('userFullName').textContent = currentUser.full_name.replace(new RegExp(`\\s*${currentUser.role}$`), ''); // 旁邊已有身分標籤，名字後面的「老師」不重複顯示
                     document.getElementById('userRoleTag').textContent = currentUser.role;
                     document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (currentUser.dept_name || '');
                     if (['管理員', '教職員'].includes(currentUser.role)) {
@@ -2520,26 +2510,14 @@
         }
 
         // 10. 學業預警與個資授權
-        async function loadEarlyWarning() {
-            try {
-                const res = await fetch('/api/student/early-warning');
-                const data = await res.json();
-                const panel = document.getElementById('earlyWarningPanel');
-                if (data.status !== 'success') {
-                    panel.innerHTML = `<div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded">${escapeHtml(data.message || '無法取得學業預警資料')}</div>`;
-                    return;
-                }
-                const isStudent = currentUser && currentUser.role === '學生';
-                ['consentParentToggle', 'consentAdvisorToggle'].forEach(id => document.getElementById(id).disabled = !isStudent);
-                document.getElementById('consentParentToggle').checked = data.consent_parent;
-                document.getElementById('consentAdvisorToggle').checked = data.consent_advisor;
-
+        // 學業預警明細 (學生本人、家長、老師點開學生時共用)
+        function warningDetailHtml(data) {
                 const tone = { '正常': 'bg-emerald-100 text-emerald-800', '注意': 'bg-sky-100 text-sky-800', '二一預警': 'bg-amber-100 text-amber-900', '三二預警': 'bg-rose-100 text-rose-800' };
                 const list = (title, items) => items.length ? `
                     <div><div class="text-xs font-bold text-slate-700 mb-1">${title}</div>
                     <ul class="text-xs text-slate-700 space-y-1">${items.map(i => `<li class="rounded border border-slate-200 px-3 py-1.5">${i}</li>`).join('')}</ul></div>` : '';
                 const office = data.counselling_office;
-                panel.innerHTML = `
+                return `
                     <div class="bg-white p-5 rounded border border-slate-200 space-y-3">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                             <div>
@@ -2567,9 +2545,104 @@
                         ${data.warning_level !== 'normal' ? `<p class="text-xs text-slate-600">輔導窗口：${escapeHtml(office.office_name)}（${escapeHtml(office.location)}，${escapeHtml(office.phone)}）${office.advisor_name ? `・導師 ${escapeHtml(office.advisor_name)}` : ''}</p>` : ''}
                     </div>
                 `;
+        }
+
+        async function loadEarlyWarning() {
+            if (['老師', '教職員', '管理員'].includes(currentUser.role)) return loadStaffWarning();
+            try {
+                const res = await fetch('/api/student/early-warning');
+                const data = await res.json();
+                const panel = document.getElementById('earlyWarningPanel');
+                if (data.status !== 'success') {
+                    panel.innerHTML = `<div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded">${escapeHtml(data.message || '無法取得學業預警資料')}</div>`;
+                    return;
+                }
+                const isStudent = currentUser && currentUser.role === '學生';
+                ['consentParentToggle', 'consentAdvisorToggle'].forEach(id => document.getElementById(id).disabled = !isStudent);
+                document.getElementById('consentParentToggle').checked = data.consent_parent;
+                document.getElementById('consentAdvisorToggle').checked = data.consent_advisor;
+
+                panel.innerHTML = warningDetailHtml(data);
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        // 學業預警 (老師版)：班導看導師班全班；教職員 / 管理員依學號查詢
+        //   後端 /api/student/early-warning 已限制老師只能查自己導師班，且學生沒有授權導師時只回傳 consent_restricted
+        const WARNING_ORDER = { '三二預警': 0, '二一預警': 1, '注意': 2, '正常': 3 };
+        const WARNING_TONE = { '正常': 'bg-emerald-100 text-emerald-800', '注意': 'bg-sky-100 text-sky-800', '二一預警': 'bg-amber-100 text-amber-900', '三二預警': 'bg-rose-100 text-rose-800' };
+
+        async function fetchWarning(studentId) {
+            const res = await fetch(`/api/student/early-warning?student_id=${encodeURIComponent(studentId)}`);
+            return res.json();
+        }
+
+        async function loadStaffWarning() {
+            document.getElementById('warningConsentCard').classList.add('hidden');
+            document.getElementById('earlyWarningPanel').innerHTML = '';
+            const panel = document.getElementById('staffWarningPanel');
+            panel.classList.remove('hidden');
+            const isAdvisor = currentUser.role === '老師' && currentUser.advised_class;
+            document.getElementById('warningTitle').textContent = isAdvisor ? `學業預警：${currentUser.advised_class}` : '學業預警查詢';
+            const search = `
+                <div class="flex flex-wrap items-center gap-2">
+                    <input id="staffWarningSid" placeholder="輸入學號，例如 S112001" class="border border-slate-300 rounded px-3 py-2 text-sm w-56"
+                        onkeydown="if (event.key === 'Enter') searchStaffWarning()">
+                    <button type="button" onclick="searchStaffWarning()" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">查詢</button>
+                </div>
+                <div id="staffWarningResult"></div>`;
+            if (!isAdvisor) { panel.innerHTML = search; return; }
+
+            panel.innerHTML = '<div class="text-sm text-slate-500">讀取導師班資料中…</div>';
+            try {
+                const summary = await (await fetch(`/api/teacher/class-summary?class_name=${encodeURIComponent(currentUser.advised_class)}`)).json();
+                if (summary.status !== 'success') throw new Error(summary.message || '無法取得導師班名單');
+                const rows = await Promise.all(summary.students.map(async s => ({ s, w: await fetchWarning(s.student_id) })));
+                rows.sort((a, b) => (WARNING_ORDER[a.w.risk_level] ?? 9) - (WARNING_ORDER[b.w.risk_level] ?? 9));
+                const count = lv => rows.filter(r => r.w.risk_level === lv).length;
+                const restricted = rows.filter(r => r.w.status === 'consent_restricted').length;
+                panel.innerHTML = `
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        ${[['三二預警', count('三二預警')], ['二一預警', count('二一預警')], ['注意', count('注意')], ['未授權導師查看', restricted]].map(([label, n]) => `
+                            <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">${label}</div>
+                                <div class="text-lg font-bold ${n && label !== '注意' ? 'text-rose-700' : 'text-slate-800'} mt-0.5">${n} 人</div></div>`).join('')}
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead><tr class="bg-slate-50 text-slate-600"><th class="p-2">學號</th><th class="p-2">姓名</th><th class="p-2">狀態</th><th class="p-2">不及格 / 修習學分</th><th class="p-2">晤談</th><th class="p-2"></th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">${rows.map(({ s, w }) => {
+                            const ok = w.status === 'success';
+                            return `<tr>
+                                <td class="p-2 font-mono">${escapeHtml(s.student_id)}</td><td class="p-2">${escapeHtml(s.full_name)}</td>
+                                <td class="p-2">${ok ? `<span class="font-bold px-2 py-0.5 rounded ${WARNING_TONE[w.risk_level] || ''}">${escapeHtml(w.risk_level)}</span>`
+                                    : `<span class="text-slate-500">${w.status === 'consent_restricted' ? '🔒 學生未授權' : escapeHtml(w.message || '無法取得')}</span>`}</td>
+                                <td class="p-2">${ok ? `${w.failed_credits} / ${w.current_credits}` : '—'}</td>
+                                <td class="p-2">${ok ? escapeHtml(w.advisor_session) : '—'}</td>
+                                <td class="p-2 text-right">${ok ? `<button type="button" onclick="showStaffWarningDetail('${escapeHtml(s.student_id)}')" class="text-ukn-700 hover:underline">明細</button>` : ''}</td>
+                            </tr>`;
+                        }).join('')}</tbody>
+                    </table></div>
+                    <p class="text-[11px] text-slate-500">依《個人資料保護法》，學生未開啟「授權班級導師輔導關懷」時，導師看不到該生成績明細。</p>
+                    <div class="border-t border-slate-100 pt-4 space-y-2"><div class="text-xs font-bold text-slate-700">查詢單一學生</div>${search}</div>`;
+            } catch (e) {
+                panel.innerHTML = `<div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded">${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        async function showStaffWarningDetail(studentId) {
+            const data = await fetchWarning(studentId);
+            if (data.status !== 'success') { alert(data.message || '無法取得學業預警資料'); return; }
+            openModal(`${data.student.full_name}（${data.student.student_id}）學業預警`, warningDetailHtml(data));
+        }
+
+        async function searchStaffWarning() {
+            const sid = document.getElementById('staffWarningSid').value.trim();
+            const box = document.getElementById('staffWarningResult');
+            if (!sid) return;
+            const data = await fetchWarning(sid);
+            box.innerHTML = data.status === 'success'
+                ? `<div class="mt-3 space-y-2"><div class="text-sm font-bold text-slate-800">${escapeHtml(data.student.full_name)}（${escapeHtml(data.student.student_id)}）· ${escapeHtml(data.student.class_name || '')}</div>${warningDetailHtml(data)}</div>`
+                : `<div class="mt-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded">${escapeHtml(data.message || '查無資料')}</div>`;
         }
 
         async function updatePrivacyConsent() {

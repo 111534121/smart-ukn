@@ -213,6 +213,7 @@ def init_database():
               `action` varchar(20) NOT NULL,
               `changed_by` varchar(50) NOT NULL,
               `changed_by_role` varchar(20) DEFAULT NULL,
+              `ip_address` varchar(45) DEFAULT NULL,
               `before_json` longtext DEFAULT NULL,
               `after_json` longtext DEFAULT NULL,
               `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -346,6 +347,7 @@ def init_database():
               `action` varchar(20) NOT NULL,
               `changed_by` varchar(50) NOT NULL,
               `changed_by_role` varchar(20) DEFAULT NULL,
+              `ip_address` varchar(45) DEFAULT NULL,
               `before_json` longtext DEFAULT NULL,
               `after_json` longtext DEFAULT NULL,
               `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -353,6 +355,12 @@ def init_database():
               KEY `idx_audit_table_record` (`table_name`, `record_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+
+        # 18b. 舊資料庫的 audit_logs 補上 ip_address 欄位 (已存在時略過)
+        try:
+            cursor.execute("ALTER TABLE `audit_logs` ADD COLUMN `ip_address` varchar(45) DEFAULT NULL AFTER `changed_by_role`")
+        except mysql.connector.Error:
+            pass
 
         # 19. 建立學期校曆事項表 academic_calendar (首頁「本週可辦」橫幅)
         cursor.execute("""
@@ -635,6 +643,58 @@ def init_database():
             (4, '停修申請', '2026-10-01', '2026-10-16', '教務', withdraw_checklist_id),
             (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None),
         ])
+
+        # 科上通知 (campus/messaging.py)：班級 / 群組、成員、通知、收件人與已讀
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_groups` (
+              `class_name` varchar(50) NOT NULL COMMENT '班級 / 群組名稱 (PK)',
+              `password_hash` varchar(255) NOT NULL COMMENT '加入密碼雜湊',
+              `created_by` varchar(50) NOT NULL COMMENT '建立者姓名',
+              `created_by_username` varchar(50) DEFAULT NULL COMMENT '建立者帳號 (系統自動建立時為 NULL)',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`class_name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級 / 群組';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_group_members` (
+              `class_name` varchar(50) NOT NULL,
+              `student_id` varchar(20) NOT NULL,
+              `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`class_name`, `student_id`),
+              KEY `fk_cgm_student` (`student_id`),
+              CONSTRAINT `fk_cgm_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON DELETE CASCADE ON UPDATE CASCADE,
+              CONSTRAINT `fk_cgm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級成員';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_notices` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `class_name` varchar(50) NOT NULL,
+              `whole_class` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = 整班；0 = 只發給個別學生',
+              `title` varchar(80) NOT NULL,
+              `content` text NOT NULL,
+              `priority` enum('一般','重要','緊急') NOT NULL DEFAULT '一般',
+              `sender` varchar(50) NOT NULL COMMENT '發送者姓名',
+              `sender_username` varchar(50) DEFAULT NULL COMMENT '發送者帳號',
+              `due_date` date DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_cn_class` (`class_name`),
+              KEY `idx_cn_sender` (`sender_username`),
+              CONSTRAINT `fk_cn_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：通知內容';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_notice_recipients` (
+              `notice_id` int(11) NOT NULL,
+              `student_id` varchar(20) NOT NULL,
+              `read_at` timestamp NULL DEFAULT NULL COMMENT 'NULL = 尚未讀',
+              PRIMARY KEY (`notice_id`, `student_id`),
+              KEY `fk_cnr_student` (`student_id`),
+              CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
+        """)
 
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
         for table in ("competitions", "application_progress", "friction_reports"):

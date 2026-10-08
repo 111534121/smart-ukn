@@ -51,11 +51,11 @@ def seed_data():
         # 2. 寫入學生主檔 (已存在的學生一併更新班級名稱)
         cursor.execute("""
             INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
-            ('S112001', '王小明', 'CS', 112, '資管四忠', '0912-345-678'),
-            ('S112002', '李美華', 'CS', 112, '資管四忠', '0922-333-444'),
+            ('S112001', '王小明', 'CS', 112, '資管五忠', '0912-345-678'),
+            ('S112002', '李美華', 'CS', 112, '資管五忠', '0922-333-444'),
             ('S112003', '張建華', 'NUR', 112, '護理四忠', '0933-555-666'),
             ('S112004', '陳冠宇', 'CS', 112, '資管四孝', '0955-222-111'),
-            ('S112005', '林雨潔', 'CS', 112, '資管四忠', '0966-777-888')
+            ('S112005', '林雨潔', 'CS', 112, '資管五忠', '0966-777-888')
             ON DUPLICATE KEY UPDATE `dept_id` = VALUES(`dept_id`), `class_name` = VALUES(`class_name`)
         """)
 
@@ -72,7 +72,7 @@ def seed_data():
             (3, 'parent1', student_pw, '家長', 'S112001', '王大明 (小明家長)', None),
             (4, 'staff1', student_pw, '教職員', None, '周立威 (教務處職員)', None),
             (5, 'admin', admin_pw, '管理員', None, '系統超級管理員', None),
-            (6, 'teacher1', student_pw, '老師', None, '陳雅婷 老師', '資管四忠'),
+            (6, 'teacher1', student_pw, '老師', None, '彭賓鈺 老師', '資管五忠'),
             (7, 'S112004', student_pw, '學生', 'S112004', '陳冠宇', None),
             (8, 'S112005', student_pw, '學生', 'S112005', '林雨潔', None),
         ])
@@ -263,7 +263,7 @@ def seed_data():
             cursor.execute("UPDATE `course_map` SET `dept_id` = 'CS' WHERE `dept_id` = 'GEN'")
             cursor.execute("DELETE FROM `graduation_requirements` WHERE `dept_id` = 'GEN'")
             cursor.execute("DELETE FROM `departments` WHERE `dept_id` NOT IN ('LTC', 'ECE', 'NUR', 'OPT', 'BA', 'CS', 'ANI', 'ENG')")
-            for old, new in [('資科二甲', '資管四忠'), ('資科二乙', '資管四孝'), ('護理二乙', '護理四忠')]:
+            for old, new in [('資科二甲', '資管五忠'), ('資科二乙', '資管四孝'), ('護理二乙', '護理四忠')]:
                 cursor.execute("UPDATE `users` SET `advised_class` = %s WHERE `advised_class` = %s", (new, old))
             for old, new in [('送請系所導師及系主任簽章', '送請班級導師及科主任簽章'),
                              ('核對系專業必修', '核對科專業必修'),
@@ -372,6 +372,24 @@ def seed_data():
             """, DEMO_FACULTY_PROFILES)
         except mysql.connector.Error:
             print("⚠️ 尚未建立 faculty_profiles，請先執行 init_db.py")
+
+        # 22. 10/08 修正：示範班級「資管四忠」改為「資管五忠」，導師陳雅婷改為彭賓鈺
+        #     (INSERT IGNORE 不會覆蓋已存在的資料，舊資料庫在這裡更新；每張表分開執行，缺表不影響其他表)
+        renames = [
+            ("UPDATE `students` SET `class_name` = '資管五忠' WHERE `class_name` = '資管四忠'", ()),
+            ("UPDATE `users` SET `advised_class` = '資管五忠' WHERE `advised_class` = '資管四忠'", ()),
+            ("UPDATE `users` SET `full_name` = '彭賓鈺 老師' WHERE `username` = 'teacher1'", ()),
+            ("UPDATE `class_schedule` SET `class_name` = '資管五忠' WHERE `class_name` = '資管四忠'", ()),
+            ("UPDATE `class_schedule` SET `teacher` = '彭賓鈺' WHERE `teacher` = '陳雅婷'", ()),
+            ("UPDATE `announcements` SET `target_class` = '資管五忠' WHERE `target_class` = '資管四忠'", ()),
+            ("UPDATE `assignments` SET `class_name` = '資管五忠' WHERE `class_name` = '資管四忠'", ()),
+            ("UPDATE `faculty_profiles` SET `name` = '彭賓鈺' WHERE `name` = '陳雅婷'", ()),
+        ]
+        for sql, params in renames:
+            try:
+                cursor.execute(sql, params)
+            except mysql.connector.Error as err:
+                print(f"⚠️ 班級 / 導師名稱修正略過：{err}")
 
         conn.commit()
         print("🎉 完整測試資料（含 7 大升級功能模組）匯入成功！")

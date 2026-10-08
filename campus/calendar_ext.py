@@ -15,7 +15,7 @@ from flask import Blueprint, request
 
 from preferences import scope_filter
 
-from .common import DATA_DIR, deps, error, ok, require, store, next_id, now_str, user_key, current_user
+from .common import DATA_DIR, deps, error, ok, require, store, next_id, now_str, user_key, current_user, all_students, STAFF_ROLES
 
 bp = Blueprint("campus_calendar", __name__)
 
@@ -211,6 +211,47 @@ def my_events_bucket(key):
     return events.setdefault(key, [])
 
 
+def _role_allowed(applies_to_role, role):
+    """期限的適用身分 ('all' 或「學生,老師」這種清單)"""
+    if not applies_to_role or str(applies_to_role).strip().lower() == "all":
+        return True
+    return role in [r.strip() for r in str(applies_to_role).split(",")]
+
+
+# 學生才需要注意的校曆類別：老師 / 行政人員的行事曆不顯示
+STUDENT_ONLY_CATEGORIES = ("繳費", "獎助")
+
+
+def staff_events(u, overlaps, today):
+    """老師 / 行政人員自己的「班務」：自己發的科上通知期限、導師班學生請假"""
+    from .messaging import load_notices  # 避免循環匯入
+    events = []
+    for n in load_notices(sender_username=u["username"]):
+        if not n.get("due_date"):
+            continue
+        d = _to_date(n["due_date"])
+        if overlaps(d, d):
+            read, total = len(n["read_by"]), len(n["recipients"])
+            events.append({"key": f"notice-{n['id']}", "type": "class", "title": f"通知期限：{n['title']}",
+                           "category": "班務", "start_date": d.isoformat(), "end_date": d.isoformat(), "expired": d < today,
+                           "detail": {"note": f"{n['class_name']} · {'整班' if n['whole_class'] else '個別通知'}\n已讀 {read} / {total} 人",
+                                      "goto": {"tab": "tab-notices", "label": "前往科上通知"}}})
+    advised = u.get("advised_class") if u["role"] == "老師" else None
+    if advised:
+        names = {s["student_id"]: s["full_name"] for s in all_students() if s.get("class_name") == advised}
+        for r in deps.get_dashboard_source().list_leave_requests_for_review(list(names), None):
+            if r.get("status") not in ("待審核", "已核准"):
+                continue
+            s, e = _to_date(r["start_date"]), _to_date(r.get("end_date") or r["start_date"])
+            if overlaps(s, e):
+                events.append({"key": f"leave-{r['id']}", "type": "class",
+                               "title": f"{names.get(r['student_id'], r['student_id'])} {r.get('leave_type', '請假')}" + ("（待審核）" if r["status"] == "待審核" else ""),
+                               "category": "班務", "start_date": s.isoformat(), "end_date": e.isoformat(), "expired": e < today,
+                               "detail": {"note": f"{advised} · {r['status']}\n節次：{r.get('periods') or '全天'}\n事由：{r.get('reason') or '—'}",
+                                          "goto": {"tab": "tab-home", "label": "前往請假審核"}}})
+    return events
+
+
 @bp.route("/api/campus/calendar/month", methods=["GET"])
 def calendar_month():
     """某月份的所有事項 (含前後週，方便畫整張月曆)。?year=2026&month=10"""
@@ -230,17 +271,24 @@ def calendar_month():
 
     checklists = load_checklists()
     events = []
+    u = current_user()
+    is_staff = bool(u) and u["role"] in STAFF_ROLES  # 老師 / 行政人員看自己的行事曆，不看學生的申辦期限
 
     for ev in deps.fetch_calendar_events():
         s, e = _to_date(ev["start_date"]), _to_date(ev["end_date"])
+        category = ev.get("category") or guess_category(ev["event_name"])
+        if is_staff and category in STUDENT_ONLY_CATEGORIES:
+            continue
         if overlaps(s, e):
             chk = match_checklist(ev["event_name"], ev.get("related_checklist_id"), checklists)
             events.append({"key": f"school-{ev['id']}", "type": "school", "title": ev["event_name"],
-                           "category": ev.get("category") or guess_category(ev["event_name"]),
+                           "category": category,
                            "start_date": s.isoformat(), "end_date": e.isoformat(), "expired": e < today,
                            "detail": {"checklist": checklist_detail(chk)}})
 
     for dl in scope_filter(load_deadlines(), lambda d: [d["applies_to_dept"]] if d.get("applies_to_dept") else []):
+        if is_staff and not _role_allowed(dl.get("applies_to_role"), u["role"]):
+            continue
         s = _to_date(dl.get("start_date") or dl["end_date"])
         e = _to_date(dl["end_date"])
         if overlaps(s, e):
@@ -254,6 +302,8 @@ def calendar_month():
 
     for ev in store.data.get("ukn_ics_events", []):
         s, e = _to_date(ev["start_date"]), _to_date(ev["end_date"])
+        if is_staff and ev.get("category", "活動") in STUDENT_ONLY_CATEGORIES:
+            continue
         if overlaps(s, e):
             events.append({"key": f"ukn-{ev['uid'][:24]}", "type": "school", "title": ev["title"],
                            "category": ev.get("category", "活動"), "start_date": s.isoformat(),
@@ -268,6 +318,11 @@ def calendar_month():
                 events.append({"key": f"my-{ev['id']}", "id": ev["id"], "type": "personal", "title": ev["title"],
                                "category": "個人", "start_date": s.isoformat(), "end_date": e.isoformat(),
                                "expired": e < today, "detail": {"note": ev.get("note", ""), "source": ev.get("source", "")}})
+
+    if is_staff:
+        for ev in events:
+            ev["detail"].pop("checklist", None)  # 學生的「要準備什麼、怎麼辦」說明
+        events += staff_events(u, overlaps, today)
 
     holidays = {}
     for y in {grid_start.year, grid_end.year}:

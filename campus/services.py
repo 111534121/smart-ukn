@@ -13,6 +13,7 @@ bp = Blueprint("campus_services", __name__)
 # ---------- 常用功能置頂 ----------
 
 DEFAULT_PINNED = ["calendar", "course-plan", "rules", "notices"]
+STAFF_DEFAULT_PINNED = ["my-schedule", "notices", "graduation", "certs", "calendar"]  # 老師、教職員、管理員
 
 
 @bp.route("/api/campus/prefs", methods=["GET", "PUT"])
@@ -21,7 +22,8 @@ def prefs():
     key = user_key()
     with store.lock:
         all_prefs = store.section("prefs", dict)
-        mine = all_prefs.setdefault(key, {"pinned": list(DEFAULT_PINNED)})
+        default = STAFF_DEFAULT_PINNED if current_user()["role"] in STAFF_ROLES else DEFAULT_PINNED
+        mine = all_prefs.setdefault(key, {"pinned": list(default)})
         if request.method == "PUT":
             pinned = (request.get_json(silent=True) or {}).get("pinned", [])
             mine["pinned"] = [str(p)[:40] for p in pinned][:12]
@@ -123,6 +125,10 @@ def dorm_update(app_id):
         a = next((x for x in dorm_apps() if x["id"] == app_id), None)
         if not a:
             return error("找不到申請", 404)
+        snap = lambda: {"name": a.get("student_name"), "student_id": a.get("student_id"), "status": a.get("status"),
+                        "stage": DORM_STAGES[a["stage"]] if isinstance(a.get("stage"), int) and a["stage"] < len(DORM_STAGES) else a.get("stage"),
+                        "bed": a.get("bed")}
+        before = snap()
         if data.get("action") == "reject":
             a["status"], a["note"] = "未通過", str(data.get("note", ""))[:200]
         else:
@@ -133,6 +139,7 @@ def dorm_update(app_id):
                 a["status"] = "已完成"
         a["history"].append({"stage": a["stage"], "at": now_str(), "note": str(data.get("note", ""))[:200]})
         store.save()
+    deps.write_audit_log("dorm_applications", app_id, "修改", before=before, after={**snap(), "note": str(data.get("note", ""))[:200]})
     return ok(data=a)
 
 

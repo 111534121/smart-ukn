@@ -17,7 +17,6 @@
           不改 links.json、不連外網、不寄信、不呼叫 AI，
           所以跑測試不會改到 MySQL 或 data/ 裡的任何資料。
 """
-import copy
 import csv
 import json
 import os
@@ -42,11 +41,11 @@ SESSIONS = {
     "訪客": {"user_id": 999001, "username": "visitor_1", "role": "訪客", "visitor_type": "未來學生",
              "full_name": "測試訪客 (未來學生)", "student_id": None, "dept_name": "資訊管理科（五專）", "class_name": ""},
     "學生": {"user_id": 1, "username": "student1", "role": "學生", "full_name": "王小明", "student_id": "S112001",
-             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "資管四忠", "advised_class": None},
+             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "資管五忠", "advised_class": None},
     "家長": {"user_id": 3, "username": "parent1", "role": "家長", "full_name": "王大明 (小明家長)", "student_id": "S112001",
-             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "資管四忠", "advised_class": None},
-    "老師": {"user_id": 6, "username": "teacher1", "role": "老師", "full_name": "陳雅婷 老師", "student_id": None,
-             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "", "advised_class": "資管四忠"},
+             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "資管五忠", "advised_class": None},
+    "老師": {"user_id": 6, "username": "teacher1", "role": "老師", "full_name": "彭賓鈺 老師", "student_id": None,
+             "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "", "advised_class": "資管五忠"},
     "教職員": {"user_id": 4, "username": "staff1", "role": "教職員", "full_name": "周立威 (教務處職員)", "student_id": None,
                "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "", "advised_class": None},
     "管理員": {"user_id": 5, "username": "admin", "role": "管理員", "full_name": "系統超級管理員", "student_id": None,
@@ -92,7 +91,8 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "save_quick_links", lambda *a, **k: None)
     # campus 功能的資料 (科上通知、證照、租借…) 改寫到暫存檔，不動 data/campus_store.json
     from campus.common import store
-    monkeypatch.setattr(store, "data", copy.deepcopy(store.data))
+    # 從空白資料開始 (班級由示範學生自動產生)，結果不受每個人電腦裡的 campus_store.json 影響
+    monkeypatch.setattr(store, "data", {})
     monkeypatch.setattr(store, "path", str(tmp_path / "campus_store.json"))
     # 不連外網 (天氣、公車、官網行事曆、國定假日)
     def no_network(*a, **k):

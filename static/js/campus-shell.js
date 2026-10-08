@@ -4,28 +4,32 @@
 
 const FEATURE_GROUPS = ['學習', '校務', '校園生活', '社群'];
 const FEATURES = [
-    { key: 'course', tab: 'tab-course', name: '修業進度與擋修', icon: '📚', group: '學習', desc: '已修學分、未通過科目與擋修連帶影響' },
-    { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修' },
-    { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看' },
-    { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認' },
-    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權' },
-    { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在' },
+    { key: 'my-schedule', tab: 'tab-myschedule', name: '我的課表', icon: '🗓️', group: '學習', desc: '本週授課、Office Hour 與現在狀態', onlyRoles: ['老師'] },
+    { key: 'course', tab: 'tab-course', name: '修業進度與擋修', icon: '📚', group: '學習', desc: '已修學分、未通過科目與擋修連帶影響', staff: false },
+    { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修', staff: false },
+    { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看', staff: { name: '導師班級總表', desc: '全班學分與證照進度、依學號查詢', otherStaffName: '畢業門檻查詢' } },
+    { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認', staff: { name: '證照審核', desc: '審核學生上傳的證照與獎狀 (班導只看導師班)' } },
+    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權', staff: { desc: '導師班的二一、三二預警 (行政人員依學號查詢)' } },
+    { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在', staff: false },
     { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
-    { key: 'assistant', tab: 'tab-assistant', name: 'AI 申辦小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦' },
+    { key: 'assistant', tab: 'tab-assistant', name: 'AI 申辦小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
     { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
-    { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦' },
+    { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
-    { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合' },
-    { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查' },
+    { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合', staff: false },
+    { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查', staff: { name: '宿舍申請審核', desc: '床位申請審核與進度', roles: ['教職員', '管理員'] } },
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
-    { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子' },
+    { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線' },
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰' },
-    { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統' },
-    { key: 'notices', tab: 'tab-notices', name: '科上通知', icon: '📣', group: '社群', desc: '老師整班或個別通知' },
-    { key: 'pet', tab: 'tab-pet', name: '我的桌寵', icon: '🐱', group: '社群', desc: '答題賺積分幫桌寵換裝' },
+    { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
+    { key: 'notices', tab: 'tab-notices', name: '科上通知', icon: '📣', group: '社群', desc: '老師整班或個別通知', staff: { desc: '發通知給導師班或自己建立的群組' } },
 ];
+// staff：老師、教職員、管理員登入時的顯示方式
+//   false              → 學生專用，不顯示
+//   { name, desc }     → 同一個分頁，老師看到的是老師版功能 (例如畢業門檻 → 導師班級總表)
+//   { roles: [...] }   → 只有這些身分顯示 (例如宿舍審核只給行政人員)
 const HOME_TAB = 'tab-home';
 const tabLoaders = {};          // 分頁第一次打開時要執行的載入函式 (campus-features.js 註冊)
 const loadedTabs = new Set();
@@ -65,7 +69,11 @@ function toast(message, tone = 'ok') {
     toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
 }
 
-function openModal(title, html) {
+function openModal(title, html, wide = false) {
+    // wide：寬版視窗 (例如嵌入學校課表)；其他視窗維持原本寬度
+    const dialog = document.querySelector('#uiModal [role="dialog"]');
+    dialog.classList.toggle('sm:max-w-lg', !wide);
+    dialog.classList.toggle('sm:max-w-5xl', wide);
     document.getElementById('uiModalTitle').textContent = title;
     document.getElementById('uiModalBody').innerHTML = html;
     document.getElementById('uiModal').classList.remove('hidden');
@@ -523,81 +531,60 @@ async function loadHomeCertReminder() {
     } catch (e) { /* 非必要功能，失敗就不顯示 */ }
 }
 
-// ---------- 巨匠電腦合作入口 (示範頁面，合作內容尚未正式確認) ----------
+// ---------- 老師 / 行政人員的待辦通知 (右上角鈴鐺) ----------
 
-function openJuguangModal() {
-    openModal('巨匠電腦（東區分校）證照培訓合作', `
-        <div class="space-y-4 text-sm">
-            <div class="rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs p-3">
-                ⚠️ 示範頁面：此合作目前僅為洽談中的示範欄位，<strong>尚未正式確認</strong>。
-                實際課程內容、優惠方案與報名網址，請以巨匠電腦正式公告或東區分校櫃檯說明為準，
-                在此頁面看到的只是「有哪些證照可能可以考」的參考方向。
-            </div>
+let staffAlerts = [];
+const STAFF_ALERT_TONE = { '請假': 'bg-sky-100 text-sky-800', '證照': 'bg-emerald-100 text-emerald-800', '預警': 'bg-rose-100 text-rose-800',
+    '教室借用': 'bg-amber-100 text-amber-900', '宿舍': 'bg-violet-100 text-violet-800' };
 
-            <p class="text-slate-600">如果想加強自傳/履歷上的證照項目，或是想衝前面提到的「學分抵免」門檻，可以參考下面幾個方向：</p>
-
-            <ul class="space-y-2">
-                <li class="rounded border border-slate-200 p-3">
-                    <div class="font-bold text-slate-900">TOEIC 多益密集班</div>
-                    <div class="text-xs text-slate-500 mt-0.5">550 分以上可申請抵免「基礎英文(一)(二)」共 4 學分，也是履歷上很常被看的分數。</div>
-                </li>
-                <li class="rounded border border-slate-200 p-3">
-                    <div class="font-bold text-slate-900">TQC / 程式設計相關證照班</div>
-                    <div class="text-xs text-slate-500 mt-0.5">適合想在自傳補一筆「實作能力證明」的同學，建議先確認跟系上課程的重疊程度再報名。</div>
-                </li>
-                <li class="rounded border border-slate-200 p-3">
-                    <div class="font-bold text-slate-900">辦公室軟體 / 數位行銷相關證照班</div>
-                    <div class="text-xs text-slate-500 mt-0.5">對求職比較看重行政、行銷類工作的同學可能有幫助。</div>
-                </li>
-            </ul>
-
-            <p class="text-xs text-slate-400">想自己準備、不報名補習班也沒關係——「證照與競賽成果」分頁一樣可以上傳自己考到的證照，班導確認後就會列入紀錄。</p>
-
-            <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded border border-slate-300 text-sm font-semibold hover:bg-slate-50">關閉</button>
-                <button type="button" onclick="closeModal(); switchTab('tab-certs');" class="px-4 py-2 rounded bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-semibold">前往「證照與競賽成果」</button>
-            </div>
-        </div>
-    `);
-}
-
-// ---------- 桌寵小工具 ----------
-
-let petState = null;
-async function loadPetWidget() {
-    if (!isLoggedIn()) return;
+async function pollStaffAlerts() {
     try {
-        petState = (await api('/api/campus/pet')).data;
-        renderPetWidget();
-        document.getElementById('petWidget').classList.remove('hidden');
-        if (petState.questions_left > 0) {
-            setTimeout(() => petSay(`今天還有 ${petState.questions_left} 題可以答，答對 +10 積分！點我開始 ✨`), 4000);
-        }
-    } catch (e) { /* 桌寵非必要功能 */ }
+        const data = await api('/api/staff/alerts');
+        const prev = new Set(staffAlerts.map(a => a.key));
+        const fresh = staffAlerts.length ? data.data.filter(a => !prev.has(a.key)) : [];
+        staffAlerts = data.data;
+        const el = document.getElementById('notifyBellCount');
+        el.textContent = staffAlerts.length;
+        el.classList.toggle('hidden', !staffAlerts.length);
+        if (fresh.length) toast(`🔔 ${fresh[0].title}`);
+    } catch (e) { /* 網路中斷時下次再試 */ }
 }
 
-function renderPetWidget() {
-    if (!petState) return;
-    document.getElementById('petWidgetEmoji').textContent = petState.pet.emoji;
-    document.getElementById('petWidgetOutfit').textContent = petState.outfit.emoji;
+function goStaffAlert(goto) {
+    closeModal();
+    if (goto.startsWith('/')) location.href = goto; else switchTab(goto);
 }
 
-let petBubbleTimer = null;
-function petSay(text) {
-    const b = document.getElementById('petBubble');
-    b.textContent = text;
-    b.classList.remove('hidden');
-    clearTimeout(petBubbleTimer);
-    petBubbleTimer = setTimeout(() => b.classList.add('hidden'), 6000);
-}
-
-function petWidgetClick() {
-    if (typeof openPetQuiz === 'function') openPetQuiz(); else switchTab('tab-pet');
+function openStaffAlerts() {
+    pollStaffAlerts();
+    openModal('待辦通知', staffAlerts.length ? `
+        <ul class="space-y-2">${staffAlerts.map(a => `
+            <li><button type="button" onclick="goStaffAlert('${escapeHtml(a.goto)}')" class="w-full text-left rounded border border-slate-200 hover:border-ukn-300 hover:bg-slate-50 px-3 py-2">
+                <div class="flex items-center gap-2"><span class="shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded ${STAFF_ALERT_TONE[a.type] || 'bg-slate-100 text-slate-700'}">${escapeHtml(a.type)}</span>
+                    <span class="text-sm font-semibold text-slate-900">${escapeHtml(a.title)}</span></div>
+                <div class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(a.detail || '')}${a.at ? ` · ${escapeHtml(a.at)}` : ''}</div>
+            </button></li>`).join('')}</ul>
+        <p class="text-[11px] text-slate-500 mt-3">處理完（審核、核准、約談後學生成績改善）之後，通知會自動消失。</p>`
+        : '<div class="text-sm text-slate-500">目前沒有待處理的事項 🎉</div>');
 }
 
 // ---------- 啟動 ----------
 
+function applyStaffView() {
+    // onlyRoles：只有這些身分看得到 (例如「我的課表」只給老師)
+    const visible = FEATURES.filter(f => !f.onlyRoles || f.onlyRoles.includes(currentUser.role));
+    FEATURES.splice(0, FEATURES.length, ...visible);
+    if (!isStaff()) return;
+    const keep = FEATURES.filter(f => f.staff !== false && !(f.staff?.roles && !f.staff.roles.includes(currentUser.role)))
+        .map(f => (f.staff ? { ...f, ...f.staff } : f))
+        .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
+    FEATURES.splice(0, FEATURES.length, ...keep);
+    const slides = HERO_SLIDES.filter(s => featureByTab(s.tab));
+    HERO_SLIDES.splice(0, HERO_SLIDES.length, ...slides);
+}
+
 function campusInit() {
+    applyStaffView();
     renderNav();
     renderHero();
     loadPinned();
@@ -612,8 +599,15 @@ function campusInit() {
             document.getElementById('enablePushBtn').classList.remove('hidden');
         }
     }
+    if (isStaff()) {
+        const bell = document.getElementById('notifyBellBtn');
+        bell.classList.remove('hidden');
+        bell.title = '待辦通知';
+        bell.onclick = openStaffAlerts;
+        pollStaffAlerts();
+        setInterval(() => { if (document.visibilityState === 'visible') pollStaffAlerts(); }, NOTIFY_POLL_MS);
+    }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
-    loadPetWidget();
     loadHomeCertReminder();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });

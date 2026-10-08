@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面 (校務申請、校園生活與社群)：獎助學金檢核、宿舍與總務、教室 / 櫃子租借、
-// 校園地圖與老師辦公室、天氣交通、人流、科上通知、桌寵。
+// 校園地圖與老師辦公室、天氣交通、人流、科上通知。
 // 依賴 campus-shell.js 與 campus-features.js 的共用函式 (api、toast、esc、statusBadge…)。
 
 // =====================================================================
@@ -695,88 +695,5 @@ async function createClass(event) {
 
 async function resetClassPassword(form) {
     try { const r = await api('/api/campus/classes/password', { json: { class_name: noticeSelectedClass, password: form.password.value } }); toast(`${noticeSelectedClass}：${r.message}`); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-// =====================================================================
-// 桌寵
-// =====================================================================
-
-async function loadPetPage() {
-    const body = document.getElementById('petBody');
-    if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入後就能領養自己的桌寵。'); return; }
-    try { petState = (await api('/api/campus/pet')).data; } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; return; }
-    renderPetWidget();
-    body.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="rounded border border-slate-200 p-5 text-center space-y-3">
-                <div class="relative inline-block pet-float"><span class="text-8xl">${petState.pet.emoji}</span><span class="absolute -top-3 -right-3 text-5xl">${petState.outfit.emoji}</span></div>
-                <div class="font-bold text-slate-900">${esc(petState.pet.name)}</div>
-                <div class="text-3xl font-bold text-accent-500">${petState.points} <span class="text-sm text-slate-500 font-normal">積分</span></div>
-                <div class="text-xs text-slate-500">累計答對 ${petState.correct_total} 題 · 今天還能答 ${petState.questions_left} 題</div>
-                <div class="flex justify-center gap-2">${petState.pets.map(p => `<button type="button" onclick="choosePet('${p.id}')" title="${esc(p.name)}" class="text-2xl w-11 h-11 rounded-full border ${p.id === petState.pet.id ? 'border-ukn-700 bg-ukn-50' : 'border-slate-200'}">${p.emoji}</button>`).join('')}</div>
-            </div>
-            <div class="lg:col-span-2 space-y-4">
-                <div class="rounded border border-slate-200 p-4 space-y-3"><div class="flex items-center justify-between"><h3 class="font-bold text-slate-900">🧠 每日小問答（答對 +10）</h3>
-                    <button type="button" onclick="openPetQuiz()" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-1.5" ${petState.questions_left ? '' : 'disabled'}>${petState.questions_left ? '開始答題' : '今天答完了'}</button></div>
-                    <p class="text-xs text-slate-500">題目會隨機出學校規定、證照與校園常識。</p></div>
-                <form onsubmit="sendPetFeedback(event)" class="rounded border border-slate-200 p-4 space-y-2"><h3 class="font-bold text-slate-900">💡 給學校的意見（每天第一則 +20）</h3>
-                    <textarea name="content" rows="2" minlength="10" maxlength="500" required placeholder="例如：希望學餐可以線上點餐…" class="w-full border border-slate-300 rounded px-3 py-2 text-sm"></textarea>
-                    <div class="flex items-center justify-between"><span class="text-[11px] text-slate-500">今天還能拿 ${petState.feedback_left ? 20 : 0} 分 · 意見會轉給學校相關單位</span><button class="bg-ukn-800 text-white text-sm font-bold rounded px-4 py-1.5">送出</button></div></form>
-                <div class="rounded border border-slate-200 p-4"><h3 class="font-bold text-slate-900 mb-3">👗 換裝商店</h3>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">${petState.shop.map(o => {
-                        const owned = petState.owned.includes(o.id), wearing = petState.outfit.id === o.id;
-                        return `<button type="button" onclick="buyOutfit('${o.id}')" class="rounded border ${wearing ? 'border-accent-500 bg-accent-50' : 'border-slate-200 hover:border-ukn-400'} p-2 text-center">
-                            <div class="text-3xl h-9">${o.emoji || '🙂'}</div><div class="text-xs font-semibold">${esc(o.name)}</div>
-                            <div class="text-[11px] ${wearing ? 'text-accent-500 font-bold' : owned ? 'text-emerald-700' : 'text-slate-500'}">${wearing ? '穿著中' : owned ? '已擁有，點我換上' : `${o.price} 積分`}</div></button>`;
-                    }).join('')}</div></div>
-            </div>
-        </div>`;
-}
-
-async function openPetQuiz() {
-    if (!isLoggedIn()) { switchTab('tab-pet'); return; }
-    try {
-        const r = await api('/api/campus/pet/question');
-        if (!r.data) { petSay(r.message); toast(r.message); return; }
-        const q = r.data;
-        openModal(`🧠 ${q.topic}小問答`, `
-            <p class="font-semibold text-slate-900">${esc(q.q)}</p>
-            <div class="space-y-2" id="petQuizOptions">${q.options.map((o, i) => `<button type="button" onclick="answerPet(${q.id}, ${i})" class="w-full text-left rounded border border-slate-300 px-3 py-2 hover:border-ukn-500">${'ABCD'[i]}. ${esc(o)}</button>`).join('')}</div>
-            <div id="petQuizResult"></div>`);
-    } catch (e) { toast(e.message, 'error'); }
-}
-
-async function answerPet(id, choice) {
-    try {
-        const r = await api('/api/campus/pet/answer', { json: { id, choice } });
-        document.querySelectorAll('#petQuizOptions button').forEach((b, i) => {
-            b.disabled = true;
-            if (i === r.answer) b.classList.add('bg-emerald-50', 'border-emerald-500');
-            else if (i === choice) b.classList.add('bg-rose-50', 'border-rose-400');
-        });
-        petState = r.data;
-        document.getElementById('petQuizResult').innerHTML = `
-            <div class="rounded px-3 py-2 ${r.correct ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}">${r.correct ? `🎉 答對了！+${r.gained} 積分（共 ${petState.points} 分）` : '差一點！'}<div class="text-xs mt-1 text-slate-700">${esc(r.explain)}</div></div>
-            ${petState.questions_left ? `<button type="button" onclick="openPetQuiz()" class="w-full mt-2 bg-ukn-800 text-white rounded py-2 font-bold">下一題（今天還有 ${petState.questions_left} 題）</button>` : '<p class="text-xs text-slate-500 mt-2">今天的題目都答完了，明天再來！</p>'}`;
-        renderPetWidget();
-        petSay(r.correct ? `答對了！我們有 ${petState.points} 分了 ✨` : '沒關係，下一題加油！');
-        if (currentTabId === 'tab-pet') loadPetPage();
-    } catch (e) { toast(e.message, 'error'); }
-}
-
-async function sendPetFeedback(event) {
-    event.preventDefault();
-    try { const r = await api('/api/campus/pet/feedback', { json: { content: new FormData(event.target).get('content') } }); toast(r.message); petState = r.data; loadPetPage(); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-async function buyOutfit(id) {
-    try { const r = await api('/api/campus/pet/buy', { json: { id } }); toast(r.message); petState = r.data; loadPetPage(); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-async function choosePet(id) {
-    try { petState = (await api('/api/campus/pet/choose', { json: { pet: id } })).data; loadPetPage(); }
     catch (e) { toast(e.message, 'error'); }
 }

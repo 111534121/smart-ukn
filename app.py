@@ -198,24 +198,38 @@ def role_required(*allowed_roles):
 DEMO_AUDIT_LOGS = []  # 示範模式下的修改紀錄 (MySQL 連不上時使用)
 _audit_log_seq = 0
 
+def client_ip():
+    """發出這次請求的電腦 IP (修改紀錄用)；不在請求中時回傳 None"""
+    try:
+        return request.remote_addr
+    except RuntimeError:
+        return None
+
 def write_audit_log(table_name, record_id, action, before=None, after=None):
+    """修改紀錄：哪張表、哪一筆、誰 (身分、IP)、什麼時候、改之前 / 改之後的內容 (JSON)"""
     global _audit_log_seq
     changed_by = session.get("full_name") or session.get("username") or "未登入"
     role = session.get("role") or "訪客"
+    ip = client_ip()
 
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO audit_logs (table_name, record_id, action, changed_by, changed_by_role, before_json, after_json) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (
-                    table_name, str(record_id), action, changed_by, role,
-                    json.dumps(before, ensure_ascii=False, default=str) if before is not None else None,
-                    json.dumps(after, ensure_ascii=False, default=str) if after is not None else None
-                )
+            values = (
+                table_name, str(record_id), action, changed_by, role,
+                json.dumps(before, ensure_ascii=False, default=str) if before is not None else None,
+                json.dumps(after, ensure_ascii=False, default=str) if after is not None else None
             )
+            try:
+                cursor.execute(
+                    "INSERT INTO audit_logs (table_name, record_id, action, changed_by, changed_by_role, before_json, after_json, ip_address) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", values + (ip,))
+            except Exception:
+                # 舊資料庫還沒有 ip_address 欄位 (尚未重跑 init_db.py)：先照舊寫入，不讓紀錄遺失
+                cursor.execute(
+                    "INSERT INTO audit_logs (table_name, record_id, action, changed_by, changed_by_role, before_json, after_json) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s)", values)
             conn.commit()
             cursor.close()
             conn.close()
@@ -231,6 +245,7 @@ def write_audit_log(table_name, record_id, action, before=None, after=None):
         "action": action,
         "changed_by": changed_by,
         "changed_by_role": role,
+        "ip_address": ip,
         # 存複本，避免之後原資料被修改時連帶改到紀錄
         "before_json": json.loads(json.dumps(before, default=str)) if before is not None else None,
         "after_json": json.loads(json.dumps(after, default=str)) if after is not None else None,
@@ -259,11 +274,11 @@ DEMO_DEPARTMENTS = [
 ]
 
 DEMO_STUDENTS = [
-    {"student_id": "S112001", "full_name": "王小明", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管四忠", "parent_phone": "0912-345-678"},
-    {"student_id": "S112002", "full_name": "李美華", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管四忠", "parent_phone": "0922-333-444"},
+    {"student_id": "S112001", "full_name": "王小明", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0912-345-678"},
+    {"student_id": "S112002", "full_name": "李美華", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0922-333-444"},
     {"student_id": "S112003", "full_name": "張建華", "dept_id": "NUR", "dept_name": "護理科（五專）", "admission_year": 112, "class_name": "護理四忠", "parent_phone": "0933-555-666"},
     {"student_id": "S112004", "full_name": "陳冠宇", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管四孝", "parent_phone": "0955-222-111"},
-    {"student_id": "S112005", "full_name": "林雨潔", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管四忠", "parent_phone": "0966-777-888"}
+    {"student_id": "S112005", "full_name": "林雨潔", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0966-777-888"}
 ]
 
 _DEMO_PW_123456 = "pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c"
@@ -274,7 +289,7 @@ DEMO_USERS = [
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
     {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
-    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "陳雅婷 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管四忠"},
+    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "彭賓鈺 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管五忠"},
     {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"},
     # 示範學號登入帳號 (密碼 123456，與 seed_data.py 一致)
     {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇"},
@@ -2368,6 +2383,7 @@ def manage_privacy_consent():
             "parent_alert_consent": consent("parent_alert_consent", "consent_parent"),
             "advisor_alert_consent": consent("advisor_alert_consent", "consent_advisor")
         }
+        before = dict(load_privacy_settings(student_id))
 
         saved = db_execute(
             "INSERT INTO student_privacy_settings (student_id, parent_alert_consent, advisor_alert_consent) VALUES (%s, %s, %s) "
@@ -2375,6 +2391,10 @@ def manage_privacy_consent():
             (student_id, settings["parent_alert_consent"], settings["advisor_alert_consent"]))
         if saved is None:
             DEMO_PRIVACY_SETTINGS[student_id] = settings
+        if {k: int(before.get(k, 1)) for k in settings} != settings:
+            write_audit_log("student_privacy_settings", student_id, "修改",
+                            before={"student_id": student_id, **{k: int(before.get(k, 1)) for k in settings}},
+                            after={"student_id": student_id, **settings})
 
         return jsonify({
             "status": "success",
@@ -3068,6 +3088,7 @@ def manage_attendance_records():
         record = source.add_record(student_id, record_date, course_name, record_type)
     except Exception as e:
         return jsonify({"status": "error", "message": f"新增失敗：{e}"}), 500
+    write_audit_log("attendance_records", record.get("id", student_id), "新增", after=record)
     return jsonify({"status": "success", "message": "已新增模擬缺曠紀錄 (尚未通知)", "data": record}), 201
 
 @app.route("/api/admin/attendance/notify", methods=["POST"])
@@ -3272,7 +3293,63 @@ def review_leave_request(leave_id):
     }), 200
 
 # ==========================================
-# 13. 校園生活新功能 (campus 套件)：行事曆月曆、選課檢查、證照審核、科上通知、論壇、租借、天氣、桌寵…
+# 12b. 老師 / 行政人員的待辦通知 (右上角鈴鐺)
+#      即時從現有資料計算，不另外建資料表；審核、核准完就自動從清單消失
+# ==========================================
+
+@app.route("/api/staff/alerts", methods=["GET"])
+@role_required("老師", "教職員", "管理員")
+def staff_alerts():
+    from campus import certificates, facilities, services
+    role, advised = session.get("role"), session.get("advised_class")
+    names = {s["student_id"]: s["full_name"] for s in list_students()}
+    items = []
+
+    # 1. 待審核假單 (老師：導師班；行政人員：全校)
+    for r in get_dashboard_source().list_leave_requests_for_review(reviewable_student_ids(), "待審核"):
+        period = r["start_date"] + (f"～{r['end_date']}" if r.get("end_date") and r["end_date"] != r["start_date"] else "")
+        items.append({"key": f"leave-{r['id']}", "type": "請假", "goto": "tab-home",
+                      "title": f"{names.get(r['student_id'], r['student_id'])} 申請{r.get('leave_type') or '請假'}，等你審核",
+                      "detail": f"{period} · {r.get('reason') or ''}", "at": str(r.get("created_at") or r["start_date"])[:16]})
+
+    # 2. 待審核證照 (老師：導師班；行政人員：全校)
+    viewer = {"role": role, "advised_class": advised}
+    for c in certificates.submissions():
+        if c["status"] == "待審核" and certificates.can_review(viewer, c):
+            items.append({"key": f"cert-{c['id']}", "type": "證照", "goto": "tab-certs",
+                          "title": f"{c.get('student_name') or c['student_id']} 上傳{c.get('kind', '證照')}「{c['name']}」，等你確認",
+                          "detail": c.get("class_name", ""), "at": str(c.get("created_at", ""))[:16]})
+
+    # 3. 導師班學業預警 (只有班導；學生沒有授權導師查看時不顯示)
+    if role == "老師" and advised:
+        from campus.common import all_students  # 含班級欄位 (list_students 只有學號與姓名)
+        for s in all_students():
+            if s.get("class_name") != advised or not load_privacy_settings(s["student_id"])["advisor_alert_consent"]:
+                continue
+            w = compute_early_warning(s["student_id"])
+            if w["warning_level"] in ("warning", "critical"):
+                items.append({"key": f"warning-{s['student_id']}", "type": "預警", "goto": "tab-warning",
+                              "title": f"{s['full_name']}：{w['risk_level']}，建議約談",
+                              "detail": f"{w['semester']} 學期不及格 {w['failed_credits']} / {w['current_credits']} 學分", "at": ""})
+
+    # 4. 行政人員：教室借用、宿舍申請
+    if role in ("教職員", "管理員"):
+        for b in facilities.bookings():
+            if b["status"] == "審核中":
+                items.append({"key": f"booking-{b['id']}", "type": "教室借用", "goto": "/admin",
+                              "title": f"{b['applicant']} 借用 {b['room_name']}，等你審核",
+                              "detail": f"{b['date']} 第 {b['period_start']}-{b['period_end']} 節 · {b.get('purpose', '')}",
+                              "at": str(b.get("created_at", ""))[:16]})
+        for a in services.dorm_apps():
+            if a["status"] == "進行中" and a["stage"] == 0:
+                items.append({"key": f"dorm-{a['id']}", "type": "宿舍", "goto": "tab-services",
+                              "title": f"{a.get('student_name') or a['student_id']} 送出宿舍申請，等你審查",
+                              "detail": f"{a.get('semester', '')} · {a.get('room_type', '')}", "at": str(a.get("created_at", ""))[:16]})
+
+    return jsonify({"status": "success", "count": len(items), "data": items}), 200
+
+# ==========================================
+# 13. 校園生活新功能 (campus 套件)：行事曆月曆、選課檢查、證照審核、科上通知、租借、天氣、報表…
 # ==========================================
 
 import campus
@@ -3280,6 +3357,7 @@ from types import SimpleNamespace
 
 campus.init_app(app, SimpleNamespace(
     fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
     fetch_calendar_events=fetch_calendar_events,
     load_course_map=load_course_map,
     load_student_credits=load_student_credits,

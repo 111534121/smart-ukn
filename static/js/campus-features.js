@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面：行事曆月曆、AI 智慧校規、選課檢查、證照審核、獎助學金、宿舍與總務、
-// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、科上通知、桌寵。
+// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、科上通知。
 // 依賴 campus-shell.js (api、toast、openModal、tabLoaders…) 與 index.html (currentUser、escapeHtml…)。
 
 const WEEKDAY_TEXT = ['', '一', '二', '三', '四', '五', '六', '日'];
@@ -12,12 +12,17 @@ function campusFeaturesInit() {
         'tab-certs': loadCerts,
         'tab-scholarship': loadScholarships,
         'tab-services': () => { loadDorm(); loadAffairs(); },
-        'tab-rent': () => { loadRooms(); loadLockers(); },
+        'tab-rent': () => {
+            loadRooms();
+            // 櫃子是學生用的，老師 / 行政人員只看教室借用 (櫃子繳費在後台處理)
+            if (isStaff()) document.getElementById('lockersBody').closest('section').classList.add('hidden');
+            else loadLockers();
+        },
         'tab-map': () => { loadMap(); loadTeachers(); },
         'tab-traffic': () => { loadWeatherDetail(); loadTransport(); },
         'tab-crowd': loadCrowd,
         'tab-notices': loadNotices,
-        'tab-pet': loadPetPage,
+        'tab-myschedule': () => { showSchoolSchedule(); loadMySchedule(); },
     });
     setupRuleSuggest();
     loadRulesTree();
@@ -56,7 +61,7 @@ function fileLinks(files) {
 // =====================================================================
 
 let calYear = null, calMonth = null, calData = null;
-const CAL_KNOWN = ['申辦', '考試', '繳費', '放假', '活動', '教務', '獎助', '個人'];
+const CAL_KNOWN = ['申辦', '考試', '繳費', '放假', '活動', '教務', '獎助', '個人', '班務'];
 
 function calendarShift(step) {
     if (step === 0 || calYear === null) {
@@ -71,7 +76,14 @@ function calendarShift(step) {
     refreshCalendar();
 }
 
+function setupCalendarLegend() {
+    if (!isStaff()) return;
+    document.querySelectorAll('[data-cal-student]').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('[data-cal-staff]').forEach(el => { el.classList.remove('hidden'); el.classList.add('flex'); });
+}
+
 async function refreshCalendar() {
+    setupCalendarLegend();
     if (calYear === null) return;
     document.getElementById('calMonthTitle').textContent = `${calYear} 年 ${calMonth} 月`;
     try {
@@ -126,7 +138,7 @@ function renderCalendar() {
             </div>`);
     }
     document.getElementById('calGrid').innerHTML = cells.join('');
-    document.getElementById('calSourceNote').textContent = '國定假日：行政院人事行政總處辦公日曆表（自動抓取）· 學校事項：校曆與申辦期限'
+    document.getElementById('calSourceNote').textContent = '國定假日：行政院人事行政總處辦公日曆表（自動抓取）· 學校事項：' + (isStaff() ? '校曆 · 班務：導師班請假與我發的通知期限' : '校曆與申辦期限')
         + (calData.ukn_synced_at ? `，康寧官網行事曆 ${calData.ukn_synced_at.slice(0, 10)} 同步` : '');
 }
 
@@ -171,6 +183,9 @@ function openEventDetail(key) {
             </div>`;
     } else if (e.detail?.system_url) {
         body += `<a href="${esc(e.detail.system_url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs border border-slate-300 rounded px-2 py-1">前往線上系統 ↗</a>`;
+    }
+    if (e.detail?.goto) {
+        body += `<button type="button" onclick="closeModal(); switchTab('${esc(e.detail.goto.tab)}')" class="text-xs bg-ukn-800 text-white rounded px-2 py-1">${esc(e.detail.goto.label)} ➔</button>`;
     }
     if (e.type === 'personal') {
         body += `<button type="button" onclick="deleteMyEvent(${Number(e.id)})" class="text-xs text-rose-700 border border-rose-200 rounded px-2 py-1 hover:bg-rose-50">從我的月曆刪除</button>`;
@@ -734,4 +749,62 @@ async function loadCertStats() {
                 <div><h4 class="text-xs font-bold text-slate-600 mb-2">競賽得獎</h4>${bars(r.competitions, '競賽')}</div>
             </div>`;
     } catch (e) { box.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+
+// =====================================================================
+// 我的課表 (老師)：使用 /api/campus/teachers (課表來自 class_schedule、Office Hour 來自教師辦公室資料)
+// =====================================================================
+
+async function loadMySchedule() {
+    const body = document.getElementById('myScheduleBody');
+    try {
+        const r = await api('/api/campus/teachers');
+        const myName = currentUser.full_name.replace(/\s*老師$/, '');
+        const me = r.data.find(t => t.name === myName);
+        if (!me) { body.innerHTML = '<div class="text-sm text-slate-500">系統裡還沒有你的授課資料，請洽教務處建立。</div>'; return; }
+        const periods = Object.entries(r.periods).map(([p, [s, e]]) => ({ p: Number(p), s, e }));
+        const today = new Date().getDay() || 7;
+        const days = [1, 2, 3, 4, 5];
+        const hours = me.timetable.reduce((n, c) => n + c.period_end - c.period_start + 1, 0);
+        const classes = [...new Set(me.timetable.map(c => c.class_name))];
+        const isOfficeHour = (d, per) => me.office_hours.some(o => o.weekday === d && o.start <= per.s && per.e <= o.end);
+        const stateTone = { '上課中': 'bg-rose-100 text-rose-800', '晤談時間': 'bg-emerald-100 text-emerald-800' }[me.status.state] || 'bg-slate-100 text-slate-700';
+        const rows = periods.map(per => `<tr>
+            <th class="p-2 text-left align-top whitespace-nowrap bg-slate-50 border border-slate-200"><div class="text-xs font-bold text-slate-700">第 ${per.p} 節</div><div class="text-[10px] text-slate-500">${per.s}–${per.e}</div></th>
+            ${days.map(d => {
+                const c = me.timetable.find(x => x.weekday === d && x.period_start <= per.p && per.p <= x.period_end);
+                if (c && c.period_start !== per.p) return '';
+                const todayCls = d === today ? ' bg-ukn-50/40' : '';
+                if (c) return `<td rowspan="${c.period_end - c.period_start + 1}" class="p-2 align-top border border-slate-200 bg-ukn-50${todayCls}">
+                    <div class="text-sm font-bold text-ukn-900">${esc(c.course_name)}</div>
+                    <div class="text-[11px] text-slate-600 mt-0.5">${esc(c.class_name)} · ${esc(c.classroom)}</div></td>`;
+                return `<td class="p-2 align-top border border-slate-200${todayCls}">${isOfficeHour(d, per) ? `<span class="text-[11px] text-emerald-700 font-semibold">Office Hour</span><div class="text-[10px] text-slate-500">${esc(me.office)}</div>` : ''}</td>`;
+            }).join('')}</tr>`).join('');
+        body.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">現在</div>
+                    <div class="mt-1"><span class="font-bold px-2 py-0.5 rounded ${stateTone}">${esc(me.status.state)}</span></div>
+                    <div class="text-slate-600 mt-1">${esc(me.status.detail)}</div></div>
+                <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">本週授課</div>
+                    <div class="text-lg font-bold text-slate-800 mt-0.5">${hours} 節 · ${me.timetable.length} 門課</div>
+                    <div class="text-slate-600">${classes.map(esc).join('、') || '—'}</div></div>
+                <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">Office Hour · ${esc(me.office)}</div>
+                    ${me.office_hours.map(o => `<div class="text-slate-800 mt-0.5">週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}</div>`).join('') || '<div class="text-slate-500 mt-0.5">尚未設定</div>'}</div>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full min-w-[640px] border-collapse text-left">
+                <thead><tr><th class="p-2 bg-slate-50 border border-slate-200 w-20"></th>${days.map(d => `<th class="p-2 text-xs text-center border border-slate-200 ${d === today ? 'bg-ukn-800 text-white' : 'bg-slate-50 text-slate-700'}">週${WEEKDAY_TEXT[d]}${d === today ? '（今天）' : ''}</th>`).join('')}</tr></thead>
+                <tbody>${rows}</tbody></table></div>`;
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+// 學校教師課表系統：直接嵌在「我的課表」頁面
+//   SCHOOL_TEACHER_SCHEDULE_URL 的 {name} 會換成老師姓名 (網址需要帶老師參數時使用)
+const SCHOOL_TEACHER_SCHEDULE_URL = 'https://ec.ukn.edu.tw/Schedule/TeacherSchedule.aspx';
+function showSchoolSchedule() {
+    const name = currentUser.full_name.replace(/\s*老師$/, '');
+    const url = SCHOOL_TEACHER_SCHEDULE_URL.replace('{name}', encodeURIComponent(name));
+    const frame = document.getElementById('schoolScheduleFrame');
+    if (frame.getAttribute('src') !== url) frame.setAttribute('src', url);
+    document.getElementById('schoolScheduleLink').href = url;
 }

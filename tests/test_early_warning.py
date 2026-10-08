@@ -14,7 +14,7 @@ def test_student_sees_own_warning_from_credits(client, login):
     assert data["risk_level"] == "三二預警"
     assert [c["course_id"] for c in data["failed_courses"]] == ["CS102"]
     assert data["advisor_session"] == "建議預約晤談"
-    assert data["counselling_office"]["advisor_name"] == "陳雅婷 老師"
+    assert data["counselling_office"]["advisor_name"] == "彭賓鈺 老師"
 
 
 def test_student_without_failures_is_normal(client, login):

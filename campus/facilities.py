@@ -56,7 +56,7 @@ OFFICES = [
 ]
 
 TEACHER_OFFICES = [
-    {"name": "陳雅婷", "title": "副教授 / 資管四忠導師", "dept": "資訊管理科", "office": "A410", "building": "A", "floor": 4, "ext": "分機 361", "email": "", "office_hours": [{"weekday": 2, "start": "13:10", "end": "15:00"}, {"weekday": 4, "start": "10:10", "end": "12:00"}]},
+    {"name": "彭賓鈺", "title": "副教授 / 資管五忠導師", "dept": "資訊管理科", "office": "A410", "building": "A", "floor": 4, "ext": "分機 361", "email": "", "office_hours": [{"weekday": 2, "start": "13:10", "end": "15:00"}, {"weekday": 4, "start": "10:10", "end": "12:00"}]},
     {"name": "林志明", "title": "助理教授", "dept": "資訊管理科", "office": "A411", "building": "A", "floor": 4, "ext": "分機 362", "email": "", "office_hours": [{"weekday": 3, "start": "13:10", "end": "15:00"}]},
     {"name": "吳建宏", "title": "講師", "dept": "資訊管理科", "office": "A412", "building": "A", "floor": 4, "ext": "分機 363", "email": "", "office_hours": [{"weekday": 1, "start": "13:10", "end": "15:00"}]},
     {"name": "張文華", "title": "講師", "dept": "資訊管理科", "office": "A413", "building": "A", "floor": 4, "ext": "分機 364", "email": "", "office_hours": [{"weekday": 5, "start": "10:10", "end": "12:00"}]},
@@ -272,6 +272,7 @@ def update_booking(booking_id):
         bk = next((b for b in bookings() if b["id"] == booking_id), None)
         if not bk:
             return error("找不到申請", 404)
+        before = {"room_name": bk.get("room_name"), "date": bk.get("date"), "applicant": bk.get("applicant"), "status": bk.get("status")}
         if action == "cancel" and bk["applicant_key"] == user_key():
             bk["status"] = "已取消"
         elif action in ("approve", "reject") and u["role"] in ("管理員", "教職員"):
@@ -280,6 +281,8 @@ def update_booking(booking_id):
         else:
             return error("沒有權限", 403)
         store.save()
+    deps.write_audit_log("room_bookings", booking_id, "修改", before=before,
+                         after={**before, "status": bk["status"], "review_note": bk.get("review_note", "")})
     return ok(message=f"已{bk['status']}", data=bk)
 
 
@@ -391,8 +394,10 @@ def locker_paid(locker_id):
         lk = next((x for x in lockers() if x["locker_id"] == locker_id), None)
         if not lk or lk["status"] != "保留中":
             return error("這一格不是保留中", 404)
+        before = {"locker_id": locker_id, "holder": lk.get("holder_key"), "status": lk["status"]}
         lk.update(status="已租用", reserved_at=None)
         store.save()
+    deps.write_audit_log("lockers", locker_id, "修改", before=before, after={**before, "status": "已租用"})
     return ok(message=f"{locker_id} 已完成繳費")
 
 

@@ -365,7 +365,7 @@
                 </div>
             </div>
 
-            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費、學生意見) -->
+            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費) -->
             <div id="panel-campus" class="hidden space-y-5">
                 <section class="rounded border border-slate-200 p-4 space-y-2">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -385,10 +385,6 @@
                     <h3 class="font-bold text-slate-900 text-sm">櫃子租借：現場繳費確認</h3>
                     <p class="text-xs text-slate-500">學生線上保留後需在期限內到出納組繳費，收款後按「已繳費」；逾期未繳會自動釋出。</p>
                     <div id="campusLockers" class="overflow-x-auto"></div>
-                </section>
-                <section class="rounded border border-slate-200 p-4 space-y-2">
-                    <h3 class="font-bold text-slate-900 text-sm">學生意見箱（來自桌寵）</h3>
-                    <div id="campusFeedback" class="space-y-2 text-sm"></div>
                 </section>
             </div>
 
@@ -562,7 +558,7 @@
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <th class="p-3">時間</th>
-                                <th class="p-3">修改者</th>
+                                <th class="p-3">修改者 / IP</th>
                                 <th class="p-3">動作</th>
                                 <th class="p-3">資料類別</th>
                                 <th class="p-3">項目</th>
@@ -881,7 +877,6 @@
         function loadCampusAdmin() {
             loadCampusBookings();
             loadCampusLockers();
-            loadCampusFeedback();
         }
 
         async function syncUknCalendar(btn) {
@@ -941,18 +936,6 @@
             if (!confirm(`確認 ${id} 已收到 ${fee} 元？`)) return;
             try { await campusApi(`/api/campus/lockers/${id}/paid`, {}); loadCampusLockers(); }
             catch (e) { alert(e.message); }
-        }
-
-        async function loadCampusFeedback() {
-            const box = document.getElementById('campusFeedback');
-            try {
-                const items = (await campusApi('/api/campus/feedback')).data;
-                box.innerHTML = items.length ? items.slice(0, 50).map(f => `
-                    <div class="border border-slate-200 rounded px-3 py-2">
-                        <div class="text-xs text-slate-500">${escapeHtml(f.created_at)} · ${escapeHtml(f.role)}</div>
-                        <div class="whitespace-pre-line break-words">${escapeHtml(f.content)}</div>
-                    </div>`).join('') : '<div class="text-xs text-slate-500">還沒有學生意見。</div>';
-            } catch (e) { box.textContent = e.message; }
         }
 
         async function loadUnmatchedQueries() {
@@ -1442,7 +1425,16 @@
             visitor_logs: '訪客登記',
             faculty_profiles: '教師專長',
             anniversary_events: '校慶設定',
-            anniversary_wishes: '校慶祝福'
+            anniversary_wishes: '校慶祝福',
+            student_privacy_settings: '個資授權',
+            attendance_records: '缺曠紀錄',
+            classes: '科上通知班級',
+            notices: '科上通知',
+            cert_submissions: '證照審核',
+            dorm_applications: '宿舍申請',
+            room_bookings: '教室借用',
+            lockers: '櫃子租借',
+            report_files: '報表文件'
         };
         // 常見欄位的中文名稱；沒列到的直接顯示欄位名
         const AUDIT_FIELD_LABELS = {
@@ -1456,7 +1448,12 @@
             applies_to_dept: '適用科系', related_system_url: '系統入口', status_badge: '狀態標籤',
             status: '狀態', review_note: '審核意見', days: '匯出天數', count: '筆數',
             name_zh: '校慶名稱', name_en: '英文名稱', name_ja: '日文名稱', announce_days: '提前顯示天數',
-            require_approval: '祝福需審核', is_enabled: '啟用', message: '祝福內容'
+            require_approval: '祝福需審核', is_enabled: '啟用', message: '祝福內容',
+            parent_alert_consent: '授權家長查看', advisor_alert_consent: '授權導師查看', student_id: '學號',
+            class_name: '班級', password: '加入密碼', created_by: '建立者', priority: '緊急程度', whole_class: '整班通知',
+            recipients: '收件學生', due_date: '期限', name: '名稱', stage: '進度', bed: '床位', note: '備註',
+            room_name: '教室', date: '日期', applicant: '申請人', locker_id: '櫃號', holder: '租用者',
+            course_name: '課程', type: '類別'
         };
         const AUDIT_ACTION_STYLES = {
             '新增': 'bg-emerald-100 text-emerald-800',
@@ -1568,7 +1565,7 @@
         // 從修改前/後內容挑一個看得懂的名稱當作「項目」欄
         function auditRecordName(log) {
             const obj = log.after_json || log.before_json || {};
-            const name = obj.title || obj.event_name || obj.business_name || obj.official_term || obj.keyword || obj.name_zh || obj.name || obj.message || '';
+            const name = obj.title || obj.event_name || obj.business_name || obj.official_term || obj.keyword || obj.name_zh || obj.name || obj.class_name || obj.room_name || obj.locker_id || obj.student_id || obj.message || '';
             const extra = log.table_name === 'synonym_dictionary' && obj.user_keyword ? `${obj.user_keyword} → ` : '';
             return `#${log.record_id}${name ? ' ' + extra + name : ''}`;
         }
@@ -1613,7 +1610,7 @@
             tbody.innerHTML = rows.map(l => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(l.changed_at)}</td>
-                    <td class="p-3"><span class="font-semibold text-slate-900">${escapeHtml(l.changed_by)}</span> <span class="text-[11px] text-slate-500">${escapeHtml(l.changed_by_role || '')}</span></td>
+                    <td class="p-3"><span class="font-semibold text-slate-900">${escapeHtml(l.changed_by)}</span> <span class="text-[11px] text-slate-500">${escapeHtml(l.changed_by_role || '')}</span>${l.ip_address ? `<div class="text-[11px] text-slate-400 font-mono">IP ${escapeHtml(l.ip_address)}</div>` : ''}</td>
                     <td class="p-3"><span class="text-xs font-semibold px-2 py-0.5 rounded ${AUDIT_ACTION_STYLES[l.action] || 'bg-slate-100 text-slate-700'}">${escapeHtml(l.action)}</span></td>
                     <td class="p-3 text-xs font-semibold text-ukn-700">${escapeHtml(AUDIT_TABLE_LABELS[l.table_name] || l.table_name)}</td>
                     <td class="p-3 text-slate-800">${escapeHtml(auditRecordName(l))}</td>

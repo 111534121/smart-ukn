@@ -1,6 +1,6 @@
 """campus 各模組共用：JSON 資料儲存、app.py 注入的相依物件、權限檢查。
 
-新功能 (論壇、科上通知、租借、桌寵…) 的資料存於 data/campus_store.json，
+新功能 (科上通知、證照、租借、報表…) 的資料存於 data/campus_store.json，
 不需要先建 MySQL 資料表就能運作；正式上線時可逐一改寫為資料表。
 """
 import json
@@ -21,8 +21,8 @@ deps = SimpleNamespace()
 class JsonStore:
     """執行緒安全的 JSON 檔案儲存。用法：
         with store.lock:
-            posts = store.section("forum_posts", list)
-            posts.append(...)
+            items = store.section("notices", list)
+            items.append(...)
             store.save()
     """
 

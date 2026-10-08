@@ -68,11 +68,11 @@ CREATE TABLE `students` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生學籍基本資料檔';
 
 INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
-('S112001', '王小明', 'CS', 112, '資管四忠', '0912-345-678'),
-('S112002', '李美華', 'CS', 112, '資管四忠', '0922-333-444'),
+('S112001', '王小明', 'CS', 112, '資管五忠', '0912-345-678'),
+('S112002', '李美華', 'CS', 112, '資管五忠', '0922-333-444'),
 ('S112003', '張建華', 'NUR', 112, '護理四忠', '0933-555-666'),
 ('S112004', '陳冠宇', 'CS', 112, '資管四孝', '0955-222-111'),
-('S112005', '林雨潔', 'CS', 112, '資管四忠', '0966-777-888');
+('S112005', '林雨潔', 'CS', 112, '資管五忠', '0966-777-888');
 
 -- --------------------------------------------------------
 -- 3. 系統使用者與登入帳號資料表 `users`
@@ -99,7 +99,7 @@ INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id
 (3, 'parent1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '家長', 'S112001', '王大明 (小明家長)', NULL),
 (4, 'staff1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 (教務處職員)', NULL),
 (5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員', NULL),
-(6, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '老師', NULL, '陳雅婷 老師', '資管四忠');
+(6, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '老師', NULL, '彭賓鈺 老師', '資管五忠');
 
 -- --------------------------------------------------------
 -- 4. 課程地圖與先修關係表 `course_map`
@@ -327,6 +327,7 @@ CREATE TABLE `audit_logs` (
   `action` varchar(20) NOT NULL COMMENT '新增/修改/刪除',
   `changed_by` varchar(50) NOT NULL COMMENT '操作者姓名/帳號',
   `changed_by_role` varchar(20) DEFAULT NULL COMMENT '操作者身分',
+  `ip_address` varchar(45) DEFAULT NULL COMMENT '操作者電腦 IP',
   `before_json` longtext DEFAULT NULL COMMENT '修改前內容 (JSON)',
   `after_json` longtext DEFAULT NULL COMMENT '修改後內容 (JSON)',
   `changed_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '異動時間',
@@ -406,6 +407,53 @@ INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_
 (11, '期末成績繳交截止', '教師行政', NULL, '2027-01-15', '老師', NULL, 'https://www.ukn.edu.tw/', '請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。'),
 (12, '期中考試週', '考試', '2026-11-23', '2026-11-27', 'all', NULL, 'https://www.ukn.edu.tw/', '期中考試週期間，請留意各科考試時間與地點公告。'),
 (13, '期末考試週', '考試', '2027-01-05', '2027-01-09', 'all', NULL, 'https://www.ukn.edu.tw/', '期末考試週期間，請留意各科考試時間與地點公告。');
+
+-- 科上通知 (campus/messaging.py)
+CREATE TABLE IF NOT EXISTS `class_groups` (
+  `class_name` varchar(50) NOT NULL COMMENT '班級 / 群組名稱 (PK)',
+  `password_hash` varchar(255) NOT NULL COMMENT '加入密碼雜湊',
+  `created_by` varchar(50) NOT NULL COMMENT '建立者姓名',
+  `created_by_username` varchar(50) DEFAULT NULL COMMENT '建立者帳號 (系統自動建立時為 NULL)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`class_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級 / 群組';
+
+CREATE TABLE IF NOT EXISTS `class_group_members` (
+  `class_name` varchar(50) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`class_name`, `student_id`),
+  KEY `fk_cgm_student` (`student_id`),
+  CONSTRAINT `fk_cgm_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_cgm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級成員';
+
+CREATE TABLE IF NOT EXISTS `class_notices` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `class_name` varchar(50) NOT NULL,
+  `whole_class` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = 整班；0 = 只發給個別學生',
+  `title` varchar(80) NOT NULL,
+  `content` text NOT NULL,
+  `priority` enum('一般','重要','緊急') NOT NULL DEFAULT '一般',
+  `sender` varchar(50) NOT NULL COMMENT '發送者姓名',
+  `sender_username` varchar(50) DEFAULT NULL COMMENT '發送者帳號',
+  `due_date` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_cn_class` (`class_name`),
+  KEY `idx_cn_sender` (`sender_username`),
+  CONSTRAINT `fk_cn_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：通知內容';
+
+CREATE TABLE IF NOT EXISTS `class_notice_recipients` (
+  `notice_id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `read_at` timestamp NULL DEFAULT NULL COMMENT 'NULL = 尚未讀',
+  PRIMARY KEY (`notice_id`, `student_id`),
+  KEY `fk_cnr_student` (`student_id`),
+  CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
 
 COMMIT;
 

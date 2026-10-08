@@ -172,11 +172,14 @@ def review(item_id):
             return error("找不到這筆資料", 404)
         if not can_review(u, item):
             return error("只有該班導師可以確認", 403)
+        before = {"name": item.get("name"), "student_id": item.get("student_id"), "status": item["status"]}
         item["status"] = "已通過" if action == "approve" else "已退回"
         item["reviewer"] = u["full_name"]
         item["review_note"] = note
         item["reviewed_at"] = now_str()
         store.save()
+    deps.write_audit_log("cert_submissions", item_id, "修改", before=before,
+                         after={**before, "status": item["status"], "review_note": note})
     sync_to_graduation(item)
     return ok(message="已確認" if action == "approve" else "已退回", data=item)
 

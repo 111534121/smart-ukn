@@ -77,7 +77,7 @@ def test_synonym_expansion():
 
 
 @pytest.mark.parametrize("query, expected", [
-    ("AI", "陳雅婷"),
+    ("AI", "彭賓鈺"),
     ("資安", "林志明"),
     ("長照", "許美玲"),
     ("多益", "Amy Chen"),
@@ -99,7 +99,7 @@ def test_search_filters(client):
 
 def test_hidden_profile_not_searchable(client):
     faculty.DEMO_PROFILES[0]["is_public"] = 0
-    assert all(t["name"] != "陳雅婷" for t in client.get("/api/faculty").get_json()["data"])
+    assert all(t["name"] != "彭賓鈺" for t in client.get("/api/faculty").get_json()["data"])
 
 
 def test_teacher_edits_own_expertise_only(client, login):
@@ -108,9 +108,9 @@ def test_teacher_edits_own_expertise_only(client, login):
     res = client.put("/api/faculty/me", json={"expertise": "生成式AI、提示工程", "fields": ["人工智慧與資料分析"],
                                               "research_summary": "新方向", "accepts_projects": False, "name": "改名"})
     assert res.status_code == 200
-    assert res.get_json()["data"]["name"] == "陳雅婷"  # 姓名不能自己改
+    assert res.get_json()["data"]["name"] == "彭賓鈺"  # 姓名不能自己改
     hit = client.get("/api/faculty?q=提示工程").get_json()["data"][0]
-    assert hit["name"] == "陳雅婷" and hit["accepts_projects"] is False
+    assert hit["name"] == "彭賓鈺" and hit["accepts_projects"] is False
     assert client.put("/api/faculty/me", json={"expertise": "", "fields": []}).status_code == 400
     assert client.put("/api/faculty/me", json={"expertise": "x", "fields": ["不存在的領域"]}).status_code == 400
 

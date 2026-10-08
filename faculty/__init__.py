@@ -25,7 +25,7 @@ PROFILE_FIELDS = ("name", "title", "dept_name", "email", "fields", "expertise", 
 
 # 示範資料 (與校園地圖的示範老師同名)；正式上線請由後台「教師專長」維護
 DEMO_PROFILES = [
-    {"id": 1, "name": "陳雅婷", "title": "副教授", "dept_name": "資訊管理科", "email": "",
+    {"id": 1, "name": "彭賓鈺", "title": "副教授", "dept_name": "資訊管理科", "email": "",
      "fields": "資訊科技,人工智慧與資料分析", "expertise": "機器學習,資料探勘,Python,學習分析",
      "research_summary": "運用機器學習分析學生學習歷程，預測學習落後並提供早期輔導建議。", "accepts_projects": 1, "is_public": 1},
     {"id": 2, "name": "林志明", "title": "助理教授", "dept_name": "資訊管理科", "email": "",
@@ -93,7 +93,7 @@ def _decorate(profile, schedule, now):
 
 
 def _teacher_name():
-    """登入老師在專長資料中的姓名 (帳號姓名「陳雅婷 老師」去掉稱謂)"""
+    """登入老師在專長資料中的姓名 (帳號姓名「彭賓鈺 老師」去掉稱謂)"""
     return str(session.get("full_name") or "").replace("老師", "").strip()
 
 
