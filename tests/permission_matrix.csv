@@ -36,6 +36,7 @@ GET,/api/student/graduation-audit,/api/student/graduation-audit?student_id=S1120
 GET,/api/student/graduation/dashboard,/api/student/graduation/dashboard?student_id=S112001,,畢業門檻儀表板,401,403,OK,OK,OK,OK,OK,老師可查任何學生，不限導師班（與 early-warning 不一致，待討論）
 GET,/api/student/graduation/export.csv,/api/student/graduation/export.csv?student_id=S112001,,畢業門檻匯出,401,403,OK,OK,OK,OK,OK,同上
 GET,/api/teacher/class-attendance,/api/teacher/class-attendance,,【班級出缺勤】導師班出缺勤一覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班 (別班 403)；教職員、管理員可用 ?class_name= 切換班級
+GET,/api/teacher/class-overview,/api/teacher/class-overview,,【我的導師班】總覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班；學業預警遵守學生授權
 GET,/api/teacher/class-summary,/api/teacher/class-summary,,導師班級總表,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
 GET,/api/checklist/progress,/api/checklist/progress,,申辦進度查詢,OK,OK,OK,OK,OK,OK,OK,未登入回 is_authenticated=false
 POST,/api/checklist/progress,/api/checklist/progress,,勾選申辦進度,401,403*,OK,403*,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）

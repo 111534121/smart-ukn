@@ -2288,6 +2288,68 @@ def teacher_class_attendance():
         "students": students,
     }), 200
 
+@app.route("/api/teacher/class-overview", methods=["GET"])
+@role_required("老師", "教職員", "管理員")
+def teacher_class_overview():
+    """我的導師班總覽 (T16)：每位學生的出缺勤、學業預警、導生關懷一次看完
+    班導只能看自己的導師班；教職員/管理員可用 ?class_name= 切換
+    學業預警遵守個資授權：學生沒有授權導師查看時只回傳「未授權」"""
+    from campus import counseling
+    role = session.get("role")
+    class_name = request.args.get("class_name") or session.get("advised_class")
+    if role == "老師" and class_name != session.get("advised_class"):
+        return jsonify({"status": "error", "message": "老師僅能查看自己的導師班"}), 403
+    classes = [session.get("advised_class")] if role == "老師" else _list_class_names()
+    if not class_name:
+        if role == "老師":
+            return jsonify({"status": "error", "message": "您目前沒有導師班"}), 404
+        class_name = classes[0] if classes else None
+    if not class_name:
+        return jsonify({"status": "error", "message": "查無班級資料"}), 404
+
+    names = {s["student_id"]: s["full_name"] for s in list_students()}
+    ids = _get_class_student_ids(class_name)
+    hours = course_weekly_hours()
+    source = get_attendance_source()
+    records = counseling.load_records(ids)
+    students = []
+    for sid in ids:
+        att = summarize_attendance(source.list_records(sid), hours)
+        if load_privacy_settings(sid)["advisor_alert_consent"]:
+            w = compute_early_warning(sid)
+            study = {"risk": w["risk_level"], "level": w["warning_level"], "failed_credits": w["failed_credits"],
+                     "current_credits": w["current_credits"], "semester": w["semester"]}
+        else:
+            study = {"risk": "未授權", "level": "restricted"}
+        mine = [r for r in records if r["student_id"] == sid]
+        students.append({
+            "student_id": sid, "full_name": names.get(sid, sid),
+            "attendance": {"level": att["overall_level"], "absent": att["totals"]["曠課"], "late": att["totals"]["遲到"],
+                           "risk_courses": [c["course_name"] for c in att["courses"] if c["level"] != "ok"]},
+            "study": study,
+            "counseling": {"count": len(mine), "last_date": mine[0]["talk_date"] if mine else "",
+                           "pending": sum(1 for r in mine if r["follow_up"] and not r["follow_up_done"])},
+        })
+    # 需要關心的排前面：已扣考 / 三二 / 二一 / 快扣考 / 待追蹤
+    def concern(x):
+        return -(3 * (x["attendance"]["level"] == "banned") + 3 * (x["study"]["level"] == "critical")
+                 + 2 * (x["study"]["level"] == "warning") + 2 * (x["attendance"]["level"] == "warning")
+                 + x["counseling"]["pending"])
+    students.sort(key=lambda x: (concern(x), x["student_id"]))
+    return jsonify({
+        "status": "success", "class_name": class_name, "classes": classes,
+        "summary": {
+            "student_count": len(students),
+            "banned": sum(1 for x in students if x["attendance"]["level"] == "banned"),
+            "attendance_warning": sum(1 for x in students if x["attendance"]["level"] == "warning"),
+            "study_warning": sum(1 for x in students if x["study"]["level"] in ("warning", "critical")),
+            "restricted": sum(1 for x in students if x["study"]["level"] == "restricted"),
+            "not_talked": sum(1 for x in students if not x["counseling"]["count"]),
+            "pending": sum(x["counseling"]["pending"] for x in students),
+        },
+        "students": students,
+    }), 200
+
 # ==========================================
 # 9. 申辦進度保存 API (功能 3: 我的申辦進度)
 # ==========================================

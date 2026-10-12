@@ -199,8 +199,11 @@
         <!-- ======================================================== -->
         <div id="tab-home" class="tab-content space-y-6">
 
-            <!-- 主視覺輪播 -->
-            <section class="hero -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 relative overflow-hidden" aria-roledescription="carousel" aria-label="校園焦點">
+            <!-- 老師 / 教職員首頁：今天的課、今天要處理、我的導師班 (campus-features.js loadStaffHome) -->
+            <div id="staffHome" class="hidden space-y-4"></div>
+
+            <!-- 主視覺輪播 (老師、教職員不顯示) -->
+            <section id="heroSection" class="hero -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 relative overflow-hidden" aria-roledescription="carousel" aria-label="校園焦點">
                 <div id="heroTrack" class="flex transition-transform duration-700 ease-out"></div>
                 <button type="button" onclick="heroGo(-1)" class="hero-arrow left-3" aria-label="上一張">‹</button>
                 <button type="button" onclick="heroGo(1)" class="hero-arrow right-3" aria-label="下一張">›</button>
@@ -1163,6 +1166,20 @@
                     </div>
                 </div>
                 <div id="myScheduleBody"></div>
+            </section>
+        </div>
+
+        <!-- 我的導師班：總覽 (campus-features.js loadClassOverview) -->
+        <div id="tab-myclass" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900" id="classOverviewTitle">我的導師班</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">需要關心的學生排在最前面；點學生名字可以一次看他的出缺勤、成績和晤談紀錄。</p>
+                    </div>
+                    <select id="classOverviewPicker" onchange="loadClassOverview(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white self-start sm:self-auto"></select>
+                </div>
+                <div id="classOverviewBody"></div>
             </section>
         </div>
 

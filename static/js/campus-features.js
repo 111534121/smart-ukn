@@ -25,6 +25,7 @@ function campusFeaturesInit() {
         'tab-myschedule': loadMySchedule,
         'tab-classattend': () => loadClassAttendance(),
         'tab-counseling': () => loadCounseling(),
+        'tab-myclass': () => loadClassOverview(),
     });
     setupRuleSuggest();
     loadRulesTree();
@@ -1064,4 +1065,188 @@ async function deleteCounseling(id) {
     if (!confirm('確定刪除這筆紀錄？刪除後無法復原。')) return;
     try { await api(`/api/campus/counseling/${id}`, { method: 'DELETE' }); toast('已刪除'); loadCounseling(); }
     catch (e) { toast(e.message, 'error'); }
+}
+
+// =====================================================================
+// T16 我的導師班 (總覽)：GET /api/teacher/class-overview
+// =====================================================================
+
+const STUDY_TONE = { '三二預警': 'bg-rose-600 text-white', '二一預警': 'bg-amber-500 text-white', '注意': 'bg-sky-100 text-sky-800',
+    '正常': 'bg-emerald-100 text-emerald-800', '未授權': 'bg-slate-100 text-slate-500' };
+let classOverviewData = null;
+let overviewFilter = '';
+
+async function loadClassOverview(className) {
+    const body = document.getElementById('classOverviewBody');
+    body.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
+    try {
+        const d = await api('/api/teacher/class-overview' + (className ? `?class_name=${encodeURIComponent(className)}` : ''));
+        classOverviewData = d;
+        document.getElementById('classOverviewTitle').textContent = `${currentUser.role === '老師' ? '我的導師班' : '班級總覽'}：${d.class_name}`;
+        const picker = document.getElementById('classOverviewPicker');
+        picker.classList.toggle('hidden', d.classes.length <= 1);
+        picker.innerHTML = d.classes.map(c => `<option ${c === d.class_name ? 'selected' : ''}>${esc(c)}</option>`).join('');
+        renderClassOverview();
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+const OVERVIEW_FILTERS = {
+    '': () => true,
+    attend: x => x.attendance.level !== 'ok',
+    study: x => ['warning', 'critical'].includes(x.study.level),
+    talk: x => !x.counseling.count,
+    pending: x => x.counseling.pending > 0,
+};
+
+function renderClassOverview() {
+    const d = classOverviewData, s = d.summary;
+    const tile = (key, label, value, sub, tone) => `<button type="button" onclick="overviewFilter = overviewFilter === '${key}' ? '' : '${key}'; renderClassOverview()"
+        class="text-left rounded border p-4 ${tone} ${overviewFilter === key ? 'ring-2 ring-ukn-700 ring-offset-1' : 'hover:shadow'}">
+        <div class="text-sm font-semibold">${label}</div><div class="text-2xl font-bold mt-1">${value}</div><div class="text-xs mt-0.5 opacity-80">${sub}</div></button>`;
+    const rows = d.students.filter(OVERVIEW_FILTERS[overviewFilter]);
+    const attendBadge = a => a.level === 'ok'
+        ? `<span class="text-slate-500">${a.absent ? `曠課 ${a.absent}` : '正常'}</span>`
+        : `<span class="inline-block text-sm font-bold rounded px-2 py-0.5 ${ATTEND_LEVEL[a.level].badge}">${ATTEND_LEVEL[a.level].text}</span>`;
+    document.getElementById('classOverviewBody').innerHTML = `
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            ${tile('attend', '出缺勤要注意', `${s.banned + s.attendance_warning} 人`, `已扣考 ${s.banned} · 快扣考 ${s.attendance_warning}`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+            ${tile('study', '學業預警', `${s.study_warning} 人`, s.restricted ? `${s.restricted} 位未授權導師查看` : '二一、三二預警', s.study_warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
+            ${tile('talk', '這學期還沒談過', `${s.not_talked} 人`, `全班 ${s.student_count} 人`, 'border-slate-200 text-slate-700')}
+            ${tile('pending', '待追蹤', `${s.pending} 件`, '晤談後要追蹤的事', s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+        </div>
+        <div class="text-sm text-slate-500">顯示 ${rows.length} / ${d.students.length} 位學生${overviewFilter ? '（再點一次上方格子取消篩選）' : ''}</div>
+        ${rows.length ? `<div class="overflow-x-auto"><table class="w-full min-w-[680px] border-collapse text-left text-sm">
+            <thead><tr class="bg-slate-50 text-slate-600">
+                <th class="p-2 border border-slate-200">學生</th><th class="p-2 border border-slate-200 whitespace-nowrap">出缺勤</th>
+                <th class="p-2 border border-slate-200 whitespace-nowrap">學業</th><th class="p-2 border border-slate-200 whitespace-nowrap">導生關懷</th><th class="p-2 border border-slate-200"></th></tr></thead>
+            <tbody>${rows.map(x => `<tr>
+                <td class="p-2 border border-slate-200"><button type="button" onclick="openStudentCard('${esc(x.student_id)}')" class="font-semibold text-ukn-800 hover:underline">${esc(x.full_name)}</button>
+                    <div class="text-xs text-slate-500">${esc(x.student_id)}</div></td>
+                <td class="p-2 border border-slate-200">${attendBadge(x.attendance)}${x.attendance.risk_courses.length ? `<div class="text-xs text-slate-500 mt-0.5">${x.attendance.risk_courses.map(esc).join('、')}</div>` : ''}</td>
+                <td class="p-2 border border-slate-200"><span class="inline-block text-sm font-bold rounded px-2 py-0.5 ${STUDY_TONE[x.study.risk] || STUDY_TONE['正常']}">${esc(x.study.risk)}</span></td>
+                <td class="p-2 border border-slate-200">${x.counseling.count ? `談過 ${x.counseling.count} 次 · ${mmdd(x.counseling.last_date)}` : '<span class="text-amber-800">還沒談過</span>'}
+                    ${x.counseling.pending ? `<div class="text-xs font-bold text-rose-700">待追蹤 ${x.counseling.pending}</div>` : ''}</td>
+                <td class="p-2 border border-slate-200 text-right whitespace-nowrap">
+                    <button type="button" onclick="openStudentCard('${esc(x.student_id)}')" class="text-sm font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">查看</button>
+                    <button type="button" onclick="counselFor('${esc(x.student_id)}', '${x.attendance.level !== 'ok' ? '出缺勤' : ['warning', 'critical'].includes(x.study.level) ? '學業' : ''}')" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
+            </tr>`).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500 rounded border border-dashed border-slate-300 p-6 text-center">沒有符合的學生</div>'}`;
+}
+
+// 從總覽或學生卡片記一筆：跳到關懷紀錄並帶入學生
+function counselFor(studentId, topic) {
+    Object.assign(counselState, { className: classOverviewData?.class_name || counselState.className, student: studentId, editing: null, presetTopic: topic || '' });
+    closeModal();
+    switchTab('tab-counseling');
+    loadCounseling(counselState.className);
+}
+
+// 學生卡片：出缺勤、學業預警、晤談紀錄一次看
+async function openStudentCard(studentId) {
+    const x = classOverviewData.students.find(s => s.student_id === studentId);
+    openModal(`${x.full_name}（${x.student_id}）`, '<div class="text-sm text-slate-500">讀取中…</div>', true);
+    const q = `class_name=${encodeURIComponent(classOverviewData.class_name)}`;
+    const [att, warn, talk] = await Promise.all([
+        api(`/api/teacher/class-attendance?${q}`).catch(() => null),
+        x.study.level === 'restricted' ? Promise.resolve(null) : fetch(`/api/student/early-warning?student_id=${encodeURIComponent(studentId)}`).then(r => r.json()).catch(() => null),
+        api(`/api/campus/counseling?${q}&student_id=${encodeURIComponent(studentId)}`).catch(() => null),
+    ]);
+    const a = att && att.students.find(s => s.student_id === studentId);
+    const section = (title, html) => `<section class="space-y-2"><h3 class="font-bold text-slate-900">${title}</h3>${html}</section>`;
+    const attendHtml = a ? `<div class="flex flex-wrap gap-2 text-sm">
+            <span class="font-bold rounded px-2 py-0.5 ${ATTEND_LEVEL[a.level].badge}">${ATTEND_LEVEL[a.level].text}</span>
+            <span>曠課 ${a.totals['曠課']}</span><span>遲到 ${a.totals['遲到']}</span><span>病假 ${a.totals['病假']}</span>
+            ${a.recent_absent ? `<span class="text-rose-700">近 7 天曠課 ${a.recent_absent}</span>` : ''}</div>
+        ${a.risk_courses.map(c => `<div class="text-sm"><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('')}`
+        : '<div class="text-sm text-slate-500">沒有出缺勤資料</div>';
+    const studyHtml = x.study.level === 'restricted'
+        ? '<div class="text-sm text-slate-500">學生沒有授權導師查看學業預警。</div>'
+        : (warn && warn.status === 'success' ? `<div class="text-sm"><span class="font-bold rounded px-2 py-0.5 ${STUDY_TONE[warn.risk_level] || STUDY_TONE['正常']}">${esc(warn.risk_level)}</span>
+            ${warn.semester ? `<span class="ml-1">${esc(warn.semester)} 學期不及格 ${warn.failed_credits} / ${warn.current_credits} 學分</span>` : ''}</div>
+            ${(warn.warning_details || []).map(t => `<div class="text-sm text-slate-700">• ${esc(t)}</div>`).join('')}` : '<div class="text-sm text-slate-500">無法取得學業資料</div>');
+    const talks = talk ? talk.data : [];
+    const talkHtml = talks.length ? talks.slice(0, 5).map(r => `<div class="rounded border border-slate-200 px-3 py-2 text-sm">
+            <div class="text-xs text-slate-500">${esc(r.talk_date)} · ${esc(r.method)} · ${esc(r.topic)}${r.follow_up && !r.follow_up_done ? ' · <span class="text-rose-700 font-bold">待追蹤</span>' : ''}</div>
+            <div class="text-slate-700 whitespace-pre-line">${esc(r.content)}</div></div>`).join('') : '<div class="text-sm text-amber-800">這學期還沒談過</div>';
+    document.getElementById('uiModalBody').innerHTML = `<div class="space-y-5">
+        ${section('🕒 出缺勤', attendHtml)}
+        ${section('📚 學業', studyHtml)}
+        ${section(`📝 晤談紀錄${talks.length > 5 ? `（最近 5 筆，共 ${talks.length} 筆）` : ''}`, talkHtml)}
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="counselFor('${esc(studentId)}', '')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">📝 記一筆晤談</button>
+        </div></div>`;
+}
+
+// =====================================================================
+// T16 老師 / 教職員首頁：今天的課、今天要處理、我的導師班 (取代學生用的輪播)
+// =====================================================================
+
+const ALERT_TILES = [
+    { type: '請假', icon: '📝', label: '待審假單', goto: 'tab-home', anchor: 'homeLeaveReview' },
+    { type: '證照', icon: '🏅', label: '待審證照', goto: 'tab-certs' },
+    { type: '預警', icon: '⚠️', label: '學業預警', goto: 'tab-myclass' },
+    { type: '教室借用', icon: '🔑', label: '待審教室借用', goto: '/admin' },
+    { type: '宿舍', icon: '🏢', label: '待審宿舍申請', goto: 'tab-services' },
+];
+
+async function loadStaffHome() {
+    const box = document.getElementById('staffHome');
+    document.getElementById('heroSection')?.classList.add('hidden');
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
+    const isTeacher = currentUser.role === '老師';
+    const [teachers, alerts, overview] = await Promise.all([
+        isTeacher ? api('/api/campus/teachers').catch(() => null) : Promise.resolve(null),
+        api('/api/staff/alerts').catch(() => ({ data: [] })),
+        api('/api/teacher/class-overview').catch(() => null),
+    ]);
+    const parts = [];
+
+    // 1. 今天的課
+    if (isTeacher && teachers) {
+        const me = teachers.data.find(t => t.name === currentUser.full_name.replace(/\s*老師$/, ''));
+        if (me) {
+            const today = new Date().getDay() || 7;
+            const per = teachers.periods;
+            const hm = new Date().toTimeString().slice(0, 5);
+            const list = me.timetable.filter(c => c.weekday === today).sort((a, b) => a.period_start - b.period_start);
+            const start = c => per[c.period_start][0], end = c => per[c.period_end][1];
+            const now = list.find(c => start(c) <= hm && hm <= end(c));
+            const next = list.find(c => start(c) > hm);
+            const chip = (c, tag) => `<div class="rounded border px-3 py-2 ${tag === '現在' ? 'border-rose-300 bg-rose-50' : tag === '下一堂' ? 'border-ukn-300 bg-ukn-50' : 'border-slate-200'} ${end(c) < hm ? 'opacity-50' : ''}">
+                <div class="text-xs text-slate-500">${tag ? `<b class="${tag === '現在' ? 'text-rose-700' : 'text-ukn-800'}">${tag}</b> · ` : ''}${start(c)}–${end(c)}</div>
+                <div class="font-bold text-slate-900">${esc(c.course_name)}</div><div class="text-sm text-slate-600">${esc(c.class_name)} · ${esc(c.classroom)}</div></div>`;
+            parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
+                <div class="flex items-end justify-between gap-2"><h2 class="ukn-title text-lg font-bold text-slate-900">今天的課 · 週${WEEKDAY_TEXT[today]}</h2>
+                    <button type="button" onclick="switchTab('tab-myschedule')" class="text-sm text-ukn-700 hover:underline">整週課表 ➔</button></div>
+                ${list.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">${list.map(c => chip(c, c === now ? '現在' : c === next ? '下一堂' : '')).join('')}</div>`
+                    : `<div class="text-sm text-slate-600">今天沒有課。${me.office_hours.length ? `Office Hour：${me.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')} · ${esc(me.office)}` : ''}</div>`}
+            </section>`);
+        }
+    }
+
+    // 2. 今天要處理
+    const items = alerts.data || [];
+    const tiles = ALERT_TILES.map(t => ({ ...t, n: items.filter(a => a.type === t.type).length }))
+        .filter(t => t.n || (isTeacher ? ['請假', '證照', '預警'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
+    const go = t => t.goto.startsWith('/') ? `window.open('${t.goto}', '_blank')`
+        : `switchTab('${t.goto}')${t.anchor ? `; document.getElementById('${t.anchor}')?.scrollIntoView({ behavior: 'smooth' })` : ''}`;
+    parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
+        <h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>
+        <div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
+            class="text-left rounded border p-4 hover:shadow ${t.n ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-500'}">
+            <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>
+        ${items.length ? '' : '<div class="text-sm text-slate-500">目前沒有待處理的事項 🎉</div>'}
+    </section>`);
+
+    // 3. 我的導師班
+    if (overview && overview.status === 'success' && isTeacher) {
+        const s = overview.summary;
+        parts.push(`<section class="bg-white rounded border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div><h2 class="ukn-title text-lg font-bold text-slate-900">🏫 我的導師班：${esc(overview.class_name)}</h2>
+                <div class="text-sm text-slate-700 mt-1">${s.student_count} 人 · 出缺勤要注意 <b class="${s.banned + s.attendance_warning ? 'text-rose-700' : ''}">${s.banned + s.attendance_warning}</b>
+                    · 學業預警 <b class="${s.study_warning ? 'text-amber-800' : ''}">${s.study_warning}</b> · 待追蹤 <b>${s.pending}</b> · 這學期還沒談過 <b>${s.not_talked}</b></div></div>
+            <button type="button" onclick="switchTab('tab-myclass')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm whitespace-nowrap self-start sm:self-auto">打開我的導師班 ➔</button>
+        </section>`);
+    }
+    box.innerHTML = parts.join('');
 }

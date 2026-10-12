@@ -5,13 +5,15 @@
 const FEATURE_GROUPS = ['學習', '校務', '校園生活', '社群'];
 const FEATURES = [
     { key: 'my-schedule', tab: 'tab-myschedule', name: '我的課表', icon: '🗓️', group: '學習', desc: '本週授課、Office Hour 與現在狀態', onlyRoles: ['老師'] },
-    { key: 'class-attendance', tab: 'tab-classattend', name: '班級出缺勤', icon: '🕒', group: '學習', desc: '導師班誰曠課、誰快扣考，一鍵提醒', onlyRoles: ['老師', '教職員', '管理員'] },
-    { key: 'counseling', tab: 'tab-counseling', name: '導生關懷紀錄', icon: '📝', group: '學習', desc: '記下和學生談了什麼、要追蹤什麼', onlyRoles: ['老師', '教職員', '管理員'] },
+    { key: 'my-class', tab: 'tab-myclass', name: '我的導師班', icon: '🏫', group: '學習', desc: '全班出缺勤、學業預警、關懷紀錄一次看', onlyRoles: ['老師', '教職員', '管理員'] },
+    // 下面四項併入「我的導師班」(上方分頁切換)，老師端選單不再個別列出 (group: '導師班' 不在 FEATURE_GROUPS 裡)
+    { key: 'class-attendance', tab: 'tab-classattend', name: '班級出缺勤', icon: '🕒', group: '導師班', desc: '導師班誰曠課、誰快扣考，一鍵提醒', onlyRoles: ['老師', '教職員', '管理員'] },
+    { key: 'counseling', tab: 'tab-counseling', name: '導生關懷紀錄', icon: '📝', group: '導師班', desc: '記下和學生談了什麼、要追蹤什麼', onlyRoles: ['老師', '教職員', '管理員'] },
     { key: 'course', tab: 'tab-course', name: '修業進度與擋修', icon: '📚', group: '學習', desc: '已修學分、未通過科目與擋修連帶影響', staff: false },
     { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修', staff: false },
-    { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看', staff: { name: '導師班級總表', desc: '全班學分與證照進度、依學號查詢', otherStaffName: '畢業門檻查詢' } },
+    { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看', staff: { group: '導師班', name: '導師班級總表', desc: '全班學分與證照進度、依學號查詢', otherStaffName: '畢業門檻查詢' } },
     { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認', staff: { name: '證照審核', desc: '審核學生上傳的證照與獎狀 (班導只看導師班)' } },
-    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權', staff: { desc: '導師班的二一、三二預警 (行政人員依學號查詢)' } },
+    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權', staff: { group: '導師班', desc: '導師班的二一、三二預警 (行政人員依學號查詢)' } },
     { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在', staff: false },
     { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
     { key: 'assistant', tab: 'tab-assistant', name: 'AI 申辦小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
@@ -581,6 +583,10 @@ function applyStaffView() {
         .map(f => (f.staff ? { ...f, ...f.staff } : f))
         .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
     FEATURES.splice(0, FEATURES.length, ...keep);
+    // 行政人員沒有導師班：同一頁叫「班級總覽」，可切換班級
+    const myClass = featureByKey('my-class');
+    if (myClass && currentUser.role !== '老師') Object.assign(myClass, { name: '班級總覽', desc: '任選班級看出缺勤、學業預警、關懷紀錄' });
+    renderClassSubnav();
     // 沒有功能的分組不顯示 (老師端「社群」只剩班級通知，已搬到「學習」)
     const groups = FEATURE_GROUPS.filter(g => FEATURES.some(f => f.group === g));
     FEATURE_GROUPS.splice(0, FEATURE_GROUPS.length, ...groups);
@@ -612,10 +618,28 @@ function campusInit() {
         bell.title = '待辦通知';
         bell.onclick = openStaffAlerts;
         pollStaffAlerts();
+        if (typeof loadStaffHome === 'function') loadStaffHome();
         setInterval(() => { if (document.visibilityState === 'visible') pollStaffAlerts(); }, NOTIFY_POLL_MS);
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
     loadHomeCertReminder();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
+}
+
+// ---------- 我的導師班：總覽、出缺勤、學業預警、關懷紀錄、學分與證照 共用上方分頁列 ----------
+const CLASS_SUBTABS = [['tab-myclass', '總覽'], ['tab-classattend', '出缺勤'], ['tab-warning', '學業預警'],
+    ['tab-counseling', '關懷紀錄'], ['tab-graduation', '學分與證照']];
+
+function renderClassSubnav() {
+    CLASS_SUBTABS.forEach(([tab]) => {
+        const host = document.getElementById(tab);
+        if (!host || host.querySelector('.class-subnav')) return;
+        const nav = document.createElement('nav');
+        nav.className = 'class-subnav flex flex-wrap gap-1 border-b border-slate-200';
+        nav.setAttribute('aria-label', '我的導師班');
+        nav.innerHTML = CLASS_SUBTABS.map(([t, label]) => `<button type="button" onclick="switchTab('${t}')"
+            class="px-4 py-2 text-sm font-semibold border-b-2 -mb-px ${t === tab ? 'border-ukn-800 text-ukn-900' : 'border-transparent text-slate-500 hover:text-ukn-800'}">${label}</button>`).join('');
+        host.prepend(nav);
+    });
 }
