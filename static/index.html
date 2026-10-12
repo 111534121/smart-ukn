@@ -59,6 +59,8 @@
         /* 字級：Tailwind 用 rem，改根元素字級整頁跟著放大 */
         html[data-font="large"] { font-size: 18px; }
         html[data-font="xlarge"] { font-size: 20px; }
+        /* 字放大後上方工具列放不下：校園地圖、交通、常用系統先收起 (大選單裡都有) */
+        html[data-font="large"] .ukn-topbar .topbar-quick, html[data-font="xlarge"] .ukn-topbar .topbar-quick { display: none; }
         /* 原本寫死 9~11px 的小字改成跟著字級縮放，且最小 12px，長輩老師也看得清楚 */
         .text-\[9px\], .text-\[10px\] { font-size: 0.75rem !important; }
         .text-\[11px\], .text-\[12px\] { font-size: 0.8125rem !important; }
@@ -138,7 +140,7 @@
         <!-- 上方工具列：日期週次、天氣、快速連結、帳號 -->
         <div class="ukn-topbar text-[12px]">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 h-9">
-                <div class="flex items-center gap-3 min-w-0">
+                <div class="flex items-center gap-3 min-w-0 overflow-hidden">
                     <span id="radarWeekText" class="whitespace-nowrap">本學期</span>
                     <button type="button" onclick="switchTab('tab-traffic')" id="topbarWeather" class="hidden sm:inline-flex items-center gap-1 hover:underline whitespace-nowrap" title="查看天氣與交通"></button>
                     <button type="button" onclick="openDeptScopeDialog()" id="deptScopeBtn" class="inline-flex items-center gap-1 hover:underline whitespace-nowrap min-w-0" title="設定我的科系與顯示範圍">
@@ -146,9 +148,9 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-                    <button type="button" onclick="switchTab('tab-map')" class="hidden md:inline hover:underline">校園地圖</button>
-                    <button type="button" onclick="switchTab('tab-traffic')" class="hidden md:inline hover:underline">交通資訊</button>
-                    <button type="button" onclick="switchTab('tab-links')" class="hidden md:inline hover:underline">常用系統</button>
+                    <button type="button" onclick="switchTab('tab-map')" class="topbar-quick hidden md:inline hover:underline">校園地圖</button>
+                    <button type="button" onclick="switchTab('tab-traffic')" class="topbar-quick hidden md:inline hover:underline">交通資訊</button>
+                    <button type="button" onclick="switchTab('tab-links')" class="topbar-quick hidden md:inline hover:underline">常用系統</button>
                     <button type="button" id="fontSizeBtn" onclick="cycleFontSize()" class="hover:underline whitespace-nowrap" title="調整字體大小">字級：<span id="fontSizeText">標準</span></button>
                     <button type="button" id="notifyBellBtn" onclick="switchTab('tab-notices')" class="hidden relative hover:underline" title="班級通知">
                         🔔<span id="notifyBellCount" class="hidden absolute -top-1.5 -right-2.5 bg-accent-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 leading-4 text-center"></span>
@@ -164,7 +166,7 @@
                 <a href="#home" onclick="switchTab('tab-home'); return false;" class="flex items-center gap-3 min-w-0">
                     <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
                     <span class="hidden md:block border-l border-slate-300 pl-3 leading-tight">
-                        <span class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
+                        <span id="siteNameText" class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
                         <span class="block text-[11px] text-slate-500 mt-0.5">UKN Campus Services</span>
                     </span>
                 </a>
@@ -1236,7 +1238,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
             <div class="col-span-2 md:col-span-1 space-y-2">
                 <img src="/img/ukn-logo.png" alt="康寧大學" class="h-10 w-auto bg-white rounded px-2 py-1">
-                <p class="font-bold">學生學習與校務服務系統</p>
+                <p id="siteNameFooter" class="font-bold">學生學習與校務服務系統</p>
                 <p class="text-white/70 text-xs leading-6">114 臺北市內湖區康寧路三段75巷137號<br>電話 (02)2632-1181 ｜ 傳真 (02)2632-8744</p>
                 <button type="button" onclick="startSiteTour()" class="text-xs text-white/80 hover:text-white underline">🧭 重新觀看網站導覽</button>
             </div>
@@ -1802,6 +1804,7 @@
                         document.getElementById('adminEntryLink').classList.remove('hidden');
                     }
                     document.getElementById('loginLink').textContent = '切換帳號';
+                    applySiteName();
                     document.getElementById('logoutBtn').classList.remove('hidden');
                 } else {
                     document.getElementById('userFullName').textContent = '訪客';
@@ -2818,6 +2821,16 @@
         showFontSize();
     }
     showFontSize();
+
+    // 系統名稱：老師、教職員、管理員看到「教職員校務服務系統」，學生、家長、訪客看到「學生學習與校務服務系統」
+    function siteName() {
+        return ['老師', '教職員', '管理員'].includes(currentUser && currentUser.role) ? '教職員校務服務系統' : '學生學習與校務服務系統';
+    }
+    function applySiteName() {
+        const name = siteName();
+        ['siteNameText', 'siteNameFooter'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name; });
+        document.title = document.title.replace(/(學生學習與校務服務系統|教職員校務服務系統)/, name);
+    }
 </script>
 </body>
 

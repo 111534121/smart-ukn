@@ -191,7 +191,7 @@ function switchTab(tabId, { updateHash = true } = {}) {
         const f = featureByTab(tabId);
         history.replaceState(null, '', f ? `#${f.key}` : location.pathname);
     }
-    document.title = `${featureByTab(tabId)?.name || '首頁'} - 康寧大學 學生學習與校務服務系統`;
+    document.title = `${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
     if (tabLoaders[tabId] && !loadedTabs.has(tabId)) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
