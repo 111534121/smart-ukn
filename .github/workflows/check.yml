@@ -1,0 +1,27 @@
+# GitHub 自動檢查 (T11)：每次 push 或開 Pull Request，自動跑 python check_all.py
+# 結果顯示在 Pull Request 頁面下方：綠色 ✓ 全部通過；紅色 ✗ 點「Details」看哪一項沒過
+name: 一鍵檢查
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 要比對 origin/main，檢查 sw.js 快取版本有沒有更新
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: 安裝套件
+        run: pip install -r requirements-dev.txt
+      - name: 一鍵檢查
+        run: python check_all.py --no-report

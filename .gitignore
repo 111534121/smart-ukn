@@ -5,3 +5,6 @@ data/
 .pytest_cache/
 static/forms/
 .env
+
+# check_all.py 每次產生的檢查報告 (只留在自己電腦)
+evidence/check_reports/
