@@ -130,7 +130,15 @@ def init_database():
               `file_path` varchar(255) DEFAULT NULL,
               `file_name` varchar(255) DEFAULT NULL,
               `file_type` varchar(20) DEFAULT NULL,
-              `issue_date` date NOT NULL,
+              `issue_date` date DEFAULT NULL,
+              `kind` enum('證照','競賽','作品') NOT NULL DEFAULT '證照' COMMENT '學生上傳的類別',
+              `review_status` enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' COMMENT '班導審核；只有已通過的證照算進畢業門檻',
+              `reviewer` varchar(50) DEFAULT NULL,
+              `review_note` varchar(200) DEFAULT NULL COMMENT '退回原因',
+              `reviewed_at` timestamp NULL DEFAULT NULL,
+              `award` varchar(60) DEFAULT NULL COMMENT '競賽名次',
+              `description` varchar(500) DEFAULT NULL,
+              `attachments` text DEFAULT NULL COMMENT '上傳的證書 / 獎狀檔案 (JSON 陣列：url、name、type)',
               `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
               PRIMARY KEY (`cert_id`),
               KEY `fk_cert_student` (`student_id`),
@@ -371,8 +379,12 @@ def init_database():
               `end_date` date NOT NULL,
               `category` varchar(50) NOT NULL DEFAULT '教務',
               `related_checklist_id` int(11) DEFAULT NULL,
+              `owner_key` varchar(50) DEFAULT NULL COMMENT 'NULL = 全校校曆；有值 = 個人行程 (學號或 user:帳號)',
+              `note` varchar(300) DEFAULT NULL COMMENT '個人行程備註',
+              `source` varchar(60) DEFAULT NULL COMMENT '從哪則公告加入 (避免重複加入)',
               PRIMARY KEY (`id`),
               KEY `idx_cal_dates` (`start_date`, `end_date`),
+              KEY `idx_cal_owner` (`owner_key`),
               KEY `fk_cal_checklist` (`related_checklist_id`),
               CONSTRAINT `fk_cal_checklist` FOREIGN KEY (`related_checklist_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE SET NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -555,6 +567,7 @@ def init_database():
               `username` varchar(50) NOT NULL,
               `dept_id` varchar(20) DEFAULT NULL,
               `content_scope` enum('all','mine') NOT NULL DEFAULT 'all' COMMENT 'mine = 只看全校公開與本科資訊',
+              `pinned_features` varchar(500) DEFAULT NULL COMMENT '首頁置頂的功能代碼，逗號分隔；NULL = 用預設',
               `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
               PRIMARY KEY (`username`),
               KEY `fk_pref_dept` (`dept_id`),
@@ -736,6 +749,49 @@ def init_database():
                 CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
         """)
+
+        # T10：證照上傳與班導審核改存在 certificates (原本在 campus_store.json)；舊資料庫補欄位
+        cursor.execute("ALTER TABLE `certificates` MODIFY `issue_date` date DEFAULT NULL")
+        for column, definition in (
+            ("kind", "enum('證照','競賽','作品') NOT NULL DEFAULT '證照' AFTER `issue_date`"),
+            ("review_status", "enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' AFTER `kind`"),
+            ("reviewer", "varchar(50) DEFAULT NULL AFTER `review_status`"),
+            ("review_note", "varchar(200) DEFAULT NULL AFTER `reviewer`"),
+            ("reviewed_at", "timestamp NULL DEFAULT NULL AFTER `review_note`"),
+            ("award", "varchar(60) DEFAULT NULL AFTER `reviewed_at`"),
+            ("description", "varchar(500) DEFAULT NULL AFTER `award`"),
+            ("attachments", "text DEFAULT NULL AFTER `description`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `certificates` ADD COLUMN `{column}` {definition}")
+                print(f"✅ certificates 已新增 {column} 欄位")
+
+        # T10：常用功能置頂改存在 user_preferences (原本在 campus_store.json)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_preferences' AND COLUMN_NAME = 'pinned_features'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `pinned_features` varchar(500) DEFAULT NULL AFTER `content_scope`")
+            print("✅ user_preferences 已新增 pinned_features 欄位")
+
+        # T10：個人行程改存在 academic_calendar (原本在 campus_store.json)；owner_key 有值的是個人行程
+        for column, definition in (
+            ("owner_key", "varchar(50) DEFAULT NULL AFTER `related_checklist_id`"),
+            ("note", "varchar(300) DEFAULT NULL AFTER `owner_key`"),
+            ("source", "varchar(60) DEFAULT NULL AFTER `note`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'academic_calendar' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `academic_calendar` ADD COLUMN `{column}` {definition}")
+                print(f"✅ academic_calendar 已新增 {column} 欄位")
 
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
         for table in ("competitions", "application_progress", "friction_reports"):

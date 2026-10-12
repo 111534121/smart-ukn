@@ -1,7 +1,14 @@
 """證照、比賽獎狀與作品集上傳：學生上傳 → 班導確認後才算數 → 同年級持有人數統計。
 
-通過審核的證照會同步加入畢業門檻儀表板使用的證照資料 (deps.certificates)。
+資料存放 (T10)：
+- MySQL 的 certificates 已有 review_status 欄位 (執行 init_db.py) → 上傳與審核都存在 certificates 表，
+  畢業門檻直接讀同一張表 (只算 kind='證照' 且 review_status='已通過')
+- 連不上 MySQL 或還沒補欄位 → 退回 data/campus_store.json (示範模式)，
+  通過審核的證照同步加入記憶體的 deps.certificates
+- 第一次連上 MySQL 時，自動把 campus_store.json 裡學生上傳的紀錄搬進 certificates
 """
+import json
+
 from flask import Blueprint, request
 
 from .common import deps, error, ok, require, store, next_id, now_str, current_user, find_student, all_students
@@ -38,7 +45,106 @@ def exemption_reminder(student_id):
     return reminders
 
 
+# =====================================================================
+# 資料存取：MySQL 有欄位就用 MySQL，否則用 campus_store.json
+# =====================================================================
+
+def use_db():
+    if deps.fetch_db_rows("SELECT review_status FROM certificates LIMIT 1") is None:
+        return False
+    _import_json_once()
+    return True
+
+
+def _row_to_item(r):
+    try:
+        files = json.loads(r.get("attachments") or "[]")
+    except ValueError:
+        files = []
+    return {
+        "id": r["cert_id"], "student_id": r["student_id"], "student_name": r.get("full_name") or "",
+        "class_name": r.get("class_name") or "", "admission_year": r.get("admission_year"),
+        "kind": r.get("kind") or "證照", "name": r["cert_name"], "issuer": r.get("issuing_org") or "",
+        "number": r.get("cert_number") or "", "issue_date": str(r.get("issue_date") or "")[:10],
+        "award": r.get("award") or "", "description": r.get("description") or "", "files": files,
+        "status": r.get("review_status") or "已通過", "reviewer": r.get("reviewer") or "",
+        "review_note": r.get("review_note") or "", "created_at": str(r.get("created_at") or "")[:19],
+        "reviewed_at": str(r.get("reviewed_at") or "")[:19],
+    }
+
+
+def _insert_db(item):
+    res = deps.db_execute(
+        "INSERT INTO certificates (student_id, kind, cert_name, issuing_org, cert_number, issue_date, award, description, "
+        "attachments, review_status, reviewer, review_note, reviewed_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (item["student_id"], item["kind"], item["name"], item.get("issuer") or "", item.get("number") or None,
+         item.get("issue_date") or None, item.get("award") or None, item.get("description") or None,
+         json.dumps(item.get("files") or [], ensure_ascii=False), item["status"], item.get("reviewer") or None,
+         item.get("review_note") or None, item.get("reviewed_at") or None))
+    return res["lastrowid"]
+
+
+def _import_json_once():
+    """campus_store.json 裡學生上傳的紀錄 (不含「系統匯入」的既有證照) 搬進 MySQL，只做一次"""
+    flags = store.data.setdefault("migrated_to_mysql", {})
+    if flags.get("cert_submissions"):
+        return
+    with store.lock:
+        for item in store.data.get("cert_submissions") or []:
+            if item.get("reviewer") == "系統匯入":
+                continue
+            _insert_db(item)
+        flags["cert_submissions"] = True
+        store.save()
+
+
 def submissions():
+    """全部的上傳紀錄 (含系統匯入的既有證照)，格式與 JSON 版相同"""
+    if use_db():
+        rows = deps.fetch_db_rows(
+            "SELECT c.*, s.full_name, s.class_name, s.admission_year FROM certificates c "
+            "LEFT JOIN students s ON c.student_id = s.student_id ORDER BY c.cert_id") or []
+        return [_row_to_item(r) for r in rows]
+    return _json_submissions()
+
+
+def add_submission(item):
+    """item 不含 id；回傳含 id 的完整資料"""
+    if use_db():
+        new_id = _insert_db(item)
+        return next(i for i in submissions() if i["id"] == new_id)
+    with store.lock:
+        items = _json_submissions()
+        full = {"id": next_id(items), **item}
+        items.append(full)
+        store.save()
+    return full
+
+
+def remove_submission(item_id):
+    if use_db():
+        deps.db_execute("DELETE FROM certificates WHERE cert_id = %s", (item_id,))
+        return
+    with store.lock:
+        items = _json_submissions()
+        items[:] = [i for i in items if i["id"] != item_id]
+        store.save()
+
+
+def save_review(item_id, status, reviewer, note):
+    reviewed_at = now_str()
+    if use_db():
+        deps.db_execute("UPDATE certificates SET review_status = %s, reviewer = %s, review_note = %s, reviewed_at = %s "
+                        "WHERE cert_id = %s", (status, reviewer, note or None, reviewed_at, item_id))
+        return next(i for i in submissions() if i["id"] == item_id)
+    with store.lock:
+        item = next(i for i in _json_submissions() if i["id"] == item_id)
+        item.update(status=status, reviewer=reviewer, review_note=note, reviewed_at=reviewed_at)
+        store.save()
+    return item
+
+
+def _json_submissions():
     def seed():
         # 既有證照資料視為已審核通過
         items = []
@@ -57,8 +163,8 @@ def submissions():
 
 
 def sync_to_graduation(item):
-    """審核通過的證照加入畢業門檻計算用的資料 (記憶體示範資料)"""
-    if item["kind"] != "證照" or item["status"] != "已通過":
+    """示範模式：審核通過的證照加入畢業門檻計算用的記憶體資料 (MySQL 模式讀同一張表，不需要同步)"""
+    if item["kind"] != "證照" or item["status"] != "已通過" or use_db():
         return
     if any(c["student_id"] == item["student_id"] and c["cert_name"] == item["name"] for c in deps.certificates):
         return
@@ -113,19 +219,15 @@ def create_cert():
     if kind != "作品" and not saved:
         return error("請上傳證書或獎狀的照片 / PDF，班導才能確認")
     stu = find_student(u["student_id"]) or {}
-    with store.lock:
-        items = submissions()
-        item = {
-            "id": next_id(items), "student_id": u["student_id"], "student_name": u["full_name"],
+    item = add_submission({
+            "student_id": u["student_id"], "student_name": u["full_name"],
             "class_name": stu.get("class_name") or u["class_name"], "admission_year": stu.get("admission_year"),
             "kind": kind, "name": name, "issuer": form.get("issuer", "").strip()[:80],
-            "number": form.get("number", "").strip()[:60], "issue_date": form.get("issue_date", "").strip()[:10],
+            "number": form.get("number", "").strip()[:50], "issue_date": form.get("issue_date", "").strip()[:10],
             "award": form.get("award", "").strip()[:60], "description": form.get("description", "").strip()[:500],
             "files": saved, "status": "待審核", "reviewer": "", "review_note": "", "created_at": now_str(),
             "reviewed_at": "",
-        }
-        items.append(item)
-        store.save()
+    })
     return ok(message="已送出，等班導確認後就會列入紀錄", data=item)
 
 
@@ -133,15 +235,12 @@ def create_cert():
 @require("學生")
 def delete_cert(item_id):
     u = current_user()
-    with store.lock:
-        items = submissions()
-        item = next((i for i in items if i["id"] == item_id), None)
-        if not item or item["student_id"] != u["student_id"]:
-            return error("找不到這筆資料", 404)
-        if item["status"] == "已通過":
-            return error("已通過審核的紀錄不能自行刪除，請洽班導", 403)
-        items.remove(item)
-        store.save()
+    item = next((i for i in submissions() if i["id"] == item_id), None)
+    if not item or item["student_id"] != u["student_id"]:
+        return error("找不到這筆資料", 404)
+    if item["status"] == "已通過":
+        return error("已通過審核的紀錄不能自行刪除，請洽班導", 403)
+    remove_submission(item_id)
     return ok(message="已刪除")
 
 
@@ -166,19 +265,14 @@ def review(item_id):
     note = str(data.get("note", "")).strip()[:200]
     if action == "reject" and not note:
         return error("退回時請寫下原因，學生才知道要補什麼")
-    with store.lock:
-        item = next((i for i in submissions() if i["id"] == item_id), None)
-        if not item:
-            return error("找不到這筆資料", 404)
-        if not can_review(u, item):
-            return error("只有該班導師可以確認", 403)
-        before = {"name": item.get("name"), "student_id": item.get("student_id"), "status": item["status"]}
-        item["status"] = "已通過" if action == "approve" else "已退回"
-        item["reviewer"] = u["full_name"]
-        item["review_note"] = note
-        item["reviewed_at"] = now_str()
-        store.save()
-    deps.write_audit_log("cert_submissions", item_id, "修改", before=before,
+    item = next((i for i in submissions() if i["id"] == item_id), None)
+    if not item:
+        return error("找不到這筆資料", 404)
+    if not can_review(u, item):
+        return error("只有該班導師可以確認", 403)
+    before = {"name": item.get("name"), "student_id": item.get("student_id"), "status": item["status"]}
+    item = save_review(item_id, "已通過" if action == "approve" else "已退回", u["full_name"], note)
+    deps.write_audit_log("certificates", item_id, "修改", before=before,
                          after={**before, "status": item["status"], "review_note": note})
     sync_to_graduation(item)
     return ok(message="已確認" if action == "approve" else "已退回", data=item)

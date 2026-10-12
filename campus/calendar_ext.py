@@ -211,6 +211,71 @@ def my_events_bucket(key):
     return events.setdefault(key, [])
 
 
+# ---------- 個人行程的資料存取 (T10)：academic_calendar 有 owner_key 欄位就存 MySQL ----------
+#   owner_key 為 NULL 的是全校校曆；有值的是個人行程 (學號或 user:帳號，和 user_key() 相同)
+
+def _events_db():
+    if deps.fetch_db_rows("SELECT owner_key FROM academic_calendar LIMIT 1") is None:
+        return False
+    flags = store.data.setdefault("migrated_to_mysql", {})
+    if not flags.get("my_events"):
+        with store.lock:
+            for key, items in (store.data.get("my_events") or {}).items():
+                for ev in items:
+                    _insert_event(key, ev)
+            flags["my_events"] = True
+            store.save()
+    return True
+
+
+def _insert_event(key, ev):
+    res = deps.db_execute(
+        "INSERT INTO academic_calendar (event_name, start_date, end_date, category, owner_key, note, source) "
+        "VALUES (%s, %s, %s, '個人', %s, %s, %s)",
+        (ev["title"], ev["start_date"], ev["end_date"], key, ev.get("note") or None, ev.get("source") or None))
+    return res["lastrowid"]
+
+
+def list_my_events(key):
+    """[{id, title, start_date, end_date, note, source, created_at}]"""
+    if not key:
+        return []
+    if _events_db():
+        rows = deps.fetch_db_rows("SELECT * FROM academic_calendar WHERE owner_key = %s ORDER BY start_date, id", (key,)) or []
+        return [{"id": r["id"], "title": r["event_name"], "start_date": str(r["start_date"])[:10],
+                 "end_date": str(r["end_date"])[:10], "note": r.get("note") or "", "source": r.get("source") or "",
+                 "created_at": ""} for r in rows]
+    return list(store.data.get("my_events", {}).get(key, []))
+
+
+def add_event(key, ev):
+    if _events_db():
+        return {"id": _insert_event(key, ev), **ev}
+    with store.lock:
+        bucket = my_events_bucket(key)
+        item = {"id": next_id(bucket), **ev}
+        bucket.append(item)
+        store.save()
+    return item
+
+
+def remove_event(key, event_id):
+    """回傳是否有刪到 (只能刪自己的行程)"""
+    if _events_db():
+        if not deps.fetch_db_rows("SELECT id FROM academic_calendar WHERE id = %s AND owner_key = %s", (event_id, key)):
+            return False
+        deps.db_execute("DELETE FROM academic_calendar WHERE id = %s AND owner_key = %s", (event_id, key))
+        return True
+    with store.lock:
+        bucket = my_events_bucket(key)
+        target = next((e for e in bucket if e["id"] == event_id), None)
+        if not target:
+            return False
+        bucket.remove(target)
+        store.save()
+    return True
+
+
 def _role_allowed(applies_to_role, role):
     """期限的適用身分 ('all' 或「學生,老師」這種清單)"""
     if not applies_to_role or str(applies_to_role).strip().lower() == "all":
@@ -312,7 +377,7 @@ def calendar_month():
 
     key = user_key()
     if key:
-        for ev in store.data.get("my_events", {}).get(key, []):
+        for ev in list_my_events(key):
             s, e = _to_date(ev["start_date"]), _to_date(ev["end_date"])
             if overlaps(s, e):
                 events.append({"key": f"my-{ev['id']}", "id": ev["id"], "type": "personal", "title": ev["title"],
@@ -350,28 +415,20 @@ def add_my_event():
         return error("請輸入行程名稱")
     if end < start:
         return error("結束日期不可早於開始日期")
-    with store.lock:
-        bucket = my_events_bucket(user_key())
-        source = str(data.get("source", ""))[:60]
-        if source and any(e.get("source") == source for e in bucket):
-            return error("這則公告已經加入過你的月曆了", 409)
-        item = {"id": next_id(bucket), "title": title, "start_date": start.isoformat(), "end_date": end.isoformat(),
-                "note": str(data.get("note", ""))[:300], "source": source, "created_at": now_str()}
-        bucket.append(item)
-        store.save()
+    key = user_key()
+    source = str(data.get("source", ""))[:60]
+    if source and any(e.get("source") == source for e in list_my_events(key)):
+        return error("這則公告已經加入過你的月曆了", 409)
+    item = add_event(key, {"title": title, "start_date": start.isoformat(), "end_date": end.isoformat(),
+                           "note": str(data.get("note", ""))[:300], "source": source, "created_at": now_str()})
     return ok(message="已加入我的月曆", data=item)
 
 
 @bp.route("/api/campus/my-events/<int:event_id>", methods=["DELETE"])
 @require()
 def delete_my_event(event_id):
-    with store.lock:
-        bucket = my_events_bucket(user_key())
-        target = next((e for e in bucket if e["id"] == event_id), None)
-        if not target:
-            return error("找不到這個行程", 404)
-        bucket.remove(target)
-        store.save()
+    if not remove_event(user_key(), event_id):
+        return error("找不到這個行程", 404)
     return ok(message="已從月曆移除")
 
 
@@ -406,7 +463,7 @@ def list_announcements():
         rows = []
     added = set()
     if user_key():
-        added = {e.get("source") for e in store.data.get("my_events", {}).get(user_key(), [])}
+        added = {e.get("source") for e in list_my_events(user_key())}
     items = []
     for a in rows:
         a = dict(a)

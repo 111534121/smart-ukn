@@ -1067,7 +1067,12 @@ def fetch_calendar_events():
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM academic_calendar ORDER BY start_date ASC, id ASC")
+            try:  # owner_key 有值的是個人行程 (T10)，不列入全校校曆
+                cursor.execute("SELECT * FROM academic_calendar WHERE owner_key IS NULL ORDER BY start_date ASC, id ASC")
+            except Exception:  # 還沒執行 init_db.py 補欄位的舊資料庫
+                cursor.close()
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute("SELECT * FROM academic_calendar ORDER BY start_date ASC, id ASC")
             rows = [normalize_calendar_row(r) for r in cursor.fetchall()]
             cursor.close()
             conn.close()
@@ -1181,7 +1186,7 @@ def update_or_delete_academic_calendar(event_id):
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM academic_calendar WHERE id = %s", (event_id,))
+            cursor.execute("SELECT * FROM academic_calendar WHERE id = %s AND owner_key IS NULL", (event_id,))
             before = cursor.fetchone()
             before = normalize_calendar_row(before) if before else None
             cursor.close()
@@ -1195,7 +1200,7 @@ def update_or_delete_academic_calendar(event_id):
                 )
             conn.commit()
             # UPDATE 內容未變時 rowcount 也是 0，因此另外確認資料是否存在
-            cursor.execute("SELECT COUNT(*) FROM academic_calendar WHERE id = %s", (event_id,))
+            cursor.execute("SELECT COUNT(*) FROM academic_calendar WHERE id = %s AND owner_key IS NULL", (event_id,))
             exists = cursor.fetchone()[0] > 0
             cursor.close()
             conn.close()
@@ -2051,8 +2056,15 @@ def _load_cohort(admission_year):
     certs = fetch_db_rows("""
         SELECT c.student_id, c.cert_name, c.issue_date
         FROM certificates c JOIN students s ON c.student_id = s.student_id
-        WHERE s.admission_year = %s ORDER BY c.issue_date DESC
+        WHERE s.admission_year = %s AND c.kind = '證照' AND c.review_status = '已通過'
+        ORDER BY c.issue_date DESC
     """, (admission_year,))
+    if certs is None and ids is not None:  # 還沒執行 init_db.py 補欄位 (T10) 的舊資料庫
+        certs = fetch_db_rows("""
+            SELECT c.student_id, c.cert_name, c.issue_date
+            FROM certificates c JOIN students s ON c.student_id = s.student_id
+            WHERE s.admission_year = %s ORDER BY c.issue_date DESC
+        """, (admission_year,))
     if ids is None or certs is None:
         ids = [{"student_id": s["student_id"]} for s in DEMO_STUDENTS if s["admission_year"] == admission_year]
         cohort_ids = {r["student_id"] for r in ids}

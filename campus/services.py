@@ -16,9 +16,42 @@ DEFAULT_PINNED = ["calendar", "course-plan", "rules", "notices"]
 STAFF_DEFAULT_PINNED = ["my-schedule", "notices", "graduation", "certs", "calendar"]  # 老師、教職員、管理員
 
 
+def _prefs_db():
+    """MySQL 的 user_preferences 有 pinned_features 欄位就存 MySQL (T10)；第一次使用時搬入 JSON 舊資料"""
+    if deps.fetch_db_rows("SELECT pinned_features FROM user_preferences LIMIT 1") is None:
+        return False
+    flags = store.data.setdefault("migrated_to_mysql", {})
+    if not flags.get("prefs"):
+        with store.lock:
+            for key, value in (store.data.get("prefs") or {}).items():
+                if key.startswith("user:"):
+                    names = [key[5:]]
+                else:  # 學生用學號當鍵：找出這個學號的登入帳號
+                    names = [r["username"] for r in deps.fetch_db_rows(
+                        "SELECT username FROM users WHERE student_id = %s", (key,)) or []]
+                for name in names:
+                    deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
+                                    "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
+                                    (name, ",".join(value.get("pinned") or [])))
+            flags["prefs"] = True
+            store.save()
+    return True
+
+
 @bp.route("/api/campus/prefs", methods=["GET", "PUT"])
 @require()
 def prefs():
+    u = current_user()
+    default = STAFF_DEFAULT_PINNED if u["role"] in STAFF_ROLES else DEFAULT_PINNED
+    if _prefs_db():
+        if request.method == "PUT":
+            pinned = [str(p)[:40] for p in (request.get_json(silent=True) or {}).get("pinned", [])][:12]
+            deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
+                            "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
+                            (u["username"], ",".join(pinned)))
+        rows = deps.fetch_db_rows("SELECT pinned_features FROM user_preferences WHERE username = %s", (u["username"],)) or []
+        saved = rows[0]["pinned_features"] if rows else None
+        return ok(data={"pinned": saved.split(",") if saved else ([] if saved == "" else list(default))})
     key = user_key()
     with store.lock:
         all_prefs = store.section("prefs", dict)
