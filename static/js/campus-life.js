@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面 (校務申請、校園生活與社群)：獎助學金檢核、宿舍與總務、教室 / 櫃子租借、
-// 校園地圖與老師辦公室、天氣交通、人流、科上通知。
+// 校園地圖與老師辦公室、天氣交通、人流、班級通知。
 // 依賴 campus-shell.js 與 campus-features.js 的共用函式 (api、toast、esc、statusBadge…)。
 
 // =====================================================================
@@ -551,16 +551,16 @@ async function loadCrowd() {
 }
 
 // =====================================================================
-// 科上通知
+// 班級通知
 // =====================================================================
 
 let noticeClasses = [];
 
 async function loadNotices() {
     const body = document.getElementById('noticesBody');
-    if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入後即可收到或發送科上通知。'); return; }
+    if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入後即可收到或發送班級通知。'); return; }
     if (isStaff()) return loadNoticesTeacher();
-    if (currentUser.role !== '學生') { body.innerHTML = '<div class="text-sm text-slate-500">科上通知提供學生與老師使用。</div>'; return; }
+    if (currentUser.role !== '學生') { body.innerHTML = '<div class="text-sm text-slate-500">班級通知提供學生與老師使用。</div>'; return; }
     try {
         const [cls, inbox] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/inbox')]);
         noticeClasses = cls.data;
@@ -570,12 +570,12 @@ async function loadNotices() {
                 <div class="lg:col-span-2 space-y-2">
                     <h3 class="font-bold text-slate-900">收到的通知 ${inbox.unread_count ? `<span class="text-xs text-accent-500">(${inbox.unread_count} 則未讀)</span>` : ''}</h3>
                     ${inbox.data.length ? inbox.data.map(n => `
-                        <details class="rounded border ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ontoggle="if(this.open) readNotice(${n.id}, this)">
+                        <details class="rounded border ${PRIORITY_STYLE[n.priority]?.bar || ''} ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ontoggle="if(this.open) readNotice(${n.id}, this)">
                             <summary class="cursor-pointer list-none px-4 py-3">
                                 <div class="flex items-center gap-2 flex-wrap">${n.is_read ? '' : '<span data-dot class="w-2 h-2 rounded-full bg-accent-500"></span>'}
-                                    ${n.priority !== '一般' ? statusBadge(n.priority, n.priority === '緊急' ? 'red' : 'amber') : ''}
+                                    ${priorityBadge(n.priority)}
                                     <span class="font-semibold text-slate-900">${esc(n.title)}</span></div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">${esc(n.class_name)} · ${esc(n.sender)} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}${n.whole_class ? '' : ' · 個別通知'}${n.due_date ? ` · 期限 ${mmdd(n.due_date)}` : ''}</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">${noticeTargetText(n)} · ${esc(n.sender)} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}${n.whole_class ? '' : ' · 個別通知'}${n.due_date ? ` · 期限 ${mmdd(n.due_date)}` : ''}</div>
                             </summary>
                             <div class="px-4 pb-4 text-sm text-slate-700 whitespace-pre-line">${esc(n.content)}</div>
                         </details>`).join('') : '<div class="text-sm text-slate-500">目前沒有通知。</div>'}
@@ -584,7 +584,7 @@ async function loadNotices() {
                     <div class="rounded border border-slate-200 p-4 space-y-2">
                         <h3 class="font-bold text-slate-900 text-sm">我加入的班級</h3>
                         ${joined.length ? joined.map(c => `<div class="flex items-center justify-between text-sm"><span>${esc(c.class_name)} <span class="text-[11px] text-slate-500">${c.member_count} 人</span></span>
-                            <button type="button" onclick="leaveClass('${esc(c.class_name)}')" class="text-[11px] text-slate-500 hover:text-rose-700">退出</button></div>`).join('') : '<div class="text-xs text-slate-500">尚未加入任何班級</div>'}
+                            ${c.is_own_class ? '<span class="text-[11px] text-slate-400">我的班級</span>' : `<button type="button" onclick="leaveClass('${esc(c.class_name)}')" class="text-[11px] text-slate-500 hover:text-rose-700">退出</button>`}</div>`).join('') : '<div class="text-xs text-slate-500">尚未加入任何班級</div>'}
                     </div>
                     <form onsubmit="joinClass(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
                         <h3 class="font-bold text-slate-900 text-sm">用密碼加入班級</h3>
@@ -616,12 +616,55 @@ async function leaveClass(name) {
     try { await api('/api/campus/classes/leave', { json: { class_name: name } }); loadNotices(); } catch (e) { toast(e.message, 'error'); }
 }
 
+// 通知等級：一般 (灰)、重要 (橘)、緊急 (紅)
+const PRIORITY_STYLE = {
+    '一般': { hint: '一般提醒，例如帶課本、繳回條', on: 'bg-slate-600 border-slate-600 text-white', off: 'border-slate-300 text-slate-700 hover:bg-slate-100', bar: '' },
+    '重要': { hint: '有期限要處理，例如繳交資料、報名', on: 'bg-amber-500 border-amber-500 text-white', off: 'border-amber-300 text-amber-800 hover:bg-amber-50', bar: 'border-l-4 !border-l-amber-500' },
+    '緊急': { hint: '要馬上知道，例如停課、教室臨時異動', on: 'bg-rose-600 border-rose-600 text-white', off: 'border-rose-300 text-rose-700 hover:bg-rose-50', bar: 'border-l-4 !border-l-rose-600' },
+};
+
+function priorityBadge(priority) {
+    if (priority === '緊急') return '<span class="inline-block text-[11px] font-bold rounded px-1.5 py-0.5 bg-rose-600 text-white whitespace-nowrap">🚨 緊急</span>';
+    if (priority === '重要') return '<span class="inline-block text-[11px] font-bold rounded px-1.5 py-0.5 bg-amber-500 text-white whitespace-nowrap">⚠️ 重要</span>';
+    return '';
+}
+
+function priorityPickerHtml() {
+    return `<div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-slate-600">通知等級</span>
+            ${Object.keys(PRIORITY_STYLE).map(p => `
+                <label class="cursor-pointer"><input type="radio" name="priority" value="${p}" class="sr-only" ${p === '一般' ? 'checked' : ''} onchange="pickPriority(this)">
+                    <span data-priority="${p}" class="inline-block border rounded-full px-3 py-1 text-xs font-bold ${p === '一般' ? PRIORITY_STYLE[p].on : PRIORITY_STYLE[p].off}">${p === '緊急' ? '🚨 ' : p === '重要' ? '⚠️ ' : ''}${p}</span></label>`).join('')}
+        </div>
+        <p data-priority-hint class="text-[11px] text-slate-500">${PRIORITY_STYLE['一般'].hint}</p>
+    </div>`;
+}
+
+function pickPriority(input) {
+    const form = input.form;
+    form.querySelectorAll('[data-priority]').forEach(el => {
+        const st = PRIORITY_STYLE[el.dataset.priority];
+        el.className = `inline-block border rounded-full px-3 py-1 text-xs font-bold ${el.dataset.priority === input.value ? st.on : st.off}`;
+    });
+    form.querySelector('[data-priority-hint]').textContent = PRIORITY_STYLE[input.value].hint;
+}
+
+// 通知對象說明：班級通知顯示班級；廣播顯示「課程廣播：資料庫系統概論（資管五忠）」
+function noticeTargetText(n) {
+    const type = n.target_type || '班級';
+    const label = esc(n.target_label || n.class_name || '');
+    return type === '班級' ? label : `<span class="text-ukn-800 font-semibold">${type === '全校' ? '全校廣播' : `${type}廣播：${label}`}</span>`;
+}
+
 let noticeSelectedClass = null;
+let noticeMode = 'class';      // 'class' = 班級通知；'broadcast' = 課程／科系／年級／全校廣播
+let broadcastTargets = null;
 async function loadNoticesTeacher() {
     const body = document.getElementById('noticesBody');
     try {
-        const [cls, sent] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent')]);
+        const [cls, sent, targets] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets')]);
         noticeClasses = cls.data;
+        broadcastTargets = targets.data;
         noticeSelectedClass = noticeSelectedClass || (noticeClasses.find(c => c.is_advised) || noticeClasses[0])?.class_name;
         body.innerHTML = `
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -637,13 +680,18 @@ async function loadNoticesTeacher() {
                                 <button type="button" onclick="resetClassPassword(this.form)" class="flex-1 border border-slate-300 rounded py-1.5 text-xs">重設所選班級密碼</button></div>
                         </form></details>
                 </div>
-                <div class="lg:col-span-3 space-y-4">${noticeComposeHtml()}
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="inline-flex rounded border border-slate-300 overflow-hidden text-sm" role="tablist">
+                        <button type="button" onclick="noticeMode='class'; loadNoticesTeacher()" class="px-4 py-1.5 ${noticeMode === 'class' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">發給班級</button>
+                        <button type="button" onclick="noticeMode='broadcast'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'broadcast' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">${broadcastTargets.school !== null ? '課程／全校廣播' : '課程廣播'}</button>
+                    </div>
+                    ${noticeMode === 'broadcast' ? broadcastComposeHtml() : noticeComposeHtml()}
                     <div><h3 class="font-bold text-slate-900 mb-2">已發送</h3>
                         ${sent.data.length ? `<div class="space-y-2">${sent.data.map(n => `
                             <details class="rounded border border-slate-200 px-4 py-3"><summary class="cursor-pointer list-none">
-                                <div class="flex flex-wrap items-center justify-between gap-2"><span class="font-semibold text-slate-900">${esc(n.title)}</span>
+                                <div class="flex flex-wrap items-center justify-between gap-2"><span class="flex items-center gap-2">${priorityBadge(n.priority)}<span class="font-semibold text-slate-900">${esc(n.title)}</span></span>
                                     ${statusBadge(`已讀 ${n.read_count} / ${n.total}`, n.read_count === n.total ? 'green' : 'blue')}</div>
-                                <div class="text-[11px] text-slate-500">${esc(n.class_name)} · ${n.whole_class ? '整班' : '個別通知'} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}</div></summary>
+                                <div class="text-[11px] text-slate-500">${noticeTargetText(n)} · ${n.target_type !== '班級' ? `${n.total} 位學生` : (n.whole_class ? '整班' : '個別通知')} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}</div></summary>
                                 <p class="text-sm text-slate-700 mt-2 whitespace-pre-line">${esc(n.content)}</p>
                                 ${n.unread_names.length ? `<p class="text-xs text-amber-800 mt-2">尚未讀：${n.unread_names.map(esc).join('、')}</p>` : ''}
                             </details>`).join('')}</div>` : '<div class="text-sm text-slate-500">還沒有發送紀錄。</div>'}</div>
@@ -666,13 +714,53 @@ function noticeComposeHtml() {
                 ${c.members.map(m => `<label class="flex items-center gap-1.5 text-xs"><input type="checkbox" name="recipients" value="${esc(m.student_id)}"> ${esc(m.full_name)}</label>`).join('') || '<span class="text-xs text-slate-500">班上還沒有學生</span>'}
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                <input name="title" required maxlength="80" placeholder="通知標題" class="sm:col-span-2 border border-slate-300 rounded px-3 py-2">
-                <select name="priority" class="border border-slate-300 rounded px-3 py-2 bg-white"><option>一般</option><option>重要</option><option>緊急</option></select>
+                <input name="title" required maxlength="80" placeholder="通知標題" class="sm:col-span-3 border border-slate-300 rounded px-3 py-2">
                 <input type="date" name="due_date" title="期限（選填）" class="border border-slate-300 rounded px-3 py-2">
             </div>
             <textarea name="content" required rows="3" maxlength="2000" placeholder="通知內容" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+            ${priorityPickerHtml()}
             <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">發送通知</button></div>
         </form>`;
+}
+
+// 廣播：班導只有自己任教的課程；教職員 (行政人員) 另有科系、年級、全校
+function broadcastComposeHtml() {
+    const t = broadcastTargets || { courses: [], departments: [], grades: [], school: null };
+    const opt = (type, value, text, count) => `<option value="${esc(type)}|${esc(value)}">${esc(text)} (${count} 人)</option>`;
+    const groups = [];
+    if (t.school !== null) groups.push(`<optgroup label="全校">${opt('全校', '', '全校學生', t.school)}</optgroup>`);
+    if (t.departments.length) groups.push(`<optgroup label="科系">${t.departments.map(d => opt('科系', d.dept_id, d.dept_name, d.count)).join('')}</optgroup>`);
+    if (t.grades.length) groups.push(`<optgroup label="年級">${t.grades.map(g => opt('年級', g.year, g.label, g.count)).join('')}</optgroup>`);
+    if (t.courses.length) groups.push(`<optgroup label="課程">${t.courses.map(c => opt('課程', c.course_name, `${c.course_name}${c.classes.length ? `（${c.classes.join('、')}）` : ''}`, c.count)).join('')}</optgroup>`);
+    if (!groups.length) return '<div class="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">課表上沒有您任教的課程，目前無法使用課程廣播；導師班請用「班級通知」。</div>';
+    return `
+        <form onsubmit="sendBroadcast(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-3 text-sm">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="font-bold text-slate-900">廣播給</span>
+                <select name="target" class="flex-1 min-w-[12rem] border border-slate-300 rounded px-3 py-2 bg-white">${groups.join('')}</select>
+            </div>
+            <p class="text-[11px] text-slate-500">${t.school !== null ? '可廣播給任何課程、科系、年級或全校。' : '只列出課表上您任教的課程，修課學生都會收到。'}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <input name="title" required maxlength="80" placeholder="通知標題" class="sm:col-span-3 border border-slate-300 rounded px-3 py-2">
+                <input type="date" name="due_date" title="期限（選填）" class="border border-slate-300 rounded px-3 py-2">
+            </div>
+            <textarea name="content" required rows="3" maxlength="2000" placeholder="通知內容" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+            ${priorityPickerHtml()}
+            <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">發送廣播</button></div>
+        </form>`;
+}
+
+async function sendBroadcast(event) {
+    event.preventDefault();
+    const fd = new FormData(event.target);
+    const [target_type, ...rest] = String(fd.get('target') || '').split('|');
+    const option = event.target.target.selectedOptions[0];
+    if (target_type === '全校' && !confirm(`確定要發給${option ? option.textContent : '全校學生'}？`)) return;
+    try {
+        const r = await api('/api/campus/broadcast', { json: { target_type, target: rest.join('|'), title: fd.get('title'), content: fd.get('content'), priority: fd.get('priority'), due_date: fd.get('due_date') } });
+        toast(r.message);
+        loadNoticesTeacher();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 async function sendNotice(event) {

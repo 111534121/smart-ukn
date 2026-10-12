@@ -669,7 +669,9 @@ def init_database():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `class_notices` (
               `id` int(11) NOT NULL AUTO_INCREMENT,
-              `class_name` varchar(50) NOT NULL,
+              `class_name` varchar(50) DEFAULT NULL COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL',
+              `target_type` enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型',
+              `target_label` varchar(100) DEFAULT NULL COMMENT '對象說明，例：資料庫系統概論（資管五忠）、資訊管理科（五專）、全校',
               `whole_class` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = 整班；0 = 只發給個別學生',
               `title` varchar(80) NOT NULL,
               `content` text NOT NULL,
@@ -695,6 +697,21 @@ def init_database():
               CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
         """)
+
+        # 舊資料庫的 class_notices 補上廣播欄位 (T09 班級／課程廣播；已存在時略過)
+        cursor.execute("ALTER TABLE `class_notices` MODIFY `class_name` varchar(50) DEFAULT NULL "
+                       "COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL'")
+        for column, definition in (
+            ("target_type", "enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型' AFTER `class_name`"),
+            ("target_label", "varchar(100) DEFAULT NULL COMMENT '對象說明' AFTER `target_type`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'class_notices' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `class_notices` ADD COLUMN `{column}` {definition}")
+                print(f"✅ class_notices 已新增 {column} 欄位")
 
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
         for table in ("competitions", "application_progress", "friction_reports"):

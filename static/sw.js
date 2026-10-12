@@ -1,6 +1,6 @@
 // Smart UKN Service Worker：讓網站可加到手機桌面，並在斷線時仍能開啟首頁外殼
 // 更新頁面或靜態檔後請遞增版本號，舊快取會在 activate 時清除
-const CACHE_VERSION = 'smart-ukn-v21';
+const CACHE_VERSION = 'smart-ukn-v29';
 const APP_SHELL = [
     '/',
     '/login',
@@ -20,7 +20,7 @@ const APP_SHELL = [
     '/js/tour.js'
 ];
 
-// 點系統通知 (科上通知)：切到已開啟的分頁，沒有就開新視窗
+// 點系統通知 (班級通知)：切到已開啟的分頁，沒有就開新視窗
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     const url = (event.notification.data && event.notification.data.url) || '/';

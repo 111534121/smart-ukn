@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面：行事曆月曆、AI 智慧校規、選課檢查、證照審核、獎助學金、宿舍與總務、
-// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、科上通知。
+// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、班級通知。
 // 依賴 campus-shell.js (api、toast、openModal、tabLoaders…) 與 index.html (currentUser、escapeHtml…)。
 
 const WEEKDAY_TEXT = ['', '一', '二', '三', '四', '五', '六', '日'];
@@ -22,7 +22,8 @@ function campusFeaturesInit() {
         'tab-traffic': () => { loadWeatherDetail(); loadTransport(); },
         'tab-crowd': loadCrowd,
         'tab-notices': loadNotices,
-        'tab-myschedule': () => { showSchoolSchedule(); loadMySchedule(); },
+        'tab-myschedule': loadMySchedule,
+        'tab-classattend': () => loadClassAttendance(),
     });
     setupRuleSuggest();
     loadRulesTree();
@@ -798,13 +799,71 @@ async function loadMySchedule() {
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-// 學校教師課表系統：直接嵌在「我的課表」頁面
-//   SCHOOL_TEACHER_SCHEDULE_URL 的 {name} 會換成老師姓名 (網址需要帶老師參數時使用)
-const SCHOOL_TEACHER_SCHEDULE_URL = 'https://ec.ukn.edu.tw/Schedule/TeacherSchedule.aspx';
-function showSchoolSchedule() {
-    const name = currentUser.full_name.replace(/\s*老師$/, '');
-    const url = SCHOOL_TEACHER_SCHEDULE_URL.replace('{name}', encodeURIComponent(name));
-    const frame = document.getElementById('schoolScheduleFrame');
-    if (frame.getAttribute('src') !== url) frame.setAttribute('src', url);
-    document.getElementById('schoolScheduleLink').href = url;
+// =====================================================================
+// 班級出缺勤 (T13)：班導看導師班；教職員 / 管理員可切換班級
+//   資料：GET /api/teacher/class-attendance；提醒：POST /api/campus/notices (只發給該生)
+// =====================================================================
+
+const ATTEND_LEVEL = {
+    banned: { text: '已達扣考', badge: 'bg-rose-600 text-white', row: 'bg-rose-50/60' },
+    warning: { text: '快扣考', badge: 'bg-amber-500 text-white', row: 'bg-amber-50/50' },
+    ok: { text: '正常', badge: 'bg-emerald-100 text-emerald-800', row: '' },
+};
+let classAttendData = null;
+
+async function loadClassAttendance(className) {
+    const body = document.getElementById('classAttendBody');
+    body.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
+    try {
+        const d = await api('/api/teacher/class-attendance' + (className ? `?class_name=${encodeURIComponent(className)}` : ''));
+        classAttendData = d;
+        document.getElementById('classAttendTitle').textContent = `班級出缺勤：${d.class_name}`;
+        const picker = document.getElementById('classAttendPicker');
+        picker.classList.toggle('hidden', d.classes.length <= 1);
+        picker.innerHTML = d.classes.map(c => `<option ${c === d.class_name ? 'selected' : ''}>${esc(c)}</option>`).join('');
+        const s = d.summary;
+        const tile = (label, value, tone) => `<div class="rounded border ${tone} p-4"><div class="text-xs font-semibold">${label}</div><div class="text-2xl font-bold mt-1">${value}</div></div>`;
+        body.innerHTML = `
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                ${tile('已達扣考', `${s.banned} 人`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+                ${tile('快扣考', `${s.warning} 人`, s.warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
+                ${tile('近 7 天曠課', `${s.recent_absent} 次`, 'border-slate-200 text-slate-700')}
+                ${tile('本學期曠課', `${s.absent_total} 次 · ${s.student_count} 位學生`, 'border-slate-200 text-slate-700')}
+            </div>
+            ${d.students.length ? `<div class="overflow-x-auto"><table class="w-full min-w-[720px] border-collapse text-left text-sm">
+                <thead><tr class="bg-slate-50 text-slate-600 text-xs">
+                    <th class="p-2 border border-slate-200">學生</th><th class="p-2 border border-slate-200">狀態</th>
+                    <th class="p-2 border border-slate-200 text-center">曠課</th><th class="p-2 border border-slate-200 text-center">遲到</th><th class="p-2 border border-slate-200 text-center">病假</th>
+                    <th class="p-2 border border-slate-200">要注意的科目</th><th class="p-2 border border-slate-200">最近紀錄</th><th class="p-2 border border-slate-200"></th></tr></thead>
+                <tbody>${d.students.map((st, i) => {
+                    const lv = ATTEND_LEVEL[st.level];
+                    return `<tr class="${lv.row}">
+                        <td class="p-2 border border-slate-200"><div class="font-semibold text-slate-900">${esc(st.full_name)}</div><div class="text-xs text-slate-500">${esc(st.student_id)}</div></td>
+                        <td class="p-2 border border-slate-200"><span class="inline-block text-xs font-bold rounded px-2 py-0.5 ${lv.badge}">${lv.text}</span></td>
+                        <td class="p-2 border border-slate-200 text-center font-bold ${st.totals['曠課'] ? 'text-rose-700' : 'text-slate-400'}">${st.totals['曠課']}${st.recent_absent ? `<div class="text-[11px] font-normal text-rose-700">近 7 天 ${st.recent_absent}</div>` : ''}</td>
+                        <td class="p-2 border border-slate-200 text-center ${st.totals['遲到'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['遲到']}</td>
+                        <td class="p-2 border border-slate-200 text-center ${st.totals['病假'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['病假']}</td>
+                        <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div class="text-xs"><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-xs text-slate-400">—</span>'}</td>
+                        <td class="p-2 border border-slate-200 text-xs text-slate-500">${st.last_date ? mmdd(st.last_date) : '—'}</td>
+                        <td class="p-2 border border-slate-200 text-right">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-xs font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1 whitespace-nowrap">📣 提醒</button>` : ''}</td>
+                    </tr>`;
+                }).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500">這個班級目前沒有學生資料。</div>'}`;
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+// 用「班級通知」只發給這位學生；已扣考發緊急，其餘發重要
+async function remindAttendance(index) {
+    const st = classAttendData.students[index];
+    const courses = st.risk_courses.map(c => c.level === 'banned'
+        ? `「${c.course_name}」已曠課 ${c.absent_hours} 小時，達到扣考門檻`
+        : `「${c.course_name}」已曠課 ${c.absent_hours} 小時，再 ${c.remaining_hours} 小時就會扣考`);
+    const content = `${st.full_name} 同學您好：\n${courses.length ? courses.join('；\n') + '。' : `本學期已曠課 ${st.totals['曠課']} 次。`}\n請注意出席；如果是請假，記得盡快補辦假單。有困難可以來找導師談。`;
+    if (!confirm(`要用「班級通知」提醒 ${st.full_name} 嗎？\n\n${content}`)) return;
+    try {
+        const r = await api('/api/campus/notices', { json: {
+            class_name: classAttendData.class_name, recipients: [st.student_id], title: '出缺勤提醒',
+            content, priority: st.level === 'banned' ? '緊急' : '重要', due_date: '' } });
+        toast(`已提醒 ${st.full_name}`);
+        return r;
+    } catch (e) { toast(e.message, 'error'); }
 }

@@ -48,10 +48,20 @@
             }
         }
     </script>
+    <script>
+        // 字級：標準 / 大 / 特大 (存在這台電腦的瀏覽器；先套用避免畫面閃一下)
+        try { document.documentElement.dataset.font = localStorage.getItem('ukn-font-size') || 'normal'; } catch (e) { /* 無痕模式 */ }
+    </script>
     <style>
         body {
             background-color: #f5f6f8;
         }
+        /* 字級：Tailwind 用 rem，改根元素字級整頁跟著放大 */
+        html[data-font="large"] { font-size: 18px; }
+        html[data-font="xlarge"] { font-size: 20px; }
+        /* 原本寫死 9~11px 的小字改成跟著字級縮放，且最小 12px，長輩老師也看得清楚 */
+        .text-\[9px\], .text-\[10px\] { font-size: 0.75rem !important; }
+        .text-\[11px\], .text-\[12px\] { font-size: 0.8125rem !important; }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -139,7 +149,8 @@
                     <button type="button" onclick="switchTab('tab-map')" class="hidden md:inline hover:underline">校園地圖</button>
                     <button type="button" onclick="switchTab('tab-traffic')" class="hidden md:inline hover:underline">交通資訊</button>
                     <button type="button" onclick="switchTab('tab-links')" class="hidden md:inline hover:underline">常用系統</button>
-                    <button type="button" id="notifyBellBtn" onclick="switchTab('tab-notices')" class="hidden relative hover:underline" title="科上通知">
+                    <button type="button" id="fontSizeBtn" onclick="cycleFontSize()" class="hover:underline whitespace-nowrap" title="調整字體大小">字級：<span id="fontSizeText">標準</span></button>
+                    <button type="button" id="notifyBellBtn" onclick="switchTab('tab-notices')" class="hidden relative hover:underline" title="班級通知">
                         🔔<span id="notifyBellCount" class="hidden absolute -top-1.5 -right-2.5 bg-accent-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 leading-4 text-center"></span>
                     </button>
                     <a href="/admin" target="_blank" id="adminEntryLink" class="hidden hover:underline">校務管理後台 ↗</a>
@@ -212,12 +223,12 @@
             </section>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- 最新消息：校園公告 / 科上通知 -->
+                <!-- 最新消息：校園公告 / 班級通知 -->
                 <section class="lg:col-span-2 bg-white rounded border border-slate-200">
                     <div class="flex items-end justify-between border-b border-slate-200 px-5 sm:px-6 pt-4">
                         <div class="flex gap-5 text-sm" role="tablist">
                             <button type="button" role="tab" id="newsTabAnn" onclick="switchNewsTab('ann')" class="news-tab active pb-3">校園公告</button>
-                            <button type="button" role="tab" id="newsTabNotice" onclick="switchNewsTab('notice')" class="news-tab pb-3">科上通知 <span id="newsNoticeCount" class="hidden ml-0.5 bg-accent-500 text-white text-[10px] rounded-full px-1.5"></span></button>
+                            <button type="button" role="tab" id="newsTabNotice" onclick="switchNewsTab('notice')" class="news-tab pb-3">班級通知 <span id="newsNoticeCount" class="hidden ml-0.5 bg-accent-500 text-white text-[10px] rounded-full px-1.5"></span></button>
                         </div>
                         <button type="button" onclick="switchTab('tab-calendar')" class="text-xs text-ukn-700 hover:underline pb-3">行事曆 ➔</button>
                     </div>
@@ -1112,13 +1123,13 @@
             </section>
         </div>
 
-        <!-- 科上通知 -->
+        <!-- 班級通知 -->
         <div id="tab-notices" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                     <div>
-                        <h2 class="ukn-title text-xl font-bold text-slate-900">科上通知</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1" id="noticesSubtitle">老師可以選班級整班通知，或點開班級只通知個別學生；學生用班級密碼加入班級。</p>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">班級通知</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1" id="noticesSubtitle">班導可以通知導師班或個別學生，也能對自己任教的課程廣播；學生用班級密碼加入班級。</p>
                     </div>
                     <button type="button" id="enablePushBtn" onclick="enablePushNotifications()" class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 px-3 py-1.5 rounded font-semibold">🔔 開啟手機 / 桌面通知</button>
                 </div>
@@ -1147,13 +1158,24 @@
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                         <h2 class="ukn-title text-xl font-bold text-slate-900">我的課表</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">學校教師課表系統的正式課表，下方另有現在狀態與 Office Hour。</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">依課表列出您本學期的課，今天會標示出來。</p>
                     </div>
-                    <a id="schoolScheduleLink" href="#" target="_blank" rel="noopener noreferrer"
-                        class="text-xs text-slate-500 hover:text-ukn-700 hover:underline self-start sm:self-auto">在新分頁開啟 ↗</a>
                 </div>
-                <iframe id="schoolScheduleFrame" title="學校教師課表" class="w-full h-[75vh] rounded border border-slate-200 bg-white"></iframe>
                 <div id="myScheduleBody"></div>
+            </section>
+        </div>
+
+        <!-- 班級出缺勤 (班導：導師班；教職員：任選班級；campus-features.js loadClassAttendance) -->
+        <div id="tab-classattend" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900" id="classAttendTitle">班級出缺勤</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">曠課達該科授課時數 1/3 會扣考；快扣考、已扣考的學生排在最前面，可以直接發通知提醒。</p>
+                    </div>
+                    <select id="classAttendPicker" onchange="loadClassAttendance(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white self-start sm:self-auto"></select>
+                </div>
+                <div id="classAttendBody"></div>
             </section>
         </div>
 
@@ -2763,6 +2785,23 @@
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW 註冊失敗', err)));
         }
     </script>
+<script>
+    const FONT_SIZES = [['normal', '標準'], ['large', '大'], ['xlarge', '特大']];
+    function showFontSize() {
+        const cur = document.documentElement.dataset.font || 'normal';
+        const el = document.getElementById('fontSizeText');
+        if (el) el.textContent = (FONT_SIZES.find(f => f[0] === cur) || FONT_SIZES[0])[1];
+    }
+    function cycleFontSize() {
+        const cur = document.documentElement.dataset.font || 'normal';
+        const i = FONT_SIZES.findIndex(f => f[0] === cur);
+        const next = FONT_SIZES[(i + 1) % FONT_SIZES.length][0];
+        document.documentElement.dataset.font = next;
+        try { localStorage.setItem('ukn-font-size', next); } catch (e) { /* 無痕模式：這次有效，下次恢復標準 */ }
+        showFontSize();
+    }
+    showFontSize();
+</script>
 </body>
 
 </html>

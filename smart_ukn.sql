@@ -430,7 +430,9 @@ CREATE TABLE IF NOT EXISTS `class_group_members` (
 
 CREATE TABLE IF NOT EXISTS `class_notices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `class_name` varchar(50) NOT NULL,
+  `class_name` varchar(50) DEFAULT NULL COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL',
+  `target_type` enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型',
+  `target_label` varchar(100) DEFAULT NULL COMMENT '對象說明，例：資料庫系統概論（資管五忠）、資訊管理科（五專）、全校',
   `whole_class` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = 整班；0 = 只發給個別學生',
   `title` varchar(80) NOT NULL,
   `content` text NOT NULL,

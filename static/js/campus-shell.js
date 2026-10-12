@@ -1,10 +1,11 @@
 // Smart UKN 版面外殼：分組大選單 (參考臺大官網)、分頁切換與網址、首頁輪播 / 常用服務置頂 / 公告 / 天氣、
-// 科上通知鈴鐺與手機通知、共用小工具 (api / toast / modal)。
+// 班級通知鈴鐺與手機通知、共用小工具 (api / toast / modal)。
 // 依賴 index.html 內的 currentUser、escapeHtml、isStudentLoggedIn。
 
 const FEATURE_GROUPS = ['學習', '校務', '校園生活', '社群'];
 const FEATURES = [
     { key: 'my-schedule', tab: 'tab-myschedule', name: '我的課表', icon: '🗓️', group: '學習', desc: '本週授課、Office Hour 與現在狀態', onlyRoles: ['老師'] },
+    { key: 'class-attendance', tab: 'tab-classattend', name: '班級出缺勤', icon: '🕒', group: '學習', desc: '導師班誰曠課、誰快扣考，一鍵提醒', onlyRoles: ['老師', '教職員', '管理員'] },
     { key: 'course', tab: 'tab-course', name: '修業進度與擋修', icon: '📚', group: '學習', desc: '已修學分、未通過科目與擋修連帶影響', staff: false },
     { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修', staff: false },
     { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看', staff: { name: '導師班級總表', desc: '全班學分與證照進度、依學號查詢', otherStaffName: '畢業門檻查詢' } },
@@ -24,7 +25,7 @@ const FEATURES = [
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線' },
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰' },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
-    { key: 'notices', tab: 'tab-notices', name: '科上通知', icon: '📣', group: '社群', desc: '老師整班或個別通知', staff: { desc: '發通知給導師班或自己建立的群組' } },
+    { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
 ];
 // staff：老師、教職員、管理員登入時的顯示方式
 //   false              → 學生專用，不顯示
@@ -323,7 +324,7 @@ function toggleAllServices() {
     document.getElementById('toggleServicesBtn').textContent = show ? '收合全部服務 ▴' : '顯示全部服務 ▾';
 }
 
-// ---------- 首頁：最新公告 / 科上通知 ----------
+// ---------- 首頁：最新公告 / 班級通知 ----------
 
 let homeAnnouncements = [];
 let homeNotices = [];
@@ -352,8 +353,8 @@ function renderHomeNews() {
     const list = document.getElementById('homeNewsList');
     if (newsTab === 'notice') {
         if (currentUser.role !== '學生') {
-            list.innerHTML = `<li class="px-6 py-6 text-sm text-slate-500">${isStaff() ? '老師可到「科上通知」發送與查看已讀情形。' : '登入學生帳號後，這裡會顯示老師發給你的通知。'}
-                <button type="button" onclick="switchTab('tab-notices')" class="text-ukn-700 font-semibold hover:underline ml-1">前往科上通知 ➔</button></li>`;
+            list.innerHTML = `<li class="px-6 py-6 text-sm text-slate-500">${isStaff() ? '老師可到「班級通知」發送與查看已讀情形。' : '登入學生帳號後，這裡會顯示老師發給你的通知。'}
+                <button type="button" onclick="switchTab('tab-notices')" class="text-ukn-700 font-semibold hover:underline ml-1">前往班級通知 ➔</button></li>`;
             return;
         }
         list.innerHTML = homeNotices.length ? homeNotices.slice(0, 6).map(n => `
@@ -363,7 +364,7 @@ function renderHomeNews() {
                     <div class="text-sm ${n.is_read ? 'text-slate-600' : 'font-bold text-slate-900'}">${n.is_read ? '' : '<span class="inline-block w-2 h-2 rounded-full bg-accent-500 mr-1.5"></span>'}${n.priority !== '一般' ? `<span class="text-[10px] font-bold text-rose-700 border border-rose-300 rounded px-1 mr-1">${escapeHtml(n.priority)}</span>` : ''}${escapeHtml(n.title)}</div>
                     <div class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(n.class_name)} · ${escapeHtml(n.sender)}</div>
                 </div></button></li>`).join('')
-            : '<li class="px-6 py-6 text-sm text-slate-500">目前沒有科上通知。</li>';
+            : '<li class="px-6 py-6 text-sm text-slate-500">目前沒有班級通知。</li>';
         return;
     }
     list.innerHTML = homeAnnouncements.length ? homeAnnouncements.slice(0, 7).map(a => `
@@ -476,7 +477,7 @@ async function loadHomeUpcoming() {
     }
 }
 
-// ---------- 科上通知：鈴鐺、輪詢、手機 / 桌面通知 ----------
+// ---------- 班級通知：鈴鐺、輪詢、手機 / 桌面通知 ----------
 
 const NOTIFY_POLL_MS = 90 * 1000;
 async function pollNotices(showSystemNotification = true) {
@@ -494,7 +495,7 @@ async function pollNotices(showSystemNotification = true) {
         });
         if (newsTab === 'notice') renderHomeNews();
         if (showSystemNotification && fresh.length) {
-            toast(`📣 新的科上通知：${fresh[0].title}`);
+            toast(`📣 新的班級通知：${fresh[0].title}`);
             showSystemNotice(fresh[0]);
         }
     } catch (e) { /* 網路中斷時下次再試 */ }

@@ -2231,6 +2231,63 @@ def teacher_class_summary():
         })
     return jsonify({"status": "success", "class_name": class_name, "students": students}), 200
 
+def _list_class_names():
+    rows = fetch_db_rows("SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL ORDER BY class_name")
+    if rows:
+        return [r["class_name"] for r in rows]
+    return sorted({s["class_name"] for s in DEMO_STUDENTS if s.get("class_name")})
+
+@app.route("/api/teacher/class-attendance", methods=["GET"])
+@role_required("老師", "教職員", "管理員")
+def teacher_class_attendance():
+    """班級出缺勤一覽 (T13)：班導只能看自己的導師班；教職員/管理員可用 ?class_name= 指定班級
+    每位學生：曠課 / 遲到 / 病假次數、扣考風險 (ok / warning / banned)、快扣考的科目、近 7 天曠課、最近一次紀錄"""
+    role = session.get("role")
+    class_name = request.args.get("class_name") or session.get("advised_class")
+    if role == "老師" and class_name != session.get("advised_class"):
+        return jsonify({"status": "error", "message": "老師僅能查看自己的導師班"}), 403
+    classes = [session.get("advised_class")] if role == "老師" else _list_class_names()
+    if not class_name:
+        if role == "老師":
+            return jsonify({"status": "error", "message": "您目前沒有導師班"}), 404
+        class_name = classes[0] if classes else None
+    if not class_name:
+        return jsonify({"status": "error", "message": "查無班級資料"}), 404
+
+    names = {s["student_id"]: s["full_name"] for s in list_students()}
+    hours = course_weekly_hours()
+    source = get_attendance_source()
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    rank = {"ok": 0, "warning": 1, "banned": 2}
+    students = []
+    for sid in _get_class_student_ids(class_name):
+        records = source.list_records(sid)
+        summary = summarize_attendance(records, hours)
+        students.append({
+            "student_id": sid,
+            "full_name": names.get(sid, sid),
+            "totals": summary["totals"],
+            "level": summary["overall_level"],
+            "risk_courses": [{k: c[k] for k in ("course_name", "absent_count", "absent_hours", "exam_ban_threshold_hours", "remaining_hours", "level")}
+                             for c in summary["courses"] if c["level"] != "ok"],
+            "recent_absent": sum(1 for r in records if r["type"] == "曠課" and str(r["date"])[:10] >= week_ago),
+            "last_date": max((str(r["date"])[:10] for r in records), default=""),
+        })
+    students.sort(key=lambda x: (-rank[x["level"]], -x["totals"]["曠課"], x["student_id"]))
+    return jsonify({
+        "status": "success",
+        "class_name": class_name,
+        "classes": classes,
+        "summary": {
+            "student_count": len(students),
+            "banned": sum(1 for x in students if x["level"] == "banned"),
+            "warning": sum(1 for x in students if x["level"] == "warning"),
+            "absent_total": sum(x["totals"]["曠課"] for x in students),
+            "recent_absent": sum(x["recent_absent"] for x in students),
+        },
+        "students": students,
+    }), 200
+
 # ==========================================
 # 9. 申辦進度保存 API (功能 3: 我的申辦進度)
 # ==========================================
@@ -3374,6 +3431,7 @@ campus.init_app(app, SimpleNamespace(
     categories=DEMO_CATEGORIES,
     certificates=DEMO_CERTIFICATES,
     class_schedule=dashboard_demo.DEMO_CLASS_SCHEDULE,
+    departments=DEMO_DEPARTMENTS,
 ))
 
 # 我的科系與顯示範圍 (preferences 套件；其他 API 以 preferences.scope_filter 過濾)

@@ -35,6 +35,7 @@ POST,/api/courses/what-if,/api/courses/what-if,,被當試算,OK,OK,OK,OK,OK,OK,O
 GET,/api/student/graduation-audit,/api/student/graduation-audit?student_id=S112001,,畢業學分預審（舊）,401*,403*,OK,OK,OK,OK,OK,🚨 完全沒有登入檢查，任何人可用 ?student_id= 查別人成績；且只讀示範資料、不讀 MySQL。建議直接刪除，改用 graduation/dashboard
 GET,/api/student/graduation/dashboard,/api/student/graduation/dashboard?student_id=S112001,,畢業門檻儀表板,401,403,OK,OK,OK,OK,OK,老師可查任何學生，不限導師班（與 early-warning 不一致，待討論）
 GET,/api/student/graduation/export.csv,/api/student/graduation/export.csv?student_id=S112001,,畢業門檻匯出,401,403,OK,OK,OK,OK,OK,同上
+GET,/api/teacher/class-attendance,/api/teacher/class-attendance,,【班級出缺勤】導師班出缺勤一覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班 (別班 403)；教職員、管理員可用 ?class_name= 切換班級
 GET,/api/teacher/class-summary,/api/teacher/class-summary,,導師班級總表,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
 GET,/api/checklist/progress,/api/checklist/progress,,申辦進度查詢,OK,OK,OK,OK,OK,OK,OK,未登入回 is_authenticated=false
 POST,/api/checklist/progress,/api/checklist/progress,,勾選申辦進度,401,403*,OK,403*,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
@@ -92,6 +93,8 @@ POST,/api/campus/classes/join,/api/campus/classes/join,,【科上通知】學生
 POST,/api/campus/classes/leave,/api/campus/classes/leave,,【科上通知】退出班級,401,403,OK,403,403,403,403,
 POST,/api/campus/notices,/api/campus/notices,,【科上通知】發送通知,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能對「任何班級」發通知，不限自己的班或自己建立的班
 GET,/api/campus/notices/sent,/api/campus/notices/sent,,【科上通知】已發送,401,403,403,403,OK,OK,OK,老師、教職員只看到自己發的；管理員看到全部
+GET,/api/campus/broadcast/targets,/api/campus/broadcast/targets,,【科上通知】可廣播對象,401,403,403,403,OK,OK,OK,老師只有自己任教的課程；教職員、管理員另有科系、年級、全校
+POST,/api/campus/broadcast,/api/campus/broadcast,,【科上通知】課程／科系／年級／全校廣播,401,403,403,403,OK,OK,OK,老師只能廣播自己任教的課程 (別的課回 403)；科系、年級、全校限教職員、管理員
 GET,/api/campus/notices/inbox,/api/campus/notices/inbox,,【科上通知】收件匣,401,403,OK,403,403,403,403,
 POST,/api/campus/notices/<int:notice_id>/read,/api/campus/notices/999999/read,,【科上通知】標記已讀,401,403,OK,403,403,403,403,只能標記發給自己的通知 (別人的回 404)
 GET,/api/campus/map,/api/campus/map,,校園地圖,OK,OK,OK,OK,OK,OK,OK,

@@ -80,3 +80,82 @@ def test_students_and_parents_cannot_send(client, login):
     assert send(client, "資管五忠").status_code == 403
     login("parent1")
     assert send(client, "資管五忠").status_code == 403
+
+
+# ---------------- T09 班級／課程廣播 ----------------
+# 課表 (dashboard/demo_data.py)：彭賓鈺教「資料庫系統概論」給資管五忠、資管四孝；「藥理學」是護理四忠蔡宗翰的課
+
+def broadcast(client, target_type, target="", **extra):
+    body = {"target_type": target_type, "target": target, "title": "期中考教室異動", "content": "改到 E301", **extra}
+    return client.post("/api/campus/broadcast", json=body)
+
+
+def inbox_ids(client):
+    return {n["id"] for n in client.get("/api/campus/notices/inbox").get_json()["data"]}
+
+
+def test_teacher_course_broadcast_reaches_all_classes_of_the_course(client, login):
+    login("teacher1")
+    targets = client.get("/api/campus/broadcast/targets").get_json()["data"]
+    courses = {c["course_name"]: c for c in targets["courses"]}
+    assert set(courses) == {"資料庫系統概論"}  # 只有自己任教的課，班會 / 導師時間不算
+    assert targets["school"] is None and targets["departments"] == [] and targets["grades"] == []
+
+    res = broadcast(client, "課程", "資料庫系統概論")
+    assert res.status_code == 200, res.get_json()
+    notice = res.get_json()["data"]
+    assert notice["target_type"] == "課程" and "資管四孝" in notice["target_label"]
+
+    for user in ("student1", "S112004"):  # 資管五忠、資管四孝的學生都收到
+        login(user)
+        assert notice["id"] in inbox_ids(client)
+
+    login("teacher1")
+    sent = next(n for n in client.get("/api/campus/notices/sent").get_json()["data"] if n["id"] == notice["id"])
+    assert sent["target_type"] == "課程" and sent["total"] == len(notice["recipients"])
+
+
+def test_teacher_cannot_broadcast_other_courses_or_school(client, login):
+    login("teacher1")
+    assert broadcast(client, "課程", "藥理學").status_code == 403
+    assert broadcast(client, "全校").status_code == 403
+    assert broadcast(client, "科系", "CS").status_code == 403
+    assert broadcast(client, "年級", "112").status_code == 403
+
+
+def test_staff_broadcast_school_department_grade(client, login):
+    login("staff1")
+    targets = client.get("/api/campus/broadcast/targets").get_json()["data"]
+    assert targets["school"] and targets["departments"] and targets["grades"]
+    assert "藥理學" in {c["course_name"] for c in targets["courses"]}
+
+    school = broadcast(client, "全校")
+    assert school.status_code == 200
+    dept = broadcast(client, "科系", "CS")
+    assert dept.status_code == 200 and dept.get_json()["data"]["target_label"] == "資訊管理科（五專）"
+    assert broadcast(client, "年級", "112").status_code == 200
+    assert broadcast(client, "課程", "藥理學").status_code == 200
+    assert broadcast(client, "科系", "不存在").status_code == 400  # 沒有學生
+    assert broadcast(client, "班級", "資管五忠").status_code == 400  # 班級通知走 /api/campus/notices
+
+    login("student1")
+    ids = inbox_ids(client)
+    assert school.get_json()["data"]["id"] in ids and dept.get_json()["data"]["id"] in ids
+
+
+def test_students_cannot_broadcast(client, login):
+    login("student1")
+    assert broadcast(client, "全校").status_code == 403
+    assert client.get("/api/campus/broadcast/targets").status_code == 403
+
+
+def test_roster_students_get_class_notice_without_joining(client, login):
+    """學籍上就是資管五忠的學生，不用輸入密碼加入也收得到班級通知 (出缺勤「提醒」就是只發給一位學生)"""
+    from campus.common import store
+    store.data["classes"] = [{"class_name": "資管五忠", "password_hash": "x", "members": [],
+                              "created_by": "系統", "created_by_username": None, "created_at": ""}]
+    login("teacher1")
+    res = send(client, "資管五忠", recipients=["S112005"])
+    assert res.status_code == 200, res.get_json()
+    login("S112005")
+    assert res.get_json()["data"]["id"] in {n["id"] for n in client.get("/api/campus/notices/inbox").get_json()["data"]}
