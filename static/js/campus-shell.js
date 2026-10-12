@@ -23,10 +23,10 @@ const FEATURES = [
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
-    { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線' },
-    { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰' },
+    { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
+    { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰', staff: false },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
-    { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
+    { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { group: '學習', desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
 ];
 // staff：老師、教職員、管理員登入時的顯示方式
 //   false              → 學生專用，不顯示
@@ -581,6 +581,11 @@ function applyStaffView() {
         .map(f => (f.staff ? { ...f, ...f.staff } : f))
         .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
     FEATURES.splice(0, FEATURES.length, ...keep);
+    // 沒有功能的分組不顯示 (老師端「社群」只剩班級通知，已搬到「學習」)
+    const groups = FEATURE_GROUPS.filter(g => FEATURES.some(f => f.group === g));
+    FEATURE_GROUPS.splice(0, FEATURE_GROUPS.length, ...groups);
+    // 上方工具列的「交通資訊」捷徑也收起來 (天氣與交通是學生用的功能)
+    document.querySelectorAll(".topbar-quick[onclick*='tab-traffic']").forEach(el => el.remove());
     const slides = HERO_SLIDES.filter(s => featureByTab(s.tab));
     HERO_SLIDES.splice(0, HERO_SLIDES.length, ...slides);
 }
