@@ -713,6 +713,30 @@ def init_database():
                 cursor.execute(f"ALTER TABLE `class_notices` ADD COLUMN `{column}` {definition}")
                 print(f"✅ class_notices 已新增 {column} 欄位")
 
+        # 導生關懷紀錄 (campus/counseling.py)：班導和學生的晤談紀錄與後續追蹤
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `counseling_records` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `student_id` varchar(20) NOT NULL,
+                `class_name` varchar(50) DEFAULT NULL COMMENT '記錄當時學生的班級',
+                `talk_date` date NOT NULL COMMENT '晤談日期',
+                `method` enum('面談','電話','線上','家長聯繫') NOT NULL DEFAULT '面談',
+                `topic` enum('學業','出缺勤','生活','生涯','家庭','身心','其他') NOT NULL DEFAULT '其他',
+                `content` text NOT NULL COMMENT '晤談內容 (個人隱私，學生與家長看不到)',
+                `follow_up` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 需要追蹤',
+                `follow_up_note` varchar(200) DEFAULT NULL COMMENT '要追蹤什麼',
+                `follow_up_done` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 已追蹤完成',
+                `counselor_username` varchar(50) NOT NULL COMMENT '記錄人帳號',
+                `counselor_name` varchar(50) NOT NULL COMMENT '記錄人姓名',
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`id`),
+                KEY `idx_counsel_student` (`student_id`, `talk_date`),
+                KEY `idx_counsel_class` (`class_name`),
+                CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
+        """)
+
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
         for table in ("competitions", "application_progress", "friction_reports"):
             cursor.execute(f"DROP TABLE IF EXISTS `{table}`")

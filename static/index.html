@@ -1179,6 +1179,23 @@
             </section>
         </div>
 
+        <!-- 導生關懷紀錄 (班導：導師班；教職員：任選班級；campus-features.js loadCounseling) -->
+        <div id="tab-counseling" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900" id="counselTitle">導生關懷紀錄</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">記下和學生談了什麼、要不要追蹤；只有導師和學校行政人員看得到，期末可以匯出交導師輔導紀錄。</p>
+                    </div>
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <select id="counselPicker" onchange="counselState.student = ''; loadCounseling(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white"></select>
+                        <a id="counselExport" href="#" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-semibold text-sm rounded px-3 py-2 whitespace-nowrap">匯出 Excel (CSV)</a>
+                    </div>
+                </div>
+                <div id="counselBody"></div>
+            </section>
+        </div>
+
         <!-- 報表與文件庫 (reports.js) -->
         <div id="tab-reports" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">

@@ -24,6 +24,7 @@ function campusFeaturesInit() {
         'tab-notices': loadNotices,
         'tab-myschedule': loadMySchedule,
         'tab-classattend': () => loadClassAttendance(),
+        'tab-counseling': () => loadCounseling(),
     });
     setupRuleSuggest();
     loadRulesTree();
@@ -845,7 +846,8 @@ async function loadClassAttendance(className) {
                         <td class="p-2 border border-slate-200 text-center ${st.totals['病假'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['病假']}</td>
                         <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div class="text-xs"><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-xs text-slate-400">—</span>'}</td>
                         <td class="p-2 border border-slate-200 text-xs text-slate-500">${st.last_date ? mmdd(st.last_date) : '—'}</td>
-                        <td class="p-2 border border-slate-200 text-right">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-xs font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1 whitespace-nowrap">📣 提醒</button>` : ''}</td>
+                        <td class="p-2 border border-slate-200 text-right whitespace-nowrap">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-xs font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">📣 提醒</button>` : ''}
+                            <button type="button" onclick="counselFromAttendance(${i})" class="text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
                     </tr>`;
                 }).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500">這個班級目前沒有學生資料。</div>'}`;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
@@ -866,4 +868,155 @@ async function remindAttendance(index) {
         toast(`已提醒 ${st.full_name}`);
         return r;
     } catch (e) { toast(e.message, 'error'); }
+}
+
+// =====================================================================
+// 導生關懷紀錄 (T14)：班導記錄晤談與後續追蹤；教職員 / 管理員可切換班級
+//   GET/POST /api/campus/counseling、PUT/DELETE /api/campus/counseling/<id>、匯出 /api/campus/counseling/export.csv
+// =====================================================================
+
+const counselState = { className: '', student: '', editing: null, presetTopic: '', data: null };
+const TOPIC_TONE = { '學業': 'bg-sky-100 text-sky-800', '出缺勤': 'bg-amber-100 text-amber-900', '生活': 'bg-emerald-100 text-emerald-800',
+    '生涯': 'bg-violet-100 text-violet-800', '家庭': 'bg-orange-100 text-orange-800', '身心': 'bg-rose-100 text-rose-800', '其他': 'bg-slate-100 text-slate-700' };
+
+// 從「班級出缺勤」按「記一筆」：直接帶入學生，主題預設出缺勤
+function counselFromAttendance(index) {
+    const st = classAttendData.students[index];
+    Object.assign(counselState, { className: classAttendData.class_name, student: st.student_id, editing: null, presetTopic: '出缺勤' });
+    switchTab('tab-counseling');
+    loadCounseling(classAttendData.class_name);
+}
+
+async function loadCounseling(className) {
+    if (className !== undefined) counselState.className = className;
+    const body = document.getElementById('counselBody');
+    body.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
+    try {
+        const q = counselState.className ? `?class_name=${encodeURIComponent(counselState.className)}` : '';
+        const d = await api('/api/campus/counseling' + q);
+        counselState.data = d;
+        counselState.className = d.class_name;
+        document.getElementById('counselTitle').textContent = `導生關懷紀錄：${d.class_name}`;
+        const picker = document.getElementById('counselPicker');
+        picker.classList.toggle('hidden', d.classes.length <= 1);
+        picker.innerHTML = d.classes.map(c => `<option ${c === d.class_name ? 'selected' : ''}>${esc(c)}</option>`).join('');
+        document.getElementById('counselExport').href = `/api/campus/counseling/export.csv?class_name=${encodeURIComponent(d.class_name)}`;
+        renderCounseling();
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+function renderCounseling() {
+    const d = counselState.data, s = d.summary;
+    const records = d.data.filter(r => !counselState.student || r.student_id === counselState.student);
+    const tile = (label, value, tone) => `<div class="rounded border ${tone} p-4"><div class="text-xs font-semibold">${label}</div><div class="text-2xl font-bold mt-1">${value}</div></div>`;
+    const studentBtn = st => {
+        const on = st.student_id === counselState.student;
+        return `<button type="button" onclick="counselState.student = '${esc(st.student_id)}'; counselState.editing = null; renderCounseling()"
+            class="w-full text-left rounded border px-3 py-2 text-sm ${on ? 'border-ukn-700 bg-ukn-50' : 'border-slate-200 hover:border-ukn-300'}">
+            <div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-900">${esc(st.full_name)}</span>
+                ${st.pending ? `<span class="text-[11px] font-bold rounded px-1.5 py-0.5 bg-amber-500 text-white">待追蹤 ${st.pending}</span>` : ''}</div>
+            <div class="text-xs ${st.count ? 'text-slate-500' : 'text-amber-800'}">${st.count ? `談過 ${st.count} 次 · 最近 ${mmdd(st.last_date)}` : '這學期還沒談過'}</div></button>`;
+    };
+    document.getElementById('counselBody').innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            ${tile('已關懷學生', `${s.cared} / ${s.student_count} 位`, s.cared < s.student_count ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800')}
+            ${tile('本學期晤談', `${s.record_count} 次`, 'border-slate-200 text-slate-700')}
+            ${tile('待追蹤', `${s.pending} 件`, s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="space-y-2">
+                <h3 class="font-bold text-slate-900 text-sm">學生</h3>
+                <button type="button" onclick="counselState.student = ''; counselState.editing = null; renderCounseling()" class="w-full text-left rounded border px-3 py-2 text-sm ${counselState.student ? 'border-slate-200 hover:border-ukn-300' : 'border-ukn-700 bg-ukn-50 font-semibold'}">全班</button>
+                ${d.students.map(studentBtn).join('') || '<div class="text-sm text-slate-500">這個班級沒有學生資料。</div>'}
+            </div>
+            <div class="lg:col-span-2 space-y-4">
+                ${counselFormHtml()}
+                <div class="space-y-2">
+                    <h3 class="font-bold text-slate-900">${counselState.student ? `${esc((d.students.find(x => x.student_id === counselState.student) || {}).full_name || '')} 的紀錄` : '全班紀錄'}</h3>
+                    ${records.length ? records.map(counselCardHtml).join('') : '<div class="text-sm text-slate-500">還沒有紀錄。</div>'}
+                </div>
+            </div>
+        </div>`;
+}
+
+function counselFormHtml() {
+    const d = counselState.data;
+    const r = counselState.editing ? d.data.find(x => x.id === counselState.editing) : null;
+    const sid = r ? r.student_id : counselState.student;
+    const topic = r ? r.topic : (counselState.presetTopic || '學業');
+    const method = r ? r.method : '面談';
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    return `
+        <form onsubmit="saveCounseling(event)" class="rounded border ${r ? 'border-ukn-700' : 'border-slate-200'} bg-slate-50 p-4 space-y-3 text-sm">
+            <div class="font-bold text-slate-900">${r ? '修改紀錄' : '記一筆晤談'}</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <select name="student_id" required ${r ? 'disabled' : ''} class="border border-slate-300 rounded px-3 py-2 bg-white">
+                    <option value="">選擇學生</option>${d.students.map(st => `<option value="${esc(st.student_id)}" ${st.student_id === sid ? 'selected' : ''}>${esc(st.full_name)}</option>`).join('')}</select>
+                <input type="date" name="talk_date" value="${r ? r.talk_date : today}" class="border border-slate-300 rounded px-3 py-2">
+                <select name="topic" class="border border-slate-300 rounded px-3 py-2 bg-white">${d.topics.map(t => `<option ${t === topic ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            </div>
+            <div class="flex flex-wrap items-center gap-3"><span class="text-xs font-semibold text-slate-600">方式</span>
+                ${d.methods.map(m => `<label class="flex items-center gap-1"><input type="radio" name="method" value="${m}" ${m === method ? 'checked' : ''}> ${m}</label>`).join('')}</div>
+            <textarea name="content" required rows="3" maxlength="2000" placeholder="談了什麼、學生的狀況、給了什麼建議" class="w-full border border-slate-300 rounded px-3 py-2">${r ? esc(r.content) : ''}</textarea>
+            <div class="flex flex-wrap items-center gap-2">
+                <label class="flex items-center gap-1.5 font-semibold text-slate-700"><input type="checkbox" name="follow_up" ${r && r.follow_up ? 'checked' : ''}> 需要追蹤</label>
+                <input name="follow_up_note" maxlength="200" value="${r ? esc(r.follow_up_note || '') : ''}" placeholder="要追蹤什麼，例如：下週確認有沒有補請假" class="flex-1 min-w-[12rem] border border-slate-300 rounded px-3 py-1.5">
+            </div>
+            <div class="flex justify-end gap-2">
+                ${r ? '<button type="button" onclick="counselState.editing = null; renderCounseling()" class="border border-slate-300 rounded px-4 py-2">取消</button>' : ''}
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">${r ? '儲存修改' : '儲存紀錄'}</button>
+            </div>
+        </form>`;
+}
+
+function counselCardHtml(r) {
+    const follow = r.follow_up
+        ? (r.follow_up_done ? `<span class="text-xs text-emerald-700 font-semibold">✓ 已追蹤：${esc(r.follow_up_note || '')}</span>`
+            : `<span class="text-xs font-bold text-rose-700">待追蹤：${esc(r.follow_up_note || '（未填）')}</span>
+               ${r.can_edit ? `<button type="button" onclick="counselDone(${r.id})" class="text-xs border border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded px-2 py-0.5 ml-1">標記完成</button>` : ''}`)
+        : '';
+    return `<div class="rounded border ${r.follow_up && !r.follow_up_done ? 'border-l-4 border-l-rose-500 border-slate-200' : 'border-slate-200'} px-4 py-3 space-y-1">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="font-bold text-slate-900 text-sm">${esc(r.full_name)}</span>
+            <span class="text-slate-500">${esc(r.talk_date)} · ${esc(r.method)}</span>
+            <span class="font-bold rounded px-1.5 py-0.5 ${TOPIC_TONE[r.topic] || TOPIC_TONE['其他']}">${esc(r.topic)}</span>
+            <span class="text-slate-400 ml-auto">${esc(r.counselor_name)}</span>
+        </div>
+        <p class="text-sm text-slate-700 whitespace-pre-line">${esc(r.content)}</p>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>${follow}</div>
+            ${r.can_edit ? `<div class="text-xs"><button type="button" onclick="counselState.editing = ${r.id}; renderCounseling(); document.getElementById('counselBody').scrollIntoView({ behavior: 'smooth' })" class="text-ukn-700 hover:underline">修改</button>
+                <button type="button" onclick="deleteCounseling(${r.id})" class="text-slate-500 hover:text-rose-700 ml-2">刪除</button></div>` : ''}
+        </div>
+    </div>`;
+}
+
+async function saveCounseling(event) {
+    event.preventDefault();
+    const fd = new FormData(event.target);
+    const body = { talk_date: fd.get('talk_date'), method: fd.get('method'), topic: fd.get('topic'), content: fd.get('content'),
+        follow_up: fd.get('follow_up') === 'on', follow_up_note: fd.get('follow_up_note') };
+    try {
+        let r;
+        if (counselState.editing) {
+            r = await api(`/api/campus/counseling/${counselState.editing}`, { method: 'PUT', json: body });
+        } else {
+            r = await api('/api/campus/counseling', { json: { ...body, student_id: fd.get('student_id') } });
+            counselState.student = fd.get('student_id');
+        }
+        toast(r.message);
+        Object.assign(counselState, { editing: null, presetTopic: '' });
+        loadCounseling();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function counselDone(id) {
+    try { await api(`/api/campus/counseling/${id}`, { method: 'PUT', json: { follow_up_done: true } }); toast('已標記追蹤完成'); loadCounseling(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteCounseling(id) {
+    if (!confirm('確定刪除這筆紀錄？刪除後無法復原。')) return;
+    try { await api(`/api/campus/counseling/${id}`, { method: 'DELETE' }); toast('已刪除'); loadCounseling(); }
+    catch (e) { toast(e.message, 'error'); }
 }

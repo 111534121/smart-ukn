@@ -95,6 +95,11 @@ POST,/api/campus/notices,/api/campus/notices,,【科上通知】發送通知,401
 GET,/api/campus/notices/sent,/api/campus/notices/sent,,【科上通知】已發送,401,403,403,403,OK,OK,OK,老師、教職員只看到自己發的；管理員看到全部
 GET,/api/campus/broadcast/targets,/api/campus/broadcast/targets,,【科上通知】可廣播對象,401,403,403,403,OK,OK,OK,老師只有自己任教的課程；教職員、管理員另有科系、年級、全校
 POST,/api/campus/broadcast,/api/campus/broadcast,,【科上通知】課程／科系／年級／全校廣播,401,403,403,403,OK,OK,OK,老師只能廣播自己任教的課程 (別的課回 403)；科系、年級、全校限教職員、管理員
+GET,/api/campus/counseling,/api/campus/counseling,,【導生關懷紀錄】班級紀錄,401,403,403,403,OK,OK,OK,老師只能看自己的導師班；學生、家長看不到 (隱私)
+POST,/api/campus/counseling,/api/campus/counseling,,【導生關懷紀錄】新增,401,403,403,403,OK,OK,OK,老師只能記導師班的學生 (別班 403)
+PUT,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】修改,401,403,403,403,OK,OK,OK,只有記錄人或管理員能改
+DELETE,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】刪除,401,403,403,403,OK,OK,OK,只有記錄人或管理員能刪
+GET,/api/campus/counseling/export.csv,/api/campus/counseling/export.csv,,【導生關懷紀錄】匯出 CSV,401,403,403,403,OK,OK,OK,
 GET,/api/campus/notices/inbox,/api/campus/notices/inbox,,【科上通知】收件匣,401,403,OK,403,403,403,403,
 POST,/api/campus/notices/<int:notice_id>/read,/api/campus/notices/999999/read,,【科上通知】標記已讀,401,403,OK,403,403,403,403,只能標記發給自己的通知 (別人的回 404)
 GET,/api/campus/map,/api/campus/map,,校園地圖,OK,OK,OK,OK,OK,OK,OK,
