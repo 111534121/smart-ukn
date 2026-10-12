@@ -213,7 +213,12 @@ def list_counseling():
 def create_counseling():
     u = current_user()
     data = request.get_json(silent=True) or {}
-    student = student_in_scope(u, str(data.get("student_id") or ""))
+    student_id = str(data.get("student_id") or "").strip()
+    if not student_id:
+        return error("請選擇學生")
+    if not any(s["student_id"] == student_id for s in all_students()):
+        return error("查無此學號", 404)
+    student = student_in_scope(u, student_id)
     if not student:
         return error("只能記錄自己導師班的學生", 403)
     fields, msg = clean(data)
