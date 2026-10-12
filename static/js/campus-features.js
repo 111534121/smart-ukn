@@ -849,7 +849,7 @@ function renderClassAttendance() {
         const on = attendFilter.kind === kind;
         return `<button type="button" onclick="setAttendFilter('${kind}')" aria-pressed="${on}"
             class="text-left rounded border p-4 transition ${tone} ${on ? 'ring-2 ring-ukn-700 ring-offset-1' : 'hover:shadow'}">
-            <div class="text-xs font-semibold flex justify-between gap-2"><span>${label}</span><span class="font-normal opacity-70">${on ? '✓ 篩選中' : '點一下篩選'}</span></div>
+            <div class="text-sm font-semibold flex justify-between gap-2"><span>${label}</span><span class="text-xs font-normal opacity-70">${on ? '✓ 篩選中' : '點一下篩選'}</span></div>
             <div class="text-2xl font-bold mt-1">${value}</div></button>`;
     };
     document.getElementById('classAttendBody').innerHTML = `
@@ -863,7 +863,7 @@ function renderClassAttendance() {
             <input id="attendSearch" type="search" value="${esc(attendFilter.q)}" placeholder="🔍 搜尋姓名或學號" oninput="attendFilter.q = this.value; renderAttendTable()"
                 class="flex-1 min-w-[12rem] border border-slate-300 rounded px-3 py-2 text-sm">
             ${Object.entries(ATTEND_FILTERS).map(([k, f]) => `<button type="button" onclick="setAttendFilter('${k}')"
-                class="text-xs font-semibold rounded-full border px-3 py-1.5 ${attendFilter.kind === k ? 'bg-ukn-800 border-ukn-800 text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}">${f.label} ${counts[k]}</button>`).join('')}
+                class="text-sm font-semibold rounded-full border px-3 py-1.5 ${attendFilter.kind === k ? 'bg-ukn-800 border-ukn-800 text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}">${f.label} ${counts[k]}</button>`).join('')}
         </div>
         <div id="attendTable"></div>`;
     renderAttendTable();
@@ -877,23 +877,23 @@ function renderAttendTable() {
         .filter(([st]) => !q || st.full_name.toLowerCase().includes(q) || st.student_id.toLowerCase().includes(q));
     const box = document.getElementById('attendTable');
     if (!d.students.length) { box.innerHTML = '<div class="text-sm text-slate-500">這個班級目前沒有學生資料。</div>'; return; }
-    box.innerHTML = `<div class="text-xs text-slate-500 mb-2">顯示 ${rows.length} / ${d.students.length} 位學生</div>` + (rows.length ? `<div class="overflow-x-auto"><table class="w-full min-w-[720px] border-collapse text-left text-sm">
-        <thead><tr class="bg-slate-50 text-slate-600 text-xs">
-            <th class="p-2 border border-slate-200">學生</th><th class="p-2 border border-slate-200">狀態</th>
-            <th class="p-2 border border-slate-200 text-center">曠課</th><th class="p-2 border border-slate-200 text-center">遲到</th><th class="p-2 border border-slate-200 text-center">病假</th>
-            <th class="p-2 border border-slate-200">要注意的科目</th><th class="p-2 border border-slate-200">最近紀錄</th><th class="p-2 border border-slate-200"></th></tr></thead>
+    box.innerHTML = `<div class="text-sm text-slate-500 mb-2">顯示 ${rows.length} / ${d.students.length} 位學生</div>` + (rows.length ? `<div class="overflow-x-auto"><table class="w-full min-w-[720px] border-collapse text-left text-sm">
+        <thead><tr class="bg-slate-50 text-slate-600 text-sm">
+            <th class="p-2 border border-slate-200 whitespace-nowrap">學生</th><th class="p-2 border border-slate-200 whitespace-nowrap">狀態</th>
+            <th class="p-2 border border-slate-200 text-center whitespace-nowrap">曠課</th><th class="p-2 border border-slate-200 text-center whitespace-nowrap">遲到</th><th class="p-2 border border-slate-200 text-center whitespace-nowrap">病假</th>
+            <th class="p-2 border border-slate-200">要注意的科目</th><th class="p-2 border border-slate-200 whitespace-nowrap">最近紀錄</th><th class="p-2 border border-slate-200"></th></tr></thead>
         <tbody>${rows.map(([st, i]) => {
             const lv = ATTEND_LEVEL[st.level];
             return `<tr class="${lv.row}">
                 <td class="p-2 border border-slate-200"><div class="font-semibold text-slate-900">${esc(st.full_name)}</div><div class="text-xs text-slate-500">${esc(st.student_id)}</div></td>
-                <td class="p-2 border border-slate-200"><span class="inline-block text-xs font-bold rounded px-2 py-0.5 ${lv.badge}">${lv.text}</span></td>
-                <td class="p-2 border border-slate-200 text-center font-bold ${st.totals['曠課'] ? 'text-rose-700' : 'text-slate-400'}">${st.totals['曠課']}${st.recent_absent ? `<div class="text-[11px] font-normal text-rose-700">近 7 天 ${st.recent_absent}</div>` : ''}</td>
+                <td class="p-2 border border-slate-200"><span class="inline-block text-sm font-bold rounded px-2 py-0.5 whitespace-nowrap ${lv.badge}">${lv.text}</span></td>
+                <td class="p-2 border border-slate-200 text-center font-bold ${st.totals['曠課'] ? 'text-rose-700' : 'text-slate-400'}">${st.totals['曠課']}${st.recent_absent ? `<div class="text-xs font-normal text-rose-700 whitespace-nowrap">近 7 天 ${st.recent_absent}</div>` : ''}</td>
                 <td class="p-2 border border-slate-200 text-center ${st.totals['遲到'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['遲到']}</td>
                 <td class="p-2 border border-slate-200 text-center ${st.totals['病假'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['病假']}</td>
-                <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div class="text-xs"><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-xs text-slate-400">—</span>'}</td>
-                <td class="p-2 border border-slate-200 text-xs text-slate-500">${st.last_date ? mmdd(st.last_date) : '—'}</td>
-                <td class="p-2 border border-slate-200 text-right whitespace-nowrap">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-xs font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">📣 提醒</button>` : ''}
-                    <button type="button" onclick="counselFromAttendance(${i})" class="text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
+                <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-slate-400">—</span>'}</td>
+                <td class="p-2 border border-slate-200 text-slate-600 whitespace-nowrap">${st.last_date ? mmdd(st.last_date) : '—'}</td>
+                <td class="p-2 border border-slate-200 text-right whitespace-nowrap">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-sm font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">📣 提醒</button>` : ''}
+                    <button type="button" onclick="counselFromAttendance(${i})" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
             </tr>`;
         }).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500 rounded border border-dashed border-slate-300 p-6 text-center">沒有符合的學生</div>');
 }
