@@ -320,11 +320,21 @@ def init_database():
               `school_from` varchar(100) NOT NULL,
               `purpose` varchar(100) NOT NULL,
               `target_dept` varchar(100) DEFAULT '資訊管理科（五專）',
+              `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生 或 未來家長',
               `visited_at` timestamp NOT NULL DEFAULT current_timestamp(),
               `ip_address` varchar(50) DEFAULT '127.0.0.1',
               PRIMARY KEY (`log_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+
+        # visitor_logs 補上 visitor_type 欄位 (既有資料庫升級用，已存在就略過)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'visitor_logs' AND COLUMN_NAME = 'visitor_type'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `visitor_logs` ADD COLUMN `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生 或 未來家長'")
+            print("✅ visitor_logs 已新增 visitor_type 欄位")
 
         # 18. 建立跨系統期限雷達表 deadlines (功能 2: 校曆連動雷達)
         cursor.execute("""
@@ -639,6 +649,23 @@ def init_database():
               PRIMARY KEY (`id`),
               KEY `idx_wish_event_status` (`event_id`, `status`, `created_at`),
               CONSTRAINT `fk_wish_event` FOREIGN KEY (`event_id`) REFERENCES `anniversary_events` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 獎學金資格比對 / 學業預警 Email 推播紀錄：避免同一件事重複通知同一人
+        # (student_id, notify_type, ref_key, recipient_role) 唯一，寄過的不會再寄，
+        # 除非比對結果變了 (例如新符合另一筆獎學金、預警等級改變) 才會產生新的 ref_key
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `notification_log` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `notify_type` varchar(20) NOT NULL COMMENT 'scholarship 或 early_warning',
+              `ref_key` varchar(50) NOT NULL COMMENT '獎學金 id，或 early_warning 的 "等級:學期"',
+              `recipient_role` varchar(10) NOT NULL COMMENT 'student 或 parent',
+              `sent_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_notify` (`student_id`, `notify_type`, `ref_key`, `recipient_role`),
+              CONSTRAINT `fk_notify_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 

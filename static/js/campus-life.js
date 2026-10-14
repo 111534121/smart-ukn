@@ -10,6 +10,42 @@ let scholarshipData = [];
 let scholarshipAuto = null;
 let scholarshipCategory = '';
 
+// 系統自動比對 (/api/scholarships/match)：獎助學金符合資格 Email 推播依這份結果判斷
+async function loadScholarshipMatch() {
+    const section = document.getElementById('scholarshipMatchSection');
+    const body = document.getElementById('scholarshipMatchBody');
+    if (!isLoggedIn() || !['學生', '家長'].includes(currentUser.role)) { section.classList.add('hidden'); return; }
+    try {
+        const r = await api('/api/scholarships/match');
+        section.classList.remove('hidden');
+        document.getElementById('scholarshipMatchParentNote').classList.toggle('hidden', currentUser.role !== '家長');
+
+        const row = (s) => `
+            <div class="rounded border ${s.is_urgent ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'} p-3 space-y-1.5">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="font-bold text-slate-900 text-sm">${esc(s.name)}</div>
+                    ${statusBadge(s.is_urgent ? `${mmdd(s.deadline)} 截止 (剩 ${s.days_left} 天)` : `${mmdd(s.deadline)} 截止`, s.is_urgent ? 'red' : 'amber')}
+                </div>
+                <div class="text-xs text-slate-500">${esc(s.provider || '')} ${s.amount ? '· ' + esc(s.amount) : ''}</div>
+                ${s.missing && s.missing.length ? `<div class="text-xs text-slate-600">${s.missing.map(esc).join('、')}</div>` : ''}
+                ${r.can_apply && s.apply_url ? `<a href="${esc(s.apply_url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs bg-ukn-800 hover:bg-ukn-900 text-white rounded px-3 py-1.5">前往申請 ↗</a>` : ''}
+            </div>`;
+
+        const section_html = (title, items, emptyText) => `
+            <div>
+                <div class="text-xs font-bold text-slate-500 mb-1.5">${esc(title)}（${items.length}）</div>
+                ${items.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">${items.map(row).join('')}</div>`
+                    : `<div class="text-xs text-slate-400">${esc(emptyText)}</div>`}
+            </div>`;
+
+        body.innerHTML = section_html('✅ 符合資格', r.eligible, '目前沒有符合資格的項目') +
+            section_html('🟡 差一點就符合', r.partial, '沒有部分符合的項目');
+    } catch (e) {
+        section.classList.add('hidden');
+        console.error(e);
+    }
+}
+
 async function loadScholarships() {
     const body = document.getElementById('scholarshipBody');
     try {
@@ -70,11 +106,12 @@ async function loadDorm() {
     const body = document.getElementById('dormBody');
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入學生帳號即可線上申請宿舍床位。'); return; }
     if (isStaff()) { loadDormAdmin(); return; }
-    if (currentUser.role !== '學生') { body.innerHTML = '<div class="text-sm text-slate-500">僅學生本人可以申請。</div>'; return; }
+    if (!['學生', '家長'].includes(currentUser.role)) { body.innerHTML = '<div class="text-sm text-slate-500">僅學生本人與家長可以查看。</div>'; return; }
+    const isParent = currentUser.role === '家長';
     try {
         const apps = (await api('/api/campus/dorm/mine')).data;
         const active = apps.find(a => a.status !== '已取消');
-        body.innerHTML = (active ? dormProgressHtml(active) : '') + `
+        const applyForm = isParent ? '' : `
             <details ${active ? '' : 'open'} class="rounded border border-slate-200 bg-slate-50 p-4 mt-4">
                 <summary class="cursor-pointer font-semibold text-sm text-slate-800">${active ? '申請其他學期' : '線上申請宿舍床位'}</summary>
                 <form onsubmit="submitDorm(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mt-3">
@@ -86,6 +123,7 @@ async function loadDorm() {
                     <div class="sm:col-span-2 text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出申請</button></div>
                 </form>
             </details>`;
+        body.innerHTML = (active ? dormProgressHtml(active) : (isParent ? '<div class="text-sm text-slate-500">子女目前沒有進行中的宿舍申請。</div>' : '')) + applyForm;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
@@ -556,10 +594,54 @@ async function loadCrowd() {
 
 let noticeClasses = [];
 
+function noticeListHtml(inbox, readonly) {
+    return `
+        <h3 class="font-bold text-slate-900">${readonly ? '子女收到的通知' : '收到的通知'} ${inbox.unread_count ? `<span class="text-xs text-accent-500">(${inbox.unread_count} 則未讀)</span>` : ''}</h3>
+        ${inbox.data.length ? inbox.data.map(n => `
+            <details class="rounded border ${PRIORITY_STYLE[n.priority]?.bar || ''} ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ${readonly ? '' : `ontoggle="if(this.open) readNotice(${n.id}, this)"`}>
+                <summary class="cursor-pointer list-none px-4 py-3">
+                    <div class="flex items-center gap-2 flex-wrap">${n.is_read ? '' : '<span data-dot class="w-2 h-2 rounded-full bg-accent-500"></span>'}
+                        ${priorityBadge(n.priority)}
+                        <span class="font-semibold text-slate-900">${esc(n.title)}</span></div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">${noticeTargetText(n)} · ${esc(n.sender)} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}${n.whole_class ? '' : ' · 個別通知'}${n.due_date ? ` · 期限 ${mmdd(n.due_date)}` : ''}</div>
+                </summary>
+                <div class="px-4 pb-4 text-sm text-slate-700 whitespace-pre-line">${esc(n.content)}</div>
+            </details>`).join('') : '<div class="text-sm text-slate-500">目前沒有通知。</div>'}`;
+}
+
 async function loadNotices() {
     const body = document.getElementById('noticesBody');
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入後即可收到或發送班級通知。'); return; }
     if (isStaff()) return loadNoticesTeacher();
+    if (currentUser.role === '家長') {
+        try {
+            const [inbox, msgs] = await Promise.all([api('/api/campus/notices/inbox'), api('/api/campus/advisor-messages')]);
+            body.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="space-y-2">${noticeListHtml(inbox, true)}
+                        <p class="text-xs text-slate-400 pt-2">僅能查看，標記已讀與加入／退出班級請由學生本人操作。</p></div>
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-slate-900">留言給導師</h3>
+                        <form onsubmit="sendAdvisorMessage(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
+                            <input name="subject" required maxlength="60" placeholder="主旨" class="w-full border border-slate-300 rounded px-3 py-2">
+                            <textarea name="content" required rows="3" maxlength="1000" placeholder="想跟導師說的事" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+                            <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出</button></div>
+                        </form>
+                        <h3 class="font-bold text-slate-900">留言紀錄</h3>
+                        ${msgs.data.length ? msgs.data.map(m => `
+                            <div class="rounded border border-slate-200 px-4 py-3 space-y-1.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="font-semibold text-slate-900">${esc(m.subject)}</span>
+                                    ${statusBadge(m.status, m.status === '待回覆' ? 'amber' : 'green')}
+                                </div>
+                                <p class="text-sm text-slate-700 whitespace-pre-line">${esc(m.content)}</p>
+                                ${m.reply ? `<div class="text-sm bg-ukn-50 border border-ukn-200 rounded px-3 py-2"><span class="text-xs font-bold text-ukn-700">導師回覆：</span>${esc(m.reply)}</div>` : ''}
+                            </div>`).join('') : '<div class="text-sm text-slate-500">還沒有留言紀錄。</div>'}
+                    </div>
+                </div>`;
+        } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+        return;
+    }
     if (currentUser.role !== '學生') { body.innerHTML = '<div class="text-sm text-slate-500">班級通知提供學生與老師使用。</div>'; return; }
     try {
         const [cls, inbox] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/inbox')]);
@@ -567,19 +649,7 @@ async function loadNotices() {
         const joined = noticeClasses.filter(c => c.joined), others = noticeClasses.filter(c => !c.joined);
         body.innerHTML = `
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 space-y-2">
-                    <h3 class="font-bold text-slate-900">收到的通知 ${inbox.unread_count ? `<span class="text-xs text-accent-500">(${inbox.unread_count} 則未讀)</span>` : ''}</h3>
-                    ${inbox.data.length ? inbox.data.map(n => `
-                        <details class="rounded border ${PRIORITY_STYLE[n.priority]?.bar || ''} ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ontoggle="if(this.open) readNotice(${n.id}, this)">
-                            <summary class="cursor-pointer list-none px-4 py-3">
-                                <div class="flex items-center gap-2 flex-wrap">${n.is_read ? '' : '<span data-dot class="w-2 h-2 rounded-full bg-accent-500"></span>'}
-                                    ${priorityBadge(n.priority)}
-                                    <span class="font-semibold text-slate-900">${esc(n.title)}</span></div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">${noticeTargetText(n)} · ${esc(n.sender)} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}${n.whole_class ? '' : ' · 個別通知'}${n.due_date ? ` · 期限 ${mmdd(n.due_date)}` : ''}</div>
-                            </summary>
-                            <div class="px-4 pb-4 text-sm text-slate-700 whitespace-pre-line">${esc(n.content)}</div>
-                        </details>`).join('') : '<div class="text-sm text-slate-500">目前沒有通知。</div>'}
-                </div>
+                <div class="lg:col-span-2 space-y-2">${noticeListHtml(inbox, false)}</div>
                 <div class="space-y-4">
                     <div class="rounded border border-slate-200 p-4 space-y-2">
                         <h3 class="font-bold text-slate-900 text-sm">我加入的班級</h3>
@@ -595,6 +665,15 @@ async function loadNotices() {
                 </div>
             </div>`;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+async function sendAdvisorMessage(event) {
+    event.preventDefault();
+    try {
+        const r = await api('/api/campus/advisor-messages', { json: Object.fromEntries(new FormData(event.target)) });
+        toast(r.message);
+        loadNotices();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 async function readNotice(id, el) {
@@ -662,7 +741,7 @@ let broadcastTargets = null;
 async function loadNoticesTeacher() {
     const body = document.getElementById('noticesBody');
     try {
-        const [cls, sent, targets] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets')]);
+        const [cls, sent, targets, advisorMsgs] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets'), api('/api/campus/advisor-messages')]);
         noticeClasses = cls.data;
         broadcastTargets = targets.data;
         noticeSelectedClass = noticeSelectedClass || (noticeClasses.find(c => c.is_advised) || noticeClasses[0])?.class_name;
@@ -686,6 +765,19 @@ async function loadNoticesTeacher() {
                         <button type="button" onclick="noticeMode='broadcast'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'broadcast' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">${broadcastTargets.school !== null ? '課程／全校廣播' : '課程廣播'}</button>
                     </div>
                     ${noticeMode === 'broadcast' ? broadcastComposeHtml() : noticeComposeHtml()}
+                    <div><h3 class="font-bold text-slate-900 mb-2">家長留言 ${advisorMsgs.data.filter(m => m.status === '待回覆').length ? `<span class="text-xs text-accent-500">(${advisorMsgs.data.filter(m => m.status === '待回覆').length} 則待回覆)</span>` : ''}</h3>
+                        ${advisorMsgs.data.length ? `<div class="space-y-2">${advisorMsgs.data.map(m => `
+                            <div class="rounded border ${m.status === '待回覆' ? 'border-accent-500/50 bg-accent-50/30' : 'border-slate-200'} px-4 py-3 space-y-1.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="font-semibold text-slate-900">${esc(m.subject)}</span>
+                                    ${statusBadge(m.status, m.status === '待回覆' ? 'amber' : 'green')}
+                                </div>
+                                <div class="text-[11px] text-slate-500">${esc(m.class_name)} · ${esc(m.student_name)}同學家長 ${esc(m.parent_name)} · ${esc(m.created_at.slice(5, 16).replace('-', '/'))}</div>
+                                <p class="text-sm text-slate-700 whitespace-pre-line">${esc(m.content)}</p>
+                                ${m.reply ? `<div class="text-sm bg-white border border-slate-200 rounded px-3 py-2"><span class="text-xs font-bold text-ukn-700">導師回覆：</span>${esc(m.reply)}</div>`
+                                    : `<form onsubmit="replyAdvisorMessage(event, ${m.id})" class="flex gap-2"><input name="reply" required placeholder="回覆家長..." class="flex-1 border border-slate-300 rounded px-3 py-1.5 text-sm"><button class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold rounded px-3">回覆</button></form>`}
+                            </div>`).join('')}</div>` : '<div class="text-sm text-slate-500">目前沒有家長留言。</div>'}
+                    </div>
                     <div><h3 class="font-bold text-slate-900 mb-2">已發送</h3>
                         ${sent.data.length ? `<div class="space-y-2">${sent.data.map(n => `
                             <details class="rounded border border-slate-200 px-4 py-3"><summary class="cursor-pointer list-none">
@@ -773,6 +865,13 @@ async function sendNotice(event) {
         toast(r.message);
         loadNoticesTeacher();
     } catch (e) { toast(e.message, 'error'); }
+}
+
+async function replyAdvisorMessage(event, id) {
+    event.preventDefault();
+    const reply = event.target.reply.value;
+    try { await api(`/api/campus/advisor-messages/${id}/reply`, { json: { reply } }); loadNoticesTeacher(); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function createClass(event) {
