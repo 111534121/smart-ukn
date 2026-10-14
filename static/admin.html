@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>康寧大學 校務法規與行政申辦管理系統 - UKN Admin</title>
+    <link rel="icon" type="image/png" href="/img/icon-192.png">
     <!-- Fonts & Tailwind CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,6 +163,12 @@
                 <button onclick="switchTab('links')" id="tabBtn-links" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生專區連結</button>
                 <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">缺曠課通知（模擬）</button>
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
+                <button onclick="switchTab('campus')" id="tabBtn-campus" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校園生活管理</button>
+                <button onclick="switchTab('faculty')" id="tabBtn-faculty" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">教師專長</button>
+                <button onclick="switchTab('anniversary')" id="tabBtn-anniversary" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校慶跑馬燈</button>
+                <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">訪客登記</button>
+                <button onclick="switchTab('audit')" id="tabBtn-audit" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">修改紀錄</button>
+                <button onclick="switchTab('selfcheck')" id="tabBtn-selfcheck" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">自動功能檢測</button>
             </div>
 
             <!-- 分頁 0: 學生未命中搜尋與詞庫維護 -->
@@ -358,6 +365,29 @@
                 </div>
             </div>
 
+            <!-- 分頁 8: 校園生活管理 (官網行事曆同步、教室借用、櫃子繳費) -->
+            <div id="panel-campus" class="hidden space-y-5">
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm">同步康寧官網行事曆</h3>
+                            <p class="text-xs text-slate-500">從官網行事曆頁嵌入的公開 Google 日曆匯入學校事項，顯示在前台月曆。國定假日會自動抓取，不需要同步。</p>
+                        </div>
+                        <button onclick="syncUknCalendar(this)" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold text-xs whitespace-nowrap">立即同步</button>
+                    </div>
+                    <div id="campusSyncResult" class="text-xs text-slate-600"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">教室借用審核</h3>
+                    <div id="campusBookings" class="space-y-2 text-sm"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">櫃子租借：現場繳費確認</h3>
+                    <p class="text-xs text-slate-500">學生線上保留後需在期限內到出納組繳費，收款後按「已繳費」；逾期未繳會自動釋出。</p>
+                    <div id="campusLockers" class="overflow-x-auto"></div>
+                </section>
+            </div>
+
             <!-- 分頁 6: 學生專區統一入口連結 -->
             <div id="panel-links" class="hidden space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
@@ -380,6 +410,174 @@
                         <tbody id="linkTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- 分頁 7b: 教師專長 (faculty_profiles) -->
+            <div id="panel-faculty" class="hidden space-y-4">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    前台「教師專長查詢」的資料。老師也可以自己登入修改專長、簡介與是否收專題生；姓名、科別與是否公開在這裡維護。
+                    辦公室、分機與「目前是否上課」以姓名對應校園地圖的老師資料。
+                </div>
+                <form id="facultyForm" onsubmit="saveFacultyProfile(event)" class="bg-white border border-slate-200 rounded p-4 space-y-3 text-xs sm:text-sm">
+                    <div class="flex items-center justify-between">
+                        <h3 id="facultyFormTitle" class="font-bold text-slate-900">新增老師</h3>
+                        <button type="button" onclick="resetFacultyForm()" class="text-ukn-700 hover:underline font-semibold">＋ 改為新增</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">姓名 *</span>
+                            <input id="facName" required maxlength="50" list="facOfficeNames" class="w-full border border-slate-300 rounded px-2 py-1.5"><datalist id="facOfficeNames"></datalist></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">職稱</span>
+                            <input id="facTitle" maxlength="50" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">科別 *</span>
+                            <input id="facDept" required maxlength="100" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">Email</span>
+                            <input id="facEmail" type="email" maxlength="100" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                    </div>
+                    <fieldset><legend class="font-semibold text-slate-700 mb-1">領域</legend><div id="facFields" class="flex flex-wrap gap-x-4 gap-y-1"></div></fieldset>
+                    <label class="block space-y-1"><span class="block font-semibold text-slate-700">專長關鍵字 * (逗號或頓號分隔)</span>
+                        <input id="facExpertise" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                    <label class="block space-y-1"><span class="block font-semibold text-slate-700">研究與指導方向簡介</span>
+                        <textarea id="facSummary" maxlength="500" rows="2" class="w-full border border-slate-300 rounded px-2 py-1.5"></textarea></label>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label class="flex items-center gap-1.5"><input id="facProjects" type="checkbox" checked> 可指導專題</label>
+                        <label class="flex items-center gap-1.5"><input id="facPublic" type="checkbox" checked> 公開於前台</label>
+                        <div class="flex-1"></div>
+                        <button type="submit" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-1.5 rounded font-semibold">儲存</button>
+                    </div>
+                </form>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead><tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <th class="p-3">姓名</th><th class="p-3">科別</th><th class="p-3">專長</th><th class="p-3">專題</th><th class="p-3">公開</th><th class="p-3 text-right">操作</th></tr></thead>
+                        <tbody id="facultyTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 8a: 校慶跑馬燈與匿名祝福 (anniversary_events / anniversary_wishes) -->
+            <div id="panel-anniversary" class="hidden space-y-4">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    校慶前「提前顯示天數」起，前台最上方會出現紅底跑馬燈 (中文 / English / 日本語)，校慶結束日過後自動消失。
+                    訪客可留下匿名祝福，資料庫不記錄姓名、學號或 IP；開啟「需審核」時，祝福要在下方按「顯示」才會出現在跑馬燈。
+                </div>
+
+                <form id="annivForm" onsubmit="saveAnniversaryEvent(event)" class="bg-white border border-slate-200 rounded p-4 space-y-3 text-xs sm:text-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <select id="annivEventSelect" onchange="loadAnniversary(this.value)" class="border border-slate-300 rounded px-2 py-1.5 bg-white"></select>
+                            <button type="button" onclick="newAnniversaryEvent()" class="text-ukn-700 font-semibold hover:underline whitespace-nowrap">＋ 新增校慶</button>
+                        </div>
+                        <span id="annivStatus" class="text-xs font-semibold"></span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">校慶名稱 (中文) *</span>
+                            <input id="annivNameZh" required maxlength="100" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">English name</span>
+                            <input id="annivNameEn" maxlength="150" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">日本語名称</span>
+                            <input id="annivNameJa" maxlength="100" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">校慶日期 *</span>
+                            <input id="annivStart" type="date" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">結束日期 (單日活動同校慶日)</span>
+                            <input id="annivEnd" type="date" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">提前顯示天數</span>
+                            <input id="annivDays" type="number" min="1" max="120" value="30" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label class="flex items-center gap-1.5"><input id="annivEnabled" type="checkbox" checked> 啟用跑馬燈</label>
+                        <label class="flex items-center gap-1.5"><input id="annivApproval" type="checkbox" checked> 匿名祝福需審核後才顯示</label>
+                        <div class="flex-1"></div>
+                        <button type="button" id="annivDeleteBtn" onclick="deleteAnniversaryEvent()" class="text-rose-700 hover:underline font-semibold">刪除此校慶</button>
+                        <button type="submit" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-1.5 rounded font-semibold">儲存設定</button>
+                    </div>
+                </form>
+
+                <div class="bg-white border border-slate-200 rounded p-4 space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="font-bold text-slate-900 text-sm">匿名祝福 <span id="annivPendingBadge" class="hidden ml-1 bg-rose-600 text-white text-[10px] px-1.5 rounded"></span></h3>
+                        <select id="annivWishFilter" onchange="renderAnniversaryWishes()" class="text-xs border border-slate-300 rounded px-2 py-1.5 bg-white">
+                            <option value="待審核">待審核</option><option value="顯示中">顯示中</option><option value="已隱藏">已隱藏</option><option value="">全部</option>
+                        </select>
+                    </div>
+                    <ul id="annivWishList" class="divide-y divide-slate-100 text-sm"></ul>
+                </div>
+            </div>
+
+            <!-- 分頁 8b: 訪客登記 (visitor_logs) -->
+            <div id="panel-visitors" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>未來學生與家長在登入頁的訪客登記。列表的手機號碼已遮蔽，完整資料請匯出 CSV（匯出會留下修改紀錄）。</p>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <select id="visitorDays" onchange="loadVisitorLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
+                            <option value="7">最近 7 天</option>
+                            <option value="30" selected>最近 30 天</option>
+                            <option value="90">最近 90 天</option>
+                            <option value="365">最近一年</option>
+                        </select>
+                        <button onclick="exportVisitorLogs()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-3 py-1.5 rounded font-semibold transition whitespace-nowrap">匯出 CSV</button>
+                    </div>
+                </div>
+                <div id="visitorStats" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs"></div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">登記時間</th>
+                                <th class="p-3">姓名</th>
+                                <th class="p-3">手機</th>
+                                <th class="p-3">學校</th>
+                                <th class="p-3">來訪目的</th>
+                                <th class="p-3">感興趣科系</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visitorTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 9: 修改紀錄 (audit_logs) -->
+            <div id="panel-audit" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>後台每次新增、修改、刪除規章、同義詞、申辦流程、期限、校曆與學生專區連結，都會記錄修改者、時間與修改前後內容（最近 200 筆）。點「查看內容」可看改了哪些欄位。</p>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <select id="auditTableFilter" onchange="renderAuditLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
+                            <option value="">全部資料</option>
+                        </select>
+                        <select id="auditActionFilter" onchange="renderAuditLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
+                            <option value="">全部動作</option>
+                            <option value="新增">新增</option>
+                            <option value="修改">修改</option>
+                            <option value="刪除">刪除</option>
+                            <option value="匯出">匯出</option>
+                        </select>
+                        <button onclick="loadAuditLogs()" class="border border-slate-300 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded font-semibold transition whitespace-nowrap">重新整理</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <th class="p-3">時間</th>
+                                <th class="p-3">修改者 / IP</th>
+                                <th class="p-3">動作</th>
+                                <th class="p-3">資料類別</th>
+                                <th class="p-3">項目</th>
+                                <th class="p-3 text-center">內容</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁：自動功能檢測 -->
+            <div id="panel-selfcheck" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>一鍵對全站功能跑一輪自動檢測（登入、權限、上傳下載、收藏通知、請假、報表權限稽核…）。檢測一律使用離線示範模式與假信箱，不會動到真正資料庫或寄出真實 Email，過程中建立的測試資料結束後會自動清除，可重複執行。</p>
+                    <button onclick="runSelfCheck()" id="selfCheckBtn" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded text-xs sm:text-sm font-semibold transition whitespace-nowrap shrink-0">執行自動檢測</button>
+                </div>
+                <div id="selfCheckSummary" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                <div id="selfCheckResults" class="space-y-4 text-xs sm:text-sm"></div>
             </div>
 
         </div>
@@ -663,6 +861,81 @@
             ]);
             // 關聯申辦流程名稱需要 checklistsCache，因此等上方載入完成後再載入校曆
             await loadCalendarEvents();
+            loadCampusAdmin();
+        }
+
+        // ---------- 校園生活管理 (campus 套件的管理功能) ----------
+        async function campusApi(url, body) {
+            const res = await fetch(url, body === undefined ? {} : {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.status === 'error') throw new Error(data.message || `連線失敗 (${res.status})`);
+            return data;
+        }
+
+        function loadCampusAdmin() {
+            loadCampusBookings();
+            loadCampusLockers();
+        }
+
+        async function syncUknCalendar(btn) {
+            const box = document.getElementById('campusSyncResult');
+            btn.disabled = true;
+            box.textContent = '同步中…';
+            try {
+                const r = await campusApi('/api/campus/calendar/sync', {});
+                box.textContent = `${r.message}（官網資料最新到 ${r.latest_date || '—'}）`;
+            } catch (e) {
+                box.textContent = e.message;
+            }
+            btn.disabled = false;
+        }
+
+        async function loadCampusBookings() {
+            const box = document.getElementById('campusBookings');
+            try {
+                const items = (await campusApi('/api/campus/rooms/bookings?scope=all')).data;
+                const pending = items.filter(b => b.status === '審核中');
+                box.innerHTML = pending.length ? pending.map(b => `
+                    <div class="flex flex-wrap items-center justify-between gap-2 border border-slate-200 rounded px-3 py-2">
+                        <div><strong>${escapeHtml(b.room_name)}</strong> · ${escapeHtml(b.date)} 第 ${b.period_start}${b.period_end !== b.period_start ? `-${b.period_end}` : ''} 節 · ${escapeHtml(b.purpose)} (${b.people} 人)
+                            <div class="text-xs text-slate-500">申請人：${escapeHtml(b.applicant)}${b.contact ? ` · ${escapeHtml(b.contact)}` : ''} · 管理：${escapeHtml(b.managed_by)}</div></div>
+                        <div class="flex gap-2">
+                            <button onclick="reviewBooking(${b.id}, 'approve')" class="bg-emerald-700 text-white text-xs px-3 py-1 rounded">核准</button>
+                            <button onclick="reviewBooking(${b.id}, 'reject')" class="border border-rose-300 text-rose-700 text-xs px-3 py-1 rounded">不核准</button>
+                        </div>
+                    </div>`).join('') : '<div class="text-xs text-slate-500">目前沒有待審核的借用申請。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function reviewBooking(id, action) {
+            const note = action === 'reject' ? prompt('不核准原因：') : '';
+            if (note === null) return;
+            try { await campusApi(`/api/campus/rooms/bookings/${id}`, { action, note }); loadCampusBookings(); }
+            catch (e) { alert(e.message); }
+        }
+
+        async function loadCampusLockers() {
+            const box = document.getElementById('campusLockers');
+            try {
+                const rows = (await campusApi('/api/campus/lockers/admin')).data;
+                box.innerHTML = rows.length ? `
+                    <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                        <thead><tr class="bg-slate-50 text-slate-600"><th class="p-2">櫃號</th><th class="p-2">區域</th><th class="p-2">學號</th><th class="p-2">狀態</th><th class="p-2">繳費期限</th><th class="p-2"></th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">${rows.map(r => `<tr>
+                            <td class="p-2 font-mono">${escapeHtml(r.locker_id)}</td><td class="p-2">${escapeHtml(r.area)}</td><td class="p-2">${escapeHtml(r.holder)}</td>
+                            <td class="p-2">${escapeHtml(r.status)}</td><td class="p-2">${escapeHtml(r.pay_deadline || '—')}</td>
+                            <td class="p-2 text-right">${r.status === '保留中' ? `<button onclick="markLockerPaid('${escapeHtml(r.locker_id)}', ${r.fee})" class="bg-ukn-800 text-white text-xs px-3 py-1 rounded">已繳費 ${r.fee} 元</button>` : ''}</td>
+                        </tr>`).join('')}</tbody>
+                    </table>` : '<div class="text-xs text-slate-500">目前沒有線上保留的櫃子。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function markLockerPaid(id, fee) {
+            if (!confirm(`確認 ${id} 已收到 ${fee} 元？`)) return;
+            try { await campusApi(`/api/campus/lockers/${id}/paid`, {}); loadCampusLockers(); }
+            catch (e) { alert(e.message); }
         }
 
         async function loadUnmatchedQueries() {
@@ -719,17 +992,13 @@
             const cid = document.getElementById('convCategory').value;
 
             try {
-                const res = await fetch('/api/admin/unmatched-queries/convert-synonym', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query_id: queryId, user_keyword: uk, official_term: ot, category_id: cid })
-                });
-                const data = await res.json();
+                const data = await adminWrite('/api/admin/unmatched-queries/convert-synonym', 'POST',
+                    { query_id: queryId, user_keyword: uk, official_term: ot, category_id: cid });
                 alert(data.message);
                 closeConvertModal();
                 await loadAllData();
             } catch (e) {
-                console.error(e);
+                alert(e.message);
             }
         }
 
@@ -873,8 +1142,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -885,6 +1154,475 @@
             if (activeBtn) {
                 activeBtn.className = 'px-4 py-2.5 text-ukn-800 font-bold border-b-2 border-accent-500 whitespace-nowrap' + (tab === 'unmatched' ? ' flex items-center gap-1.5' : '');
             }
+            // 修改紀錄每次切過來都重新抓，才看得到剛剛在其他分頁做的修改
+            if (tab === 'audit') loadAuditLogs();
+            if (tab === 'visitors') loadVisitorLogs();
+            if (tab === 'anniversary') loadAnniversary();
+            if (tab === 'faculty') loadFacultyAdmin();
+        }
+
+        // ---------- 教師專長 (faculty_profiles) ----------
+        let facultyAdmin = { data: [], fields_available: [] };
+        let facultyEditingId = null;
+
+        async function loadFacultyAdmin() {
+            const tbody = document.getElementById('facultyTableBody');
+            try {
+                const res = await fetch('/api/admin/faculty');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                facultyAdmin = data;
+                document.getElementById('facOfficeNames').innerHTML = data.office_names.map(n => `<option value="${escapeHtml(n)}">`).join('');
+                if (!document.getElementById('facFields').children.length) resetFacultyForm();
+                tbody.innerHTML = data.data.map(p => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(p.name)} <span class="text-xs font-normal text-slate-500">${escapeHtml(p.title || '')}</span></td>
+                        <td class="p-3 whitespace-nowrap">${escapeHtml(p.dept_name)}</td>
+                        <td class="p-3 text-xs">${escapeHtml(p.expertise)}</td>
+                        <td class="p-3">${p.accepts_projects ? '✓' : '—'}</td>
+                        <td class="p-3">${p.is_public ? '✓' : '<span class="text-rose-700">隱藏</span>'}</td>
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <button onclick="editFacultyProfile(${Number(p.id)})" class="text-ukn-700 hover:underline font-semibold">編輯</button>
+                            <button onclick="deleteFacultyProfile(${Number(p.id)})" class="text-rose-700 hover:underline font-semibold ml-2">刪除</button>
+                        </td>
+                    </tr>`).join('') || '<tr><td colspan="6" class="p-4 text-center text-slate-400">尚無資料</td></tr>';
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">${escapeHtml(e.message || '無法載入')}</td></tr>`;
+            }
+        }
+
+        function renderFacultyFieldBoxes(selected) {
+            document.getElementById('facFields').innerHTML = facultyAdmin.fields_available.map(f => `
+                <label class="flex items-center gap-1 text-xs"><input type="checkbox" value="${escapeHtml(f)}" ${selected.includes(f) ? 'checked' : ''}> ${escapeHtml(f)}</label>`).join('');
+        }
+
+        function resetFacultyForm() {
+            facultyEditingId = null;
+            document.getElementById('facultyForm').reset();
+            document.getElementById('facultyFormTitle').textContent = '新增老師';
+            renderFacultyFieldBoxes([]);
+        }
+
+        function editFacultyProfile(id) {
+            const p = facultyAdmin.data.find(x => x.id === id);
+            if (!p) return;
+            facultyEditingId = id;
+            document.getElementById('facultyFormTitle').textContent = `編輯：${p.name}`;
+            document.getElementById('facName').value = p.name;
+            document.getElementById('facTitle').value = p.title || '';
+            document.getElementById('facDept').value = p.dept_name;
+            document.getElementById('facEmail').value = p.email || '';
+            document.getElementById('facExpertise').value = p.expertise;
+            document.getElementById('facSummary').value = p.research_summary || '';
+            document.getElementById('facProjects').checked = !!p.accepts_projects;
+            document.getElementById('facPublic').checked = !!p.is_public;
+            renderFacultyFieldBoxes(String(p.fields || '').split(','));
+            document.getElementById('facultyForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveFacultyProfile(e) {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('facName').value,
+                title: document.getElementById('facTitle').value,
+                dept_name: document.getElementById('facDept').value,
+                email: document.getElementById('facEmail').value,
+                expertise: document.getElementById('facExpertise').value,
+                research_summary: document.getElementById('facSummary').value,
+                fields: [...document.querySelectorAll('#facFields input:checked')].map(i => i.value),
+                accepts_projects: document.getElementById('facProjects').checked,
+                is_public: document.getElementById('facPublic').checked
+            };
+            const id = facultyEditingId;
+            const res = await fetch(id ? `/api/admin/faculty/${id}` : '/api/admin/faculty', {
+                method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            alert(data.message || (res.ok ? '已儲存' : '儲存失敗'));
+            if (res.ok) { resetFacultyForm(); loadFacultyAdmin(); }
+        }
+
+        async function deleteFacultyProfile(id) {
+            const p = facultyAdmin.data.find(x => x.id === id);
+            if (!p || !confirm(`確定刪除「${p.name}」的專長資料？`)) return;
+            const res = await fetch(`/api/admin/faculty/${id}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) alert(data.message || '刪除失敗');
+            loadFacultyAdmin();
+        }
+
+        // ---------- 校慶跑馬燈與匿名祝福 ----------
+        let annivData = { events: [], wishes: [], event_id: 0 };
+
+        async function annivRequest(url, method, body) {
+            const res = await fetch(url, {
+                method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `操作失敗 (${res.status})`);
+            return data;
+        }
+
+        async function loadAnniversary(eventId) {
+            try {
+                const res = await fetch(`/api/admin/anniversary${eventId ? `?event_id=${encodeURIComponent(eventId)}` : ''}`);
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.message);
+                annivData = data;
+                const select = document.getElementById('annivEventSelect');
+                select.innerHTML = data.events.length
+                    ? data.events.map(e => `<option value="${e.id}">${escapeHtml(e.start_date)} ${escapeHtml(e.name_zh)}</option>`).join('')
+                    : '<option value="">尚未設定校慶</option>';
+                select.value = String(data.event_id || '');
+                const event = data.events.find(e => e.id === data.event_id);
+                event ? fillAnniversaryForm(event) : newAnniversaryEvent();
+                renderAnniversaryWishes();
+            } catch (e) {
+                document.getElementById('annivWishList').innerHTML = `<li class="py-3 text-center text-rose-600 text-xs">${escapeHtml(e.message || '無法載入校慶設定')}</li>`;
+            }
+        }
+
+        function fillAnniversaryForm(e) {
+            document.getElementById('annivNameZh').value = e.name_zh || '';
+            document.getElementById('annivNameEn').value = e.name_en || '';
+            document.getElementById('annivNameJa').value = e.name_ja || '';
+            document.getElementById('annivStart').value = e.start_date;
+            document.getElementById('annivEnd').value = e.end_date;
+            document.getElementById('annivDays').value = e.announce_days;
+            document.getElementById('annivEnabled').checked = !!e.is_enabled;
+            document.getElementById('annivApproval').checked = !!e.require_approval;
+            document.getElementById('annivDeleteBtn').classList.remove('hidden');
+            const status = document.getElementById('annivStatus');
+            status.textContent = `顯示期間 ${e.display_from} ～ ${e.display_until}・${e.is_showing ? '前台顯示中' : e.is_enabled ? '目前不在顯示期間' : '已停用'}`;
+            status.className = `text-xs font-semibold ${e.is_showing ? 'text-emerald-700' : 'text-slate-500'}`;
+        }
+
+        function newAnniversaryEvent() {
+            annivData.event_id = 0;
+            document.getElementById('annivForm').reset();
+            document.getElementById('annivDays').value = 30;
+            document.getElementById('annivDeleteBtn').classList.add('hidden');
+            document.getElementById('annivStatus').textContent = '新增校慶活動';
+            document.getElementById('annivStatus').className = 'text-xs font-semibold text-ukn-700';
+            annivData.wishes = [];
+            renderAnniversaryWishes();
+        }
+
+        async function saveAnniversaryEvent(e) {
+            e.preventDefault();
+            const body = {
+                name_zh: document.getElementById('annivNameZh').value,
+                name_en: document.getElementById('annivNameEn').value,
+                name_ja: document.getElementById('annivNameJa').value,
+                start_date: document.getElementById('annivStart').value,
+                end_date: document.getElementById('annivEnd').value || document.getElementById('annivStart').value,
+                announce_days: Number(document.getElementById('annivDays').value),
+                is_enabled: document.getElementById('annivEnabled').checked,
+                require_approval: document.getElementById('annivApproval').checked
+            };
+            try {
+                const id = annivData.event_id;
+                const data = await annivRequest(id ? `/api/admin/anniversary/events/${id}` : '/api/admin/anniversary/events', id ? 'PUT' : 'POST', body);
+                alert(data.message);
+                loadAnniversary(id || data.id);
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function deleteAnniversaryEvent() {
+            const id = annivData.event_id;
+            if (!id || !confirm('確定刪除此校慶活動？所有匿名祝福也會一併刪除。')) return;
+            try {
+                await annivRequest(`/api/admin/anniversary/events/${id}`, 'DELETE');
+                loadAnniversary();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function renderAnniversaryWishes() {
+            const filter = document.getElementById('annivWishFilter').value;
+            const wishes = annivData.wishes.filter(w => !filter || w.status === filter);
+            const pending = annivData.wishes.filter(w => w.status === '待審核').length;
+            const badge = document.getElementById('annivPendingBadge');
+            badge.textContent = `${pending} 則待審核`;
+            badge.classList.toggle('hidden', !pending);
+            const tone = { '待審核': 'bg-amber-100 text-amber-900', '顯示中': 'bg-emerald-100 text-emerald-800', '已隱藏': 'bg-slate-100 text-slate-600' };
+            document.getElementById('annivWishList').innerHTML = wishes.length ? wishes.map(w => `
+                <li class="py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-slate-900 break-words">${escapeHtml(w.message)}</div>
+                        <div class="text-[11px] text-slate-400">${escapeHtml(w.created_at)} · ${escapeHtml(w.lang)}</div>
+                    </div>
+                    <span class="text-[11px] px-1.5 py-0.5 rounded font-semibold whitespace-nowrap ${tone[w.status] || ''}">${escapeHtml(w.status)}</span>
+                    <div class="flex gap-2 text-xs whitespace-nowrap">
+                        ${w.status !== '顯示中' ? `<button onclick="moderateWish(${Number(w.id)}, '顯示中')" class="text-emerald-700 font-semibold hover:underline">顯示</button>` : ''}
+                        ${w.status !== '已隱藏' ? `<button onclick="moderateWish(${Number(w.id)}, '已隱藏')" class="text-slate-600 font-semibold hover:underline">隱藏</button>` : ''}
+                        <button onclick="moderateWish(${Number(w.id)}, null)" class="text-rose-700 font-semibold hover:underline">刪除</button>
+                    </div>
+                </li>`).join('')
+                : `<li class="py-3 text-center text-slate-400 text-xs">${annivData.event_id ? '沒有符合的祝福' : '請先儲存校慶設定'}</li>`;
+        }
+
+        async function moderateWish(id, status) {
+            if (status === null && !confirm('確定刪除這則祝福？')) return;
+            try {
+                await annivRequest(`/api/admin/anniversary/wishes/${id}`, status ? 'PUT' : 'DELETE', status ? { status } : null);
+                loadAnniversary(annivData.event_id);
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        // ---------- 訪客登記 (visitor_logs) ----------
+        async function loadVisitorLogs() {
+            const tbody = document.getElementById('visitorTableBody');
+            const days = document.getElementById('visitorDays').value;
+            try {
+                const res = await fetch(`/api/admin/visitor-logs?days=${days}`);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status !== 'success') {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">${escapeHtml(data.message || `無法載入訪客紀錄 (${res.status})`)}</td></tr>`;
+                    return;
+                }
+                const top = (items) => items.length
+                    ? items.slice(0, 4).map(i => `<div class="flex justify-between gap-2"><span class="truncate">${escapeHtml(i.name)}</span><span class="font-bold">${i.count}</span></div>`).join('')
+                    : '<div class="text-slate-400">尚無資料</div>';
+                document.getElementById('visitorStats').innerHTML = `
+                    <div class="bg-white border border-slate-200 rounded p-3"><div class="text-slate-500">最近 ${data.days} 天訪客</div><div class="text-2xl font-bold text-slate-900 mt-1">${data.total} 人</div></div>
+                    <div class="bg-white border border-slate-200 rounded p-3 space-y-1"><div class="text-slate-500 mb-1">來訪目的</div>${top(data.by_purpose)}</div>
+                    <div class="bg-white border border-slate-200 rounded p-3 space-y-1"><div class="text-slate-500 mb-1">感興趣科系</div>${top(data.by_dept)}</div>`;
+                tbody.innerHTML = data.data.length ? data.data.map(v => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 whitespace-nowrap text-slate-500">${escapeHtml(v.visited_at)}</td>
+                        <td class="p-3 font-semibold text-slate-900">${escapeHtml(v.visitor_name)}</td>
+                        <td class="p-3 font-mono text-xs">${escapeHtml(v.phone)}</td>
+                        <td class="p-3">${escapeHtml(v.school_from)}</td>
+                        <td class="p-3">${escapeHtml(v.purpose)}</td>
+                        <td class="p-3">${escapeHtml(v.target_dept)}</td>
+                    </tr>`).join('')
+                    : '<tr><td colspan="6" class="p-4 text-center text-slate-400">這段期間沒有訪客登記</td></tr>';
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-600">無法連線到伺服器</td></tr>';
+            }
+        }
+
+        function exportVisitorLogs() {
+            window.open(`/api/admin/visitor-logs/export.csv?days=${document.getElementById('visitorDays').value}`, '_blank');
+        }
+
+        // ---------- 修改紀錄 (audit_logs) ----------
+        const AUDIT_TABLE_LABELS = {
+            knowledge_base: '校規條文',
+            synonym_dictionary: '同義詞',
+            checklist_items: '申辦流程',
+            deadlines: '重要日程',
+            academic_calendar: '校曆事項',
+            links: '學生專區連結',
+            leave_requests: '請假審核',
+            visitor_logs: '訪客登記',
+            faculty_profiles: '教師專長',
+            anniversary_events: '校慶設定',
+            anniversary_wishes: '校慶祝福',
+            student_privacy_settings: '個資授權',
+            attendance_records: '缺曠紀錄',
+            classes: '班級通知班級',
+            notices: '班級通知',
+            cert_submissions: '證照審核',
+            dorm_applications: '宿舍申請',
+            room_bookings: '教室借用',
+            lockers: '櫃子租借',
+            report_files: '報表文件'
+        };
+        // 常見欄位的中文名稱；沒列到的直接顯示欄位名
+        const AUDIT_FIELD_LABELS = {
+            title: '標題', category: '分類', category_id: '分類編號', category_name: '分類名稱', subcategory: '子項目',
+            keyword: '關鍵字', official_term: '官方名稱', user_keyword: '口語詞彙', content: '條文內容',
+            doc_name: '法規依據', page: '頁碼', url: '網址', description: '說明', group: '群組', todo: '待辦備註',
+            event_name: '事項名稱', start_date: '開始日期', end_date: '截止日期', related_checklist_id: '關聯申辦流程',
+            business_name: '申辦項目', steps_json: '辦理步驟', required_docs: '應備文件', office_hours: '辦公時間',
+            office_location: '辦公室位置', contact_phone: '分機', form_download_url: '表單下載', system_url: '系統入口',
+            deadline_week_info: '受理期程', audience: '適用對象', semester_week: '學期週次', applies_to_role: '適用身分',
+            applies_to_dept: '適用科系', related_system_url: '系統入口', status_badge: '狀態標籤',
+            status: '狀態', review_note: '審核意見', days: '匯出天數', count: '筆數',
+            name_zh: '校慶名稱', name_en: '英文名稱', name_ja: '日文名稱', announce_days: '提前顯示天數',
+            require_approval: '祝福需審核', is_enabled: '啟用', message: '祝福內容',
+            parent_alert_consent: '授權家長查看', advisor_alert_consent: '授權導師查看', student_id: '學號',
+            class_name: '班級', password: '加入密碼', created_by: '建立者', priority: '緊急程度', whole_class: '整班通知',
+            recipients: '收件學生', due_date: '期限', name: '名稱', stage: '進度', bed: '床位', note: '備註',
+            room_name: '教室', date: '日期', applicant: '申請人', locker_id: '櫃號', holder: '租用者',
+            course_name: '課程', type: '類別'
+        };
+        const AUDIT_ACTION_STYLES = {
+            '新增': 'bg-emerald-100 text-emerald-800',
+            '修改': 'bg-amber-100 text-amber-800',
+            '刪除': 'bg-rose-100 text-rose-800',
+            '匯出': 'bg-sky-100 text-sky-800'
+        };
+        let auditCache = [];
+
+        async function loadAuditLogs() {
+            const tbody = document.getElementById('auditTableBody');
+            try {
+                const res = await fetch('/api/admin/audit-logs');
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status !== 'success') {
+                    auditCache = [];
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">${escapeHtml(data.message || `無法載入修改紀錄 (${res.status})`)}</td></tr>`;
+                    return;
+                }
+                auditCache = data.data || [];
+                // 篩選選單只列出有紀錄的資料類別
+                const filter = document.getElementById('auditTableFilter');
+                const current = filter.value;
+                const tables = [...new Set(auditCache.map(l => l.table_name))];
+                filter.innerHTML = '<option value="">全部資料</option>' + tables.map(t =>
+                    `<option value="${escapeHtml(t)}">${escapeHtml(AUDIT_TABLE_LABELS[t] || t)}</option>`).join('');
+                filter.value = tables.includes(current) ? current : '';
+                renderAuditLogs();
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-600">無法連線到伺服器</td></tr>';
+            }
+        }
+
+        // ---------- 自動功能檢測 ----------
+        async function runSelfCheck() {
+            const btn = document.getElementById('selfCheckBtn');
+            const summaryBox = document.getElementById('selfCheckSummary');
+            const resultsBox = document.getElementById('selfCheckResults');
+            btn.disabled = true;
+            btn.textContent = '檢測中…（約數秒，請稍候）';
+            resultsBox.innerHTML = '<div class="text-slate-500 p-4">執行中，請稍候…</div>';
+            summaryBox.classList.add('hidden');
+            try {
+                const res = await fetch('/api/admin/self-check', { method: 'POST' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status !== 'success') {
+                    resultsBox.innerHTML = `<div class="p-4 text-rose-600">檢測失敗：${escapeHtml(data.message || `HTTP ${res.status}`)}</div>`;
+                    return;
+                }
+                renderSelfCheck(data);
+            } catch (e) {
+                console.error(e);
+                resultsBox.innerHTML = '<div class="p-4 text-rose-600">無法連線到伺服器</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '執行自動檢測';
+            }
+        }
+
+        function renderSelfCheck(report) {
+            const summaryBox = document.getElementById('selfCheckSummary');
+            const resultsBox = document.getElementById('selfCheckResults');
+            summaryBox.classList.remove('hidden');
+            const pct = report.completion_percent;
+            const pctColor = pct >= 100 ? 'text-emerald-700' : pct >= 80 ? 'text-amber-600' : 'text-rose-600';
+            summaryBox.innerHTML = `
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">完成度</div>
+                    <div class="text-2xl font-bold mt-1 ${pctColor}">${pct}%</div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">檢測項目</div>
+                    <div class="text-2xl font-bold mt-1 text-slate-900">${report.total}</div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">通過 / 未通過</div>
+                    <div class="text-2xl font-bold mt-1 text-slate-900">${report.passed} <span class="text-rose-600">/ ${report.failed_count}</span></div>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200">
+                    <div class="text-xs text-slate-500 font-semibold">執行時間</div>
+                    <div class="text-sm font-bold mt-1 text-slate-700">${escapeHtml(report.generated_at)}</div>
+                </div>`;
+
+            const byFeature = {};
+            report.results.forEach(r => {
+                (byFeature[r.feature] = byFeature[r.feature] || []).push(r);
+            });
+            const icon = { pass: '✅', fail: '❌', error: '💥' };
+            resultsBox.innerHTML = Object.entries(byFeature).map(([feature, items]) => {
+                const okCount = items.filter(i => i.status === 'pass').length;
+                return `<div class="rounded border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-3 py-2 font-bold text-slate-800 flex items-center justify-between">
+                        <span>${escapeHtml(feature)}</span>
+                        <span class="text-xs ${okCount === items.length ? 'text-emerald-700' : 'text-rose-600'}">${okCount}/${items.length}</span>
+                    </div>
+                    <table class="w-full text-left border-collapse">
+                        <tbody>${items.map(i => `<tr class="border-t border-slate-100 align-top">
+                            <td class="p-2 w-8 text-center">${icon[i.status] || '?'}</td>
+                            <td class="p-2 font-semibold text-slate-700 whitespace-nowrap">${escapeHtml(i.name)}</td>
+                            <td class="p-2 text-slate-600 break-all">${escapeHtml((i.detail || '').split('\\n')[0])}</td>
+                            <td class="p-2 text-slate-400 text-right whitespace-nowrap">${i.ms}ms</td>
+                        </tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
+        }
+
+        // 從修改前/後內容挑一個看得懂的名稱當作「項目」欄
+        function auditRecordName(log) {
+            const obj = log.after_json || log.before_json || {};
+            const name = obj.title || obj.event_name || obj.business_name || obj.official_term || obj.keyword || obj.name_zh || obj.name || obj.class_name || obj.room_name || obj.locker_id || obj.student_id || obj.message || '';
+            const extra = log.table_name === 'synonym_dictionary' && obj.user_keyword ? `${obj.user_keyword} → ` : '';
+            return `#${log.record_id}${name ? ' ' + extra + name : ''}`;
+        }
+
+        function formatAuditValue(value) {
+            if (value === null || value === undefined || value === '') return '（空白）';
+            if (typeof value === 'object') return JSON.stringify(value, null, 0);
+            return String(value);
+        }
+
+        function renderAuditDetail(log) {
+            const before = log.before_json || {};
+            const after = log.after_json || {};
+            let keys;
+            if (log.action === '修改') {
+                keys = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+                    .filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+                if (!keys.length) return '<div class="text-slate-500">內容沒有變更。</div>';
+            } else {
+                keys = Object.keys(log.action === '刪除' ? before : after);
+            }
+            return `<table class="w-full text-xs border-collapse">
+                <thead><tr class="text-slate-500"><th class="p-1.5 text-left w-32">欄位</th>${log.action === '修改' ? '<th class="p-1.5 text-left">修改前</th><th class="p-1.5 text-left">修改後</th>' : '<th class="p-1.5 text-left">內容</th>'}</tr></thead>
+                <tbody>${keys.map(k => `<tr class="border-t border-slate-200 align-top">
+                    <td class="p-1.5 font-semibold text-slate-700">${escapeHtml(AUDIT_FIELD_LABELS[k] || k)}</td>
+                    ${log.action === '修改'
+                        ? `<td class="p-1.5 text-rose-700 line-through break-all">${escapeHtml(formatAuditValue(before[k]))}</td><td class="p-1.5 text-emerald-800 break-all">${escapeHtml(formatAuditValue(after[k]))}</td>`
+                        : `<td class="p-1.5 break-all">${escapeHtml(formatAuditValue((log.action === '刪除' ? before : after)[k]))}</td>`}
+                </tr>`).join('')}</tbody>
+            </table>`;
+        }
+
+        function renderAuditLogs() {
+            const tableFilter = document.getElementById('auditTableFilter').value;
+            const actionFilter = document.getElementById('auditActionFilter').value;
+            const rows = auditCache.filter(l => (!tableFilter || l.table_name === tableFilter) && (!actionFilter || l.action === actionFilter));
+            const tbody = document.getElementById('auditTableBody');
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">${auditCache.length ? '沒有符合篩選條件的紀錄' : '目前還沒有任何修改紀錄'}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(l => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(l.changed_at)}</td>
+                    <td class="p-3"><span class="font-semibold text-slate-900">${escapeHtml(l.changed_by)}</span> <span class="text-[11px] text-slate-500">${escapeHtml(l.changed_by_role || '')}</span>${l.ip_address ? `<div class="text-[11px] text-slate-400 font-mono">IP ${escapeHtml(l.ip_address)}</div>` : ''}</td>
+                    <td class="p-3"><span class="text-xs font-semibold px-2 py-0.5 rounded ${AUDIT_ACTION_STYLES[l.action] || 'bg-slate-100 text-slate-700'}">${escapeHtml(l.action)}</span></td>
+                    <td class="p-3 text-xs font-semibold text-ukn-700">${escapeHtml(AUDIT_TABLE_LABELS[l.table_name] || l.table_name)}</td>
+                    <td class="p-3 text-slate-800">${escapeHtml(auditRecordName(l))}</td>
+                    <td class="p-3 text-center"><button onclick="toggleAuditDetail(${l.log_id})" class="text-ukn-700 hover:underline font-semibold whitespace-nowrap">查看內容</button></td>
+                </tr>
+                <tr id="auditDetail-${l.log_id}" class="hidden bg-slate-50">
+                    <td colspan="6" class="p-3">${renderAuditDetail(l)}</td>
+                </tr>`).join('');
+        }
+
+        function toggleAuditDetail(logId) {
+            document.getElementById(`auditDetail-${logId}`)?.classList.toggle('hidden');
         }
 
         function openModal(mode) {
@@ -925,16 +1663,24 @@
             const method = id ? 'PUT' : 'POST';
 
             try {
-                await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                await adminWrite(url, method, payload);
                 closeModal();
                 await loadRules();
             } catch (e) {
-                console.error(e);
+                alert(e.message);
             }
+        }
+
+        // 寫入 API 共用：失敗時丟出後端訊息 (例如權限不足、必填欄位、資料庫寫入失敗)
+        async function adminWrite(url, method, body) {
+            const res = await fetch(url, {
+                method,
+                headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+                body: body === undefined ? undefined : JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.status === 'error') throw new Error(data.message || `儲存失敗 (${res.status})`);
+            return data;
         }
 
         function editRule(id) {
@@ -955,10 +1701,10 @@
         async function deleteRule(id) {
             if (!confirm('確定要刪除這筆校規條文嗎？')) return;
             try {
-                await fetch(`/api/rules/${id}`, { method: 'DELETE' });
+                await adminWrite(`/api/rules/${id}`, 'DELETE');
                 await loadRules();
             } catch (e) {
-                console.error(e);
+                alert(e.message);
             }
         }
 
@@ -969,25 +1715,21 @@
             const cid = document.getElementById('sCategory').value;
 
             try {
-                await fetch('/api/synonyms', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_keyword: uk, official_term: ot, category_id: cid })
-                });
+                await adminWrite('/api/synonyms', 'POST', { user_keyword: uk, official_term: ot, category_id: cid });
                 closeSynonymModal();
                 await loadSynonyms();
             } catch (e) {
-                console.error(e);
+                alert(e.message);
             }
         }
 
         async function deleteSynonym(id) {
             if (!confirm('確定要刪除這筆同義詞嗎？')) return;
             try {
-                await fetch(`/api/synonyms/${id}`, { method: 'DELETE' });
+                await adminWrite(`/api/synonyms/${id}`, 'DELETE');
                 await loadSynonyms();
             } catch (e) {
-                console.error(e);
+                alert(e.message);
             }
         }
         function escapeHtml(str) {

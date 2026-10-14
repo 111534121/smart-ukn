@@ -21,14 +21,14 @@ PERIOD_TIMES = {
 
 # weekday：1 = 週一 … 7 = 週日
 DEMO_CLASS_SCHEDULE = [
-    # 資管四忠
-    {"id": 1, "class_name": "資管四忠", "student_id": None, "weekday": 1, "period_start": 3, "period_end": 4, "course_name": "環境永續與社會責任", "classroom": "G203", "teacher": "黃淑芬"},
-    {"id": 2, "class_name": "資管四忠", "student_id": None, "weekday": 2, "period_start": 1, "period_end": 2, "course_name": "基礎英文(二)", "classroom": "L201", "teacher": "Amy Chen"},
-    {"id": 3, "class_name": "資管四忠", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 5, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
-    {"id": 4, "class_name": "資管四忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "陳雅婷"},
-    {"id": 5, "class_name": "資管四忠", "student_id": None, "weekday": 4, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
-    {"id": 6, "class_name": "資管四忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "跨領域思維與創新科技", "classroom": "G101", "teacher": "李佩珊"},
-    {"id": 7, "class_name": "資管四忠", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A301", "teacher": "陳雅婷"},
+    # 資管五忠
+    {"id": 1, "class_name": "資管五忠", "student_id": None, "weekday": 1, "period_start": 3, "period_end": 4, "course_name": "環境永續與社會責任", "classroom": "G203", "teacher": "黃淑芬"},
+    {"id": 2, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 1, "period_end": 2, "course_name": "基礎英文(二)", "classroom": "L201", "teacher": "Amy Chen"},
+    {"id": 3, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 5, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
+    {"id": 4, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "彭賓鈺"},
+    {"id": 5, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
+    {"id": 6, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "跨領域思維與創新科技", "classroom": "G101", "teacher": "李佩珊"},
+    {"id": 7, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A301", "teacher": "彭賓鈺"},
     # 王小明重修
     {"id": 8, "class_name": None, "student_id": "S112001", "weekday": 1, "period_start": 6, "period_end": 7, "course_name": "程式設計(一)", "classroom": "A303", "teacher": "張文華"},
     {"id": 9, "class_name": None, "student_id": "S112001", "weekday": 3, "period_start": 6, "period_end": 6, "course_name": "程式設計(一)", "classroom": "A303", "teacher": "張文華"},
@@ -36,7 +36,7 @@ DEMO_CLASS_SCHEDULE = [
     {"id": 10, "class_name": "資管四孝", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
     {"id": 11, "class_name": "資管四孝", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 4, "course_name": "基礎英文(二)", "classroom": "L203", "teacher": "Amy Chen"},
     {"id": 12, "class_name": "資管四孝", "student_id": None, "weekday": 3, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
-    {"id": 13, "class_name": "資管四孝", "student_id": None, "weekday": 4, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "陳雅婷"},
+    {"id": 13, "class_name": "資管四孝", "student_id": None, "weekday": 4, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "彭賓鈺"},
     {"id": 14, "class_name": "資管四孝", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A302", "teacher": "林志明"},
     # 護理四忠
     {"id": 15, "class_name": "護理四忠", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "內外科護理學", "classroom": "N201", "teacher": "許美玲"},
@@ -52,7 +52,7 @@ DEMO_ANNOUNCEMENTS = [
      "content": "請同學於截止前至學生教務系統確認選課結果，逾期不再受理加退選。"},
     {"id": 2, "title": "獎助學金申請開始受理（至 10/16）", "office": "生輔組", "publish_date": "2026-09-21", "target_class": None, "url": "#",
      "content": "校內外獎助學金即日起開放線上申請，請備妥清寒證明或成績單等相關文件。"},
-    {"id": 3, "title": "9/25 班會地點改至 A402", "office": "資管科辦", "publish_date": "2026-09-23", "target_class": "資管四忠", "url": "#",
+    {"id": 3, "title": "9/25 班會地點改至 A402", "office": "資管科辦", "publish_date": "2026-09-23", "target_class": "資管五忠", "url": "#",
      "content": "因 A301 投影設備維修，本週五班會改於 A402 舉行，請準時出席。"},
     {"id": 4, "title": "圖書館利用講習開放報名", "office": "圖書館", "publish_date": "2026-09-15", "target_class": None, "url": "#",
      "content": "介紹電子資料庫查詢與館際合作服務，參加可認證學習時數 2 小時。"},
@@ -73,10 +73,10 @@ DEMO_ANNOUNCEMENT_READS = [
 ]
 
 DEMO_ASSIGNMENTS = [
-    {"id": 1, "class_name": "資管四忠", "student_id": None, "course_name": "資料結構", "title": "作業一：鏈結串列實作", "due_at": "2026-09-25 23:59", "url": "#"},
-    {"id": 2, "class_name": "資管四忠", "student_id": None, "course_name": "資料庫系統概論", "title": "ER 圖設計報告", "due_at": "2026-09-30 23:59", "url": "#"},
-    {"id": 3, "class_name": "資管四忠", "student_id": None, "course_name": "物件導向程式設計", "title": "Lab 2：類別與封裝", "due_at": "2026-09-24 12:00", "url": "#"},
-    {"id": 4, "class_name": "資管四忠", "student_id": None, "course_name": "基礎英文(二)", "title": "Reading Journal Week 3", "due_at": "2026-09-22 23:59", "url": "#"},
+    {"id": 1, "class_name": "資管五忠", "student_id": None, "course_name": "資料結構", "title": "作業一：鏈結串列實作", "due_at": "2026-09-25 23:59", "url": "#"},
+    {"id": 2, "class_name": "資管五忠", "student_id": None, "course_name": "資料庫系統概論", "title": "ER 圖設計報告", "due_at": "2026-09-30 23:59", "url": "#"},
+    {"id": 3, "class_name": "資管五忠", "student_id": None, "course_name": "物件導向程式設計", "title": "Lab 2：類別與封裝", "due_at": "2026-09-24 12:00", "url": "#"},
+    {"id": 4, "class_name": "資管五忠", "student_id": None, "course_name": "基礎英文(二)", "title": "Reading Journal Week 3", "due_at": "2026-09-22 23:59", "url": "#"},
     {"id": 5, "class_name": None, "student_id": "S112001", "course_name": "程式設計(一)", "title": "重修班：迴圈練習題", "due_at": "2026-09-28 23:59", "url": "#"},
     {"id": 6, "class_name": "資管四孝", "student_id": None, "course_name": "資料結構", "title": "作業一：鏈結串列實作", "due_at": "2026-09-26 23:59", "url": "#"},
     {"id": 7, "class_name": "護理四忠", "student_id": None, "course_name": "藥理學", "title": "常用藥物分類表", "due_at": "2026-09-29 23:59", "url": "#"},

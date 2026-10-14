@@ -1,0 +1,3 @@
+-r requirements.txt
+# pytest 版本以 requirements.txt 為準 (原本這裡寫 >=9.0，和 requirements.txt 的 <9 衝突，pip 會裝不起來)
+pytest>=8.0

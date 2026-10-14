@@ -76,7 +76,7 @@
                     <span class="block text-[11px] text-slate-500 mt-0.5">單一身分登入</span>
                 </span>
             </a>
-            <a href="/" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">直接瀏覽前台 ➔</a>
+            <a href="/" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">不登入，直接逛逛 ➔</a>
         </div>
     </header>
 
@@ -114,6 +114,11 @@
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                     </div>
 
+                    <label class="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="mRemember" checked class="h-4 w-4 rounded border-slate-300">
+                        <span>記住我（30 天內不用再登入，公用電腦請取消勾選）</span>
+                    </label>
+
                     <div id="loginErrorMsg" class="hidden p-3 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold"></div>
 
                     <button type="submit" id="loginBtn" class="w-full py-2.5 rounded bg-ukn-800 hover:bg-ukn-900 text-white font-bold transition flex items-center justify-center space-x-1.5">
@@ -128,7 +133,7 @@
                     <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
                         <button onclick="fillAccount('student1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">學生：王小明</div>
-                            <div class="text-[10px] text-slate-500 font-normal">S112001 (資管四忠)</div>
+                            <div class="text-[10px] text-slate-500 font-normal">S112001 (資管五忠)</div>
                         </button>
                         <button onclick="fillAccount('S112004', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">學生：陳冠宇</div>
@@ -143,8 +148,8 @@
                             <div class="text-[10px] text-slate-500 font-normal">學生王小明之家長</div>
                         </button>
                         <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
-                            <div class="font-bold text-ukn-900">導師：陳雅婷</div>
-                            <div class="text-[10px] text-slate-500 font-normal">資管四忠導師</div>
+                            <div class="font-bold text-ukn-900">導師：彭賓鈺</div>
+                            <div class="text-[10px] text-slate-500 font-normal">資管五忠導師</div>
                         </button>
                         <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-emerald-900">管理員：系統後台</div>
@@ -303,7 +308,7 @@
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
+                    body: JSON.stringify({ username: u, password: p, remember: document.getElementById('mRemember').checked })
                 });
                 const data = await res.json();
 
@@ -314,7 +319,7 @@
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                errBox.textContent = '無法連線至伺服器，請確認後端已啟動';
+                errBox.textContent = '連不上系統，請確認程式已經開啟';
                 errBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -350,11 +355,11 @@
                 if (res.ok && data.status === 'success') {
                     window.location.href = '/';
                 } else {
-                    errBox.textContent = data.message || '登記失敗，請檢查欄位';
+                    errBox.textContent = data.message || '登記失敗，請檢查有沒有漏填';
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                errBox.textContent = '無法連線至伺服器';
+                errBox.textContent = '連不上系統，請稍後再試';
                 errBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -368,5 +373,6 @@
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW 註冊失敗', err)));
         }
     </script>
+    <script src="/js/anniversary.js"></script>
 </body>
 </html>

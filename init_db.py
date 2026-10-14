@@ -130,31 +130,19 @@ def init_database():
               `file_path` varchar(255) DEFAULT NULL,
               `file_name` varchar(255) DEFAULT NULL,
               `file_type` varchar(20) DEFAULT NULL,
-              `issue_date` date NOT NULL,
+              `issue_date` date DEFAULT NULL,
+              `kind` enum('證照','競賽','作品') NOT NULL DEFAULT '證照' COMMENT '學生上傳的類別',
+              `review_status` enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' COMMENT '班導審核；只有已通過的證照算進畢業門檻',
+              `reviewer` varchar(50) DEFAULT NULL,
+              `review_note` varchar(200) DEFAULT NULL COMMENT '退回原因',
+              `reviewed_at` timestamp NULL DEFAULT NULL,
+              `award` varchar(60) DEFAULT NULL COMMENT '競賽名次',
+              `description` varchar(500) DEFAULT NULL,
+              `attachments` text DEFAULT NULL COMMENT '上傳的證書 / 獎狀檔案 (JSON 陣列：url、name、type)',
               `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
               PRIMARY KEY (`cert_id`),
               KEY `fk_cert_student` (`student_id`),
               CONSTRAINT `fk_cert_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        """)
-
-        # 6c. 建立學生競賽獲獎表 competitions
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS `competitions` (
-              `comp_id` int(11) NOT NULL AUTO_INCREMENT,
-              `student_id` varchar(20) NOT NULL,
-              `competition_name` varchar(150) NOT NULL,
-              `award_title` varchar(100) NOT NULL,
-              `organizer` varchar(100) DEFAULT '主辦單位',
-              `project_name` varchar(150) DEFAULT NULL,
-              `award_date` date NOT NULL,
-              `file_path` varchar(255) DEFAULT NULL,
-              `file_name` varchar(255) DEFAULT NULL,
-              `file_type` varchar(20) DEFAULT NULL,
-              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-              PRIMARY KEY (`comp_id`),
-              KEY `fk_comp_student` (`student_id`),
-              CONSTRAINT `fk_comp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
@@ -181,6 +169,7 @@ def init_database():
               `doc_name` varchar(255) NOT NULL,
               `page` int(11) DEFAULT 1,
               `url` varchar(500) NOT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
               PRIMARY KEY (`id`),
               KEY `fk_kb_category` (`category_id`),
               CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE
@@ -223,6 +212,24 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 10b. 建立修改紀錄表 audit_logs (R5：規章/同義詞/期限/申辦流程的新增、修改、刪除皆留下可追溯紀錄)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `audit_logs` (
+              `log_id` int(11) NOT NULL AUTO_INCREMENT,
+              `table_name` varchar(50) NOT NULL,
+              `record_id` varchar(50) NOT NULL,
+              `action` varchar(20) NOT NULL,
+              `changed_by` varchar(50) NOT NULL,
+              `changed_by_role` varchar(20) DEFAULT NULL,
+              `ip_address` varchar(45) DEFAULT NULL,
+              `before_json` longtext DEFAULT NULL,
+              `after_json` longtext DEFAULT NULL,
+              `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`log_id`),
+              KEY `idx_audit_table_record` (`table_name`, `record_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
         # 11. 建立申辦進度保存表 application_progress (功能 3: 我的申辦進度)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `application_progress` (
@@ -242,7 +249,6 @@ def init_database():
               CONSTRAINT `fk_prog_item` FOREIGN KEY (`item_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
-
         # 12. 建立未命中搜尋紀錄表 unmatched_queries (功能 4: 詞庫自動成長)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `unmatched_queries` (
@@ -320,20 +326,6 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
-        # 17. 建立校務服務斷點匿名回報表 friction_reports
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS `friction_reports` (
-              `report_id` int(11) NOT NULL AUTO_INCREMENT,
-              `category` varchar(50) NOT NULL,
-              `description` text DEFAULT NULL,
-              `page_context` varchar(100) DEFAULT NULL,
-              `role_context` varchar(20) DEFAULT NULL,
-              `reported_at` timestamp NOT NULL DEFAULT current_timestamp(),
-              `ip_address` varchar(50) DEFAULT '127.0.0.1',
-              PRIMARY KEY (`report_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        """)
-
         # 18. 建立跨系統期限雷達表 deadlines (功能 2: 校曆連動雷達)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `deadlines` (
@@ -354,6 +346,30 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 18b. 建立修改紀錄表 audit_logs (R5：規章/同義詞/期限/申辦流程/連結的新增、修改、刪除皆留下可追溯紀錄)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `audit_logs` (
+              `log_id` int(11) NOT NULL AUTO_INCREMENT,
+              `table_name` varchar(50) NOT NULL,
+              `record_id` varchar(50) NOT NULL,
+              `action` varchar(20) NOT NULL,
+              `changed_by` varchar(50) NOT NULL,
+              `changed_by_role` varchar(20) DEFAULT NULL,
+              `ip_address` varchar(45) DEFAULT NULL,
+              `before_json` longtext DEFAULT NULL,
+              `after_json` longtext DEFAULT NULL,
+              `changed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`log_id`),
+              KEY `idx_audit_table_record` (`table_name`, `record_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 18b. 舊資料庫的 audit_logs 補上 ip_address 欄位 (已存在時略過)
+        try:
+            cursor.execute("ALTER TABLE `audit_logs` ADD COLUMN `ip_address` varchar(45) DEFAULT NULL AFTER `changed_by_role`")
+        except mysql.connector.Error:
+            pass
+
         # 19. 建立學期校曆事項表 academic_calendar (首頁「本週可辦」橫幅)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `academic_calendar` (
@@ -363,8 +379,12 @@ def init_database():
               `end_date` date NOT NULL,
               `category` varchar(50) NOT NULL DEFAULT '教務',
               `related_checklist_id` int(11) DEFAULT NULL,
+              `owner_key` varchar(50) DEFAULT NULL COMMENT 'NULL = 全校校曆；有值 = 個人行程 (學號或 user:帳號)',
+              `note` varchar(300) DEFAULT NULL COMMENT '個人行程備註',
+              `source` varchar(60) DEFAULT NULL COMMENT '從哪則公告加入 (避免重複加入)',
               PRIMARY KEY (`id`),
               KEY `idx_cal_dates` (`start_date`, `end_date`),
+              KEY `idx_cal_owner` (`owner_key`),
               KEY `fk_cal_checklist` (`related_checklist_id`),
               CONSTRAINT `fk_cal_checklist` FOREIGN KEY (`related_checklist_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE SET NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -541,6 +561,87 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 我的科系與顯示範圍 (分系)：username 不設外鍵，因示範帳號可能不在 users 資料表
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `user_preferences` (
+              `username` varchar(50) NOT NULL,
+              `dept_id` varchar(20) DEFAULT NULL,
+              `content_scope` enum('all','mine') NOT NULL DEFAULT 'all' COMMENT 'mine = 只看全校公開與本科資訊',
+              `pinned_features` varchar(500) DEFAULT NULL COMMENT '首頁置頂的功能代碼，逗號分隔；NULL = 用預設',
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`username`),
+              KEY `fk_pref_dept` (`dept_id`),
+              CONSTRAINT `fk_pref_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON DELETE SET NULL ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 教師專長查詢：辦公室與課表沿用校園地圖資料，以姓名對應
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `faculty_profiles` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `name` varchar(50) NOT NULL,
+              `title` varchar(50) DEFAULT NULL,
+              `dept_name` varchar(100) NOT NULL,
+              `email` varchar(100) DEFAULT NULL,
+              `fields` varchar(200) NOT NULL DEFAULT '' COMMENT '領域分類，逗號分隔',
+              `expertise` varchar(400) NOT NULL COMMENT '專長關鍵字，逗號分隔',
+              `research_summary` text DEFAULT NULL,
+              `accepts_projects` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否可指導專題',
+              `is_public` tinyint(1) NOT NULL DEFAULT 1,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_faculty_name` (`name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 學期學習自評表：每位學生每學期一份，只有本人可讀寫
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `self_reviews` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `semester` varchar(10) NOT NULL COMMENT '學年-學期，例如 115-1',
+              `ratings_json` text NOT NULL COMMENT '各項 1-5 分',
+              `reflections_json` text NOT NULL COMMENT '文字反思',
+              `status` enum('草稿','已完成') NOT NULL DEFAULT '草稿',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_review_student_semester` (`student_id`, `semester`),
+              CONSTRAINT `fk_review_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 校慶跑馬燈：校慶前 announce_days 天開始顯示，end_date 過後自動隱藏
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `anniversary_events` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `name_zh` varchar(100) NOT NULL,
+              `name_en` varchar(150) DEFAULT NULL,
+              `name_ja` varchar(100) DEFAULT NULL,
+              `start_date` date NOT NULL COMMENT '校慶當天 (多天活動為第一天)',
+              `end_date` date NOT NULL COMMENT '最後一天，隔天起不再顯示',
+              `announce_days` int(11) NOT NULL DEFAULT 30 COMMENT '提前幾天開始顯示',
+              `require_approval` tinyint(1) NOT NULL DEFAULT 1 COMMENT '匿名祝福是否需審核後才顯示',
+              `is_enabled` tinyint(1) NOT NULL DEFAULT 1,
+              PRIMARY KEY (`id`),
+              KEY `idx_anniv_dates` (`start_date`, `end_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        # 匿名祝福：刻意不存姓名、學號、IP
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `anniversary_wishes` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `event_id` int(11) NOT NULL,
+              `message` varchar(100) NOT NULL,
+              `lang` varchar(5) NOT NULL DEFAULT 'zh',
+              `status` enum('待審核','顯示中','已隱藏') NOT NULL DEFAULT '待審核',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_wish_event_status` (`event_id`, `status`, `created_at`),
+              CONSTRAINT `fk_wish_event` FOREIGN KEY (`event_id`) REFERENCES `anniversary_events` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
         # 校曆範例事項 (與 app.py 的 DEMO_ACADEMIC_CALENDAR 保持一致；
         # related_checklist_id 需等 seed_data.py 匯入 checklist_items 後才有對應，未匯入前先設為 NULL)
         cursor.execute("SELECT COUNT(*) FROM `checklist_items` WHERE `item_id` = 1")
@@ -556,8 +657,167 @@ def init_database():
             (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None),
         ])
 
+        # 科上通知 (campus/messaging.py)：班級 / 群組、成員、通知、收件人與已讀
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_groups` (
+              `class_name` varchar(50) NOT NULL COMMENT '班級 / 群組名稱 (PK)',
+              `password_hash` varchar(255) NOT NULL COMMENT '加入密碼雜湊',
+              `created_by` varchar(50) NOT NULL COMMENT '建立者姓名',
+              `created_by_username` varchar(50) DEFAULT NULL COMMENT '建立者帳號 (系統自動建立時為 NULL)',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`class_name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級 / 群組';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_group_members` (
+              `class_name` varchar(50) NOT NULL,
+              `student_id` varchar(20) NOT NULL,
+              `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`class_name`, `student_id`),
+              KEY `fk_cgm_student` (`student_id`),
+              CONSTRAINT `fk_cgm_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON DELETE CASCADE ON UPDATE CASCADE,
+              CONSTRAINT `fk_cgm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級成員';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_notices` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `class_name` varchar(50) DEFAULT NULL COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL',
+              `target_type` enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型',
+              `target_label` varchar(100) DEFAULT NULL COMMENT '對象說明，例：資料庫系統概論（資管五忠）、資訊管理科（五專）、全校',
+              `whole_class` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = 整班；0 = 只發給個別學生',
+              `title` varchar(80) NOT NULL,
+              `content` text NOT NULL,
+              `priority` enum('一般','重要','緊急') NOT NULL DEFAULT '一般',
+              `sender` varchar(50) NOT NULL COMMENT '發送者姓名',
+              `sender_username` varchar(50) DEFAULT NULL COMMENT '發送者帳號',
+              `due_date` date DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_cn_class` (`class_name`),
+              KEY `idx_cn_sender` (`sender_username`),
+              CONSTRAINT `fk_cn_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：通知內容';
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `class_notice_recipients` (
+              `notice_id` int(11) NOT NULL,
+              `student_id` varchar(20) NOT NULL,
+              `read_at` timestamp NULL DEFAULT NULL COMMENT 'NULL = 尚未讀',
+              PRIMARY KEY (`notice_id`, `student_id`),
+              KEY `fk_cnr_student` (`student_id`),
+              CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
+        """)
+
+        # 舊資料庫的 class_notices 補上廣播欄位 (T09 班級／課程廣播；已存在時略過)
+        cursor.execute("ALTER TABLE `class_notices` MODIFY `class_name` varchar(50) DEFAULT NULL "
+                       "COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL'")
+        for column, definition in (
+            ("target_type", "enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型' AFTER `class_name`"),
+            ("target_label", "varchar(100) DEFAULT NULL COMMENT '對象說明' AFTER `target_type`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'class_notices' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `class_notices` ADD COLUMN `{column}` {definition}")
+                print(f"✅ class_notices 已新增 {column} 欄位")
+
+        # 導生關懷紀錄 (campus/counseling.py)：班導和學生的晤談紀錄與後續追蹤
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `counseling_records` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `student_id` varchar(20) NOT NULL,
+                `class_name` varchar(50) DEFAULT NULL COMMENT '記錄當時學生的班級',
+                `talk_date` date NOT NULL COMMENT '晤談日期',
+                `method` enum('面談','電話','線上','家長聯繫') NOT NULL DEFAULT '面談',
+                `topic` enum('學業','出缺勤','生活','生涯','家庭','身心','其他') NOT NULL DEFAULT '其他',
+                `content` text NOT NULL COMMENT '晤談內容 (個人隱私，學生與家長看不到)',
+                `follow_up` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 需要追蹤',
+                `follow_up_note` varchar(200) DEFAULT NULL COMMENT '要追蹤什麼',
+                `follow_up_done` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 已追蹤完成',
+                `counselor_username` varchar(50) NOT NULL COMMENT '記錄人帳號',
+                `counselor_name` varchar(50) NOT NULL COMMENT '記錄人姓名',
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`id`),
+                KEY `idx_counsel_student` (`student_id`, `talk_date`),
+                KEY `idx_counsel_class` (`class_name`),
+                CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
+        """)
+
+        # 學生表現紀錄 (campus/records.py)：獎懲與幹部
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `student_records` (
+                `record_id` int(11) NOT NULL AUTO_INCREMENT,
+                `student_id` varchar(20) NOT NULL,
+                `kind` enum('獎懲','幹部') NOT NULL COMMENT '獎懲 或 幹部',
+                `item` varchar(20) NOT NULL COMMENT '獎懲：嘉獎、小功、大功、申誡、小過、大過；幹部：班長、課程小老師…',
+                `count` tinyint(4) NOT NULL DEFAULT 1 COMMENT '獎懲次數，例如嘉獎 2 次；幹部固定 1',
+                `reason` varchar(200) DEFAULT NULL COMMENT '獎懲事由；小老師填負責的科目',
+                `semester` varchar(10) NOT NULL COMMENT '學期，例如 115-1',
+                `record_date` date DEFAULT NULL COMMENT '核定或擔任日期',
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (`record_id`),
+                KEY `idx_records_student` (`student_id`, `record_date`),
+                CONSTRAINT `fk_records_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生表現紀錄：獎懲與幹部 (T18)';
+        """)
+
+        # T10：證照上傳與班導審核改存在 certificates (原本在 campus_store.json)；舊資料庫補欄位
+        cursor.execute("ALTER TABLE `certificates` MODIFY `issue_date` date DEFAULT NULL")
+        for column, definition in (
+            ("kind", "enum('證照','競賽','作品') NOT NULL DEFAULT '證照' AFTER `issue_date`"),
+            ("review_status", "enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' AFTER `kind`"),
+            ("reviewer", "varchar(50) DEFAULT NULL AFTER `review_status`"),
+            ("review_note", "varchar(200) DEFAULT NULL AFTER `reviewer`"),
+            ("reviewed_at", "timestamp NULL DEFAULT NULL AFTER `review_note`"),
+            ("award", "varchar(60) DEFAULT NULL AFTER `reviewed_at`"),
+            ("description", "varchar(500) DEFAULT NULL AFTER `award`"),
+            ("attachments", "text DEFAULT NULL AFTER `description`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `certificates` ADD COLUMN `{column}` {definition}")
+                print(f"✅ certificates 已新增 {column} 欄位")
+
+        # T10：常用功能置頂改存在 user_preferences (原本在 campus_store.json)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_preferences' AND COLUMN_NAME = 'pinned_features'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `pinned_features` varchar(500) DEFAULT NULL AFTER `content_scope`")
+            print("✅ user_preferences 已新增 pinned_features 欄位")
+
+        # T10：個人行程改存在 academic_calendar (原本在 campus_store.json)；owner_key 有值的是個人行程
+        for column, definition in (
+            ("owner_key", "varchar(50) DEFAULT NULL AFTER `related_checklist_id`"),
+            ("note", "varchar(300) DEFAULT NULL AFTER `owner_key`"),
+            ("source", "varchar(60) DEFAULT NULL AFTER `note`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'academic_calendar' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `academic_calendar` ADD COLUMN `{column}` {definition}")
+                print(f"✅ academic_calendar 已新增 {column} 欄位")
+
+        # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
+        for table in ("competitions", "application_progress", "friction_reports"):
+            cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
+
         conn.commit()
-        print("🎉 3NF 正規化資料庫共 30 張資料表建立成功！")
+        cursor.execute("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()")
+        print(f"🎉 3NF 正規化資料庫共 {cursor.fetchone()[0]} 張資料表建立成功！")
 
     except mysql.connector.Error as err:
         print(f"❌ 資料庫初始化錯誤: {err}")

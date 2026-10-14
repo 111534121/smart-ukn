@@ -1,0 +1,173 @@
+﻿method,rule,url,body,說明,未登入,訪客,學生,家長,老師,教職員,管理員,備註
+GET,/uploads/<path:filename>,/uploads/not_exist.png,,上傳檔案,OK,OK,OK,OK,OK,OK,OK,⚠️ 證照、比賽照片不用登入就能讀，檔名有亂數但仍屬公開，建議討論是否加登入檢查
+GET,/forms/<path:filename>,/forms/not_exist.txt,,申辦表單下載,OK,OK,OK,OK,OK,OK,OK,
+GET,/,/,,首頁,OK,OK,OK,OK,OK,OK,OK,
+GET,/login,/login,,登入頁,OK,OK,OK,OK,OK,OK,OK,
+GET,/admin,/admin,,後台頁面,OK,OK,OK,OK,OK,OK,OK,頁面本身公開，資料靠後台 API 保護
+POST,/api/auth/login,/api/auth/login,,登入,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/auth/logout,/api/auth/logout,,登出,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/auth/me,/api/auth/me,,目前登入者,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/visitor/register,/api/visitor/register,,訪客登記,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/calendar/current-week,/api/calendar/current-week,,本週校曆,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/deadlines,/api/deadlines,,期限列表,OK,OK,OK,OK,OK,OK,OK,?role= 預覽僅教職員/管理員有效
+POST,/api/deadlines,/api/deadlines,,新增期限,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+GET,/api/calendar/now,/api/calendar/now,,進行中校曆,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/academic-calendar,/api/academic-calendar,,校曆列表,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/academic-calendar,/api/academic-calendar,,新增校曆,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+PUT,/api/academic-calendar/<int:event_id>,/api/academic-calendar/999999,,修改校曆,401,403,403,403,403,OK,OK,
+DELETE,/api/academic-calendar/<int:event_id>,/api/academic-calendar/999999,,刪除校曆,401,403,403,403,403,OK,OK,
+POST,/api/search,/api/search,,規章搜尋,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/feedback,/api/feedback,,搜尋評價,OK,OK,OK,OK,OK,OK,OK,不需登入，可能被灌票
+POST,/api/search/feedback,/api/search/feedback,,搜尋評價（舊路徑）,OK,OK,OK,OK,OK,OK,OK,前端若已不用可刪除
+GET,/api/admin/missed-queries,/api/admin/missed-queries,,找不到的問題,401,403,403,403,403,OK,OK,
+GET,/api/admin/search-stats,/api/admin/search-stats,,本週搜尋統計,401,403,403,403,403,OK,OK,
+GET,/api/admin/unmatched-queries,/api/admin/unmatched-queries,,未命中關鍵字,401,403,403,403,403,OK,OK,
+POST,/api/admin/unmatched-queries/convert-synonym,/api/admin/unmatched-queries/convert-synonym,,未命中轉同義詞,401,403,403,403,403,OK,OK,
+GET,/api/admin/audit-logs,/api/admin/audit-logs,,修改紀錄,401,403,403,403,403,OK,OK,
+GET,/api/admin/visitor-logs,/api/admin/visitor-logs,,訪客紀錄,401,403,403,403,403,OK,OK,
+GET,/api/admin/visitor-logs/export.csv,/api/admin/visitor-logs/export.csv,,匯出訪客 CSV,401,403,403,403,403,OK,OK,含完整手機號碼
+GET,/api/admin/search-feedback/stats,/api/admin/search-feedback/stats,,滿意度統計,401,403,403,403,403,OK,OK,
+GET,/api/courses,/api/courses,,課程地圖,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/courses/check,/api/courses/check,,擋修檢核（自動帶成績）,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+POST,/api/courses/check,/api/courses/check,,擋修檢核（手動模擬）,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/student/courses/personalized,/api/student/courses/personalized,,個人化課程地圖,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+POST,/api/courses/what-if,/api/courses/what-if,,被當試算,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/student/graduation-audit,/api/student/graduation-audit?student_id=S112001,,畢業學分預審（舊）,401*,403*,OK,OK,OK,OK,OK,🚨 完全沒有登入檢查，任何人可用 ?student_id= 查別人成績；且只讀示範資料、不讀 MySQL。建議直接刪除，改用 graduation/dashboard
+GET,/api/student/graduation/dashboard,/api/student/graduation/dashboard?student_id=S112001,,畢業門檻儀表板,401,403,OK,OK,OK,OK,OK,老師可查任何學生，不限導師班（與 early-warning 不一致，待討論）
+GET,/api/student/graduation/export.csv,/api/student/graduation/export.csv?student_id=S112001,,畢業門檻匯出,401,403,OK,OK,OK,OK,OK,同上
+GET,/api/teacher/class-attendance,/api/teacher/class-attendance,,【班級出缺勤】導師班出缺勤一覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班 (別班 403)；教職員、管理員可用 ?class_name= 切換班級
+GET,/api/teacher/class-overview,/api/teacher/class-overview,,【我的導師班】總覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班；學業預警遵守學生授權
+GET,/api/teacher/student-profile,/api/teacher/student-profile?student_id=S112001,,【學生個人總覽】出缺勤、學業、畢業門檻、請假、證照、晤談一頁看完,401,403,403,403,OK,OK,OK,老師只能看自己導師班的學生；學業預警遵守學生授權
+GET,/api/teacher/class-summary,/api/teacher/class-summary,,導師班級總表,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
+GET,/api/checklist/progress,/api/checklist/progress,,申辦進度查詢,OK,OK,OK,OK,OK,OK,OK,未登入回 is_authenticated=false
+POST,/api/checklist/progress,/api/checklist/progress,,勾選申辦進度,401,403*,OK,403*,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+GET,/api/student/my-applications,/api/student/my-applications,,我進行中的申辦,OK,OK,OK,OK,OK,OK,OK,未登入回 requires_login=true
+GET,/api/student/privacy-consent,/api/student/privacy-consent,,查看個資授權,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+POST,/api/student/privacy-consent,/api/student/privacy-consent,"{""parent_alert_consent"": 1, ""advisor_alert_consent"": 1}",修改個資授權,401,403*,OK,403,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+GET,/api/student/early-warning,/api/student/early-warning?student_id=S112001,,學業預警,401,403*,OK,OK,OK,OK,OK,訪客目前回 401，應為 403；家長/導師另受個資授權限制
+GET,/api/categories,/api/categories,,規章分類,OK,OK,OK,OK,OK,OK,OK,只讀示範資料，未接 knowledge_categories 表
+GET,/api/checklists,/api/checklists,,申辦流程列表,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/checklists,/api/checklists,,新增申辦流程,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+GET,/api/synonyms,/api/synonyms,,同義詞列表,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/synonyms,/api/synonyms,,新增同義詞,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+DELETE,/api/synonyms/<int:synonym_id>,/api/synonyms/999999,,刪除同義詞,401,403,403,403,403,OK,OK,
+GET,/api/rules,/api/rules,,規章列表,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/rules,/api/rules,,新增規章,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+PUT,/api/rules/<int:rule_id>,/api/rules/999999,,修改規章,401,403,403,403,403,OK,OK,
+DELETE,/api/rules/<int:rule_id>,/api/rules/999999,,刪除規章,401,403,403,403,403,OK,OK,
+GET,/api/links,/api/links,,快速連結,OK,OK,OK,OK,OK,OK,OK,存在 links.json，不在 MySQL
+POST,/api/links,/api/links,,新增連結,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+PUT,/api/links/<int:link_id>,/api/links/999999,,修改連結,401,403,403,403,403,OK,OK,
+DELETE,/api/links/<int:link_id>,/api/links/999999,,刪除連結,401,403,403,403,403,OK,OK,
+GET,/api/scholarships/match,/api/scholarships/match,,獎學金比對,401,403,OK,OK,403,403,403,
+GET,/api/health,/api/health,,健康檢查,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/stats,/api/stats,,統計數字,OK,OK,OK,OK,OK,OK,OK,courses_count、feedback_count 只算示範資料
+GET,/api/student/attendance,/api/student/attendance,,我的缺曠,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+GET,/api/admin/attendance,/api/admin/attendance,,缺曠管理,401,403,403,403,403,OK,OK,
+POST,/api/admin/attendance,/api/admin/attendance,,新增缺曠,401,403,403,403,403,OK,OK,
+POST,/api/admin/attendance/notify,/api/admin/attendance/notify,,寄送缺曠通知,401,403,403,403,403,OK,OK,測試中已替換寄信函式，不會真的寄
+GET,/api/student/dashboard,/api/student/dashboard,,今日儀表板,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+POST,/api/student/announcements/<int:announcement_id>/read,/api/student/announcements/999999/read,,公告標已讀,401,403,OK,403,403,403,403,
+POST,/api/student/leave-requests,/api/student/leave-requests,,送出假單,401,403,OK,403,403,403,403,
+DELETE,/api/student/leave-requests/<int:leave_id>,/api/student/leave-requests/999999,,撤回假單,401,403,OK,403,403,403,403,
+GET,/api/leave-requests/review,/api/leave-requests/review,,待審假單,401,403,403,403,OK,OK,OK,老師只看到導師班
+POST,/api/leave-requests/<int:leave_id>/review,/api/leave-requests/999999/review,,審核假單,401,403,403,403,OK,OK,OK,
+POST,/api/campus/calendar/sync,/api/campus/calendar/sync,,同步官網行事曆,401,403,403,403,403,OK,OK,會連官網；測試時不連外網所以管理員回 502
+GET,/api/campus/calendar/month,/api/campus/calendar/month?year=2026&month=10,,月曆,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/my-events,/api/campus/my-events,,新增我的行程,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+DELETE,/api/campus/my-events/<int:event_id>,/api/campus/my-events/999999,,刪除我的行程,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/announcements,/api/campus/announcements,,最新公告,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/course-plan/offerings,/api/campus/course-plan/offerings,,開課清單,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/course-plan/check,/api/campus/course-plan/check,,選課檢查,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/rules/suggest,/api/campus/rules/suggest?q=請假,,校規輸入提示,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/rules/candidates,/api/campus/rules/candidates?q=請假,,校規候選,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/rules/tree,/api/campus/rules/tree,,校規分類樹,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/certs/mine,/api/campus/certs/mine,,我的證照,401,403,OK,OK,403,403,403,
+GET,/api/campus/records/mine,/api/campus/records/mine,,【獎懲與幹部】我的紀錄,401,403,OK,OK,403,403,403,家長看綁定子女的紀錄
+GET,/api/campus/records/cadres,/api/campus/records/cadres,,【幹部與小老師】班級幹部,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
+POST,/api/campus/records/cadres,/api/campus/records/cadres,,【幹部與小老師】設定,401,403,403,403,OK,OK,OK,老師只能設定導師班的學生 (別班 403)
+DELETE,/api/campus/records/<int:record_id>,/api/campus/records/999999,,【幹部與小老師】取消,401,403,403,403,OK,OK,OK,只能取消幹部，獎懲不能刪
+POST,/api/campus/certs,/api/campus/certs,,上傳證照,401,403,OK,403,403,403,403,
+DELETE,/api/campus/certs/<int:item_id>,/api/campus/certs/999999,,刪除證照,401,403,OK,403,403,403,403,
+GET,/api/campus/certs/review,/api/campus/certs/review,,待審證照,401,403,403,403,OK,OK,OK,
+POST,/api/campus/certs/<int:item_id>/review,/api/campus/certs/999999/review,,審核證照,401,403,403,403,OK,OK,OK,老師只能審自己導師班 (個別資料層級，需另寫功能測試)
+GET,/api/campus/certs/stats,/api/campus/certs/stats,,證照統計,OK,OK,OK,OK,OK,OK,OK,公開：只有人數統計，不含姓名
+GET,/api/campus/classes,/api/campus/classes,,【科上通知】班級列表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)；⚠️ 任何老師都看得到「所有班級」的成員名單，不限自己的班
+POST,/api/campus/classes,/api/campus/classes,,【科上通知】建立班級,401,403,403,403,OK,OK,OK,
+POST,/api/campus/classes/password,/api/campus/classes/password,,【科上通知】設定加入密碼,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能改「任何班級」的加入密碼；示範班級預設密碼都是 ukn2026
+POST,/api/campus/classes/join,/api/campus/classes/join,,【科上通知】學生用密碼加入,401,403,OK,403,403,403,403,
+POST,/api/campus/classes/leave,/api/campus/classes/leave,,【科上通知】退出班級,401,403,OK,403,403,403,403,
+POST,/api/campus/notices,/api/campus/notices,,【科上通知】發送通知,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能對「任何班級」發通知，不限自己的班或自己建立的班
+GET,/api/campus/notices/sent,/api/campus/notices/sent,,【科上通知】已發送,401,403,403,403,OK,OK,OK,老師、教職員只看到自己發的；管理員看到全部
+GET,/api/campus/broadcast/targets,/api/campus/broadcast/targets,,【科上通知】可廣播對象,401,403,403,403,OK,OK,OK,老師只有自己任教的課程；教職員、管理員另有科系、年級、全校
+POST,/api/campus/broadcast,/api/campus/broadcast,,【科上通知】課程／科系／年級／全校廣播,401,403,403,403,OK,OK,OK,老師只能廣播自己任教的課程 (別的課回 403)；科系、年級、全校限教職員、管理員
+GET,/api/campus/counseling,/api/campus/counseling,,【導生關懷紀錄】班級紀錄,401,403,403,403,OK,OK,OK,老師只能看自己的導師班；學生、家長看不到 (隱私)
+POST,/api/campus/counseling,/api/campus/counseling,,【導生關懷紀錄】新增,401,403,403,403,OK,OK,OK,老師只能記導師班的學生 (別班 403)
+PUT,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】修改,401,403,403,403,OK,OK,OK,只有記錄人或管理員能改
+DELETE,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】刪除,401,403,403,403,OK,OK,OK,只有記錄人或管理員能刪
+GET,/api/campus/counseling/export.csv,/api/campus/counseling/export.csv,,【導生關懷紀錄】匯出 CSV,401,403,403,403,OK,OK,OK,
+GET,/api/campus/notices/inbox,/api/campus/notices/inbox,,【科上通知】收件匣,401,403,OK,403,403,403,403,
+POST,/api/campus/notices/<int:notice_id>/read,/api/campus/notices/999999/read,,【科上通知】標記已讀,401,403,OK,403,403,403,403,只能標記發給自己的通知 (別人的回 404)
+GET,/api/campus/map,/api/campus/map,,校園地圖,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/map/find,/api/campus/map/find?q=A101,,找教室,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/teachers,/api/campus/teachers,,老師辦公室,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/rooms,/api/campus/rooms,,空教室,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/rooms/book,/api/campus/rooms/book,,借教室,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/rooms/bookings,/api/campus/rooms/bookings,,我的借用,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+POST,/api/campus/rooms/bookings/<int:booking_id>,/api/campus/rooms/bookings/999999,,取消/審核借用,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)；取消限本人、核准限管理員/教職員 (個別資料層級)
+GET,/api/campus/lockers,/api/campus/lockers,,櫃子列表,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/lockers/<locker_id>/reserve,/api/campus/lockers/Z-999/reserve,,保留櫃子,401,403,OK,403,403,403,403,
+POST,/api/campus/lockers/<locker_id>/cancel,/api/campus/lockers/Z-999/cancel,,取消櫃子,401,403,OK,403,403,403,403,
+GET,/api/campus/lockers/admin,/api/campus/lockers/admin,,櫃子管理,401,403,403,403,403,OK,OK,
+POST,/api/campus/lockers/<locker_id>/paid,/api/campus/lockers/Z-999/paid,,櫃子已繳費,401,403,403,403,403,OK,OK,
+GET,/api/campus/crowd,/api/campus/crowd,,人流,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/weather,/api/campus/weather,,天氣,OK,OK,OK,OK,OK,OK,OK,會連氣象署；測試時不連外網所以回 502。目前天氣是否為真實資料待確認
+GET,/api/campus/transport,/api/campus/transport,,交通,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/prefs,/api/campus/prefs,,置頂設定,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+PUT,/api/campus/prefs,/api/campus/prefs,,修改置頂,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/checklist-docs,/api/campus/checklist-docs,,申辦文件勾選,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+POST,/api/campus/checklist-docs,/api/campus/checklist-docs,,儲存文件勾選,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/dorm/mine,/api/campus/dorm/mine,,我的宿舍申請,401,403,OK,403,403,403,403,
+POST,/api/campus/dorm/apply,/api/campus/dorm/apply,,申請宿舍,401,403,OK,403,403,403,403,
+GET,/api/campus/dorm/applications,/api/campus/dorm/applications,,宿舍申請列表,401,403,403,403,OK,OK,OK,⚠️ 老師也看得到全校宿舍申請 (含通勤時間等個資)，待討論
+POST,/api/campus/dorm/applications/<int:app_id>,/api/campus/dorm/applications/999999,,審核宿舍,401,403,403,403,403,OK,OK,
+GET,/api/campus/affairs/mine,/api/campus/affairs/mine,,我的總務申請,401,403,OK,403,403,403,403,
+POST,/api/campus/affairs/check,/api/campus/affairs/check,,報帳檢查,401,403,OK,403,403,403,403,
+POST,/api/campus/affairs/submit,/api/campus/affairs/submit,,送出總務申請,401,403,OK,403,403,403,403,
+GET,/api/campus/scholarships,/api/campus/scholarships,,獎助學金清單,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/me/preferences,/api/me/preferences,,我的科系,OK,OK,OK,OK,OK,OK,OK,
+PUT,/api/me/preferences,/api/me/preferences,,修改我的科系,OK,OK,OK,OK,OK,OK,OK,未登入時存在 session，登入後存在帳號
+GET,/api/faculty,/api/faculty,,教師專長查詢,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/faculty/me,/api/faculty/me,,我的專長,401*,403,403,403,OK,403,403,未登入目前回 403，應為 401：先檢查是否登入再檢查身分
+PUT,/api/faculty/me,/api/faculty/me,,修改我的專長,401*,403,403,403,OK,403,403,未登入目前回 403，應為 401：先檢查是否登入再檢查身分
+GET,/api/admin/faculty,/api/admin/faculty,,後台教師專長,401,403,403,403,403,OK,OK,
+POST,/api/admin/faculty,/api/admin/faculty,,新增教師專長,401,403,403,403,403,OK,OK,
+PUT,/api/admin/faculty/<int:profile_id>,/api/admin/faculty/999999,,修改教師專長,401,403,403,403,403,OK,OK,
+DELETE,/api/admin/faculty/<int:profile_id>,/api/admin/faculty/999999,,刪除教師專長,401,403,403,403,403,OK,OK,
+GET,/api/self-review,/api/self-review,,自評表列表,401,403,OK,403,403,403,403,
+GET,/api/self-review/<semester>,/api/self-review/114-1,,查看自評表,401,403,OK,403,403,403,403,
+PUT,/api/self-review/<semester>,/api/self-review/114-1,,儲存自評表,401,403,OK,403,403,403,403,
+DELETE,/api/self-review/<semester>,/api/self-review/114-1,,刪除自評表,401,403,OK,403,403,403,403,
+POST,/api/assistant/ask,/api/assistant/ask,,AI 小幫手提問,OK,OK,OK,OK,OK,OK,OK,不需登入，有頻率限制
+GET,/api/assistant/status,/api/assistant/status,,AI 小幫手狀態,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/anniversary/marquee,/api/anniversary/marquee,,校慶跑馬燈,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/anniversary/wishes,/api/anniversary/wishes,,匿名祝福,OK,OK,OK,OK,OK,OK,OK,設計上不需登入的匿名祝福，有防洗版限制
+GET,/api/admin/anniversary,/api/admin/anniversary,,後台校慶,401,403,403,403,403,OK,OK,
+POST,/api/admin/anniversary/events,/api/admin/anniversary/events,,新增校慶活動,401,403,403,403,403,OK,OK,
+PUT,/api/admin/anniversary/events/<int:event_id>,/api/admin/anniversary/events/999999,,修改校慶活動,401,403,403,403,403,OK,OK,
+DELETE,/api/admin/anniversary/events/<int:event_id>,/api/admin/anniversary/events/999999,,刪除校慶活動,401,403,403,403,403,OK,OK,
+PUT,/api/admin/anniversary/wishes/<int:wish_id>,/api/admin/anniversary/wishes/999999,,審核祝福,401,403,403,403,403,OK,OK,
+DELETE,/api/admin/anniversary/wishes/<int:wish_id>,/api/admin/anniversary/wishes/999999,,刪除祝福,401,403,403,403,403,OK,OK,
+POST,/api/admin/self-check,/api/admin/self-check,,全站自動檢測,401,403,403,403,403,403,OK,只限管理員；測試中以假的檢測代替，不會真的跑整套
+GET,/api/campus/certs/exemption-reminder,/api/campus/certs/exemption-reminder,,證照抵免提醒,401,403,OK,403,403,403,403,
+GET,/api/campus/reports/categories,/api/campus/reports/categories,,報表分類,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/reports,/api/campus/reports,,報表列表,OK,OK,OK,OK,OK,OK,OK,依每份報表的 allowed_roles 過濾，只回傳該身分看得到的
+GET,/api/campus/reports/my/favorites,/api/campus/reports/my/favorites,,我的收藏報表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/reports/<int:file_id>,/api/campus/reports/999999,,報表詳細,OK,OK,OK,OK,OK,OK,OK,權限依報表的 allowed_roles 判斷 (個別資料層級)
+POST,/api/campus/reports,/api/campus/reports,,上傳報表,401,403,403,403,OK,OK,OK,⚠️ 老師也能上傳；報表資料存在 campus_store.json，不在 MySQL
+DELETE,/api/campus/reports/<int:file_id>,/api/campus/reports/999999,,刪除報表,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能刪除任何人上傳的報表，待討論
+GET,/api/campus/reports/<int:file_id>/download,/api/campus/reports/999999/download,,下載報表,OK,OK,OK,OK,OK,OK,OK,身分不符回 403 (個別資料層級)；下載紀錄存在 campus_store.json
+POST,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favorite,,收藏報表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+DELETE,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favorite,,取消收藏,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
+GET,/api/campus/reports/<int:file_id>/stats,/api/campus/reports/999999/stats,,報表下載統計,401,403,403,403,OK,OK,OK,
+GET,/api/staff/alerts,/api/staff/alerts,,老師 / 行政人員待辦通知,401,403,403,403,OK,OK,OK,老師只看到導師班；行政人員看全校並多了教室借用、宿舍

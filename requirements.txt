@@ -1,0 +1,9 @@
+Flask>=3.1,<4
+flask-cors>=6.0,<7
+mysql-connector-python>=9.0,<10
+Werkzeug>=3.1,<4
+# 選用：AI 申辦小幫手用 Claude 整理回答 (未安裝時改用資料庫比對回答)
+# anthropic>=1.0
+
+# 測試用 (python -m pytest)
+pytest>=8.0,<9

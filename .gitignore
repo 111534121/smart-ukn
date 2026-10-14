@@ -1,3 +1,14 @@
 __pycache__/
 *.pyc
 db_backups/
+data/
+.pytest_cache/
+static/forms/
+.env
+
+# check_all.py 每次產生的檢查報告 (只留在自己電腦)
+evidence/check_reports/
+
+# 個人資料與執行時產生的上傳檔 (不推上 GitHub)
+my_data.json
+static/uploads/report_*
