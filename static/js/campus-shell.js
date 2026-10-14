@@ -17,6 +17,7 @@ const FEATURES = [
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
     { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合' },
     { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查' },
+    { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子' },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線' },
@@ -508,6 +509,57 @@ async function enablePushNotifications() {
     }
 }
 
+// ---------- 首頁：證照可抵免學分提醒 ----------
+
+async function loadHomeCertReminder() {
+    if (currentUser.role !== '學生') return;
+    try {
+        const items = (await api('/api/campus/certs/exemption-reminder')).data;
+        if (!items.length) return;
+        document.getElementById('homeCertReminderList').innerHTML = items.map(r =>
+            `<li>・<strong>${escapeHtml(r.label)}</strong> → 可抵免「${escapeHtml(r.exempts_course)}」${r.credits} 學分</li>`).join('');
+        document.getElementById('homeCertReminderCard').classList.remove('hidden');
+    } catch (e) { /* 非必要功能，失敗就不顯示 */ }
+}
+
+// ---------- 巨匠電腦合作入口 (示範頁面，合作內容尚未正式確認) ----------
+
+function openJuguangModal() {
+    openModal('巨匠電腦（東區分校）證照培訓合作', `
+        <div class="space-y-4 text-sm">
+            <div class="rounded border border-amber-300 bg-amber-50 text-amber-900 text-xs p-3">
+                ⚠️ 示範頁面：此合作目前僅為洽談中的示範欄位，<strong>尚未正式確認</strong>。
+                實際課程內容、優惠方案與報名網址，請以巨匠電腦正式公告或東區分校櫃檯說明為準，
+                在此頁面看到的只是「有哪些證照可能可以考」的參考方向。
+            </div>
+
+            <p class="text-slate-600">如果想加強自傳/履歷上的證照項目，或是想衝前面提到的「學分抵免」門檻，可以參考下面幾個方向：</p>
+
+            <ul class="space-y-2">
+                <li class="rounded border border-slate-200 p-3">
+                    <div class="font-bold text-slate-900">TOEIC 多益密集班</div>
+                    <div class="text-xs text-slate-500 mt-0.5">550 分以上可申請抵免「基礎英文(一)(二)」共 4 學分，也是履歷上很常被看的分數。</div>
+                </li>
+                <li class="rounded border border-slate-200 p-3">
+                    <div class="font-bold text-slate-900">TQC / 程式設計相關證照班</div>
+                    <div class="text-xs text-slate-500 mt-0.5">適合想在自傳補一筆「實作能力證明」的同學，建議先確認跟系上課程的重疊程度再報名。</div>
+                </li>
+                <li class="rounded border border-slate-200 p-3">
+                    <div class="font-bold text-slate-900">辦公室軟體 / 數位行銷相關證照班</div>
+                    <div class="text-xs text-slate-500 mt-0.5">對求職比較看重行政、行銷類工作的同學可能有幫助。</div>
+                </li>
+            </ul>
+
+            <p class="text-xs text-slate-400">想自己準備、不報名補習班也沒關係——「證照與競賽成果」分頁一樣可以上傳自己考到的證照，班導確認後就會列入紀錄。</p>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded border border-slate-300 text-sm font-semibold hover:bg-slate-50">關閉</button>
+                <button type="button" onclick="closeModal(); switchTab('tab-certs');" class="px-4 py-2 rounded bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-semibold">前往「證照與競賽成果」</button>
+            </div>
+        </div>
+    `);
+}
+
 // ---------- 啟動 ----------
 
 function campusInit() {
@@ -527,6 +579,7 @@ function campusInit() {
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
     renderVisitorWelcome();
+    loadHomeCertReminder();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
 }

@@ -161,6 +161,7 @@ def init_database():
               `doc_name` varchar(255) NOT NULL,
               `page` int(11) DEFAULT 1,
               `url` varchar(500) NOT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
               PRIMARY KEY (`id`),
               KEY `fk_kb_category` (`category_id`),
               CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE

@@ -1,7 +1,21 @@
 """預約校園參觀：訪客/家長可預約，承辦單位可確認或取消，時段有名額上限。"""
 from datetime import date, timedelta
 
+import pytest
+
 import app as app_module
+import campus.visits as visits_module
+
+
+@pytest.fixture(autouse=True)
+def _reset_visit_bookings():
+    """visit_bookings 存在 data/campus_store.json，會跨 pytest 執行留存，
+    每次測試前後都清空，避免同一天重複跑測試時名額被舊資料佔滿"""
+    visits_module.bookings().clear()
+    visits_module.store.save()
+    yield
+    visits_module.bookings().clear()
+    visits_module.store.save()
 
 
 def _next_weekday(days_ahead=7):
