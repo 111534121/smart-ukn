@@ -2775,6 +2775,14 @@
 
         function buildNotifications() {
             const list = [];
+            // 班級通知 (campus-shell.js 的 pollNotices 每 90 秒更新 homeNotices)：未讀的才列出
+            if (typeof homeNotices !== 'undefined') {
+                homeNotices.filter(n => !n.is_read).slice(0, 5).forEach(n => {
+                    list.push({ id: `notice-${n.id}`, level: n.priority === '緊急' ? 'urgent' : n.priority === '重要' ? 'warning' : 'info',
+                        icon: '📣', title: `班級通知：${n.title}`, desc: `${n.sender}：${(n.content || '').slice(0, 60)}`,
+                        time: relativeDayLabel((n.created_at || '').slice(0, 10)), tab: 'tab-notices' });
+                });
+            }
             const dash = notifSources.dashboard;
             if (dash) {
                 // 作業：已逾期或 48 小時內到期；id 帶狀態，從「快到期」變成「逾期」時會再提醒一次
