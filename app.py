@@ -74,6 +74,14 @@ CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o
 if CORS_ORIGINS:
     CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
 
+@app.errorhandler(500)
+def api_internal_error(e):
+    """API 未預期的錯誤也回 JSON，前端才顯示得出原因，不會只剩「連線失敗 (500)」"""
+    if request.path.startswith("/api/"):
+        app.logger.error("API 錯誤 %s %s：%s", request.method, request.path, getattr(e, "original_exception", e))
+        return jsonify({"status": "error", "message": "伺服器處理時發生錯誤，請稍後再試；若持續發生請通知管理員"}), 500
+    return e
+
 # 檔案上傳設定 (支援 PDF 檔與證照、比賽照片)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
 FORMS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms")

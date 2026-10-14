@@ -23,10 +23,15 @@ def prefs():
         all_prefs = store.section("prefs", dict)
         mine = all_prefs.setdefault(key, {"pinned": list(DEFAULT_PINNED)})
         if request.method == "PUT":
-            pinned = (request.get_json(silent=True) or {}).get("pinned", [])
-            mine["pinned"] = [str(p)[:40] for p in pinned][:12]
+            # 只更新有送來的欄位，置頂與網站導覽分開存不會互相蓋掉
+            data = request.get_json(silent=True) or {}
+            if "pinned" in data:
+                mine["pinned"] = [str(p)[:40] for p in data["pinned"] or []][:12]
+            if "tour_seen" in data:
+                mine["tour_seen"] = bool(data["tour_seen"])
             store.save()
-    return ok(data=mine)
+    # tour_seen：這個帳號是否看過 (或跳過) 網站導覽；新帳號第一次登入時為 False，前端會自動開始導覽
+    return ok(data={**mine, "tour_seen": bool(mine.get("tour_seen"))})
 
 
 # ---------- 申辦資料自評表 (準備好的文件打勾) ----------

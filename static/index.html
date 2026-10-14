@@ -116,9 +116,7 @@
         .cal-cat-活動, .cal-cat-教務, .cal-cat-獎助 { background: #e1e8f3; border-left: 3px solid #003c9d; color: #00295f; }
         .cal-cat-個人 { background: #fefce8; border-left: 3px solid #ca8a04; color: #854d0e; }
         .cal-ev.expired { background: #f1f5f9 !important; border-left-color: #cbd5e1 !important; color: #94a3b8 !important; text-decoration: line-through; }
-        .pet-float { animation: petBob 3s ease-in-out infinite; }
-        @keyframes petBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-        @media (prefers-reduced-motion: reduce) { .pet-float { animation: none; } #heroTrack { transition: none; } }
+        @media (prefers-reduced-motion: reduce) { #heroTrack { transition: none; } }
     </style>
 </head>
 
@@ -137,6 +135,7 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+                    <button type="button" id="tourReplayBtn" onclick="startSiteTour()" class="inline-flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline whitespace-nowrap" title="重新觀看網站導覽" aria-label="重新觀看網站導覽">🧭<span class="hidden sm:inline">導覽</span></button>
                     <button type="button" onclick="switchTab('tab-map')" class="hidden md:inline hover:underline">校園地圖</button>
                     <button type="button" onclick="switchTab('tab-traffic')" class="hidden md:inline hover:underline">交通資訊</button>
                     <button type="button" onclick="switchTab('tab-links')" class="hidden md:inline hover:underline">常用系統</button>
@@ -1112,28 +1111,6 @@
             </section>
         </div>
 
-        <!-- 匿名論壇 (表白牆) -->
-        <div id="tab-forum" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">匿名論壇 · 表白牆</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">登入才能發文，但文章與留言都不會記錄你的帳號，其他同學、老師和後台都看不到是誰寫的。</p>
-                </div>
-                <div id="forumBody"></div>
-            </section>
-        </div>
-
-        <!-- 桌寵 -->
-        <div id="tab-pet" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">我的桌寵</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">每天回答學校規定或證照小問題賺積分，給學校意見也能拿積分，積分可以幫桌寵換衣服。</p>
-                </div>
-                <div id="petBody"></div>
-            </section>
-        </div>
-
         <!-- 教師專長查詢 (faculty.js) -->
         <div id="tab-faculty" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
@@ -1178,9 +1155,7 @@
             <div class="col-span-2 md:col-span-1 space-y-2">
                 <img src="/img/ukn-logo.png" alt="康寧大學" class="h-10 w-auto bg-white rounded px-2 py-1">
                 <p class="font-bold">學生學習與校務服務系統</p>
-                <p class="text-white/70 text-xs leading-6">114 臺北市內湖區康寧路三段75巷137號<br>電話 (02)2632-1181 ｜ 傳真 (02)2632-8744</p>
-                <button type="button" onclick="startSiteTour()" class="text-xs text-white/80 hover:text-white underline">🧭 重新觀看網站導覽</button>
-            </div>
+                <p class="text-white/70 text-xs leading-6">114 臺北市內湖區康寧路三段75巷137號<br>電話 (02)2632-1181 ｜ 傳真 (02)2632-8744</p>            </div>
             <div id="footerCol1" class="space-y-2"></div>
             <div id="footerCol2" class="space-y-2"></div>
             <div id="footerCol3" class="space-y-2"></div>
@@ -1205,14 +1180,6 @@
     </div>
     <div id="uiToast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white text-sm px-4 py-2.5 rounded shadow-lg max-w-[90vw]"></div>
 
-    <!-- 桌寵 (登入後出現在右下角) -->
-    <button type="button" id="petWidget" onclick="petWidgetClick()" class="hidden fixed bottom-4 right-4 z-40 pet-float" aria-label="我的桌寵">
-        <span id="petBubble" class="hidden absolute bottom-full right-0 mb-2 w-52 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 text-xs text-left text-slate-700"></span>
-        <span class="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-ukn-200 shadow-lg text-4xl">
-            <span id="petWidgetEmoji">🐱</span>
-            <span id="petWidgetOutfit" class="absolute -top-2 -right-1 text-2xl"></span>
-        </span>
-    </button>
 
 
     <!-- ======================================================== -->
@@ -1231,9 +1198,11 @@
             await loadDeptPref();
             // 選單、首頁與新功能 (campus-shell.js)；網址 #xxx 直接開到對應分頁
             campusInit();
-            // 第一次來的人顯示網站導覽 (tour.js)，結束後 (或沒有導覽時) 再請登入者確認科系
-            if (!maybeStartSiteTour()) maybePromptDept();
-            else window.addEventListener('ukn-tour-finished', maybePromptDept, { once: true });
+            // 帳號第一次登入時顯示網站導覽 (tour.js)，結束後 (或沒有導覽時) 再請登入者確認科系
+            maybeStartSiteTour().then(started => {
+                if (!started) maybePromptDept();
+                else window.addEventListener('ukn-tour-finished', maybePromptDept, { once: true });
+            });
             // 儀表板的「前往請假系統」連結取自統一入口設定，因此先載入連結
             loadStudentLinks().then(loadDashboard);
             loadLeaveReview();
@@ -2074,7 +2043,8 @@
                 if (data.status === 'success') {
                     // 將 /api/checklists 的欄位 (item_id, business_name, steps_json...) 轉為卡片渲染所需格式
                     checklistsCache = (data.data || []).map(c => {
-                        const done = (progress[c.item_id] || {}).completed_steps || [];
+                        // /api/checklist/progress 回傳 {item_id: [已完成的步驟編號]}
+                        const done = Array.isArray(progress[c.item_id]) ? progress[c.item_id] : [];
                         return {
                             checklist_id: c.item_id,
                             title: c.business_name,

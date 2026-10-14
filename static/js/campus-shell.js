@@ -23,8 +23,6 @@ const FEATURES = [
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰' },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統' },
     { key: 'notices', tab: 'tab-notices', name: '科上通知', icon: '📣', group: '社群', desc: '老師整班或個別通知' },
-    { key: 'forum', tab: 'tab-forum', name: '匿名論壇', icon: '💌', group: '社群', desc: '表白牆，完全匿名' },
-    { key: 'pet', tab: 'tab-pet', name: '我的桌寵', icon: '🐱', group: '社群', desc: '答題賺積分幫桌寵換裝' },
 ];
 const HOME_TAB = 'tab-home';
 const tabLoaders = {};          // 分頁第一次打開時要執行的載入函式 (campus-features.js 註冊)
@@ -510,40 +508,6 @@ async function enablePushNotifications() {
     }
 }
 
-// ---------- 桌寵小工具 ----------
-
-let petState = null;
-async function loadPetWidget() {
-    if (!isLoggedIn()) return;
-    try {
-        petState = (await api('/api/campus/pet')).data;
-        renderPetWidget();
-        document.getElementById('petWidget').classList.remove('hidden');
-        if (petState.questions_left > 0) {
-            setTimeout(() => petSay(`今天還有 ${petState.questions_left} 題可以答，答對 +10 積分！點我開始 ✨`), 4000);
-        }
-    } catch (e) { /* 桌寵非必要功能 */ }
-}
-
-function renderPetWidget() {
-    if (!petState) return;
-    document.getElementById('petWidgetEmoji').textContent = petState.pet.emoji;
-    document.getElementById('petWidgetOutfit').textContent = petState.outfit.emoji;
-}
-
-let petBubbleTimer = null;
-function petSay(text) {
-    const b = document.getElementById('petBubble');
-    b.textContent = text;
-    b.classList.remove('hidden');
-    clearTimeout(petBubbleTimer);
-    petBubbleTimer = setTimeout(() => b.classList.add('hidden'), 6000);
-}
-
-function petWidgetClick() {
-    if (typeof openPetQuiz === 'function') openPetQuiz(); else switchTab('tab-pet');
-}
-
 // ---------- 啟動 ----------
 
 function campusInit() {
@@ -562,7 +526,6 @@ function campusInit() {
         }
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
-    loadPetWidget();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
 }
