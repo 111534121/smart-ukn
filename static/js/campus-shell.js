@@ -484,7 +484,7 @@ async function loadHomeUpcoming() {
 
 const NOTIFY_POLL_MS = 90 * 1000;
 async function pollNotices(showSystemNotification = true) {
-    if (currentUser.role !== '學生') return;
+    if (!['學生', '家長'].includes(currentUser.role)) return;
     try {
         const data = await api('/api/campus/notices/inbox');
         const prevIds = new Set(homeNotices.map(n => n.id));
@@ -497,6 +497,8 @@ async function pollNotices(showSystemNotification = true) {
             el.classList.toggle('hidden', !count);
         });
         if (newsTab === 'notice') renderHomeNews();
+        // 班級通知併入右上角的通知中心 (index.html 的 renderNotifications)
+        if (typeof renderNotifications === 'function') renderNotifications();
         if (showSystemNotification && fresh.length) {
             toast(`📣 新的班級通知：${fresh[0].title}`);
             showSystemNotice(fresh[0]);
@@ -604,8 +606,11 @@ function campusInit() {
     loadHomeNews();
     loadWeatherSummary();
     loadHomeUpcoming();
+    // 右上角只留一個鈴鐺：學生、家長用「通知中心」(作業、缺曠、公告、請假、獎學金、班級通知)；
+    // 老師與行政人員用「待辦通知」(下方 isStaff 區塊)
+    document.getElementById('notificationDropdownContainer')?.classList.toggle('hidden', !['學生', '家長'].includes(currentUser.role));
+    if (currentUser.role === '家長') pollNotices(false);
     if (currentUser.role === '學生') {
-        document.getElementById('notifyBellBtn').classList.remove('hidden');
         pollNotices(false);
         setInterval(() => { if (document.visibilityState === 'visible') pollNotices(); }, NOTIFY_POLL_MS);
         if ('Notification' in window && Notification.permission === 'default') {
