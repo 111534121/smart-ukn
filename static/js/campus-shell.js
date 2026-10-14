@@ -526,6 +526,132 @@ function campusInit() {
         }
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
+    renderVisitorWelcome();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
+}
+
+// ---------- 訪客(未來學生／未來家長)首頁歡迎內容 ----------
+
+const VISITOR_WELCOME_CONTENT = {
+    '未來學生': {
+        subtitle: '幫你快速了解想念的科系、社團與證照機會',
+        cards: [
+            { title: '🏅 社團與證照', text: '入學後可以透過系統登錄考到的證照、參加比賽；校內也有多個社團與實習機會。' },
+            { title: '🎓 入學方式', text: '甄選入學、申請入學等管道與名額，請以官網「招生專區」最新公告為準。' },
+        ],
+    },
+    '未來家長': {
+        subtitle: '幫你快速了解學費、宿舍與聯絡窗口',
+        cards: [
+            { title: '💰 學雜費與獎助學金', text: '學校提供校內獎學金、清寒助學金，以及市府/勞動部等政府補助管道；實際金額與資格請以正式公告為準。' },
+            { title: '🏠 宿舍與校園安全', text: '在學學生可申請住宿，床位依通勤距離與身分排序；校內設有門禁與生活輔導組可協助處理生活問題。' },
+            { title: '☎️ 聯絡窗口', text: '對入學、獎助學金或宿舍有疑問，都可以直接致電學校詢問相關承辦單位。' },
+        ],
+    },
+};
+
+function deptCardHtml(d) {
+    return `
+        <div class="rounded border border-slate-200 p-3 space-y-1.5">
+            <div class="font-bold text-slate-900">${escapeHtml(d.dept_name)}</div>
+            ${d.intro ? `<div class="text-xs text-slate-600 leading-5">${escapeHtml(d.intro)}</div>` : ''}
+            ${d.highlights && d.highlights.length ? `<div class="text-[11px] text-slate-500">核心課程：${d.highlights.map(escapeHtml).join('、')}</div>` : ''}
+            ${d.careers && d.careers.length ? `<div class="text-[11px] text-ukn-700">可能出路：${d.careers.map(escapeHtml).join('、')}</div>` : ''}
+        </div>`;
+}
+
+async function renderVisitorWelcome() {
+    const section = document.getElementById('visitorWelcome');
+    if (!section) return;
+    if (currentUser.role !== '訪客' || !currentUser.visitor_type) { section.classList.add('hidden'); return; }
+    const content = VISITOR_WELCOME_CONTENT[currentUser.visitor_type] || VISITOR_WELCOME_CONTENT['未來學生'];
+    const name = currentUser.visitor_name || currentUser.full_name || '';
+    document.getElementById('visitorWelcomeTitle').textContent = `歡迎，${name}！${content.subtitle}`;
+    document.getElementById('visitorWelcomeDept').textContent = currentUser.dept_name
+        ? `您登記時填寫感興趣的科系：${currentUser.dept_name}` : '';
+
+    let depts = [], faqs = [];
+    try { depts = (await (await fetch('/api/departments')).json()).data || []; } catch (e) { /* 離線時略過科系介紹 */ }
+    try { faqs = (await (await fetch('/api/faq')).json()).data || []; } catch (e) { /* 離線時略過常見問題 */ }
+    const faqBox = document.getElementById('visitorFaqList');
+    if (faqs.length) {
+        const faqCats = [...new Set(faqs.map(f => f.category))];
+        faqBox.innerHTML = faqCats.map(cat => `
+            <div class="space-y-1.5">
+                <div class="text-xs font-bold text-slate-500">${escapeHtml(cat)}</div>
+                ${faqs.filter(f => f.category === cat).map(f => `
+                    <details class="rounded border border-slate-100 bg-slate-50 px-3 py-2">
+                        <summary class="cursor-pointer font-semibold text-slate-800 text-sm">${escapeHtml(f.q)}</summary>
+                        <div class="text-xs text-slate-600 leading-5 mt-1.5">${escapeHtml(f.a)}</div>
+                    </details>`).join('')}
+            </div>`).join('');
+    } else {
+        faqBox.innerHTML = '<div class="text-xs text-slate-400">常見問題載入失敗，請稍後再試。</div>';
+    }
+    const myDept = depts.find(d => d.dept_name === currentUser.dept_name);
+    const cards = (myDept ? [deptCardHtmlAsCard(myDept)] : []).concat(content.cards.map(c => `
+        <div class="rounded border border-slate-200 p-3 space-y-1">
+            <div class="font-bold text-slate-900">${escapeHtml(c.title)}</div>
+            <div class="text-xs text-slate-600 leading-5">${escapeHtml(c.text)}</div>
+        </div>`));
+    document.getElementById('visitorWelcomeCards').innerHTML = cards.join('');
+
+    const browser = document.getElementById('visitorDeptBrowser');
+    if (depts.length) {
+        const colleges = [...new Set(depts.map(d => d.college_name))];
+        browser.innerHTML = colleges.map(c => `
+            <div>
+                <div class="text-xs font-bold text-slate-500 mb-1.5">${escapeHtml(c)}</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${depts.filter(d => d.college_name === c).map(deptCardHtml).join('')}</div>
+            </div>`).join('');
+    } else {
+        browser.innerHTML = '<div class="text-xs text-slate-400">科系資料載入失敗，請稍後再試。</div>';
+    }
+
+    document.getElementById('visitorWelcomeContact').textContent =
+        '康寧大學總機 (02)2632-1181（可請總機轉接招生相關單位）｜114 臺北市內湖區康寧路三段75巷137號';
+    section.classList.remove('hidden');
+    loadVisitorVisits();
+}
+
+async function loadVisitorVisits() {
+    const box = document.getElementById('visitorVisitList');
+    if (!box) return;
+    try {
+        const mine = (await api('/api/campus/visits')).data;
+        box.innerHTML = mine.length ? `<div class="text-xs font-bold text-slate-500">我的預約</div>` +
+            mine.map(v => `
+                <div class="flex items-center justify-between text-xs border border-slate-200 rounded px-3 py-2">
+                    <span>${escapeHtml(v.date)} ${escapeHtml(v.slot)}（${v.party_size} 人）</span>
+                    <span class="flex items-center gap-2">
+                        <span class="px-1.5 py-0.5 rounded ${v.status === '已取消' ? 'bg-slate-100 text-slate-500' : v.status === '已確認' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}">${escapeHtml(v.status)}</span>
+                        ${v.status === '待確認' ? `<button type="button" onclick="cancelVisitBooking(${v.id})" class="text-rose-600 hover:underline">取消</button>` : ''}
+                    </span>
+                </div>`).join('') : '';
+    } catch (e) { /* 非必要功能，失敗就不顯示 */ }
+}
+
+async function submitVisitBooking(event) {
+    event.preventDefault();
+    try {
+        const r = await api('/api/campus/visits', { json: Object.fromEntries(new FormData(event.target)) });
+        toast(r.message);
+        event.target.reset();
+        loadVisitorVisits();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function cancelVisitBooking(id) {
+    try { await api(`/api/campus/visits/${id}`, { json: { action: 'cancel' } }); loadVisitorVisits(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+function deptCardHtmlAsCard(d) {
+    return `
+        <div class="rounded border border-ukn-200 bg-ukn-50/50 p-3 space-y-1">
+            <div class="font-bold text-slate-900">📚 ${escapeHtml(d.dept_name)}</div>
+            <div class="text-xs text-slate-600 leading-5">${escapeHtml(d.intro || '')}</div>
+            ${d.highlights && d.highlights.length ? `<div class="text-[11px] text-slate-500">核心課程：${d.highlights.slice(0, 3).map(escapeHtml).join('、')}</div>` : ''}
+        </div>`;
 }

@@ -75,6 +75,7 @@ def seed_data():
             (6, 'teacher1', student_pw, '老師', None, '陳雅婷 老師', '資管四忠'),
             (7, 'S112004', student_pw, '學生', 'S112004', '陳冠宇', None),
             (8, 'S112005', student_pw, '學生', 'S112005', '林雨潔', None),
+            (9, 'parent2', student_pw, '家長', 'S112002', '李建國 (美華家長)', None),
         ])
 
         # 4. 寫入完整課程地圖與先修擋修鏈

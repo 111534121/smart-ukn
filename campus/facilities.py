@@ -280,7 +280,7 @@ def update_booking(booking_id):
         else:
             return error("沒有權限", 403)
         store.save()
-    return ok(message=f"已{bk['status']}", data=bk)
+    return ok(message=f"狀態已更新為「{bk['status']}」", data=bk)
 
 
 # ---------- 櫃子租借 ----------

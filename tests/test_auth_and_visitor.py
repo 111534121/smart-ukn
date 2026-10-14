@@ -24,7 +24,26 @@ def test_visitor_register_creates_visitor_session(client):
     user = client.get("/api/auth/me").get_json()["user"]
     assert user["role"] == "訪客"
     assert "未來家長" in user["full_name"]
-    assert any(v["visitor_name"] == "測試訪客" for v in app_module.DEMO_VISITOR_LOGS)
+    # 前端要依身份顯示不同首頁內容，/api/auth/me 要能拿到 visitor_type 跟原始姓名
+    assert user["visitor_type"] == "未來家長"
+    assert user["visitor_name"] == "測試訪客"
+    row = next(v for v in app_module.DEMO_VISITOR_LOGS if v["visitor_name"] == "測試訪客")
+    assert row["visitor_type"] == "未來家長"
+
+
+def test_visitor_register_defaults_to_prospective_student(client):
+    res = client.post("/api/visitor/register", json={
+        "visitor_name": "沒填身份", "phone": "0911111111", "school_from": "南港高中", "purpose": "校園參觀"
+    })
+    assert res.status_code == 201
+    user = client.get("/api/auth/me").get_json()["user"]
+    assert user["visitor_type"] == "未來學生"
+
+
+def test_anonymous_user_has_no_visitor_type(client):
+    """沒登記過的使用者 (純瀏覽) 不應該被當成已登記的訪客顯示客製化首頁內容"""
+    data = client.get("/api/auth/me").get_json()
+    assert data["is_authenticated"] is False
 
 
 def test_visitor_register_requires_fields(client):

@@ -77,9 +77,9 @@ def dorm_apps():
 
 
 @bp.route("/api/campus/dorm/mine", methods=["GET"])
-@require("學生")
+@require("學生", "家長")
 def dorm_mine():
-    key = user_key()
+    key = current_user()["student_id"]
     apps = [a for a in dorm_apps() if a["student_id"] == key]
     apps.sort(key=lambda a: a["created_at"], reverse=True)
     return ok(data=[{**a, "stages": DORM_STAGES, "next_action": DORM_NEXT_ACTION.get(a["stage"], "") if a["status"] == "進行中" else a.get("note", "")}

@@ -162,6 +162,7 @@
                 <button onclick="switchTab('feedback')" id="tabBtn-feedback" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">搜尋滿意度回饋</button>
                 <button onclick="switchTab('links')" id="tabBtn-links" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">學生專區連結</button>
                 <button onclick="switchTab('attendance')" id="tabBtn-attendance" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">缺曠課通知（模擬）</button>
+                <button onclick="switchTab('scholarwarn')" id="tabBtn-scholarwarn" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">獎學金／預警通知</button>
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
                 <button onclick="switchTab('campus')" id="tabBtn-campus" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校園生活管理</button>
                 <button onclick="switchTab('faculty')" id="tabBtn-faculty" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">教師專長</button>
@@ -340,6 +341,19 @@
                 </div>
             </div>
 
+            <!-- 分頁：獎學金符合資格 / 學業預警 Email 推播 -->
+            <div id="panel-scholarwarn" class="hidden space-y-3">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <div class="space-y-2">
+                        <p>按下後會立即比對全校學生目前「符合資格的獎助學金」與「學業預警（二一／三二）」，寄信通知學生本人。</p>
+                        <p>家長只有在該學生本人於「個資授權」開啟<strong>家長預警授權</strong>時才會一併收到；信件內容只請登入查看，不含成績等個資。</p>
+                        <p class="text-slate-500">同一件事（同一筆獎學金／同一次預警等級）只會通知一次，之後除非比對結果改變，否則不會重複寄送。</p>
+                    </div>
+                    <button onclick="sendScholarWarnNotifications()" id="btnNotifyScholarWarn" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap disabled:opacity-50 shrink-0">立即比對並寄送</button>
+                </div>
+                <div id="scholarWarnResult" class="hidden rounded border border-slate-200 bg-white p-4 text-xs sm:text-sm text-slate-700 whitespace-pre-line"></div>
+            </div>
+
             <!-- 分頁 7: 學期校曆事項 (首頁「本週可辦」橫幅) -->
             <div id="panel-calendar" class="hidden space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
@@ -381,6 +395,11 @@
                     <div id="campusBookings" class="space-y-2 text-sm"></div>
                 </section>
                 <section class="rounded border border-slate-200 p-4 space-y-2">
+                    <h3 class="font-bold text-slate-900 text-sm">校園參觀預約</h3>
+                    <p class="text-xs text-slate-500">訪客與家長線上預約的校園參觀，確認後請主動聯絡對方。</p>
+                    <div id="campusVisits" class="space-y-2 text-sm"></div>
+                </section>
+                <section class="rounded border border-slate-200 p-4 space-y-2">
                     <h3 class="font-bold text-slate-900 text-sm">櫃子租借：現場繳費確認</h3>
                     <p class="text-xs text-slate-500">學生線上保留後需在期限內到出納組繳費，收款後按「已繳費」；逾期未繳會自動釋出。</p>
                     <div id="campusLockers" class="overflow-x-auto"></div>
@@ -389,10 +408,6 @@
                     <h3 class="font-bold text-slate-900 text-sm">匿名論壇：被檢舉的文章</h3>
                     <p class="text-xs text-slate-500">論壇不保存作者帳號，這裡只看得到內容。被 3 人以上檢舉的文章會自動隱藏。</p>
                     <div id="campusForum" class="space-y-2 text-sm"></div>
-                </section>
-                <section class="rounded border border-slate-200 p-4 space-y-2">
-                    <h3 class="font-bold text-slate-900 text-sm">學生意見箱（來自桌寵）</h3>
-                    <div id="campusFeedback" class="space-y-2 text-sm"></div>
                 </section>
             </div>
 
@@ -525,7 +540,7 @@
                         <button onclick="exportVisitorLogs()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-3 py-1.5 rounded font-semibold transition whitespace-nowrap">匯出 CSV</button>
                     </div>
                 </div>
-                <div id="visitorStats" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs"></div>
+                <div id="visitorStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs"></div>
                 <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
@@ -536,6 +551,7 @@
                                 <th class="p-3">學校</th>
                                 <th class="p-3">來訪目的</th>
                                 <th class="p-3">感興趣科系</th>
+                                <th class="p-3">身分</th>
                             </tr>
                         </thead>
                         <tbody id="visitorTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
@@ -876,7 +892,7 @@
             loadCampusBookings();
             loadCampusLockers();
             loadCampusForum();
-            loadCampusFeedback();
+            loadCampusVisits();
         }
 
         async function syncUknCalendar(btn) {
@@ -913,6 +929,30 @@
             const note = action === 'reject' ? prompt('不核准原因：') : '';
             if (note === null) return;
             try { await campusApi(`/api/campus/rooms/bookings/${id}`, { action, note }); loadCampusBookings(); }
+            catch (e) { alert(e.message); }
+        }
+
+        async function loadCampusVisits() {
+            const box = document.getElementById('campusVisits');
+            try {
+                const items = (await campusApi('/api/campus/visits')).data;
+                const pending = items.filter(v => v.status !== '已取消');
+                box.innerHTML = pending.length ? pending.map(v => `
+                    <div class="flex flex-wrap items-center justify-between gap-2 border ${v.status === '待確認' ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200'} rounded px-3 py-2">
+                        <div>${escapeHtml(v.date)} ${escapeHtml(v.slot)} · ${escapeHtml(v.contact_name)}（${v.party_size} 人）
+                            <div class="text-xs text-slate-500">電話：${escapeHtml(v.contact_phone)}${v.note ? ` · ${escapeHtml(v.note)}` : ''} · 身分：${escapeHtml(v.booked_by_role)}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-1.5 py-0.5 rounded ${v.status === '已確認' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}">${escapeHtml(v.status)}</span>
+                            ${v.status === '待確認' ? `<button onclick="reviewVisit(${v.id}, 'confirm')" class="bg-emerald-700 text-white text-xs px-3 py-1 rounded">確認</button>` : ''}
+                            <button onclick="reviewVisit(${v.id}, 'cancel')" class="border border-rose-300 text-rose-700 text-xs px-3 py-1 rounded">取消</button>
+                        </div>
+                    </div>`).join('') : '<div class="text-xs text-slate-500">目前沒有校園參觀預約。</div>';
+            } catch (e) { box.textContent = e.message; }
+        }
+
+        async function reviewVisit(id, action) {
+            try { await campusApi(`/api/campus/visits/${id}`, { action }); loadCampusVisits(); }
             catch (e) { alert(e.message); }
         }
 
@@ -958,18 +998,6 @@
             if (action === 'delete' && !confirm('確定刪除這篇文章？')) return;
             try { await campusApi(`/api/campus/forum/moderation/${id}`, { action }); loadCampusForum(); }
             catch (e) { alert(e.message); }
-        }
-
-        async function loadCampusFeedback() {
-            const box = document.getElementById('campusFeedback');
-            try {
-                const items = (await campusApi('/api/campus/feedback')).data;
-                box.innerHTML = items.length ? items.slice(0, 50).map(f => `
-                    <div class="border border-slate-200 rounded px-3 py-2">
-                        <div class="text-xs text-slate-500">${escapeHtml(f.created_at)} · ${escapeHtml(f.role)}</div>
-                        <div class="whitespace-pre-line break-words">${escapeHtml(f.content)}</div>
-                    </div>`).join('') : '<div class="text-xs text-slate-500">還沒有學生意見。</div>';
-            } catch (e) { box.textContent = e.message; }
         }
 
         async function loadUnmatchedQueries() {
@@ -1176,8 +1204,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -1425,6 +1453,7 @@
                     : '<div class="text-slate-400">尚無資料</div>';
                 document.getElementById('visitorStats').innerHTML = `
                     <div class="bg-white border border-slate-200 rounded p-3"><div class="text-slate-500">最近 ${data.days} 天訪客</div><div class="text-2xl font-bold text-slate-900 mt-1">${data.total} 人</div></div>
+                    <div class="bg-white border border-slate-200 rounded p-3 space-y-1"><div class="text-slate-500 mb-1">身分別</div>${top(data.by_visitor_type || [])}</div>
                     <div class="bg-white border border-slate-200 rounded p-3 space-y-1"><div class="text-slate-500 mb-1">來訪目的</div>${top(data.by_purpose)}</div>
                     <div class="bg-white border border-slate-200 rounded p-3 space-y-1"><div class="text-slate-500 mb-1">感興趣科系</div>${top(data.by_dept)}</div>`;
                 tbody.innerHTML = data.data.length ? data.data.map(v => `
@@ -1435,8 +1464,9 @@
                         <td class="p-3">${escapeHtml(v.school_from)}</td>
                         <td class="p-3">${escapeHtml(v.purpose)}</td>
                         <td class="p-3">${escapeHtml(v.target_dept)}</td>
+                        <td class="p-3">${escapeHtml(v.visitor_type || '')}</td>
                     </tr>`).join('')
-                    : '<tr><td colspan="6" class="p-4 text-center text-slate-400">這段期間沒有訪客登記</td></tr>';
+                    : '<tr><td colspan="7" class="p-4 text-center text-slate-400">這段期間沒有訪客登記</td></tr>';
             } catch (e) {
                 console.error(e);
                 tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-600">無法連線到伺服器</td></tr>';
@@ -2015,6 +2045,31 @@
                 console.error(e);
             } finally {
                 btn.disabled = false;
+            }
+        }
+
+        async function sendScholarWarnNotifications() {
+            const btn = document.getElementById('btnNotifyScholarWarn');
+            const box = document.getElementById('scholarWarnResult');
+            btn.disabled = true;
+            btn.textContent = '比對寄送中…';
+            box.classList.add('hidden');
+            try {
+                const res = await fetch('/api/admin/notify/scholarship-warning', { method: 'POST' });
+                const data = await res.json();
+                let text = data.message || '';
+                if ((data.failed || []).length) {
+                    text += '\n\n寄送失敗明細：\n' + data.failed.map(f => `・${f.student_id}（${f.type}）：${f.error}`).join('\n');
+                }
+                box.textContent = text;
+                box.classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+                box.textContent = '連線失敗，請稍後再試。';
+                box.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '立即比對並寄送';
             }
         }
     </script>
