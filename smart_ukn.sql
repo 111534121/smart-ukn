@@ -19,22 +19,37 @@ CREATE DATABASE IF NOT EXISTS `smart_ukn` DEFAULT CHARACTER SET utf8mb4 COLLATE 
 USE `smart_ukn`;
 
 -- --------------------------------------------------------
--- 1. 系所單位資料表 `departments`
+-- 移除廢棄系統資料表 (論壇、告白牆、遊戲積點) 與現有表重建準備
 -- --------------------------------------------------------
-DROP TABLE IF EXISTS `student_credits`;
-DROP TABLE IF EXISTS `certificates`;
-DROP TABLE IF EXISTS `visitor_logs`;
-DROP TABLE IF EXISTS `friction_reports`;
+DROP TABLE IF EXISTS `forum_posts`;
+DROP TABLE IF EXISTS `confession_wall`;
+DROP TABLE IF EXISTS `game_points`;
+
+DROP TABLE IF EXISTS `scholarship_conditions`;
+DROP TABLE IF EXISTS `counseling_records`;
+DROP TABLE IF EXISTS `class_notice_recipients`;
+DROP TABLE IF EXISTS `class_notices`;
+DROP TABLE IF EXISTS `class_group_members`;
+DROP TABLE IF EXISTS `class_groups`;
 DROP TABLE IF EXISTS `deadlines`;
-DROP TABLE IF EXISTS `users`;
-DROP TABLE IF EXISTS `students`;
-DROP TABLE IF EXISTS `course_map`;
-DROP TABLE IF EXISTS `departments`;
+DROP TABLE IF EXISTS `friction_reports`;
+DROP TABLE IF EXISTS `visitor_logs`;
+DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `checklist_items`;
 DROP TABLE IF EXISTS `synonym_dictionary`;
 DROP TABLE IF EXISTS `knowledge_base`;
 DROP TABLE IF EXISTS `knowledge_categories`;
+DROP TABLE IF EXISTS `competitions`;
+DROP TABLE IF EXISTS `certificates`;
+DROP TABLE IF EXISTS `student_credits`;
+DROP TABLE IF EXISTS `course_map`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `students`;
+DROP TABLE IF EXISTS `departments`;
 
+-- --------------------------------------------------------
+-- 1. 系所單位資料表 `departments`
+-- --------------------------------------------------------
 CREATE TABLE `departments` (
   `dept_id` varchar(20) NOT NULL COMMENT '系所代碼 (PK)',
   `dept_name` varchar(100) NOT NULL COMMENT '系所全名',
@@ -92,7 +107,6 @@ CREATE TABLE `users` (
   CONSTRAINT `fk_users_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系統使用者身分與權限表';
 
--- 密碼皆已用 werkzeug (pbkdf2:sha256) 雜湊，原文分別為 123456 / admin123，不再明碼儲存
 INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id`, `full_name`, `advised_class`) VALUES
 (1, 'student1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112001', '王小明', NULL),
 (2, 'student2', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112002', '李美華', NULL),
@@ -163,7 +177,6 @@ INSERT INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester
 
 -- --------------------------------------------------------
 -- 5b. 學生證照與檢定成績表 `certificates`
---     學生自行維護的證照紀錄 (如勞動部技術士技能檢定成績單)
 -- --------------------------------------------------------
 CREATE TABLE `certificates` (
   `cert_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '證照紀錄唯一碼 (PK)',
@@ -326,7 +339,7 @@ INSERT INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `busin
 (8, 2, '學務處', '導師班務通報與期中期末座談', '[\"1. 每學期至少安排一次班會或個別晤談\", \"2. 將學生出缺勤、獎懲及輔導紀錄填寫於導師手冊系統\", \"3. 期中預警名單公告後，需於輔導期內完成受輔導學生之面談紀錄\", \"4. 學期末提交班級輔導總結報告\"]', '導師輔導紀錄表', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)', '老師');
 
 -- --------------------------------------------------------
--- 9b. 修改紀錄表 `audit_logs` (R5：誰在何時新增/修改/刪除了什麼資料)
+-- 9b. 修改紀錄表 `audit_logs`
 -- --------------------------------------------------------
 CREATE TABLE `audit_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '紀錄唯一碼 (PK)',
@@ -365,7 +378,6 @@ INSERT INTO `visitor_logs` (`log_id`, `visitor_name`, `phone`, `school_from`, `p
 
 -- --------------------------------------------------------
 -- 11. 校務服務斷點匿名回報表 `friction_reports`
---     不收集姓名/學號等個資，僅記錄卡關類型與情境，供電算中心統計改善
 -- --------------------------------------------------------
 CREATE TABLE `friction_reports` (
   `report_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '回報唯一碼 (PK)',
@@ -384,7 +396,6 @@ INSERT INTO `friction_reports` (`report_id`, `category`, `description`, `page_co
 
 -- --------------------------------------------------------
 -- 12. 跨系統期限雷達表 `deadlines`
---     整合選課/請假/抵免/獎助學金/教學評量等既有系統的期限 (校方系統無 API 可串，須人工建檔)
 -- --------------------------------------------------------
 CREATE TABLE `deadlines` (
   `deadline_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '期限唯一碼 (PK)',
@@ -416,7 +427,29 @@ INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_
 (12, '期中考試週', '考試', '2026-11-23', '2026-11-27', 'all', NULL, 'https://www.ukn.edu.tw/', '期中考試週期間，請留意各科考試時間與地點公告。'),
 (13, '期末考試週', '考試', '2027-01-05', '2027-01-09', 'all', NULL, 'https://www.ukn.edu.tw/', '期末考試週期間，請留意各科考試時間與地點公告。');
 
--- 科上通知 (campus/messaging.py)
+-- --------------------------------------------------------
+-- 13. 獎學金條件表 `scholarship_conditions` (全新建立)
+-- --------------------------------------------------------
+CREATE TABLE `scholarship_conditions` (
+  `scholarship_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '獎學金條件唯一碼 (PK)',
+  `scholarship_name` varchar(100) NOT NULL COMMENT '獎學金名稱',
+  `academic_score_req` decimal(5,2) DEFAULT NULL COMMENT '學生成績門檻',
+  `conduct_score_req` decimal(5,2) DEFAULT NULL COMMENT '操行成績門檻',
+  `identity_type` varchar(50) DEFAULT '一般生' COMMENT '身分別 (例如：低收入戶、原住民、一般生等)',
+  `amount` int(11) DEFAULT NULL COMMENT '獎學金金額',
+  `description` text DEFAULT NULL COMMENT '其他條件說明',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '建立時間',
+  PRIMARY KEY (`scholarship_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='獎學金條件與資格設定表';
+
+INSERT INTO `scholarship_conditions` (`scholarship_id`, `scholarship_name`, `academic_score_req`, `conduct_score_req`, `identity_type`, `amount`, `description`) VALUES
+(1, '書卷獎學金', 90.00, 85.00, '一般生', 5000, '前一學期學業成績與操行皆達標者。'),
+(2, '清寒助學金', 70.00, 80.00, '低收入戶', 10000, '具備鄉鎮市區公所低收入戶證明文件。'),
+(3, '原住民學生助學金', 75.00, 80.00, '原住民', 8000, '具備原住民身分證明，學業成績達標者。');
+
+-- --------------------------------------------------------
+-- 14. 科上通知與關懷紀錄系統 (衍生表)
+-- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `class_groups` (
   `class_name` varchar(50) NOT NULL COMMENT '班級 / 群組名稱 (PK)',
   `password_hash` varchar(255) NOT NULL COMMENT '加入密碼雜湊',
