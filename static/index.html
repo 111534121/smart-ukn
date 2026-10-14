@@ -1588,11 +1588,6 @@
             setupGraduationDashboard();
             await loadEarlyWarning();
             loadSchoolCalendar();
-            if (['學生', '家長'].includes(currentUser.role)) {
-                loadCertificates();
-                loadCompetitions();
-            }
-            updatePortfolioActionButtons();
             await loadDeadlines();
             renderNotifications();
             runWhatIfSimulation();
@@ -1920,7 +1915,7 @@
             }
         }
 
-        async function loadDashboard() {
+        async function loadDashboard(refreshMoodle = false) {
             const section = document.getElementById('homeDashboard');
             const guest = document.getElementById('homeDashboardGuest');
             if (!isStudentLoggedIn()) {
@@ -2399,6 +2394,543 @@
         }
 
         // 7. 骨牌擋修模擬試算
+        // Moodle 作業同步：未連結顯示連結按鈕；已連結顯示最後同步時間、立即更新與解除連結
+        function renderMoodleStatus(m) {
+            const el = document.getElementById('dashMoodleStatus');
+            const err = document.getElementById('dashMoodleError');
+            if (!m || (!m.linked && !m.can_link)) {
+                el.innerHTML = '';
+                err.classList.add('hidden');
+                return;
+            }
+            const btn = 'text-ukn-700 hover:text-ukn-900 hover:underline';
+            if (!m.linked) {
+                el.innerHTML = `<button onclick="openMoodleLinkDialog()" class="${btn} font-semibold">🔗 連結 Moodle</button>`;
+            } else {
+                el.innerHTML = `
+                    <span title="${escapeHtml(m.moodle_fullname || m.moodle_username || '')}">Moodle 同步 ${m.synced_at ? escapeHtml(m.synced_at.slice(11)) : '—'}</span>
+                    <button onclick="loadDashboard(true)" class="${btn}">立即更新</button>
+                    ${m.can_link ? `<button onclick="unlinkMoodle()" class="text-slate-400 hover:text-rose-700 hover:underline">解除</button>` : ''}`;
+            }
+            err.textContent = m.error || '';
+            err.classList.toggle('hidden', !m.error);
+        }
+
+        function openMoodleLinkDialog() {
+            document.getElementById('moodleLinkError').classList.add('hidden');
+            document.getElementById('moodlePassword').value = '';
+            document.getElementById('moodleLinkDialog').showModal();
+        }
+
+        async function submitMoodleLink(e) {
+            e.preventDefault();
+            const submit = document.getElementById('moodleLinkSubmit');
+            const errorEl = document.getElementById('moodleLinkError');
+            const password = document.getElementById('moodlePassword');
+            submit.disabled = true;
+            submit.textContent = '連結中…';
+            try {
+                const res = await fetch('/api/student/moodle/link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: document.getElementById('moodleUsername').value.trim(), password: password.value })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    errorEl.textContent = data.message || '連結失敗，請稍後再試';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('moodleLinkDialog').close();
+                await loadDashboard(true);
+            } catch (err) {
+                errorEl.textContent = '連線失敗，請稍後再試';
+                errorEl.classList.remove('hidden');
+            } finally {
+                password.value = '';
+                submit.disabled = false;
+                submit.textContent = '連結';
+            }
+        }
+
+        async function unlinkMoodle() {
+            if (!confirm('確定要解除 Moodle 連結嗎？Moodle 上的作業將不再同步到這裡。')) return;
+            await fetch('/api/student/moodle/link', { method: 'DELETE' });
+            loadDashboard();
+        }
+
+        // 頂部橫條：本週要注意的校曆事項，點擊開啟行事曆上的該事項
+        function renderRadarPills(highlights) {
+            const el = document.getElementById('radarActivePills');
+            if (!el) return;  // 新版首頁沒有這個橫條時略過
+            if (!highlights.length) {
+                el.innerHTML = '<span class="text-slate-400">本週沒有需要辦理的事項</span>';
+                return;
+            }
+            el.innerHTML = highlights.map(h => {
+                const style = h.is_urgent ? 'hover:bg-rose-50 text-rose-700 border-rose-200'
+                    : h.category === 'holiday' ? 'hover:bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'hover:bg-slate-50 text-slate-600 border-slate-300';
+                return `
+                    <button onclick="openRadarEvent(${Number(h.id)})" title="${escapeHtml(h.title)}" class="bg-white ${style} border px-2.5 py-0.5 rounded flex items-center gap-1 transition max-w-[18rem]">
+                        ${h.is_urgent ? '<span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>' : ''}
+                        <span class="truncate">${escapeHtml(h.title)}</span>
+                        <span class="shrink-0">（${escapeHtml(h.badge)}）</span>
+                    </button>`;
+            }).join('');
+        }
+
+        function openRadarEvent(id) {
+            switchTab('tab-calendar');
+            openSchoolCalEvent(id);
+        }
+
+        // ======================================================
+        // 學校行事曆 (/api/school-calendar)：月曆、假日著色、點開看申請方式、已截止變灰
+        // ======================================================
+        let schoolCal = { events: [], today: null, year: 0, month: 0 };
+
+        const SCHOOL_CAL_STYLE = {
+            holiday: 'bg-rose-100 text-rose-800 border-rose-200',
+            exam: 'bg-violet-100 text-violet-800 border-violet-200',
+            apply: 'bg-ukn-100 text-ukn-900 border-ukn-200',
+            event: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            meeting: 'bg-slate-50 text-slate-600 border-slate-200',
+            past: 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+        };
+        const SCHOOL_CAL_LABEL = { holiday: '放假', exam: '考試', apply: '申請／截止', event: '校園活動', meeting: '行政會議' };
+
+        function calDateStr(y, m, d) {
+            return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        }
+
+        function visibleSchoolCalEvents() {
+            const showMeetings = document.getElementById('schoolCalShowMeetings').checked;
+            return schoolCal.events.filter(e => showMeetings || e.category !== 'meeting');
+        }
+
+        function schoolCalStatusText(e) {
+            if (e.status === 'past') return '已截止';
+            if (e.status === 'ongoing') return e.days_to_end === 0 ? '今天截止' : `進行中・剩 ${e.days_to_end} 天`;
+            return e.days_to_start === 1 ? '明天開始' : `${e.days_to_start} 天後開始`;
+        }
+
+        function schoolCalDateText(e) {
+            const fmt = s => `${Number(s.slice(5, 7))}/${Number(s.slice(8, 10))}`;
+            return e.start_date === e.end_date ? fmt(e.start_date) : `${fmt(e.start_date)} ~ ${fmt(e.end_date)}`;
+        }
+
+        async function loadSchoolCalendar() {
+            const source = document.getElementById('schoolCalSource');
+            try {
+                const res = await fetch('/api/school-calendar');
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    source.textContent = data.message || '行事曆載入失敗';
+                    return;
+                }
+                schoolCal.events = data.events;
+                schoolCal.today = data.today;
+                document.getElementById('schoolCalYear').textContent = `${data.academic_year} 學年度`;
+                source.innerHTML = `資料來源：<a href="${escapeHtml(data.source_url)}" target="_blank" rel="noopener noreferrer" class="text-ukn-700 hover:underline">教務處行事曆 PDF ↗</a>（程式自動抓取，更新於 ${escapeHtml(data.fetched_at)}）`;
+                // 預設顯示本月；今天不在學年度內時顯示學年度第一個月
+                const first = data.events[0].start_date, last = data.events[data.events.length - 1].end_date;
+                const base = data.today >= first && data.today <= last ? data.today : first;
+                schoolCal.year = Number(base.slice(0, 4));
+                schoolCal.month = Number(base.slice(5, 7)) - 1;
+                renderSchoolCalendar();
+            } catch (e) {
+                console.error(e);
+                source.textContent = '行事曆載入失敗，請稍後再試。';
+            }
+        }
+
+        function shiftSchoolCalMonth(delta) {
+            const d = new Date(schoolCal.year, schoolCal.month + delta, 1);
+            schoolCal.year = d.getFullYear();
+            schoolCal.month = d.getMonth();
+            renderSchoolCalendar();
+        }
+
+        function goSchoolCalToday() {
+            schoolCal.year = Number(schoolCal.today.slice(0, 4));
+            schoolCal.month = Number(schoolCal.today.slice(5, 7)) - 1;
+            renderSchoolCalendar();
+        }
+
+        function renderSchoolCalendar() {
+            const { year, month, today } = schoolCal;
+            const events = visibleSchoolCalEvents();
+            document.getElementById('schoolCalMonthLabel').textContent = `${year} 年 ${month + 1} 月`;
+
+            const firstWeekday = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const cells = [];
+            for (let i = 0; i < firstWeekday; i++) cells.push('<div class="bg-slate-50 min-h-[3.5rem] sm:min-h-[6rem]"></div>');
+            for (let d = 1; d <= daysInMonth; d++) {
+                const date = calDateStr(year, month, d);
+                const dayEvents = events.filter(e => e.start_date <= date && date <= e.end_date);
+                const weekday = (firstWeekday + d - 1) % 7;
+                const isHoliday = dayEvents.some(e => e.category === 'holiday');
+                const isWeekend = weekday === 0 || weekday === 6;
+                const isToday = date === today;
+                const numClass = isToday ? 'bg-ukn-800 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                    : (isHoliday || isWeekend) ? 'text-rose-600' : 'text-slate-700';
+                const bg = isHoliday ? 'bg-rose-100' : isWeekend ? 'bg-[#fff5f6]' : 'bg-white';
+                const pills = dayEvents.slice(0, 3).map(e => `
+                    <button onclick="openSchoolCalEvent(${e.id})" title="${escapeHtml(e.title)}"
+                        class="hidden sm:block w-full text-left truncate text-[11px] leading-tight px-1 py-0.5 rounded border ${SCHOOL_CAL_STYLE[e.status === 'past' ? 'past' : e.category]}">${escapeHtml(e.title)}</button>`).join('');
+                const more = dayEvents.length > 3 ? `<div class="hidden sm:block text-[10px] text-slate-500 px-1">另有 ${dayEvents.length - 3} 項</div>` : '';
+                // 手機版格子太小，只顯示色點，點日期看當天事項
+                const dots = dayEvents.slice(0, 4).map(e => `<span class="w-1.5 h-1.5 rounded-full ${e.status === 'past' ? 'bg-slate-300' : { holiday: 'bg-rose-500', exam: 'bg-violet-500', apply: 'bg-ukn-700', event: 'bg-emerald-500', meeting: 'bg-slate-400' }[e.category]}"></span>`).join('');
+                cells.push(`
+                    <div class="${bg} min-h-[3.5rem] sm:min-h-[6rem] p-1 space-y-0.5 ${dayEvents.length ? 'cursor-pointer sm:cursor-default' : ''}" ${dayEvents.length ? `onclick="if (window.innerWidth < 640) openSchoolCalDay('${date}')"` : ''}>
+                        <div class="text-xs font-semibold ${numClass}">${d}</div>
+                        ${pills}${more}
+                        <div class="flex gap-0.5 flex-wrap sm:hidden">${dots}</div>
+                    </div>`);
+            }
+            while (cells.length % 7) cells.push('<div class="bg-slate-50 min-h-[3.5rem] sm:min-h-[6rem]"></div>');
+            document.getElementById('schoolCalGrid').innerHTML = cells.join('');
+
+            // 本月事項清單 (跨月的事項也列出)
+            const monthStart = calDateStr(year, month, 1), monthEnd = calDateStr(year, month, daysInMonth);
+            const monthEvents = events.filter(e => e.start_date <= monthEnd && e.end_date >= monthStart);
+            document.getElementById('schoolCalList').innerHTML = monthEvents.length
+                ? monthEvents.map(renderSchoolCalListItem).join('')
+                : '<li class="px-4 py-3 text-sm text-slate-400">這個月沒有行事曆事項。</li>';
+        }
+
+        function renderSchoolCalListItem(e) {
+            const past = e.status === 'past';
+            const hasAction = e.checklists.length || e.links.length || e.offices.length;
+            const statusClass = past ? 'bg-slate-100 text-slate-500'
+                : e.status === 'ongoing' && e.days_to_end <= 3 ? 'bg-rose-600 text-white'
+                : e.status === 'ongoing' ? 'bg-ukn-50 text-ukn-800 border border-ukn-200' : 'bg-white text-slate-600 border border-slate-200';
+            return `
+                <li>
+                    <button onclick="openSchoolCalEvent(${e.id})" class="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 ${past ? 'text-slate-400' : 'text-slate-800'}">
+                        <span class="shrink-0 w-24 text-xs ${past ? '' : 'text-slate-500'}">${schoolCalDateText(e)}</span>
+                        <span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${SCHOOL_CAL_STYLE[past ? 'past' : e.category].replace('line-through', '')}">${SCHOOL_CAL_LABEL[e.category]}</span>
+                        <span class="flex-1 min-w-0 text-sm ${past ? 'line-through' : ''}">${escapeHtml(e.title)}${e.tentative ? '<span class="ml-1 text-[10px] text-amber-700">（日期待確認）</span>' : ''}</span>
+                        ${hasAction && !past ? '<span class="hidden sm:inline shrink-0 text-[11px] text-ukn-700">申請方式 ➔</span>' : ''}
+                        <span class="shrink-0 text-[11px] px-2 py-0.5 rounded ${statusClass}">${schoolCalStatusText(e)}</span>
+                    </button>
+                </li>`;
+        }
+
+        // 手機版：點日期顯示當天所有事項
+        function openSchoolCalDay(date) {
+            const dayEvents = visibleSchoolCalEvents().filter(e => e.start_date <= date && date <= e.end_date);
+            if (dayEvents.length === 1) return openSchoolCalEvent(dayEvents[0].id);
+            document.getElementById('schoolCalDialogBody').innerHTML = `
+                <h3 class="ukn-title text-base font-bold text-slate-900">${Number(date.slice(5, 7))} 月 ${Number(date.slice(8, 10))} 日</h3>
+                <ul class="divide-y divide-slate-100 border border-slate-200 rounded">${dayEvents.map(renderSchoolCalListItem).join('')}</ul>`;
+            const dialog = document.getElementById('schoolCalDialog');
+            if (!dialog.open) dialog.showModal();
+        }
+
+        function openSchoolCalEvent(id) {
+            const e = schoolCal.events.find(ev => ev.id === id);
+            if (!e) return;
+            const past = e.status === 'past';
+            const section = (title, body) => `<div class="space-y-1.5"><h4 class="font-bold text-slate-900 text-sm">${title}</h4>${body}</div>`;
+            const parts = [];
+            if (e.tips.length) {
+                parts.push(`<div class="rounded border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2 text-xs space-y-1">${e.tips.map(t => `<div>💡 ${escapeHtml(t)}</div>`).join('')}</div>`);
+            }
+            e.checklists.forEach(c => {
+                const steps = (c.steps_json || []).map((s, i) => `<li><span class="text-slate-400 mr-1">${i + 1}.</span>${escapeHtml(s)}</li>`).join('');
+                parts.push(section(`📋 ${escapeHtml(c.business_name)}`, `
+                    <div class="text-xs space-y-1.5 text-slate-700">
+                        ${c.required_docs ? `<div><span class="font-semibold text-slate-900">應備文件：</span>${escapeHtml(c.required_docs)}</div>` : ''}
+                        ${steps ? `<ol class="space-y-0.5 pl-1">${steps}</ol>` : ''}
+                        <div class="text-slate-500">${escapeHtml(c.office_location || '')}${c.contact_phone ? ' · ' + escapeHtml(c.contact_phone) : ''}</div>
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            ${c.form_download_url ? `<a href="${escapeHtml(c.form_download_url)}" class="text-xs px-3 py-1.5 rounded border border-ukn-700 text-ukn-800 hover:bg-ukn-50">下載申請表</a>` : ''}
+                            <button onclick="document.getElementById('schoolCalDialog').close(); jumpToChecklist(${Number(c.item_id)})" class="text-xs px-3 py-1.5 rounded border border-ukn-700 text-ukn-800 hover:bg-ukn-50">查看完整申辦流程 ➔</button>
+                        </div>
+                    </div>`));
+            });
+            if (e.links.length) {
+                parts.push(section('🔗 相關系統', `<div class="flex flex-wrap gap-2">${e.links.map(l =>
+                    `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold px-3 py-1.5 rounded ${past ? 'bg-slate-100 text-slate-500' : 'bg-ukn-800 hover:bg-ukn-700 text-white'}">${escapeHtml(l.title)} ↗</a>`).join('')}</div>`));
+            }
+            if (e.offices.length) {
+                parts.push(section('🏢 承辦單位', e.offices.map(o => `
+                    <div class="text-xs text-slate-700"><span class="font-semibold">${escapeHtml(o.office)}</span> · ${escapeHtml(o.location)} · ${escapeHtml(o.phone)}</div>`).join('')));
+            }
+            if (!parts.length) {
+                parts.push('<p class="text-xs text-slate-500">這是校園行程，不需要另外申請。</p>');
+            }
+            document.getElementById('schoolCalDialogBody').innerHTML = `
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded border ${SCHOOL_CAL_STYLE[past ? 'past' : e.category].replace('line-through', '')}">${SCHOOL_CAL_LABEL[e.category]}</span>
+                        <span class="text-xs font-semibold ${past ? 'text-slate-500' : e.status === 'ongoing' ? 'text-ukn-800' : 'text-slate-600'}">${schoolCalStatusText(e)}</span>
+                    </div>
+                    <h3 class="ukn-title text-base font-bold ${past ? 'text-slate-400 line-through' : 'text-slate-900'}">${escapeHtml(e.title)}</h3>
+                    <div class="text-xs text-slate-500">${e.start_date}${e.end_date !== e.start_date ? ' ~ ' + e.end_date : ''}</div>
+                    ${e.tentative ? '<div class="text-xs text-amber-700">日期預定，實際放假或補上班以人事行政總處公告為準。</div>' : ''}
+                    ${past ? '<div class="text-xs text-slate-500 bg-slate-100 rounded px-2 py-1">此事項已截止，以下資訊僅供參考。</div>' : ''}
+                </div>
+                ${parts.join('')}`;
+            const dialog = document.getElementById('schoolCalDialog');
+            if (!dialog.open) dialog.showModal();
+        }
+
+
+        // 3. 檔案多媒體燈箱預覽功能 (支援 PDF 閱讀與照片查看)
+        function openFilePreview(url, fileName, type) {
+            const modal = document.getElementById('filePreviewModal');
+            const titleEl = document.getElementById('modalFileTitle');
+            const nameEl = document.getElementById('modalFileName');
+            const iconEl = document.getElementById('modalFileIcon');
+            const extLink = document.getElementById('modalExternalLink');
+            const dlLink = document.getElementById('modalDownloadLink');
+            const bodyEl = document.getElementById('modalBody');
+
+            titleEl.textContent = type === 'pdf' ? 'PDF 文件檢視' : '照片高畫質預覽';
+            nameEl.textContent = fileName || url;
+            iconEl.textContent = type === 'pdf' ? '' : '';
+            extLink.href = url;
+            dlLink.href = url;
+            dlLink.setAttribute('download', fileName || 'download');
+
+            if (type === 'pdf') {
+                bodyEl.innerHTML = `<iframe src="${url}" class="w-full h-[72vh] rounded border border-slate-200 bg-white shadow-inner"></iframe>`;
+            } else {
+                bodyEl.innerHTML = `<img src="${url}" alt="${fileName}" class="max-h-[72vh] max-w-full object-contain rounded bg-slate-900">`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeFilePreview() {
+            const modal = document.getElementById('filePreviewModal');
+            modal.classList.add('hidden');
+            const bodyEl = document.getElementById('modalBody');
+            if (bodyEl) bodyEl.innerHTML = '';
+        }
+
+        function handleModalBackdropClick(e) {
+            if (e.target.id === 'filePreviewModal') {
+                closeFilePreview();
+            }
+        }
+
+        // ==========================================
+        // 🔔 頂部通知中心系統 (Notification Center)
+        // ==========================================
+        // 通知由儀表板、缺曠課、獎助學金 API 的資料動態產生；各 loader 取得資料後呼叫 renderNotifications()
+        const notifSources = {};
+        const NOTIF_LEVEL_ORDER = { urgent: 0, warning: 1, info: 2 };
+        const NOTIF_LEAVE_DAYS = 7;
+        const NOTIF_STYLES = {
+            urgent: 'bg-rose-50 text-rose-700 border-rose-200',
+            warning: 'bg-amber-50 text-amber-700 border-amber-200',
+            info: 'bg-blue-50 text-blue-700 border-blue-200',
+            scholarship: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        };
+        let systemNotifications = [];
+
+        // 已讀的通知 id 依學號存在瀏覽器，重新整理後仍保留
+        function notifReadKey() {
+            return `ukn_notif_read_${currentUser.student_id || currentUser.username || 'guest'}`;
+        }
+        function loadReadNotifIds() {
+            try {
+                return new Set(JSON.parse(localStorage.getItem(notifReadKey()) || '[]'));
+            } catch (e) {
+                return new Set();
+            }
+        }
+        function saveReadNotifIds(ids) {
+            try {
+                localStorage.setItem(notifReadKey(), JSON.stringify([...ids]));
+            } catch (e) { /* 無痕模式等無法寫入時，只在本次頁面有效 */ }
+        }
+
+        // 以儀表板回傳的 now 為準 (後端可用 ?date= 模擬日期)
+        function notifNow() {
+            const d = notifSources.dashboard;
+            return d && d.now ? new Date(d.now.replace(' ', 'T')) : new Date();
+        }
+        function daysAgo(dateStr) {
+            return Math.round((new Date(notifNow().toDateString()) - new Date(new Date(dateStr.replace(' ', 'T')).toDateString())) / 86400000);
+        }
+        function relativeDayLabel(dateStr) {
+            const days = daysAgo(dateStr);
+            if (days <= 0) return '今天';
+            if (days === 1) return '昨天';
+            return `${days} 天前`;
+        }
+        function dueLabel(hoursLeft) {
+            if (hoursLeft < 0) {
+                const late = -hoursLeft;
+                return late < 24 ? `逾期 ${Math.ceil(late)} 小時` : `逾期 ${Math.floor(late / 24)} 天`;
+            }
+            return hoursLeft < 24 ? `剩 ${Math.max(1, Math.floor(hoursLeft))} 小時` : `剩 ${Math.ceil(hoursLeft / 24)} 天`;
+        }
+
+        function buildNotifications() {
+            const list = [];
+            const dash = notifSources.dashboard;
+            if (dash) {
+                // 作業：已逾期或 48 小時內到期；id 帶狀態，從「快到期」變成「逾期」時會再提醒一次
+                dash.assignments.items.forEach(a => {
+                    if (a.overdue) {
+                        list.push({ id: `hw-${a.id}-overdue`, level: 'urgent', icon: '📝', title: `作業已逾期：${a.title}`,
+                            desc: `${a.course_name}，截止時間 ${a.due_at}，請儘快補交。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
+                    } else if (a.hours_left <= 48) {
+                        list.push({ id: `hw-${a.id}-soon`, level: 'warning', icon: '⏰', title: `作業即將截止：${a.title}`,
+                            desc: `${a.course_name}，截止時間 ${a.due_at}。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
+                    } else if (a.source === 'moodle') {
+                        // Moodle 同步進來的新作業：看過 (已讀) 後就不再出現，快截止時再以上面的規則提醒
+                        list.push({ id: `hw-${a.id}-new`, level: 'info', icon: '📚', title: `Moodle 新作業：${a.title}`,
+                            desc: `${a.course_name}，截止時間 ${a.due_at}。`, time: dueLabel(a.hours_left), anchor: 'dashAssignmentCard' });
+                    }
+                });
+                // 公告：未讀的合併成一則，有新公告時 id 會改變
+                const unread = dash.announcements.items.filter(a => !a.is_read);
+                if (unread.length) {
+                    const latest = unread.reduce((x, y) => (y.publish_date > x.publish_date ? y : x));
+                    list.push({ id: `ann-${unread.map(a => a.id).sort((x, y) => x - y).join('_')}`, level: 'info', icon: '📢',
+                        title: `${dash.announcements.unread_count} 則未讀公告`,
+                        desc: `最新：${latest.title}（${latest.office}）`, time: relativeDayLabel(latest.publish_date), anchor: 'dashAnnouncementCard' });
+                }
+                // 請假：近 7 天送出且已審核完成的結果 (待審核不通知)
+                dash.leave.items.filter(r => r.status !== '待審核' && daysAgo(r.submitted_at) <= NOTIF_LEAVE_DAYS).forEach(r => {
+                    const rejected = r.status === '已退回';
+                    list.push({ id: `leave-${r.id}-${r.status}`, level: rejected ? 'warning' : 'info', icon: rejected ? '↩️' : '✅',
+                        title: `${r.leave_type}${r.status}（${r.start_date.slice(5).replace('-', '/')}）`,
+                        desc: rejected ? `退回原因：${r.review_note || '請洽生輔組'}` : `第 ${r.periods} 節請假已核准。`,
+                        time: relativeDayLabel(r.submitted_at), anchor: 'dashLeaveCard' });
+                });
+            }
+            // 缺曠課：接近或已達扣考門檻的科目
+            const att = notifSources.attendance;
+            if (att) {
+                att.courses.filter(c => c.level !== 'ok').forEach(c => {
+                    const banned = c.level === 'banned';
+                    list.push({ id: `att-${c.course_name}-${c.level}`, level: banned ? 'urgent' : 'warning', icon: '⚠️',
+                        title: banned ? `${c.course_name} 已達扣考門檻` : `${c.course_name} 曠課接近扣考`,
+                        desc: `曠課 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${banned ? '，請儘速洽詢生輔組與任課教師。' : `，再曠課 ${c.remaining_hours} 小時將扣考。`}`,
+                        time: '本學期', anchor: 'homeAttendance' });
+                });
+            }
+            // 獎助學金：即將截止 (後端 is_urgent) 的符合項目個別提醒，其餘合併成一則
+            const sch = notifSources.scholarship;
+            if (sch && sch.can_apply) {
+                const urgent = sch.eligible.filter(s => s.is_urgent);
+                urgent.forEach(s => {
+                    list.push({ id: `sch-${s.id}-due`, level: 'urgent', icon: '💰', style: 'scholarship',
+                        title: `獎學金即將截止：${s.name}`, desc: `你符合申請資格，截止日 ${s.deadline}。`,
+                        time: s.days_left === 0 ? '今天截止' : `剩 ${s.days_left} 天`, tab: 'tab-scholarship' });
+                });
+                const others = sch.eligible.length - urgent.length;
+                if (others > 0) {
+                    list.push({ id: `sch-eligible-${sch.eligible.map(s => s.id).join('_')}`, level: 'info', icon: '💰', style: 'scholarship',
+                        title: `你可能符合 ${sch.eligible.length} 項獎助學金`,
+                        desc: sch.partial.length ? `另有 ${sch.partial.length} 項只差部分條件，點擊查看比對結果。` : '點擊查看比對結果與申請方式。',
+                        time: `截止 ${sch.eligible[urgent.length].deadline.slice(5).replace('-', '/')}`, tab: 'tab-scholarship' });
+                }
+            }
+            return list.sort((a, b) => NOTIF_LEVEL_ORDER[a.level] - NOTIF_LEVEL_ORDER[b.level]);
+        }
+
+        function renderNotifications() {
+            const listEl = document.getElementById('notificationList');
+            const badgeEl = document.getElementById('notificationBadge');
+            const unreadCountText = document.getElementById('unreadCountText');
+            if (!listEl) return;
+
+            const readIds = loadReadNotifIds();
+            systemNotifications = buildNotifications().map(n => ({ ...n, isRead: readIds.has(n.id) }));
+            const unreadCount = systemNotifications.filter(n => !n.isRead).length;
+
+            if (badgeEl) {
+                badgeEl.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                badgeEl.classList.toggle('hidden', unreadCount === 0);
+            }
+            if (unreadCountText) unreadCountText.textContent = unreadCount ? `${unreadCount} 則未讀` : '已無未讀通知';
+
+            if (systemNotifications.length === 0) {
+                const text = isStudentLoggedIn() ? '目前沒有需要處理的事項 👍' : '登入學生帳號後，這裡會提醒作業、公告、缺曠與獎學金';
+                listEl.innerHTML = `
+                    <div class="p-8 text-center text-slate-400">
+                        <span class="text-3xl block mb-2">📭</span>
+                        <span>${text}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // 紅點位置固定保留 (已讀時 invisible)，讓右側時間欄對齊
+            listEl.innerHTML = systemNotifications.map(n => `
+                <div onclick="handleNotificationClick('${escapeHtml(n.id)}')" class="p-3 hover:bg-slate-50 transition cursor-pointer flex items-start gap-3 ${n.isRead ? 'opacity-70 bg-white' : 'bg-ukn-50/40 font-medium'}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${NOTIF_STYLES[n.style || n.level]} text-sm">
+                        ${n.icon}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                            <h4 class="font-bold text-slate-900 truncate text-xs ${n.isRead ? 'text-slate-700' : 'text-ukn-900'}">${escapeHtml(n.title)}</h4>
+                            <span class="text-[10px] ${n.level === 'urgent' && !n.isRead ? 'text-rose-600' : 'text-slate-400'} whitespace-nowrap shrink-0">${escapeHtml(n.time)}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-relaxed">${escapeHtml(n.desc)}</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1.5 shadow-sm ${n.isRead ? 'invisible' : ''}"></span>
+                </div>
+            `).join('');
+        }
+
+        function toggleNotificationMenu(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('notificationMenu');
+            const btn = document.getElementById('notificationBellBtn');
+            if (!menu) return;
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+            } else {
+                menu.classList.add('hidden');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function closeNotificationMenu() {
+            const menu = document.getElementById('notificationMenu');
+            const btn = document.getElementById('notificationBellBtn');
+            if (menu) menu.classList.add('hidden');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function handleNotificationClick(id) {
+            const notif = systemNotifications.find(n => n.id === id);
+            if (!notif) return;
+            const readIds = loadReadNotifIds();
+            readIds.add(id);
+            saveReadNotifIds(readIds);
+            renderNotifications();
+            closeNotificationMenu();
+            if (notif.tab) {
+                switchTab(notif.tab);
+            } else if (notif.anchor) {
+                // 儀表板上的卡片：切回首頁並捲到該區塊
+                switchTab('tab-home');
+                const el = document.getElementById(notif.anchor);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function markAllNotificationsRead() {
+            const readIds = loadReadNotifIds();
+            systemNotifications.forEach(n => readIds.add(n.id));
+            saveReadNotifIds(readIds);
+            renderNotifications();
+        }
+
         // 畢業缺課檢核：有該屆修業科目表時取代擋修試算 (資管科沒有先修擋修規定，改看還缺哪些課)
         const GRAD_STATUS = {
             passed: ['已通過', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
