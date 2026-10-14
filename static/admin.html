@@ -357,6 +357,11 @@
 
             <!-- 分頁 7: 學期校曆事項 (首頁「本週可辦」橫幅) -->
             <div id="panel-calendar" class="hidden space-y-3">
+                <!-- 學校行事曆：程式從教務處行事曆 PDF 抓取，前台「重要日程與校曆」月曆使用 -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-ukn-50 border border-ukn-200 p-3 rounded text-xs text-slate-700">
+                    <p id="schoolCalSyncInfo">前台月曆的資料由程式從教務處行事曆 PDF 抓取。教務處公告新學年度行事曆或修訂後，按右側按鈕重新抓取。</p>
+                    <button id="schoolCalSyncBtn" onclick="syncSchoolCalendar()" class="bg-white border border-ukn-700 text-ukn-800 hover:bg-ukn-100 px-4 py-2 rounded font-semibold transition whitespace-nowrap disabled:opacity-50">重新抓取學校行事曆</button>
+                </div>
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
                     <p>學生首頁「本週可辦」橫幅會顯示今天進行中與 14 天內即將開始的事項，剩 3 天以內以紅色標示。設定「關聯申辦流程」後，學生點擊即可跳到該流程清單。</p>
                     <button onclick="openCalendarModal()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap">+ 新增校曆事項</button>
@@ -882,6 +887,7 @@
             // 關聯申辦流程名稱需要 checklistsCache，因此等上方載入完成後再載入校曆
             await loadCalendarEvents();
             loadCampusAdmin();
+            loadSchoolCalendarInfo();
         }
 
         // ---------- 校園生活管理 (campus 套件的管理功能) ----------
@@ -1883,6 +1889,36 @@
         function checklistName(id) {
             const c = checklistsCache.find(x => x.item_id === id);
             return c ? c.business_name : `#${id}`;
+        }
+
+        async function loadSchoolCalendarInfo() {
+            try {
+                const res = await fetch('/api/school-calendar');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('schoolCalSyncInfo').textContent =
+                        `前台月曆目前使用 ${data.academic_year} 學年度行事曆（${data.events.length} 筆，${data.fetched_at} 從教務處 PDF 抓取）。教務處公告新版或修訂後，按右側按鈕重新抓取。`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function syncSchoolCalendar() {
+            const btn = document.getElementById('schoolCalSyncBtn');
+            btn.disabled = true;
+            btn.textContent = '抓取中...';
+            try {
+                const res = await fetch('/api/admin/school-calendar/sync', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                if (data.status === 'success') loadSchoolCalendarInfo();
+            } catch (e) {
+                alert('抓取失敗，請稍後再試');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '重新抓取學校行事曆';
+            }
         }
 
         async function loadCalendarEvents() {

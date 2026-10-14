@@ -25,6 +25,12 @@ from dashboard.summary import build_dashboard
 from dashboard import demo_data as dashboard_demo
 from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
 import preferences
+from school_calendar import sync as school_calendar_sync
+from school_calendar.actions import match_actions as match_calendar_actions
+from moodle_sync.client import MoodleClient, MoodleError, get_token as get_moodle_token
+from moodle_sync.assignments import MoodleMergedSource, get_cached_assignments, clear_cache as clear_moodle_cache
+from moodle_sync.store import MoodleLinkStore
+from curriculum.audit import load_curriculum, audit as audit_curriculum
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -195,6 +201,20 @@ def role_required(*allowed_roles):
                 return jsonify({"status": "error", "message": "請先登入系統"}), 401
             if session.get("role") not in allowed_roles:
                 return jsonify({"status": "error", "message": "權限不足，僅限特定身分存取"}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def write_roles_required(*allowed_roles):
+    """GET 公開讀取；POST/PUT/DELETE 等寫入操作限特定身分"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if request.method not in ("GET", "HEAD", "OPTIONS"):
+                if "username" not in session:
+                    return jsonify({"status": "error", "message": "請先登入系統"}), 401
+                if session.get("role") not in allowed_roles:
+                    return jsonify({"status": "error", "message": "權限不足"}), 403
             return f(*args, **kwargs)
         return wrapper
     return decorator
@@ -733,11 +753,11 @@ DEMO_DEADLINES = [
 
 # 學期校曆事項 (對應 academic_calendar 資料表，內容與 init_db.py 範例一致)
 DEMO_ACADEMIC_CALENDAR = [
-    {"id": 1, "event_name": "加退選", "start_date": "2026-09-14", "end_date": "2026-09-25", "category": "教務", "related_checklist_id": None},
-    {"id": 2, "event_name": "學雜費繳費期限", "start_date": "2026-09-01", "end_date": "2026-09-30", "category": "繳費", "related_checklist_id": None},
-    {"id": 3, "event_name": "獎助學金申請期限", "start_date": "2026-09-21", "end_date": "2026-10-16", "category": "獎助", "related_checklist_id": None},
-    {"id": 4, "event_name": "停修申請", "start_date": "2026-10-01", "end_date": "2026-10-16", "category": "教務", "related_checklist_id": 1},
-    {"id": 5, "event_name": "教學意見調查開放期間", "start_date": "2026-12-14", "end_date": "2027-01-15", "category": "教務", "related_checklist_id": None}
+    {"id": 1, "event_name": "網路加退選及重補修", "start_date": "2026-09-14", "end_date": "2026-09-20", "category": "教務", "related_checklist_id": None},
+    {"id": 2, "event_name": "就學貸款申請、學雜費減免收件", "start_date": "2026-09-14", "end_date": "2026-09-15", "category": "繳費", "related_checklist_id": None},
+    {"id": 3, "event_name": "弱勢助學金、學產基金申請", "start_date": "2026-09-16", "end_date": "2026-10-01", "category": "獎助", "related_checklist_id": None},
+    {"id": 4, "event_name": "受理棄選（停修）", "start_date": "2026-11-16", "end_date": "2026-12-04", "category": "教務", "related_checklist_id": 1},
+    {"id": 5, "event_name": "網路教學評量填寫", "start_date": "2026-12-14", "end_date": "2026-12-20", "category": "教務", "related_checklist_id": None}
 ]
 
 # 模擬缺曠課紀錄 (對應 attendance_records 資料表，內容與 seed_data.py 一致)
@@ -754,13 +774,117 @@ DEMO_ATTENDANCE_RECORDS = [
 ]
 
 DEMO_CERTIFICATES = [
-    {"cert_id": 1, "student_id": "S112001", "cert_name": "丙級電腦硬體裝修技術士", "issuing_org": "勞動部勞動力發展署", "cert_number": "113-CS-004521", "theory_score": 82.00, "practical_score": 88.00, "cert_status": "及格發證", "issue_date": "2026-06-20"},
-    {"cert_id": 2, "student_id": "S112001", "cert_name": "乙級電腦軟體應用技術士", "issuing_org": "勞動部勞動力發展署", "cert_number": "114-CS-008912", "theory_score": 86.50, "practical_score": 92.00, "cert_status": "及格發證", "issue_date": "2026-08-15"},
-    {"cert_id": 3, "student_id": "S112002", "cert_name": "TQC+ 網頁設計工程師", "issuing_org": "財團法人中華民國電腦技能基金會", "cert_number": "TQC-WD-22310", "theory_score": 78.00, "practical_score": 85.00, "cert_status": "及格發證", "issue_date": "2026-07-05"},
-    {"cert_id": 4, "student_id": "S112004", "cert_name": "丙級電腦硬體裝修技術士", "issuing_org": "勞動部勞動力發展署", "cert_number": "113-CS-004588", "theory_score": 90.00, "practical_score": 86.00, "cert_status": "及格發證", "issue_date": "2026-06-20"},
-    {"cert_id": 5, "student_id": "S112004", "cert_name": "乙級電腦軟體應用技術士", "issuing_org": "勞動部勞動力發展署", "cert_number": "114-CS-009010", "theory_score": 88.00, "practical_score": 90.00, "cert_status": "及格發證", "issue_date": "2026-08-15"}
+    {
+        "cert_id": 1,
+        "student_id": "S112001",
+        "cert_name": "丙級電腦硬體裝修技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "113-CS-004521",
+        "theory_score": 82.0,
+        "practical_score": 88.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": "/uploads/demo_mol_transcript.pdf",
+        "file_name": "勞動部技術士技能檢定成績單.pdf",
+        "file_type": "pdf",
+        "issue_date": "2026-06-20",
+        "created_at": "2026-06-25 10:00:00"
+    },
+    {
+        "cert_id": 2,
+        "student_id": "S112001",
+        "cert_name": "乙級電腦軟體應用技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "114-CS-008912",
+        "theory_score": 86.5,
+        "practical_score": 92.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": "/uploads/demo_mol_cert.svg",
+        "file_name": "乙級技術士證書正本.svg",
+        "file_type": "image",
+        "issue_date": "2026-08-15",
+        "created_at": "2026-08-20 14:30:00"
+    },
+    {
+        "cert_id": 3,
+        "student_id": "S112002",
+        "cert_name": "TQC+ 網頁設計工程師",
+        "issuing_org": "財團法人中華民國電腦技能基金會",
+        "cert_number": "TQC-WD-22310",
+        "theory_score": 78.0,
+        "practical_score": 85.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://www.tqc.org.tw/",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
+        "issue_date": "2026-07-05",
+        "created_at": "2026-07-10 09:00:00"
+    },
+    {
+        "cert_id": 4,
+        "student_id": "S112004",
+        "cert_name": "丙級電腦硬體裝修技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "113-CS-004588",
+        "theory_score": 90.0,
+        "practical_score": 86.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
+        "issue_date": "2026-06-20",
+        "created_at": "2026-06-25 10:00:00"
+    },
+    {
+        "cert_id": 5,
+        "student_id": "S112004",
+        "cert_name": "乙級電腦軟體應用技術士",
+        "issuing_org": "勞動部勞動力發展署技能檢定中心",
+        "cert_number": "114-CS-009010",
+        "theory_score": 88.0,
+        "practical_score": 90.0,
+        "cert_status": "及格發證",
+        "verify_url": "https://eservice.wdasec.gov.tw/WWW/C101Q",
+        "file_path": None,
+        "file_name": None,
+        "file_type": None,
+        "issue_date": "2026-08-15",
+        "created_at": "2026-08-20 14:30:00"
+    }
 ]
 
+# 學生比賽與獲獎獎狀紀錄
+DEMO_COMPETITIONS = [
+    {
+        "comp_id": 1,
+        "student_id": "S112001",
+        "competition_name": "2026 全國大專校院智慧校園物聯網創新應用競賽",
+        "award_title": "第一名 (金獎)",
+        "organizer": "教育部資訊及科技教育司",
+        "project_name": "Smart UKN 智慧校園導引與擋修診斷系統",
+        "award_date": "2026-05-18",
+        "file_path": "/uploads/demo_award_cert.pdf",
+        "file_name": "全國第一名獲獎獎狀.pdf",
+        "file_type": "pdf",
+        "created_at": "2026-05-20 11:00:00"
+    },
+    {
+        "comp_id": 2,
+        "student_id": "S112001",
+        "competition_name": "第十屆北區大專跨校程式設計黑客松",
+        "award_title": "佳作",
+        "organizer": "中華民國電腦學會",
+        "project_name": "AI 智慧法規檢索助理",
+        "award_date": "2026-07-10",
+        "file_path": "/uploads/demo_award_photo.svg",
+        "file_name": "頒獎典禮受獎現場照片.svg",
+        "file_type": "image",
+        "created_at": "2026-07-12 16:20:00"
+    }
+]
 DEMO_VISITOR_LOGS = []
 
 CAMPUS_CONTACT_DIRECTORY = [
@@ -974,23 +1098,56 @@ def current_academic_term(today):
         "name": f"{year} 學年度第 {semester} 學期"
     }
 
+# 頂部橫條：進行中的申請/考試，以及幾天內要開始的申請、考試、放假
+HIGHLIGHT_CATEGORIES = ("apply", "exam", "holiday")
+HIGHLIGHT_UPCOMING_DAYS = 7
+HIGHLIGHT_URGENT_DAYS = 3
+HIGHLIGHT_LIMIT = 4
+
+def calendar_highlights(events, today):
+    """從學校行事曆挑出本週要注意的事項，依緊急程度排序"""
+    ongoing, upcoming = [], []
+    for ev in events:
+        if ev["category"] not in HIGHLIGHT_CATEGORIES:
+            continue
+        start = datetime.strptime(ev["start_date"], "%Y-%m-%d").date()
+        end = datetime.strptime(ev["end_date"], "%Y-%m-%d").date()
+        days_to_end, days_to_start = (end - today).days, (start - today).days
+        if start <= today <= end and ev["category"] != "holiday":
+            badge = "今天截止" if days_to_end == 0 else f"進行中・剩 {days_to_end} 天"
+            ongoing.append({"id": ev["id"], "title": ev["title"], "category": ev["category"], "badge": badge,
+                            "is_urgent": days_to_end <= HIGHLIGHT_URGENT_DAYS, "sort": days_to_end})
+        elif 0 < days_to_start <= HIGHLIGHT_UPCOMING_DAYS:
+            when = "明天" if days_to_start == 1 else f"{days_to_start} 天後"
+            if ev["category"] == "holiday":
+                badge = f"{when}放假"
+            elif start == end and "截止" in ev["title"]:
+                badge = f"{when}截止"
+            else:
+                badge = f"{when}開始"
+            upcoming.append({"id": ev["id"], "title": ev["title"], "category": ev["category"], "badge": badge,
+                             "is_urgent": False, "sort": days_to_start})
+    ongoing.sort(key=lambda h: h["sort"])
+    upcoming.sort(key=lambda h: h["sort"])
+    return [{k: v for k, v in h.items() if k != "sort"} for h in (ongoing + upcoming)[:HIGHLIGHT_LIMIT]]
+
 @app.route("/api/calendar/current-week", methods=["GET"])
 def get_current_week():
-    """回傳當前學期、當週校曆週次與重要辦理事項"""
-    now = datetime.now()
-    term = current_academic_term(now.date())
+    """回傳當前學期、當週校曆週次與本週要注意的校曆事項 (可用 ?date=YYYY-MM-DD 模擬日期)"""
+    try:
+        today = datetime.strptime(request.args["date"], "%Y-%m-%d").date() if request.args.get("date") else datetime.now().date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "date 格式須為 YYYY-MM-DD"}), 400
+    term = current_academic_term(today)
+    calendar = school_calendar_sync.load()
     return jsonify({
         "status": "success",
         "academic_year": term["academic_year"],
         "semester": term["semester"],
         "semester_name": term["name"],
         "current_week": term["week"],
-        "current_date": now.strftime("%Y-%m-%d"),
-        "active_highlights": [
-            {"title": "課程停修申請", "badge": "本週受理中 (剩 3 天)", "office": "課務組", "url": "/#tab-checklist", "is_urgent": True},
-            {"title": "期中預警評量", "badge": "輔導進行中 (剩 5 天)", "office": "學務處", "url": "/#tab-warning", "is_urgent": True},
-            {"title": "大四學分預審", "badge": "審查中 (剩 35 天)", "office": "註冊組", "url": "/#tab-graduation", "is_urgent": False}
-        ]
+        "current_date": today.isoformat(),
+        "active_highlights": calendar_highlights(calendar["events"], today) if calendar else []
     }), 200
 
 def _deadline_visible_to_role(applies_to_role, viewer_role):
@@ -1048,6 +1205,7 @@ def normalize_deadline_row(row):
     return item
 
 @app.route("/api/deadlines", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_deadlines():
     global DEMO_DEADLINES
     if request.method == "GET":
@@ -1200,13 +1358,12 @@ def get_calendar_now():
     }), 200
 
 @app.route("/api/academic-calendar", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_academic_calendar():
     global DEMO_ACADEMIC_CALENDAR
     if request.method == "GET":
         return jsonify({"status": "success", "data": fetch_calendar_events()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
-        return jsonify({"status": "error", "message": "權限不足"}), 403
     item, error = parse_calendar_payload(request.get_json(silent=True) or {})
     if error:
         return jsonify({"status": "error", "message": error}), 400
@@ -1781,6 +1938,15 @@ def current_student_id():
         return session.get("student_id")
     return None
 
+DEMO_COURSE_IDS = {c["course_id"] for c in DEMO_COURSES}
+
+def hide_untaken_demo_courses(courses, taken_ids):
+    """用 import_my_data.py 匯入真實成績的學生 (修過示範以外的課) 不列出沒修過的示範課程；
+    示範帳號的成績全是示範課程，清單不變"""
+    if not set(taken_ids) - DEMO_COURSE_IDS:
+        return courses
+    return [c for c in courses if c["course_id"] not in DEMO_COURSE_IDS or c["course_id"] in taken_ids]
+
 def summarize_credits(credit_records):
     """整理成績：同一科重修時以最近一次成績為準，任何一次及格即視為通過"""
     passed, latest = set(), {}
@@ -1819,6 +1985,7 @@ def check_courses_prerequisites():
             return jsonify({"status": "error", "message": "請先登入學生帳號，或改用手動模擬模式"}), 401
         mode = "student"
         passed_ids, failed_ids, latest = summarize_credits(load_student_credits(student_id))
+        courses = hide_untaken_demo_courses(courses, latest)
         student = {"student_id": student_id, "full_name": session.get("full_name", ""), "dept_name": session.get("dept_name", "")}
 
     total_passed_credits = 0
@@ -1952,6 +2119,34 @@ def get_personalized_courses():
         }
     }), 200
 
+@app.route("/api/student/graduation-audit", methods=["GET"])
+def graduation_audit():
+    """畢業缺課檢核：依學生入學年度的修業科目表 (curriculum/<dept_id>_<入學年>.json) 比對已通過與修課中的課程；
+    沒有該屆修業科目表時回傳 available=False，前端改顯示擋修試算"""
+    role = session.get("role")
+    if not role:
+        return jsonify({"status": "error", "message": "請先登入系統"}), 401
+    student_id, err = _resolve_graduation_target_student(role, session.get("student_id"),
+                                                         (request.args.get("student_id") or "").strip().upper() or None)
+    if err:
+        return jsonify({"status": "error", "message": err[0]}), err[1]
+    if role == "老師" and not teacher_can_view_student(student_id):
+        return jsonify({"status": "error", "message": "老師僅能查詢自己班級學生的資料"}), 403
+    rows = fetch_db_rows("SELECT dept_id, admission_year, class_name FROM students WHERE student_id = %s", (student_id,))
+    stu = rows[0] if rows else next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+    curriculum = load_curriculum(stu["dept_id"], stu["admission_year"]) if stu else None
+    if not curriculum:
+        return jsonify({"status": "success", "available": False}), 200
+
+    course_by_id = {c["course_id"]: c for c in load_course_map()}
+    passed = [{"course_name": course_by_id[r["course_id"]]["course_name"], "credits": course_by_id[r["course_id"]]["credits"],
+               "semester": r["semester"]}
+              for r in load_student_credits(student_id) if r["is_passed"] and r["course_id"] in course_by_id]
+    current = [c["course_name"] for c in get_dashboard_source().list_schedule(stu["class_name"], student_id)]
+    term = current_academic_term(datetime.now().date())
+    result = audit_curriculum(curriculum, passed, current, f"{term['academic_year']}-{term['semester']}")
+    return jsonify({"status": "success", "available": True, **result}), 200
+
 @app.route("/api/courses/what-if", methods=["POST"])
 def what_if_course_failed():
     """「如果這門課被當」骨牌連鎖擋修試算器 (功能 5)"""
@@ -2013,75 +2208,6 @@ def what_if_course_failed():
             f"1. 立即於期中退選或停修截止前評估是否辦理停修，避免成績單留下不及格紀錄。",
             f"2. 於下學期開學初向科辦登記暑期重修開班調查。",
             f"3. 調整選課計畫，優先確保先修鏈樞紐【{target_course['course_name']}】及格通過。"
-        ]
-    }), 200
-
-# ==========================================
-# 8. 畢業學分預審與門檻細拆 API (功能 5)
-# ==========================================
-
-@app.route("/api/student/graduation-audit", methods=["GET"])
-def get_graduation_audit():
-    """畢業學分預審：拆解總學分 220、必修、選修、通識、英文門檻與專題缺口 (功能 5)"""
-    student_id = request.args.get("student_id") or session.get("student_id") or "S112001"
-    student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), DEMO_STUDENTS[0])
-    dept_req = DEMO_GRADUATION_REQUIREMENTS.get(student["dept_id"], DEMO_GRADUATION_REQUIREMENTS["CS"])
-
-    # 統計學分
-    credit_records = [c for c in DEMO_STUDENT_CREDITS if c["student_id"] == student_id and c["is_passed"] == 1]
-    course_dict = {c["course_id"]: c for c in DEMO_COURSES}
-
-    passed_courses = [course_dict[r["course_id"]] for r in credit_records if r["course_id"] in course_dict]
-    total_earned = sum(c["credits"] for c in passed_courses)
-    major_req_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") == "專業必修")
-    major_elec_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") == "專業選修")
-    gen_earned = sum(c["credits"] for c in passed_courses if c.get("course_type") in ("通識教育", "共同必修"))
-
-    # 英文門檻判定（例如通過基礎英文或證照）
-    has_english = any("英文" in c["course_name"] for c in passed_courses) or len([c for c in DEMO_CERTIFICATES if c["student_id"] == student_id]) > 0
-
-    return jsonify({
-        "status": "success",
-        "student": student,
-        "graduation_threshold": dept_req["total_credits_req"],
-        "total_earned": total_earned,
-        "total_remaining": max(0, dept_req["total_credits_req"] - total_earned),
-        "overall_progress_percent": round(min(100, (total_earned / dept_req["total_credits_req"]) * 100), 1),
-        "breakdown": [
-            {
-                "category": "科專業必修",
-                "required": dept_req["major_required_req"],
-                "earned": major_req_earned,
-                "remaining": max(0, dept_req["major_required_req"] - major_req_earned),
-                "is_met": major_req_earned >= dept_req["major_required_req"],
-                "icon": "📘"
-            },
-            {
-                "category": "科專業選修",
-                "required": dept_req["major_elective_req"],
-                "earned": major_elec_earned,
-                "remaining": max(0, dept_req["major_elective_req"] - major_elec_earned),
-                "is_met": major_elec_earned >= dept_req["major_elective_req"],
-                "icon": "📙"
-            },
-            {
-                "category": "通識與共同必修",
-                "required": dept_req["general_req"],
-                "earned": gen_earned,
-                "remaining": max(0, dept_req["general_req"] - gen_earned),
-                "is_met": gen_earned >= dept_req["general_req"],
-                "icon": "📗"
-            },
-            {
-                "category": "英文畢業門檻",
-                "required": 1,
-                "earned": 1 if has_english else 0,
-                "remaining": 0 if has_english else 1,
-                "is_met": has_english,
-                "detail": dept_req["english_threshold_name"],
-                "status_text": "已通過 (多益 550 或基礎外語及格)" if has_english else "未通過 (需繳驗證書或修畢進階英文)",
-                "icon": "🔤"
-            }
         ]
     }), 200
 
@@ -2671,6 +2797,7 @@ def load_privacy_settings(student_id):
     return dict(DEFAULT_PRIVACY_CONSENT)
 
 @app.route("/api/student/privacy-consent", methods=["GET", "POST"])
+@role_required("學生", "家長")
 def manage_privacy_consent():
     """管理學生本人對家長/導師預警推播的個資授權 (功能 6)；家長可查看，只有學生本人可修改"""
     student_id = current_student_id()
@@ -2800,6 +2927,7 @@ def compute_early_warning(student_id):
     }
 
 @app.route("/api/student/early-warning", methods=["GET"])
+@login_required
 def get_student_early_warning():
     """學業與擋修風險預警（附帶個資法授權保護）(功能 6)
     學生/家長只能看本人 (綁定) 學號；老師只能看自己導師班學生；教職員/管理員可用 ?student_id= 查詢"""
@@ -2829,6 +2957,13 @@ def get_student_early_warning():
             "message": f"⚠️ 學生本人尚未開啟【{who}學業預警同步授權】。依《個人資料保護法》及校園隱私政策，系統已保護學業警示明細。",
             "student_name": student["full_name"]
         }), 200
+    if role == "老師" and not privacy.get("advisor_alert_consent"):
+        return jsonify({
+            "status": "consent_restricted",
+            "is_authorized": False,
+            "message": "⚠️ 學生本人尚未開啟【導師學業預警同步授權】，依《個人資料保護法》系統已保護學業警示明細。",
+            "student_name": student["full_name"]
+        }), 200
 
     advisor = find_class_advisor(student["class_name"])
     return jsonify({
@@ -2855,6 +2990,7 @@ def get_categories():
     return jsonify({"status": "success", "data": DEMO_CATEGORIES}), 200
 
 @app.route("/api/checklists", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_checklists():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_checklists()}), 200
@@ -2919,6 +3055,7 @@ def add_synonym(user_keyword, official_term, category_id):
     return item
 
 @app.route("/api/synonyms", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_synonyms():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_synonyms()}), 200
@@ -2993,6 +3130,7 @@ def parse_rule_payload(data, current=None):
 RULE_DB_COLUMNS = ("category_id", "subcategory", "keyword", "official_term", "content", "doc_name", "page", "url")
 
 @app.route("/api/rules", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_rules():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_rules()}), 200
@@ -3097,12 +3235,11 @@ def parse_link_payload(data, categories):
     }, None
 
 @app.route("/api/links", methods=["GET", "POST"])
+@write_roles_required("管理員", "教職員")
 def manage_quick_links():
     if request.method == "GET":
         data = load_quick_links()
         return jsonify({"status": "success", "categories": data["categories"], "data": data["links"]}), 200
-    if session.get("role") not in ("管理員", "教職員"):
-        return jsonify({"status": "error", "message": "權限不足"}), 403
     with links_lock:
         data = load_quick_links()
         item, error = parse_link_payload(request.get_json(silent=True) or {}, data["categories"])
@@ -3470,6 +3607,407 @@ def notify_scholarship_and_warning():
             message += f"；{len(failed)} 封寄送失敗"
     return jsonify({"status": "success", "message": message, "sent": sent,
                      "skipped_no_consent": skipped_no_consent, "failed": failed, "notify_mode": mailer.mode}), 200
+# 8c. 學生證照與檢定成績管理 API (/api/certificates)
+#     學生自行維護個人證照紀錄 (如勞動部技術士技能檢定成績單)；
+#     支援上傳 PDF 檔、證照照片；支援勞動部成績單與官方查驗網站連結。
+# ==========================================
+
+def teacher_can_view_student(student_id):
+    """老師只能查看自己擔任導師班級的學生"""
+    advised = session.get("advised_class")
+    student = _load_student_info(student_id)
+    return bool(advised and student and student.get("class_name") == advised)
+
+def portfolio_row_dates(row):
+    """證照／競賽資料列：日期欄位轉成 YYYY-MM-DD 字串"""
+    return {k: (v.strftime("%Y-%m-%d %H:%M:%S") if k == "created_at" and hasattr(v, "strftime")
+                else _date_str(v)) for k, v in row.items()}
+
+@app.route("/api/certificates", methods=["GET", "POST"])
+@login_required
+def manage_certificates():
+    global DEMO_CERTIFICATES
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+
+    if request.method == "GET":
+        requested_id = request.args.get("student_id")
+        if role == "學生":
+            target_student_id = session_student_id
+        elif role == "家長":
+            if requested_id and requested_id != session_student_id:
+                return jsonify({"status": "error", "message": "無權查詢非本人子女之證照資料"}), 403
+            target_student_id = session_student_id
+        elif role in ("教職員", "管理員", "老師"):
+            target_student_id = requested_id
+            if not target_student_id:
+                return jsonify({"status": "error", "message": "請提供欲查詢之學號 (student_id)"}), 400
+            if role == "老師" and not teacher_can_view_student(target_student_id):
+                return jsonify({"status": "error", "message": "老師僅能查詢自己班級學生的資料"}), 403
+        else:
+            return jsonify({"status": "error", "message": "此身分無權查詢證照資料"}), 403
+
+        if not target_student_id:
+            return jsonify({"status": "error", "message": "查無綁定學號，請確認登入身分"}), 400
+
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute("SELECT * FROM certificates WHERE student_id = %s ORDER BY issue_date DESC", (target_student_id,))
+                rows = [portfolio_row_dates(r) for r in cursor.fetchall()]
+                cursor.close()
+                conn.close()
+                return jsonify({"status": "success", "data": rows}), 200
+            except Exception:
+                if conn: conn.close()
+
+        rows = [c for c in DEMO_CERTIFICATES if c["student_id"] == target_student_id]
+        return jsonify({"status": "success", "data": rows}), 200
+
+    # POST：只有學生本人能新增自己的證照紀錄，不可代填其他學號
+    if role != "學生":
+        return jsonify({"status": "error", "message": "僅學生本人可新增證照紀錄"}), 403
+    if not session_student_id:
+        return jsonify({"status": "error", "message": "查無綁定學號，請確認登入身分"}), 400
+
+    # 同時相容 FormData (檔案上傳) 與純 JSON 請求
+    if request.content_type and "multipart/form-data" in request.content_type:
+        data = request.form
+    else:
+        data = request.get_json(silent=True) or {}
+
+    cert_name = str(data.get("cert_name", "")).strip()
+    issuing_org = str(data.get("issuing_org", "")).strip() or "勞動部勞動力發展署技能檢定中心"
+    cert_number = str(data.get("cert_number", "")).strip()
+    issue_date = str(data.get("issue_date", "")).strip()
+    cert_status = str(data.get("cert_status", "")).strip() or "及格發證"
+    verify_url = str(data.get("verify_url", "")).strip()
+    raw_theory = data.get("theory_score")
+    raw_practical = data.get("practical_score")
+
+    # 針對勞動部相關證照與成績單，若未指定網址則自動帶入官方即時線上查詢通道
+    if not verify_url and ("勞動部" in issuing_org or "技能檢定" in cert_name or "技術士" in cert_name):
+        verify_url = "https://eservice.wdasec.gov.tw/WWW/C101Q"
+
+    if not cert_name or not issue_date:
+        return jsonify({"status": "error", "message": "證照名稱與取得日期為必填"}), 400
+
+    try:
+        theory_score = float(raw_theory) if raw_theory not in (None, "") else None
+        practical_score = float(raw_practical) if raw_practical not in (None, "") else None
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "成績須為數字"}), 400
+
+    # 處理上傳檔案 (PDF 檔或照片圖檔)
+    file_obj = request.files.get("file") or request.files.get("cert_file")
+    file_path, file_name, file_type = save_uploaded_file(file_obj, prefix="cert") if file_obj else (None, None, None)
+
+    conn = get_db_connection()
+    new_id = None
+    if conn:
+        try:
+            cursor = conn.cursor()
+            # 優先嘗試寫入包含擴充欄位之資料表
+            try:
+                sql = """
+                    INSERT INTO certificates 
+                    (student_id, cert_name, issuing_org, cert_number, theory_score, practical_score, issue_date, cert_status, verify_url, file_path, file_name, file_type) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql, (session_student_id, cert_name, issuing_org, cert_number, theory_score, practical_score, issue_date, cert_status, verify_url, file_path, file_name, file_type))
+                conn.commit()
+                new_id = cursor.lastrowid
+            except Exception:
+                # 若尚未擴充欄位則平穩退回基礎欄位
+                sql = "INSERT INTO certificates (student_id, cert_name, issuing_org, cert_number, theory_score, practical_score, issue_date) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                cursor.execute(sql, (session_student_id, cert_name, issuing_org, cert_number, theory_score, practical_score, issue_date))
+                conn.commit()
+                new_id = cursor.lastrowid
+            cursor.close()
+            conn.close()
+        except Exception:
+            if conn: conn.close()
+
+    if not new_id:
+        new_id = max([c["cert_id"] for c in DEMO_CERTIFICATES], default=0) + 1
+
+    DEMO_CERTIFICATES.append({
+        "cert_id": new_id,
+        "student_id": session_student_id,
+        "cert_name": cert_name,
+        "issuing_org": issuing_org,
+        "cert_number": cert_number,
+        "theory_score": theory_score,
+        "practical_score": practical_score,
+        "cert_status": cert_status,
+        "verify_url": verify_url,
+        "file_path": file_path,
+        "file_name": file_name,
+        "file_type": file_type,
+        "issue_date": issue_date,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+    return jsonify({"status": "success", "message": "證照紀錄新增成功！", "id": new_id}), 201
+
+@app.route("/api/certificates/<int:cert_id>", methods=["DELETE"])
+@login_required
+def delete_certificate(cert_id):
+    global DEMO_CERTIFICATES
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+
+    if role != "學生":
+        return jsonify({"status": "error", "message": "僅學生本人可刪除證照紀錄"}), 403
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT student_id, file_path FROM certificates WHERE cert_id = %s", (cert_id,))
+            row = cursor.fetchone()
+            if not row:
+                cursor.close(); conn.close()
+                return jsonify({"status": "error", "message": "找不到該筆證照紀錄"}), 404
+            if row["student_id"] != session_student_id:
+                cursor.close(); conn.close()
+                return jsonify({"status": "error", "message": "無權刪除非本人之證照紀錄"}), 403
+            cursor.execute("DELETE FROM certificates WHERE cert_id = %s", (cert_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return jsonify({"status": "success", "message": "證照紀錄已刪除！"}), 200
+        except Exception:
+            if conn: conn.close()
+
+    target = next((c for c in DEMO_CERTIFICATES if c["cert_id"] == cert_id), None)
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該筆證照紀錄"}), 404
+    if target["student_id"] != session_student_id:
+        return jsonify({"status": "error", "message": "無權刪除非本人之證照紀錄"}), 403
+    DEMO_CERTIFICATES = [c for c in DEMO_CERTIFICATES if c["cert_id"] != cert_id]
+    return jsonify({"status": "success", "message": "證照紀錄已刪除！"}), 200
+
+# ==========================================
+# 8d. 學生比賽獲獎與榮譽獎狀管理 API (/api/competitions)
+#     學生自行維護個人比賽獎狀與現場照片；
+#     支援上傳 PDF 檔與比賽照片；與證照功能並存同一個畫面。
+# ==========================================
+
+@app.route("/api/competitions", methods=["GET", "POST"])
+@login_required
+def manage_competitions():
+    global DEMO_COMPETITIONS
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+
+    if request.method == "GET":
+        requested_id = request.args.get("student_id")
+        if role == "學生":
+            target_student_id = session_student_id
+        elif role == "家長":
+            if requested_id and requested_id != session_student_id:
+                return jsonify({"status": "error", "message": "無權查詢非本人子女之比賽獲獎資料"}), 403
+            target_student_id = session_student_id
+        elif role in ("教職員", "管理員", "老師"):
+            target_student_id = requested_id
+            if not target_student_id:
+                return jsonify({"status": "error", "message": "請提供欲查詢之學號 (student_id)"}), 400
+            if role == "老師" and not teacher_can_view_student(target_student_id):
+                return jsonify({"status": "error", "message": "老師僅能查詢自己班級學生的資料"}), 403
+        else:
+            return jsonify({"status": "error", "message": "此身分無權查詢比賽獲獎資料"}), 403
+
+        if not target_student_id:
+            return jsonify({"status": "error", "message": "查無綁定學號，請確認登入身分"}), 400
+
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute("SELECT * FROM competitions WHERE student_id = %s ORDER BY award_date DESC", (target_student_id,))
+                rows = [portfolio_row_dates(r) for r in cursor.fetchall()]
+                cursor.close()
+                conn.close()
+                return jsonify({"status": "success", "data": rows}), 200
+            except Exception:
+                if conn: conn.close()
+
+        rows = [c for c in DEMO_COMPETITIONS if c["student_id"] == target_student_id]
+        return jsonify({"status": "success", "data": rows}), 200
+
+    # POST：只有學生本人能新增自己的比賽紀錄
+    if role != "學生":
+        return jsonify({"status": "error", "message": "僅學生本人可新增比賽獲獎紀錄"}), 403
+    if not session_student_id:
+        return jsonify({"status": "error", "message": "查無綁定學號，請確認登入身分"}), 400
+
+    if request.content_type and "multipart/form-data" in request.content_type:
+        data = request.form
+    else:
+        data = request.get_json(silent=True) or {}
+
+    competition_name = str(data.get("competition_name", "")).strip()
+    award_title = str(data.get("award_title", "")).strip()
+    organizer = str(data.get("organizer", "")).strip() or "主辦單位"
+    project_name = str(data.get("project_name", "")).strip()
+    award_date = str(data.get("award_date", "")).strip()
+
+    if not competition_name or not award_title or not award_date:
+        return jsonify({"status": "error", "message": "比賽名稱、獲獎獎項與得獎日期為必填"}), 400
+
+    # 處理上傳檔案 (PDF 獎狀或照片圖檔)
+    file_obj = request.files.get("file") or request.files.get("award_file")
+    file_path, file_name, file_type = save_uploaded_file(file_obj, prefix="award") if file_obj else (None, None, None)
+
+    conn = get_db_connection()
+    new_id = None
+    if conn:
+        try:
+            cursor = conn.cursor()
+            sql = """
+                INSERT INTO competitions 
+                (student_id, competition_name, award_title, organizer, project_name, award_date, file_path, file_name, file_type) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (session_student_id, competition_name, award_title, organizer, project_name, award_date, file_path, file_name, file_type))
+            conn.commit()
+            new_id = cursor.lastrowid
+            cursor.close()
+            conn.close()
+        except Exception:
+            if conn: conn.close()
+
+    if not new_id:
+        new_id = max([c["comp_id"] for c in DEMO_COMPETITIONS], default=0) + 1
+
+    DEMO_COMPETITIONS.append({
+        "comp_id": new_id,
+        "student_id": session_student_id,
+        "competition_name": competition_name,
+        "award_title": award_title,
+        "organizer": organizer,
+        "project_name": project_name,
+        "award_date": award_date,
+        "file_path": file_path,
+        "file_name": file_name,
+        "file_type": file_type,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+    return jsonify({"status": "success", "message": "比賽獲獎紀錄新增成功！", "id": new_id}), 201
+
+@app.route("/api/competitions/<int:comp_id>", methods=["DELETE"])
+@login_required
+def delete_competition(comp_id):
+    global DEMO_COMPETITIONS
+    role = session.get("role")
+    session_student_id = session.get("student_id")
+
+    if role != "學生":
+        return jsonify({"status": "error", "message": "僅學生本人可刪除比賽獲獎紀錄"}), 403
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT student_id FROM competitions WHERE comp_id = %s", (comp_id,))
+            row = cursor.fetchone()
+            if not row:
+                cursor.close(); conn.close()
+                return jsonify({"status": "error", "message": "找不到該筆比賽紀錄"}), 404
+            if row["student_id"] != session_student_id:
+                cursor.close(); conn.close()
+                return jsonify({"status": "error", "message": "無權刪除非本人之比賽紀錄"}), 403
+            cursor.execute("DELETE FROM competitions WHERE comp_id = %s", (comp_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return jsonify({"status": "success", "message": "比賽獲獎紀錄已刪除！"}), 200
+        except Exception:
+            if conn: conn.close()
+
+    target = next((c for c in DEMO_COMPETITIONS if c["comp_id"] == comp_id), None)
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該筆比賽紀錄"}), 404
+    if target["student_id"] != session_student_id:
+        return jsonify({"status": "error", "message": "無權刪除非本人之比賽紀錄"}), 403
+    DEMO_COMPETITIONS = [c for c in DEMO_COMPETITIONS if c["comp_id"] != comp_id]
+    return jsonify({"status": "success", "message": "比賽獲獎紀錄已刪除！"}), 200
+
+# ==========================================
+# 11i. 學校行事曆 (/api/school-calendar)
+#      資料由程式從教務處行事曆 PDF 抓取 (school_calendar/sync.py)，存於 school_calendar.json；
+#      點開事項時附上對應的申辦流程、系統連結與承辦單位 (school_calendar/actions.py)
+# ==========================================
+
+def _calendar_event_detail(ev, today, checklists, links, offices):
+    start = datetime.strptime(ev["start_date"], "%Y-%m-%d").date()
+    end = datetime.strptime(ev["end_date"], "%Y-%m-%d").date()
+    if end < today:
+        status = "past"
+    elif start <= today:
+        status = "ongoing"
+    else:
+        status = "upcoming"
+    actions = match_calendar_actions(ev["title"])
+    return {
+        **ev,
+        "status": status,
+        "days_to_end": (end - today).days,
+        "days_to_start": (start - today).days,
+        "checklists": [
+            {k: c.get(k) for k in ("item_id", "business_name", "required_docs", "steps_json", "office_location",
+                                   "contact_phone", "office_hours", "form_download_url")}
+            for cid in actions["checklist_ids"] for c in checklists if c["item_id"] == cid
+        ],
+        # 網址未確定 ("#") 的連結不列出，避免點了沒反應
+        "links": [{"title": l["title"], "url": l["url"]}
+                  for lid in actions["link_ids"] for l in links if l["id"] == lid and l.get("url") not in (None, "", "#")],
+        "offices": [o for name in actions["offices"] for o in offices if o["office"] == name],
+        "tips": actions["tips"]
+    }
+
+@app.route("/api/school-calendar", methods=["GET"])
+def get_school_calendar():
+    """學年度行事曆 (公開)；可用 ?date=YYYY-MM-DD 模擬今天日期"""
+    try:
+        today = datetime.strptime(request.args["date"], "%Y-%m-%d").date() if request.args.get("date") else datetime.now().date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "date 格式須為 YYYY-MM-DD"}), 400
+    data = school_calendar_sync.load()
+    if not data:
+        return jsonify({"status": "error", "message": "尚未抓取學校行事曆，請管理員於後台執行更新"}), 404
+    checklists = load_checklists()
+    links = load_quick_links().get("links", [])
+    events = [_calendar_event_detail(ev, today, checklists, links, CAMPUS_CONTACT_DIRECTORY) for ev in data["events"]]
+    return jsonify({
+        "status": "success",
+        "today": today.isoformat(),
+        "academic_year": data["academic_year"],
+        "source_url": data["source_url"],
+        "fetched_at": data["fetched_at"],
+        "events": events
+    }), 200
+
+@app.route("/api/admin/school-calendar/sync", methods=["POST"])
+@role_required("管理員", "教職員")
+def sync_school_calendar():
+    """重新從教務處網站抓取最新學年度行事曆 PDF"""
+    try:
+        data = school_calendar_sync.sync()
+    except ImportError:
+        return jsonify({"status": "error", "message": "伺服器尚未安裝 pypdf，請執行 pip install pypdf"}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"抓取失敗，已保留原本的行事曆：{e}"}), 502
+    return jsonify({
+        "status": "success",
+        "message": f"已更新 {data['academic_year']} 學年度行事曆，共 {len(data['events'])} 筆事項",
+        "academic_year": data["academic_year"],
+        "fetched_at": data["fetched_at"],
+        "source_url": data["source_url"]
+    }), 200
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
@@ -3614,6 +4152,53 @@ def get_dashboard_source():
     source = MySQLDashboardSource(get_db_connection)
     return source if source.is_available() else DEMO_DASHBOARD_SOURCE
 
+# ---------- Moodle 數位學習平台串接 (作業與繳交狀態) ----------
+#   學生輸入 Moodle 帳密 → 換成權杖後只存權杖；儀表板開啟時同步 (moodle_sync/assignments.py 有 3 分鐘快取)
+
+MOODLE_URL = os.getenv("MOODLE_URL", "https://moodle.ukn.edu.tw").rstrip("/")
+MOODLE_LINKS = MoodleLinkStore(get_db_connection)
+
+def moodle_error_message(error):
+    if not error:
+        return None
+    if error.code == "invalidtoken":
+        return "Moodle 連結已失效 (可能改過密碼)，請重新連結"
+    if error.code == "network":
+        return "暫時連不上 Moodle，顯示的是上次同步的資料"
+    return f"Moodle 同步失敗：{error}"
+
+def moodle_status_for(student_id):
+    link = MOODLE_LINKS.get(student_id)
+    if not link:
+        return {"linked": False, "can_link": session.get("role") == "學生"}
+    return {"linked": True, "can_link": session.get("role") == "學生",
+            "moodle_username": link["moodle_username"], "moodle_fullname": link.get("moodle_fullname")}
+
+@app.route("/api/student/moodle/link", methods=["POST", "DELETE"])
+@role_required("學生")
+def link_moodle():
+    """POST：用 Moodle 帳密換權杖並保存 (不保存密碼)；DELETE：解除連結"""
+    student_id = session.get("student_id")
+    if request.method == "DELETE":
+        MOODLE_LINKS.delete(student_id)
+        clear_moodle_cache(student_id)
+        return jsonify({"status": "success", "message": "已解除 Moodle 連結"}), 200
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", ""))
+    if not username or not password:
+        return jsonify({"status": "error", "message": "請輸入 Moodle 帳號與密碼"}), 400
+    try:
+        token = get_moodle_token(MOODLE_URL, username, password)
+        info = MoodleClient(MOODLE_URL, token).site_info()
+    except MoodleError as e:
+        status = 401 if e.code == "invalidlogin" else 502
+        return jsonify({"status": "error", "message": str(e)}), status
+    MOODLE_LINKS.save(student_id, info.get("username") or username, info.get("fullname"), token)
+    clear_moodle_cache(student_id)
+    return jsonify({"status": "success", "message": f"已連結 Moodle 帳號：{info.get('fullname') or username}"}), 200
+
 def student_class_name(student_id):
     rows = fetch_db_rows("SELECT class_name FROM students WHERE student_id = %s", (student_id,))
     if rows:
@@ -3642,8 +4227,16 @@ def get_student_dashboard():
         return jsonify({"status": "error", "message": "日期時間格式須為 date=YYYY-MM-DD、time=HH:MM"}), 400
 
     source = get_dashboard_source()
+    moodle = moodle_status_for(student_id)
+    if moodle["linked"]:
+        link = MOODLE_LINKS.get(student_id)
+        items, synced_at, error = get_cached_assignments(student_id, MOODLE_URL, link["token"], now,
+                                                         force=request.args.get("refresh_moodle") == "1")
+        source = MoodleMergedSource(source, items)
+        moodle.update({"synced_at": synced_at, "count": len(items), "error": moodle_error_message(error)})
     class_name = student_class_name(student_id)
     data = build_dashboard(source, class_name, student_id, now)
+    data["moodle"] = moodle
 
     attendance = summarize_attendance(get_attendance_source().list_records(student_id), course_weekly_hours())
     data["attendance"] = {
