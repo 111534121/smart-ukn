@@ -69,10 +69,46 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* 主選單：比照官網，目前頁籤底部橘線、文字深藍 */
-        .tab-btn { color: #444; border-bottom: 3px solid transparent; }
+        /* 主選單與下拉式選單樣式 */
+        .tab-btn { color: #444; border-bottom: 3px solid transparent; transition: all 0.2s ease; }
         .tab-btn:hover { color: #003377; }
         .tab-btn.active { color: #003377; border-bottom-color: #ff5511; font-weight: 700; }
+
+        /* 下拉選單動畫與浮層 */
+        .nav-dropdown-group {
+            position: relative;
+        }
+        .nav-dropdown-menu {
+            display: none;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .nav-dropdown-group:hover .nav-dropdown-menu,
+        .nav-dropdown-group:focus-within .nav-dropdown-menu,
+        .nav-dropdown-group.is-open .nav-dropdown-menu {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .nav-dropdown-group:hover .arrow-icon,
+        .nav-dropdown-group:focus-within .arrow-icon,
+        .nav-dropdown-group.is-open .arrow-icon {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-item {
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .dropdown-item.active {
+            background-color: #f2f5fa;
+            color: #003377;
+            font-weight: 700;
+            border-left: 3px solid #ff5511;
+        }
 
         /* ---- 康寧大學官網風格 ---- */
         body { color: #444; }
@@ -171,11 +207,48 @@
                     </span>
                 </a>
 
-                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                    <!-- 通知鈴鐺按鈕 (Notification Bell) -->
+                    <div class="relative" id="notificationDropdownContainer">
+                        <button id="notificationBellBtn" onclick="toggleNotificationMenu(event)" class="relative p-2 rounded-full text-slate-600 hover:text-ukn-800 hover:bg-slate-100 transition focus:outline-none" aria-label="系統通知與提醒" aria-expanded="false" title="通知與待辦提醒">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <!-- 未讀紅點 / 計數徽章 -->
+                            <span id="notificationBadge" class="hidden absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow"></span>
+                        </button>
+
+                        <!-- 通知下拉卡片 (Notification Dropdown) -->
+                        <!-- 手機版改為貼齊螢幕左右邊距，避免卡片超出畫面 -->
+                        <div id="notificationMenu" class="hidden fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden origin-top-right transition-all">
+                            <!-- 頂部標題與操作 -->
+                            <div class="p-3.5 bg-gradient-to-r from-ukn-900 to-ukn-800 text-white flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base">🔔</span>
+                                    <span class="font-bold text-sm">通知與待辦提醒</span>
+                                    <span id="unreadCountText" class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">已無未讀通知</span>
+                                </div>
+                                <button onclick="markAllNotificationsRead()" class="text-[11px] text-white/80 hover:text-white hover:underline transition cursor-pointer">全部標為已讀</button>
+                            </div>
+
+                            <!-- 通知清單 -->
+                            <div id="notificationList" class="max-h-[360px] overflow-y-auto divide-y divide-slate-100 text-xs">
+                                <!-- 動態注入通知項目 -->
+                            </div>
+
+                            <!-- 底部查看更多 -->
+                            <div class="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                                <button onclick="switchTab('tab-calendar'); closeNotificationMenu();" class="text-xs text-ukn-700 hover:text-ukn-900 font-semibold flex items-center justify-center gap-1 w-full cursor-pointer">
+                                    <span>查看學期重要校曆日程 ➔</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="currentUserBadge" class="text-right text-xs">
                         <div class="font-bold text-slate-800 flex items-center justify-end gap-1.5">
-                            <span id="userFullName">訪客</span>
-                            <span id="userRoleTag" class="text-[10px] border border-ukn-200 text-ukn-700 px-1.5 rounded">未登入</span>
+                            <span id="userFullName" class="truncate max-w-[6rem] sm:max-w-none">訪客</span>
+                            <span id="userRoleTag" class="hidden sm:inline text-[10px] border border-ukn-200 text-ukn-700 px-1.5 rounded">未登入</span>
                         </div>
                         <div class="text-[11px] text-slate-500 hidden md:block" id="userSubInfo"></div>
                     </div>
@@ -326,9 +399,38 @@
                         <ol id="dashScheduleList" class="space-y-2"></ol>
                     </div>
                     <div id="dashAssignmentCard" class="rounded border border-slate-200 p-4 space-y-3">
-                        <h3 class="font-bold text-slate-900 text-sm">待繳作業</h3>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center justify-between gap-2">
+                            <span>待繳作業</span>
+                            <!-- Moodle 連結狀態 (renderMoodleStatus) -->
+                            <span id="dashMoodleStatus" class="text-[11px] font-normal text-slate-500 flex items-center gap-2"></span>
+                        </h3>
+                        <p id="dashMoodleError" class="hidden text-xs rounded border border-amber-200 bg-amber-50 text-amber-900 px-2.5 py-1.5"></p>
                         <ul id="dashAssignmentList" class="space-y-2"></ul>
                     </div>
+
+                    <!-- 連結 Moodle：帳密只用來向 Moodle 換取權杖，本系統不保存密碼 -->
+                    <dialog id="moodleLinkDialog" class="rounded-lg p-0 w-[calc(100%-2rem)] max-w-sm backdrop:bg-slate-900/40">
+                        <form onsubmit="submitMoodleLink(event)" class="p-5 space-y-4 text-sm">
+                            <div>
+                                <h3 class="ukn-title text-base font-bold text-slate-900">連結 Moodle 數位學習平台</h3>
+                                <p class="text-xs text-slate-500 mt-1">連結後會自動同步 Moodle 上的作業與繳交狀態，交完的作業會自動從待繳清單移除。</p>
+                            </div>
+                            <label class="block space-y-1">
+                                <span class="text-xs font-semibold text-slate-700">Moodle 帳號</span>
+                                <input id="moodleUsername" autocomplete="username" required class="w-full border border-slate-300 rounded px-3 py-2 focus:outline-none focus:border-ukn-600">
+                            </label>
+                            <label class="block space-y-1">
+                                <span class="text-xs font-semibold text-slate-700">Moodle 密碼</span>
+                                <input id="moodlePassword" type="password" autocomplete="current-password" required class="w-full border border-slate-300 rounded px-3 py-2 focus:outline-none focus:border-ukn-600">
+                            </label>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">🔒 密碼只用來向 moodle.ukn.edu.tw 換取一組同步用的權杖（與 Moodle 手機 App 相同方式），本系統不會保存你的密碼。隨時可以解除連結。</p>
+                            <p id="moodleLinkError" class="hidden text-xs text-rose-700"></p>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="document.getElementById('moodleLinkDialog').close()" class="px-4 py-2 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">取消</button>
+                                <button id="moodleLinkSubmit" type="submit" class="px-4 py-2 rounded bg-ukn-800 hover:bg-ukn-700 text-white font-semibold">連結</button>
+                            </div>
+                        </form>
+                    </dialog>
                     <div id="dashAnnouncementCard" class="rounded border border-slate-200 p-4 space-y-3">
                         <h3 class="font-bold text-slate-900 text-sm flex items-center justify-between">
                             <span>校園公告</span>
@@ -611,8 +713,29 @@
                 </div>
             </div>
 
+            <!-- 畢業缺課檢核 (有該屆修業科目表的學生才顯示，取代下方的擋修試算；資料來源 /api/student/graduation-audit) -->
+            <section id="gradAuditSection" class="hidden bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="ukn-title text-lg font-bold text-slate-900">畢業缺課檢核</h3>
+                            <span class="text-[10px] bg-ukn-50 text-ukn-800 border border-ukn-200 font-bold px-2 py-0.5 rounded">依官方修業科目表</span>
+                        </div>
+                        <p id="gradAuditSource" class="text-xs text-slate-500 mt-1"></p>
+                    </div>
+                    <div id="gradAuditTotal" class="text-sm text-slate-700"></div>
+                </div>
+                <div id="gradAuditTodo" class="space-y-2"></div>
+                <div id="gradAuditCategories" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"></div>
+                <div id="gradAuditElective" class="rounded border border-slate-200 p-4 text-xs text-slate-700 space-y-2"></div>
+                <details class="rounded border border-slate-200">
+                    <summary class="cursor-pointer px-4 py-2.5 text-sm font-semibold text-slate-800">查看全部必修科目對照</summary>
+                    <div id="gradAuditAll" class="px-4 pb-4 overflow-x-auto"></div>
+                </details>
+            </section>
+
             <!-- 先修課程影響試算器 (清晰教學導向) -->
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
+            <section id="whatIfSection" class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
                         <div class="flex items-center gap-2">
@@ -992,6 +1115,57 @@
             </section>
 
 
+            <!-- 學校行事曆 (資料來源 /api/school-calendar，由程式從教務處行事曆 PDF 抓取) -->
+            <section class="bg-white rounded border border-slate-200 p-4 sm:p-7 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900"><span id="schoolCalYear"></span>學校行事曆</h2>
+                        <p id="schoolCalSource" class="text-xs text-slate-500 mt-1">載入中...</p>
+                    </div>
+                    <label class="text-xs text-slate-600 flex items-center gap-1.5 cursor-pointer select-none">
+                        <input type="checkbox" id="schoolCalShowMeetings" onchange="renderSchoolCalendar()" class="accent-ukn-800">
+                        顯示行政會議
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between gap-2">
+                    <button onclick="shiftSchoolCalMonth(-1)" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm" aria-label="上個月">◀</button>
+                    <div class="flex items-center gap-2">
+                        <h3 id="schoolCalMonthLabel" class="ukn-title text-lg font-bold text-slate-900"></h3>
+                        <button onclick="goSchoolCalToday()" class="text-xs px-2 py-1 rounded border border-ukn-200 text-ukn-800 hover:bg-ukn-50">今天</button>
+                    </div>
+                    <button onclick="shiftSchoolCalMonth(1)" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm" aria-label="下個月">▶</button>
+                </div>
+
+                <!-- 圖例 -->
+                <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-slate-600">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-rose-100 border border-rose-300"></span>放假／補假</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-[#fff5f6] border border-rose-200"></span>週末</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-violet-100 border border-violet-300"></span>考試</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-ukn-100 border border-ukn-300"></span>申請／截止</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-emerald-50 border border-emerald-300"></span>校園活動</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-slate-100 border border-slate-300"></span>已截止</span>
+                </div>
+
+                <div class="grid grid-cols-7 text-center text-xs font-semibold text-slate-500">
+                    <div class="py-1 text-rose-500">日</div><div class="py-1">一</div><div class="py-1">二</div><div class="py-1">三</div><div class="py-1">四</div><div class="py-1">五</div><div class="py-1 text-rose-500">六</div>
+                </div>
+                <div id="schoolCalGrid" class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded overflow-hidden"></div>
+
+                <div>
+                    <h3 class="ukn-title text-sm font-bold text-slate-900 mb-2">本月事項 <span class="text-xs font-normal text-slate-500">（點選可查看要準備的文件與申請方式）</span></h3>
+                    <ul id="schoolCalList" class="divide-y divide-slate-100 border border-slate-200 rounded"></ul>
+                </div>
+            </section>
+
+            <!-- 行事曆事項詳細資訊 -->
+            <dialog id="schoolCalDialog" class="rounded-lg p-0 w-[calc(100%-2rem)] max-w-lg backdrop:bg-slate-900/40">
+                <div id="schoolCalDialogBody" class="p-5 space-y-4 text-sm"></div>
+                <div class="px-5 pb-5 flex justify-end">
+                    <button onclick="document.getElementById('schoolCalDialog').close()" class="px-4 py-2 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold">關閉</button>
+                </div>
+            </dialog>
+
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-6">
                 <div class="border-b border-slate-100 pb-4">
                     <h2 class="ukn-title text-xl font-bold text-slate-900"><span id="calendarYearText">本學年度</span>重要日程與申辦期限</h2>
@@ -1349,6 +1523,39 @@
 
 
     <!-- ======================================================== -->
+    <!-- 檔案即時檢視燈箱 (Modal Lightbox: 支援 PDF 閱讀與照片預覽) -->
+    <!-- ======================================================== -->
+    <div id="filePreviewModal" class="fixed inset-0 z-50 bg-slate-900/80 hidden flex items-center justify-center p-3 sm:p-6" onclick="handleModalBackdropClick(event)">
+        <div class="bg-white rounded max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-white/20" onclick="event.stopPropagation()">
+            <!-- 燈箱頂部 -->
+            <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+                <div class="flex items-center space-x-2.5 overflow-hidden">
+                    <div>
+                        <h4 id="modalFileTitle" class="font-bold text-slate-900 text-sm truncate">檔案檢視</h4>
+                        <p id="modalFileName" class="text-[11px] text-slate-400 truncate">檔名</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 shrink-0">
+                    <a id="modalExternalLink" href="#" target="_blank" class="px-3 py-1.5 rounded bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                        <span>新分頁開啟 ↗</span>
+                    </a>
+                    <a id="modalDownloadLink" href="#" download class="px-3 py-1.5 rounded bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-semibold transition flex items-center gap-1">
+                        <span>下載 ⬇</span>
+                    </a>
+                    <button onclick="closeFilePreview()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-600 flex items-center justify-center font-bold text-sm transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- 燈箱主要預覽內容區 -->
+            <div id="modalBody" class="p-4 flex-grow overflow-auto flex items-center justify-center bg-slate-950/5 min-h-[350px]">
+                <!-- 動態注入 img 或 iframe -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
     <!-- 前端核心 JavaScript 邏輯 -->
     <!-- ======================================================== -->
     <script>
@@ -1380,8 +1587,16 @@
             loadMyAttendance();
             setupGraduationDashboard();
             await loadEarlyWarning();
+            loadSchoolCalendar();
+            if (['學生', '家長'].includes(currentUser.role)) {
+                loadCertificates();
+                loadCompetitions();
+            }
+            updatePortfolioActionButtons();
             await loadDeadlines();
+            renderNotifications();
             runWhatIfSimulation();
+            loadGraduationAudit();
         });
 
         // 學生專區統一入口：依分類渲染連結卡片
@@ -1642,13 +1857,15 @@
                     const title = escapeHtml(i.title);
                     const linked = i.url && i.url !== '#'
                         ? `<a href="${escapeHtml(i.url)}" target="_blank" rel="noopener noreferrer" class="hover:underline">${title} ↗</a>` : title;
+                    const badge = i.source === 'moodle' ? '<span class="ml-1.5 align-middle text-[10px] font-medium border border-orange-300 text-orange-700 px-1 rounded">Moodle</span>' : '';
                     return `
                         <li class="rounded border ${i.overdue ? 'border-rose-200 bg-rose-50/60' : 'border-slate-200'} px-3 py-2">
-                            <div class="text-sm font-semibold text-slate-900">${linked}</div>
+                            <div class="text-sm font-semibold text-slate-900">${linked}${badge}</div>
                             <div class="text-xs text-slate-500 flex justify-between gap-2"><span>${escapeHtml(i.course_name)}</span><span>${formatDue(i)}</span></div>
                         </li>`;
                 }).join('')
                 : '<li class="text-xs text-slate-400">目前沒有待繳作業 👍</li>';
+            renderMoodleStatus(d.moodle);
 
             // 公告：未讀在前，點開標記已讀
             document.getElementById('dashAnnouncementList').innerHTML = ann.items.length
@@ -1712,10 +1929,12 @@
                 return;
             }
             try {
-                const res = await fetch('/api/student/dashboard');
+                const res = await fetch(`/api/student/dashboard${refreshMoodle === true ? '?refresh_moodle=1' : ''}`);
                 const data = await res.json();
                 if (data.status !== 'success') return;
                 dashboardCanMarkRead = data.can_mark_read;
+                notifSources.dashboard = data;
+                renderNotifications();
                 renderDashboard(data);
                 // 只有學生本人可以線上請假，家長僅能查看
                 document.getElementById('leaveFormToggle').classList.toggle('hidden', currentUser.role !== '學生');
@@ -1826,6 +2045,10 @@
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && isStudentLoggedIn()) loadDashboard();
         });
+        // 網頁開著時每 5 分鐘更新一次 (Moodle 新作業、繳交狀態)；背景分頁不更新
+        setInterval(() => {
+            if (document.visibilityState === 'visible' && isStudentLoggedIn()) loadDashboard();
+        }, 5 * 60 * 1000);
 
         // 我的缺曠課摘要 (登入學生才顯示；扣考門檻依學則：曠課時數達授課總時數 1/3)
         async function loadMyAttendance() {
@@ -1835,6 +2058,8 @@
                 const res = await fetch('/api/student/attendance');
                 const data = await res.json();
                 if (data.status !== 'success') return;
+                notifSources.attendance = data;
+                renderNotifications();
 
                 document.getElementById('attTotals').innerHTML = ['曠課', '遲到', '病假'].map(t =>
                     `<span class="px-2.5 py-1 rounded border ${t === '曠課' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-slate-50 border-slate-200 text-slate-700'}">${t} <strong>${data.totals[t] || 0}</strong> 次</span>`
@@ -1877,13 +2102,20 @@
             try {
                 const res = await fetch('/api/auth/me');
                 const data = await res.json();
+                const adminBtn = document.getElementById('adminEntryLink');
                 if (data.is_authenticated && data.user) {
                     currentUser = data.user;
                     document.getElementById('userFullName').textContent = currentUser.full_name.replace(new RegExp(`\\s*${currentUser.role}$`), ''); // 旁邊已有身分標籤，名字後面的「老師」不重複顯示
                     document.getElementById('userRoleTag').textContent = currentUser.role;
                     document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (currentUser.dept_name || '');
-                    if (['管理員', '教職員'].includes(currentUser.role)) {
-                        document.getElementById('adminEntryLink').classList.remove('hidden');
+                    if (adminBtn) {
+                        if (['管理員', '教職員'].includes(currentUser.role)) {
+                            adminBtn.classList.remove('hidden');
+                            adminBtn.classList.add('flex');
+                        } else {
+                            adminBtn.classList.add('hidden');
+                            adminBtn.classList.remove('flex');
+                        }
                     }
                     document.getElementById('loginLink').textContent = '切換帳號';
                     applySiteName();
@@ -1892,6 +2124,10 @@
                     document.getElementById('userFullName').textContent = '訪客';
                     document.getElementById('userRoleTag').textContent = '未登入';
                     document.getElementById('userSubInfo').textContent = '登入後可自動帶入成績與保存申辦進度';
+                    if (adminBtn) {
+                        adminBtn.classList.add('hidden');
+                        adminBtn.classList.remove('flex');
+                    }
                 }
             } catch (e) {
                 console.log('Auth check error:', e);
@@ -1906,6 +2142,7 @@
                 if (data.status === 'success') {
                     document.getElementById('radarWeekText').textContent = `${data.semester_name} 第 ${data.current_week} 週`;
                     document.getElementById('calendarYearText').textContent = `${data.academic_year} 學年度`;
+                    renderRadarPills(data.active_highlights);
                 }
             } catch (e) {
                 console.error(e);
@@ -2162,6 +2399,87 @@
         }
 
         // 7. 骨牌擋修模擬試算
+        // 畢業缺課檢核：有該屆修業科目表時取代擋修試算 (資管科沒有先修擋修規定，改看還缺哪些課)
+        const GRAD_STATUS = {
+            passed: ['已通過', 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+            in_progress: ['本學期修課中', 'bg-ukn-50 text-ukn-800 border-ukn-200'],
+            planned: ['尚未開課', 'bg-slate-50 text-slate-600 border-slate-200'],
+            missing: ['未通過・需重補修', 'bg-rose-50 text-rose-800 border-rose-300']
+        };
+        const termLabel = t => `${t.slice(0, 3)} 學年第 ${t.slice(4)} 學期`;
+
+        async function loadGraduationAudit() {
+            if (!isStudentLoggedIn()) return;
+            let d;
+            try {
+                d = await (await fetch('/api/student/graduation-audit')).json();
+            } catch (e) {
+                console.error(e);
+                return;
+            }
+            if (d.status !== 'success' || !d.available) return;
+            document.getElementById('whatIfSection').classList.add('hidden');
+            document.getElementById('gradAuditSection').classList.remove('hidden');
+
+            document.getElementById('gradAuditSource').innerHTML =
+                `${escapeHtml(d.title)}（<a href="${escapeHtml(d.source_url)}" target="_blank" rel="noopener noreferrer" class="text-ukn-700 hover:underline">資管科官網 PDF ↗</a>）・資管科沒有先修擋修規定，未通過的必修需重補修`;
+            document.getElementById('gradAuditTotal').innerHTML =
+                `已通過 <strong class="text-ukn-900 text-lg">${d.total.earned}</strong> / ${d.total.required} 學分・必修 ${d.required.earned}/${d.required.required}・選修 ${d.elective.earned}/${d.elective.required}`;
+
+            const todo = d.requirements.filter(r => r.status !== 'passed')
+                .sort((a, b) => ['missing', 'in_progress', 'planned'].indexOf(a.status) - ['missing', 'in_progress', 'planned'].indexOf(b.status));
+            document.getElementById('gradAuditTodo').innerHTML = todo.length
+                ? `<h4 class="text-sm font-bold text-slate-900">還沒完成的必修（${todo.length} 科，${todo.reduce((s, r) => s + r.remaining, 0)} 學分）</h4>` +
+                  todo.map(r => {
+                      const [label, style] = GRAD_STATUS[r.status];
+                      const when = r.status === 'missing' ? `原排在 ${termLabel(r.term)}` : r.status === 'planned' ? `排在 ${termLabel(r.term)}` : '';
+                      return `
+                        <div class="flex items-center justify-between gap-3 rounded border ${style} px-3 py-2">
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold">${escapeHtml(r.name)}</div>
+                                <div class="text-[11px] opacity-80">${escapeHtml(r.category)}・還差 ${r.remaining} 學分${when ? '・' + when : ''}</div>
+                            </div>
+                            <span class="shrink-0 text-[11px] font-bold">${label}</span>
+                        </div>`;
+                  }).join('')
+                : '<p class="text-sm text-emerald-700 font-semibold">🎉 所有必修都已通過！</p>';
+
+            document.getElementById('gradAuditCategories').innerHTML = d.categories.map(c => `
+                <div class="rounded border ${c.done === c.count ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'} px-3 py-2">
+                    <div class="text-[11px] text-slate-500">${escapeHtml(c.category)}</div>
+                    <div class="text-sm font-bold text-slate-900">${c.earned} / ${c.credits} 學分</div>
+                    <div class="text-[11px] text-slate-500">${c.done} / ${c.count} 科完成</div>
+                </div>`).join('') + `
+                <div class="rounded border ${d.elective.earned >= d.elective.required ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'} px-3 py-2">
+                    <div class="text-[11px] text-slate-500">專業選修</div>
+                    <div class="text-sm font-bold text-slate-900">${d.elective.earned} / ${d.elective.required} 學分</div>
+                    <div class="text-[11px] text-slate-500">還差 ${Math.max(0, d.elective.required - d.elective.earned)} 學分</div>
+                </div>`;
+
+            const e = d.elective;
+            const list = items => items.map(i => `${escapeHtml(i.course_name)} ${i.credits}`).join('、') || '無';
+            const progressCredits = e.in_progress.reduce((s, i) => s + (i.credits || 0), 0);
+            document.getElementById('gradAuditElective').innerHTML = `
+                <div class="font-bold text-slate-900 text-sm">選修學分明細</div>
+                <div>科內選修：${list(e.in_dept)}</div>
+                <div>跨科選修（最多採計 ${e.cross_dept_cap} 學分，目前 ${e.cross_dept_earned}）：${list(e.cross_dept)}</div>
+                ${e.in_progress.length ? `<div>本學期修課中：${e.in_progress.map(i => `${escapeHtml(i.course_name)}${i.credits ? ' ' + i.credits : ''}${i.cross_dept ? '（跨科／學分依課程而定）' : ''}`).join('、')}</div>` : ''}
+                <div class="text-slate-500">全部通過後預估選修 ${e.earned + progressCredits}${e.in_progress.some(i => !i.credits) ? ' 以上' : ''} / ${e.required} 學分</div>`;
+
+            document.getElementById('gradAuditAll').innerHTML = `
+                <table class="w-full text-xs mt-2">
+                    <thead><tr class="text-left text-slate-500 border-b border-slate-200"><th class="py-1.5 pr-2">類別</th><th class="pr-2">科目</th><th class="pr-2">學分</th><th class="pr-2">對應到的修課紀錄</th><th>狀態</th></tr></thead>
+                    <tbody>${d.requirements.map(r => `
+                        <tr class="border-b border-slate-100 align-top">
+                            <td class="py-1.5 pr-2 text-slate-500 whitespace-nowrap">${escapeHtml(r.category)}</td>
+                            <td class="pr-2 font-semibold text-slate-800">${escapeHtml(r.name)}</td>
+                            <td class="pr-2 whitespace-nowrap">${r.earned}/${r.credits}</td>
+                            <td class="pr-2 text-slate-600">${r.matched.map(m => `${escapeHtml(m.course_name)}（${escapeHtml(m.semester)}）`).join('、') || '—'}</td>
+                            <td class="whitespace-nowrap">${GRAD_STATUS[r.status][0]}</td>
+                        </tr>`).join('')}</tbody>
+                </table>`;
+        }
+
         async function runWhatIfSimulation() {
             const courseCode = document.getElementById('whatIfCourseSelect').value;
             try {
@@ -2477,7 +2795,7 @@
         }
 
         // 甜甜圈圖：類別有順序 (0 張 → 1 張 → 達標)，用同一色系由淺到深
-        function renderDonutChart(svgElId, legendElId, entries, colors) {
+        function renderDonutChart(svgElId, legendElId, entries, colors, unit = '人') {
             const svgEl = document.getElementById(svgElId);
             const legendEl = document.getElementById(legendElId);
             const total = entries.reduce((sum, e) => sum + e.value, 0);
@@ -2495,14 +2813,14 @@
                 const dash = frac === 1 ? circumference : Math.max(0, frac * circumference - 2);
                 const rotation = acc / total * 360 - 90;
                 acc += it.value;
-                return `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="${sw}" stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(${rotation} ${c} ${c})"><title>${escapeHtml(it.label)}：${it.value} 人 (${Math.round(frac * 100)}%)</title></circle>`;
+                return `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="${sw}" stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(${rotation} ${c} ${c})"><title>${escapeHtml(it.label)}：${it.value} ${unit} (${Math.round(frac * 100)}%)</title></circle>`;
             }).join('');
-            svgEl.innerHTML = `<svg viewBox="0 0 100 100" class="w-28 h-28" role="img" aria-label="同屆證照張數分布">${arcs}</svg>`;
+            svgEl.innerHTML = `<svg viewBox="0 0 100 100" class="w-28 h-28" role="img" aria-label="${escapeHtml(entries.map(e => e.label).join("、"))}分布">${arcs}</svg>`;
             legendEl.innerHTML = entries.map((it, i) => `
                 <div class="flex items-center gap-1.5">
                     <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${colors[i]}"></span>
                     <span class="text-slate-600 flex-1">${escapeHtml(it.label)}</span>
-                    <span class="text-slate-900 font-semibold">${it.value} 人</span>
+                    <span class="text-slate-900 font-semibold">${it.value} ${unit}</span>
                     <span class="text-slate-500 w-10 text-right">${Math.round(it.value / total * 100)}%</span>
                 </div>`).join('');
         }

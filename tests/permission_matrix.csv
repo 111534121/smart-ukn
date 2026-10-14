@@ -183,3 +183,13 @@ GET,/api/campus/visits/slots,/api/campus/visits/slots,,校園參觀可預約時�
 GET,/api/campus/visits,/api/campus/visits,,校園參觀預約：查看,401,OK,OK,OK,OK,OK,OK,教職員看全部，其他人只看自己的
 POST,/api/campus/visits,/api/campus/visits,,校園參觀預約：送出,401,OK,OK,OK,OK,OK,OK,
 POST,/api/campus/visits/<int:visit_id>,/api/campus/visits/1,"{""action"": ""cancel""}",校園參觀預約：取消／確認,401,OK,OK,OK,OK,OK,OK,本人只能取消自己的；教職員可確認或取消
+GET,/api/certificates,/api/certificates,,證照紀錄：查看,401,403,OK,OK,OK,OK,OK,老師只能查自己導師班；教職員需指定學號
+POST,/api/certificates,/api/certificates,,證照紀錄：新增,401,403,OK,403,403,403,403,僅學生本人
+DELETE,/api/certificates/<int:cert_id>,/api/certificates/99999,,證照紀錄：刪除,401,403,OK,403,403,403,403,僅學生本人
+GET,/api/competitions,/api/competitions,,比賽獲獎紀錄：查看,401,403,OK,OK,OK,OK,OK,老師只能查自己導師班；教職員需指定學號
+POST,/api/competitions,/api/competitions,,比賽獲獎紀錄：新增,401,403,OK,403,403,403,403,僅學生本人
+DELETE,/api/competitions/<int:comp_id>,/api/competitions/99999,,比賽獲獎紀錄：刪除,401,403,OK,403,403,403,403,僅學生本人
+GET,/api/school-calendar,/api/school-calendar,,學校行事曆,OK,OK,OK,OK,OK,OK,OK,公開資訊
+POST,/api/admin/school-calendar/sync,/api/admin/school-calendar/sync,,同步學校行事曆,401,403,403,403,403,OK,OK,
+POST,/api/student/moodle/link,/api/student/moodle/link,,連結 Moodle 帳號,401,403,OK,403,403,403,403,僅學生本人
+DELETE,/api/student/moodle/link,/api/student/moodle/link,,解除 Moodle 連結,401,403,OK,403,403,403,403,僅學生本人

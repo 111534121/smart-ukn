@@ -73,6 +73,7 @@ def summarize_assignments(rows, now):
             "title": a["title"],
             "due_at": a["due_at"],
             "url": a.get("url") or "#",
+            "source": a.get("source", "local"),
             "overdue": hours_left < 0,
             "hours_left": round(hours_left, 1),
         })

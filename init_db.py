@@ -1,6 +1,7 @@
 import mysql.connector
 import os
 import sys
+from moodle_sync.store import CREATE_TABLE_SQL as MOODLE_LINKS_TABLE_SQL
 
 # 設定 Windows 終端輸出為 UTF-8
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -444,6 +445,9 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 22b. Moodle 連結 moodle_links (只存 Moodle App 權杖，不存密碼；app 第一次使用時也會自動建立)
+        cursor.execute(MOODLE_LINKS_TABLE_SQL)
+
         # 23-28. 個人化儀表板：課表、公告 (含已讀)、作業 (含繳交)、請假
         #        學校尚無對應 API，先以本地資料表模擬；class_name 與 student_id 擇一 (整班 / 個人重補修)
         cursor.execute("""
@@ -677,11 +681,11 @@ def init_database():
             INSERT IGNORE INTO `academic_calendar` (`id`, `event_name`, `start_date`, `end_date`, `category`, `related_checklist_id`)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, [
-            (1, '加退選', '2026-09-14', '2026-09-25', '教務', None),
-            (2, '學雜費繳費期限', '2026-09-01', '2026-09-30', '繳費', None),
-            (3, '獎助學金申請期限', '2026-09-21', '2026-10-16', '獎助', None),
-            (4, '停修申請', '2026-10-01', '2026-10-16', '教務', withdraw_checklist_id),
-            (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None),
+            (1, '網路加退選及重補修', '2026-09-14', '2026-09-20', '教務', None),
+            (2, '就學貸款申請、學雜費減免收件', '2026-09-14', '2026-09-15', '繳費', None),
+            (3, '弱勢助學金、學產基金申請', '2026-09-16', '2026-10-01', '獎助', None),
+            (4, '受理棄選（停修）', '2026-11-16', '2026-12-04', '教務', withdraw_checklist_id),
+            (5, '網路教學評量填寫', '2026-12-14', '2026-12-20', '教務', None),
         ])
 
         # 科上通知 (campus/messaging.py)：班級 / 群組、成員、通知、收件人與已讀
