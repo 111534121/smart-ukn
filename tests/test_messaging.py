@@ -2,15 +2,15 @@
 
 
 def test_teacher_can_notify_own_class(client, login):
-    login("teacher1")  # advised_class = 資管四忠
+    login("teacher1")  # advised_class = 資管五忠
     res = client.post("/api/campus/notices", json={
-        "class_name": "資管四忠", "title": "期中考公告", "content": "下週三考期中考",
+        "class_name": "資管五忠", "title": "期中考公告", "content": "下週三考期中考",
     })
     assert res.status_code == 200, res.get_json()
 
 
 def test_teacher_cannot_notify_other_class(client, login):
-    """teacher1 帶資管四忠，不能通知資管四孝或護理四忠"""
+    """teacher1 帶資管五忠，不能通知資管四孝或護理四忠"""
     login("teacher1")
     for other_class in ("資管四孝", "護理四忠"):
         res = client.post("/api/campus/notices", json={
@@ -27,7 +27,7 @@ def test_teacher_cannot_reset_other_class_password(client, login):
 
 def test_teacher_can_reset_own_class_password(client, login):
     login("teacher1")
-    res = client.post("/api/campus/classes/password", json={"class_name": "資管四忠", "password": "newpass123"})
+    res = client.post("/api/campus/classes/password", json={"class_name": "資管五忠", "password": "newpass123"})
     assert res.status_code == 200
 
 
@@ -41,16 +41,16 @@ def test_staff_can_notify_any_class(client, login):
 
 def test_student_cannot_send_notice(client, login):
     login("student1")
-    res = client.post("/api/campus/notices", json={"class_name": "資管四忠", "title": "x", "content": "y"})
+    res = client.post("/api/campus/notices", json={"class_name": "資管五忠", "title": "x", "content": "y"})
     assert res.status_code == 403
 
 
 def test_parent_can_view_inbox_readonly(client, login):
     login("teacher1")
-    client.post("/api/campus/notices", json={"class_name": "資管四忠", "title": "期中考", "content": "下週考試"})
+    client.post("/api/campus/notices", json={"class_name": "資管五忠", "title": "期中考", "content": "下週考試"})
     client.post("/api/auth/logout")
 
-    login("parent1")  # 綁定 S112001，班級資管四忠
+    login("parent1")  # 綁定 S112001，班級資管五忠
     data = client.get("/api/campus/notices/inbox").get_json()
     assert any(n["title"] == "期中考" for n in data["data"])
     # 家長不能標記已讀 (僅學生本人可以)
@@ -63,14 +63,14 @@ def test_parent_message_to_advisor_flow(client, login):
     res = client.post("/api/campus/advisor-messages", json={"subject": "請假", "content": "小明這週要請假"})
     assert res.status_code == 200, res.get_json()
     msg_id = res.get_json()["data"]["id"]
-    assert res.get_json()["data"]["class_name"] == "資管四忠"
+    assert res.get_json()["data"]["class_name"] == "資管五忠"
 
     mine = client.get("/api/campus/advisor-messages").get_json()["data"]
     assert any(m["id"] == msg_id and m["status"] == "待回覆" for m in mine)
     client.post("/api/auth/logout")
 
     # 別班導師看不到
-    login("teacher1")  # advised_class = 資管四忠，正好是本人班級
+    login("teacher1")  # advised_class = 資管五忠，正好是本人班級
     teacher_view = client.get("/api/campus/advisor-messages").get_json()["data"]
     assert any(m["id"] == msg_id for m in teacher_view)
 
@@ -91,7 +91,7 @@ def test_only_parent_can_message_advisor(client, login):
 
 
 def test_staff_sees_all_advisor_messages(client, login):
-    login("parent1")  # S112001 在資管四忠
+    login("parent1")  # S112001 在資管五忠
     msg_id = client.post("/api/campus/advisor-messages", json={"subject": "x", "content": "y"}).get_json()["data"]["id"]
     client.post("/api/auth/logout")
 
