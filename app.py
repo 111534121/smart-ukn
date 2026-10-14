@@ -2123,9 +2123,15 @@ def get_personalized_courses():
 def graduation_audit():
     """畢業缺課檢核：依學生入學年度的修業科目表 (curriculum/<dept_id>_<入學年>.json) 比對已通過與修課中的課程；
     沒有該屆修業科目表時回傳 available=False，前端改顯示擋修試算"""
-    student_id = current_student_id()
-    if not student_id:
-        return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
+    role = session.get("role")
+    if not role:
+        return jsonify({"status": "error", "message": "請先登入系統"}), 401
+    student_id, err = _resolve_graduation_target_student(role, session.get("student_id"),
+                                                         (request.args.get("student_id") or "").strip().upper() or None)
+    if err:
+        return jsonify({"status": "error", "message": err[0]}), err[1]
+    if role == "老師" and not teacher_can_view_student(student_id):
+        return jsonify({"status": "error", "message": "老師僅能查詢自己班級學生的資料"}), 403
     rows = fetch_db_rows("SELECT dept_id, admission_year, class_name FROM students WHERE student_id = %s", (student_id,))
     stu = rows[0] if rows else next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
     curriculum = load_curriculum(stu["dept_id"], stu["admission_year"]) if stu else None

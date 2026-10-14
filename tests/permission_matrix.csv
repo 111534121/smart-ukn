@@ -10,10 +10,10 @@ GET,/api/auth/me,/api/auth/me,,目前登入者,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/visitor/register,/api/visitor/register,,訪客登記,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/calendar/current-week,/api/calendar/current-week,,本週校曆,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/deadlines,/api/deadlines,,期限列表,OK,OK,OK,OK,OK,OK,OK,?role= 預覽僅教職員/管理員有效
-POST,/api/deadlines,/api/deadlines,,新增期限,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/deadlines,/api/deadlines,,新增期限,401,403,403,403,403,OK,OK,
 GET,/api/calendar/now,/api/calendar/now,,進行中校曆,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/academic-calendar,/api/academic-calendar,,校曆列表,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/academic-calendar,/api/academic-calendar,,新增校曆,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/academic-calendar,/api/academic-calendar,,新增校曆,401,403,403,403,403,OK,OK,
 PUT,/api/academic-calendar/<int:event_id>,/api/academic-calendar/999999,,修改校曆,401,403,403,403,403,OK,OK,
 DELETE,/api/academic-calendar/<int:event_id>,/api/academic-calendar/999999,,刪除校曆,401,403,403,403,403,OK,OK,
 POST,/api/search,/api/search,,規章搜尋,OK,OK,OK,OK,OK,OK,OK,
@@ -32,7 +32,7 @@ GET,/api/courses/check,/api/courses/check,,擋修檢核（自動帶成績）,401
 POST,/api/courses/check,/api/courses/check,,擋修檢核（手動模擬）,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/student/courses/personalized,/api/student/courses/personalized,,個人化課程地圖,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
 POST,/api/courses/what-if,/api/courses/what-if,,被當試算,OK,OK,OK,OK,OK,OK,OK,
-GET,/api/student/graduation-audit,/api/student/graduation-audit?student_id=S112001,,畢業學分預審（舊）,401*,403*,OK,OK,OK,OK,OK,🚨 完全沒有登入檢查，任何人可用 ?student_id= 查別人成績；且只讀示範資料、不讀 MySQL。建議直接刪除，改用 graduation/dashboard
+GET,/api/student/graduation-audit,/api/student/graduation-audit?student_id=S112001,,畢業學分預審（舊）,401,403,OK,OK,OK,OK,OK,學生/家長只看本人；老師只能查導師班；教職員、管理員需指定學號
 GET,/api/student/graduation/dashboard,/api/student/graduation/dashboard?student_id=S112001,,畢業門檻儀表板,401,403,OK,OK,OK,OK,OK,老師可查任何學生，不限導師班（與 early-warning 不一致，待討論）
 GET,/api/student/graduation/export.csv,/api/student/graduation/export.csv?student_id=S112001,,畢業門檻匯出,401,403,OK,OK,OK,OK,OK,同上
 GET,/api/teacher/class-attendance,/api/teacher/class-attendance,,【班級出缺勤】導師班出缺勤一覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班 (別班 403)；教職員、管理員可用 ?class_name= 切換班級
@@ -42,21 +42,21 @@ GET,/api/teacher/class-summary,/api/teacher/class-summary,,導師班級總表,40
 GET,/api/checklist/progress,/api/checklist/progress,,申辦進度查詢,OK,OK,OK,OK,OK,OK,OK,未登入回 is_authenticated=false
 POST,/api/checklist/progress,/api/checklist/progress,,勾選申辦進度,401,403*,OK,403*,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
 GET,/api/student/my-applications,/api/student/my-applications,,我進行中的申辦,OK,OK,OK,OK,OK,OK,OK,未登入回 requires_login=true
-GET,/api/student/privacy-consent,/api/student/privacy-consent,,查看個資授權,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
-POST,/api/student/privacy-consent,/api/student/privacy-consent,"{""parent_alert_consent"": 1, ""advisor_alert_consent"": 1}",修改個資授權,401,403*,OK,403,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+GET,/api/student/privacy-consent,/api/student/privacy-consent,,查看個資授權,401,403,OK,OK,403,403,403,
+POST,/api/student/privacy-consent,/api/student/privacy-consent,"{""parent_alert_consent"": 1, ""advisor_alert_consent"": 1}",修改個資授權,401,403,OK,403,403,403,403,
 GET,/api/student/early-warning,/api/student/early-warning?student_id=S112001,,學業預警,401,403*,OK,OK,OK,OK,OK,訪客目前回 401，應為 403；家長/導師另受個資授權限制
 GET,/api/categories,/api/categories,,規章分類,OK,OK,OK,OK,OK,OK,OK,只讀示範資料，未接 knowledge_categories 表
 GET,/api/checklists,/api/checklists,,申辦流程列表,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/checklists,/api/checklists,,新增申辦流程,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/checklists,/api/checklists,,新增申辦流程,401,403,403,403,403,OK,OK,
 GET,/api/synonyms,/api/synonyms,,同義詞列表,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/synonyms,/api/synonyms,,新增同義詞,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/synonyms,/api/synonyms,,新增同義詞,401,403,403,403,403,OK,OK,
 DELETE,/api/synonyms/<int:synonym_id>,/api/synonyms/999999,,刪除同義詞,401,403,403,403,403,OK,OK,
 GET,/api/rules,/api/rules,,規章列表,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/rules,/api/rules,,新增規章,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/rules,/api/rules,,新增規章,401,403,403,403,403,OK,OK,
 PUT,/api/rules/<int:rule_id>,/api/rules/999999,,修改規章,401,403,403,403,403,OK,OK,
 DELETE,/api/rules/<int:rule_id>,/api/rules/999999,,刪除規章,401,403,403,403,403,OK,OK,
 GET,/api/links,/api/links,,快速連結,OK,OK,OK,OK,OK,OK,OK,存在 links.json，不在 MySQL
-POST,/api/links,/api/links,,新增連結,401*,403,403,403,403,OK,OK,"未登入目前回 403，應為 401；改用 @role_required(""管理員"",""教職員"") 即可統一"
+POST,/api/links,/api/links,,新增連結,401,403,403,403,403,OK,OK,
 PUT,/api/links/<int:link_id>,/api/links/999999,,修改連結,401,403,403,403,403,OK,OK,
 DELETE,/api/links/<int:link_id>,/api/links/999999,,刪除連結,401,403,403,403,403,OK,OK,
 GET,/api/scholarships/match,/api/scholarships/match,,獎學金比對,401,403,OK,OK,403,403,403,
