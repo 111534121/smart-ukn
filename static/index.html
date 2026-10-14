@@ -1915,7 +1915,7 @@
             }
         }
 
-        async function loadDashboard() {
+        async function loadDashboard(refreshMoodle = false) {
             const section = document.getElementById('homeDashboard');
             const guest = document.getElementById('homeDashboardGuest');
             if (!isStudentLoggedIn()) {
@@ -2462,6 +2462,7 @@
         // 頂部橫條：本週要注意的校曆事項，點擊開啟行事曆上的該事項
         function renderRadarPills(highlights) {
             const el = document.getElementById('radarActivePills');
+            if (!el) return;  // 新版首頁沒有這個橫條時略過
             if (!highlights.length) {
                 el.innerHTML = '<span class="text-slate-400">本週沒有需要辦理的事項</span>';
                 return;
