@@ -298,7 +298,7 @@ DEMO_USERS = [
 
 DEMO_CATEGORIES = [
     {"category_id": 1, "category_name": "教務學則與選課", "icon": "📖", "sort_order": 1, "subcategories": ["停修/棄修手續", "先修與擋修規定", "畢業學分資格"]},
-    {"category_id": 2, "category_name": "學務生輔與請假", "icon": "📝", "sort_order": 2, "subcategories": ["學生請假辦法", "缺課扣考", "學業二一預警"]},
+    {"category_id": 2, "category_name": "學務生輔與請假", "icon": "📝", "sort_order": 2, "subcategories": ["學生請假辦法", "缺課扣考", "學業預警"]},
     {"category_id": 3, "category_name": "證照抵免與獎助", "icon": "🏆", "sort_order": 3, "subcategories": ["語言證照抵免", "專業證照獎勵金"]},
     {"category_id": 4, "category_name": "總務校園與設施", "icon": "🏢", "sort_order": 4, "subcategories": ["學生證補發", "停車證申請"]}
 ]
@@ -708,7 +708,7 @@ DEMO_VISITOR_LOGS = []
 CAMPUS_CONTACT_DIRECTORY = [
     {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
     {"office": "教務處註冊組", "location": "康寧樓 2 樓 A202", "phone": "02-2632-1181 分機 321, 322", "business": "學籍、成績單、畢業學分審查、休退學"},
-    {"office": "學務處生活輔導組", "location": "行政大樓 1 樓", "phone": "02-2632-1181 分機 211, 212", "business": "學生請假、獎懲、二一輔導、宿舍"},
+    {"office": "學務處生活輔導組", "location": "行政大樓 1 樓", "phone": "02-2632-1181 分機 211, 212", "business": "學生請假、獎懲、學業輔導、宿舍"},
     {"office": "通識教育中心", "location": "卓越樓 3 樓 C305", "phone": "02-2632-1181 分機 520, 521", "business": "共同外語抵免、通識學分檢核"},
     {"office": "研發處實習就業組", "location": "圖資大樓 2 樓", "phone": "02-2632-1181 分機 612", "business": "專業證照獎勵、校外實習、就業輔導"}
 ]
@@ -967,7 +967,7 @@ def _compute_deadline_status(item, today):
         row["status_badge"] = f"尚未開放（{(start - today).days} 天後開始）"
         row["is_urgent"] = False
     elif days_left < 0:
-        row["status_badge"] = f"已逾期（過期 {abs(days_left)} 天）"
+        row["status_badge"] = f"已超過期限 {abs(days_left)} 天"
         row["is_urgent"] = False
     elif days_left == 0:
         row["status_badge"] = "今天截止"
@@ -1423,7 +1423,7 @@ def search_knowledge():
         "page_num": "-",
         "source_url": "https://www.ukn.edu.tw",
         "contacts_directory": CAMPUS_CONTACT_DIRECTORY,
-        "suggested_topics": ["停修課程", "英文證照抵免", "學生請假", "擋修規定", "二一退學"],
+        "suggested_topics": ["停修課程", "英文證照抵免", "學生請假", "擋修規定", "學業退學"],
         "checklist": [],
         "all_matches": []
     }), 200
@@ -2305,7 +2305,7 @@ def teacher_class_attendance():
 def teacher_class_overview():
     """我的導師班總覽 (T16)：每位學生的出缺勤、學業預警、導生關懷一次看完
     班導只能看自己的導師班；教職員/管理員可用 ?class_name= 切換
-    學業預警遵守個資授權：學生沒有授權導師查看時只回傳「未授權」"""
+    學業預警遵守個資授權：學生沒有授權導師查看時只回傳「沒有開放查看」"""
     from campus import counseling
     role = session.get("role")
     class_name = request.args.get("class_name") or session.get("advised_class")
@@ -2332,7 +2332,7 @@ def teacher_class_overview():
             study = {"risk": w["risk_level"], "level": w["warning_level"], "failed_credits": w["failed_credits"],
                      "current_credits": w["current_credits"], "semester": w["semester"]}
         else:
-            study = {"risk": "未授權", "level": "restricted"}
+            study = {"risk": "沒有開放查看", "level": "restricted"}
         mine = [r for r in records if r["student_id"] == sid]
         students.append({
             "student_id": sid, "full_name": names.get(sid, sid),
@@ -2342,7 +2342,7 @@ def teacher_class_overview():
             "counseling": {"count": len(mine), "last_date": mine[0]["talk_date"] if mine else "",
                            "pending": sum(1 for r in mine if r["follow_up"] and not r["follow_up_done"])},
         })
-    # 需要關心的排前面：已扣考 / 三二 / 二一 / 快扣考 / 待追蹤
+    # 需要關心的排前面：已扣考 / 學業很嚴重 / 學業要注意 / 快扣考 / 待追蹤
     def concern(x):
         return -(3 * (x["attendance"]["level"] == "banned") + 3 * (x["study"]["level"] == "critical")
                  + 2 * (x["study"]["level"] == "warning") + 2 * (x["attendance"]["level"] == "warning")
@@ -2360,6 +2360,115 @@ def teacher_class_overview():
             "pending": sum(x["counseling"]["pending"] for x in students),
         },
         "students": students,
+    }), 200
+
+def _student_parent_phone(student_id):
+    rows = fetch_db_rows("SELECT parent_phone FROM students WHERE student_id = %s", (student_id,))
+    if rows:
+        return rows[0].get("parent_phone") or ""
+    stu = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+    return (stu or {}).get("parent_phone") or ""
+
+@app.route("/api/teacher/student-profile", methods=["GET"])
+@role_required("老師", "教職員", "管理員")
+def teacher_student_profile():
+    """學生個人總覽 (T17)：班導找學生談話前一頁看完一位學生的
+    基本資料、出缺勤、學業預警、畢業門檻、請假紀錄、證照與競賽、獎懲與幹部、導生關懷紀錄
+    班導只能看自己導師班的學生；教職員/管理員可看全校
+    學業預警遵守個資授權：學生沒有授權導師查看時只回傳「沒有開放查看」"""
+    from campus import counseling
+    from campus import certificates as campus_certs
+    from campus import records as campus_records
+    student_id = request.args.get("student_id", "").strip()
+    if not student_id:
+        return jsonify({"status": "error", "message": "請提供學號 (student_id)"}), 400
+    info = _load_student_info(student_id)
+    if not info:
+        return jsonify({"status": "error", "message": "查無此學號之學生資料"}), 404
+    if session.get("role") == "老師" and info.get("class_name") != session.get("advised_class"):
+        return jsonify({"status": "error", "message": "老師僅能查看自己導師班的學生"}), 403
+
+    # 出缺勤
+    att_records = get_attendance_source().list_records(student_id)
+    att = summarize_attendance(att_records, course_weekly_hours())
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    attendance = {
+        "level": att["overall_level"],
+        "totals": att["totals"],
+        "recent_absent": sum(1 for r in att_records if r["type"] == "曠課" and str(r["date"])[:10] >= week_ago),
+        "risk_courses": [{k: c[k] for k in ("course_name", "absent_hours", "exam_ban_threshold_hours", "remaining_hours", "level")}
+                         for c in att["courses"] if c["level"] != "ok"],
+        "recent_records": [{"date": str(r["date"])[:10], "course_name": r.get("course_name", ""), "type": r["type"]}
+                           for r in att_records[:10]],
+    }
+
+    # 學業預警 (需學生授權)
+    if load_privacy_settings(student_id)["advisor_alert_consent"]:
+        w = compute_early_warning(student_id)
+        study = {k: w[k] for k in ("risk_level", "warning_level", "semester", "current_credits", "failed_credits",
+                                   "failed_courses", "blocked_courses", "warning_details", "advisor_session")}
+    else:
+        study = {"risk_level": "沒有開放查看", "warning_level": "restricted"}
+
+    # 畢業門檻
+    grad = _compute_graduation_dashboard(student_id)
+    graduation = None
+    if grad:
+        c, ce = grad["credits"], grad["certificates"]
+        graduation = {
+            "credits_earned": c["earned"], "credits_threshold": c["threshold"], "credits_remaining": c["remaining"],
+            "progress_percent": c["progress_percent"], "breakdown": c["breakdown"],
+            "certs_owned": ce["owned_count"], "certs_required": ce["required"],
+            "overall_meets": grad["overall_meets_graduation_requirement"],
+        }
+
+    # 請假紀錄
+    leave_rows = get_dashboard_source().list_leave_requests_for_review([student_id], None)
+    leaves = {
+        "pending": sum(1 for r in leave_rows if r["status"] == "待審核"),
+        "approved": sum(1 for r in leave_rows if r["status"] == "已核准"),
+        "rejected": sum(1 for r in leave_rows if r["status"] == "已退回"),
+        "data": [{k: r.get(k) for k in ("id", "leave_type", "start_date", "end_date", "periods", "reason", "status", "review_note", "submitted_at")}
+                 for r in leave_rows[:10]],
+    }
+    for item in leaves["data"]:
+        for k in ("start_date", "end_date", "submitted_at"):
+            if item.get(k) is not None:
+                item[k] = str(item[k])[:16 if k == "submitted_at" else 10]
+
+    # 證照、競賽、作品 (含待審核)
+    mine = [i for i in campus_certs.submissions() if i["student_id"] == student_id]
+    mine.sort(key=lambda i: (i["issue_date"] or i["created_at"]), reverse=True)
+    certificates = {
+        "approved": sum(1 for i in mine if i["status"] == "已通過"),
+        "pending": sum(1 for i in mine if i["status"] == "待審核"),
+        "data": [{**{k: i[k] for k in ("id", "kind", "name", "issuer", "issue_date", "award", "status", "review_note")},
+                  "files": [{"url": f.get("url"), "name": f.get("name")} for f in (i.get("files") or [])]} for i in mine],
+    }
+
+    # 導生關懷紀錄
+    talks = counseling.load_records([student_id])
+    counseling_info = {
+        "count": len(talks),
+        "last_date": talks[0]["talk_date"] if talks else "",
+        "pending": sum(1 for r in talks if r["follow_up"] and not r["follow_up_done"]),
+        "data": [{k: r.get(k) for k in ("id", "talk_date", "method", "topic", "content", "follow_up", "follow_up_done")} for r in talks],
+    }
+
+    return jsonify({
+        "status": "success",
+        "student": {
+            "student_id": info["student_id"], "full_name": info["full_name"], "class_name": info.get("class_name", ""),
+            "dept_name": info.get("dept_name", ""), "admission_year": info.get("admission_year"),
+            "parent_phone": _student_parent_phone(student_id),
+        },
+        "attendance": attendance,
+        "study": study,
+        "graduation": graduation,
+        "leaves": leaves,
+        "certificates": certificates,
+        "records": campus_records.profile(student_id),
+        "counseling": counseling_info,
     }), 200
 
 # ==========================================
@@ -2541,7 +2650,7 @@ def find_class_advisor(class_name):
     return next((u["full_name"] for u in DEMO_USERS if u["role"] == "老師" and u.get("advised_class") == class_name), None)
 
 def compute_early_warning(student_id):
-    """依最近一學期成績計算二一/三二預警：不及格學分達修習學分 1/2 為二一、2/3 為三二；並列出因不及格而擋修的課程"""
+    """依最近一學期成績計算學業預警：不及格學分超過修習學分一半為「要注意」、超過三分之二為「很嚴重」；並列出因不及格而擋修的課程"""
     records = load_student_credits(student_id)
     course_by_id = {c["course_id"]: c for c in load_course_map()}
     _, failed_ids, _ = summarize_credits(records)
@@ -2555,11 +2664,11 @@ def compute_early_warning(student_id):
     ratio = failed_credits / current_credits if current_credits else 0
 
     if ratio >= 2 / 3:
-        level, risk_level, title = "critical", "三二預警", "🚨 三二退學高風險預警"
+        level, risk_level, title = "critical", "很嚴重", "🚨 這學期不及格的學分超過三分之二"
     elif ratio >= 1 / 2:
-        level, risk_level, title = "warning", "二一預警", "⚠️ 二一學業預警"
+        level, risk_level, title = "warning", "要注意", "⚠️ 這學期不及格的學分超過一半"
     elif failed_ids:
-        level, risk_level, title = "notice", "注意", "有科目尚未通過，請規劃重補修"
+        level, risk_level, title = "notice", "有科目沒過", "有科目還沒通過，請規劃重補修"
     else:
         level, risk_level, title = "normal", "正常", "學業狀況良好"
 
@@ -2581,7 +2690,7 @@ def compute_early_warning(student_id):
     if blocked_courses:
         details.append("因先修科目未通過而擋修：" + "、".join(f"{c['course_name']} (需先通過 {c['blocked_by']})" for c in blocked_courses))
     if level in ("warning", "critical"):
-        details.append("建議儘速與導師預約晤談，並規劃下學期重補修。")
+        details.append("建議儘速找導師談談，並規劃下學期重補修。")
 
     return {
         "warning_level": level,
@@ -2594,12 +2703,12 @@ def compute_early_warning(student_id):
         "failed_courses": failed_courses,
         "blocked_courses": blocked_courses,
         "warning_details": details,
-        "advisor_session": "建議預約晤談" if level in ("warning", "critical") else "目前無需晤談"
+        "advisor_session": "建議找導師談談" if level in ("warning", "critical") else "目前不需要"
     }
 
 @app.route("/api/student/early-warning", methods=["GET"])
 def get_student_early_warning():
-    """學業二一與擋修風險預警（附帶個資法授權保護）(功能 6)
+    """學業與擋修風險預警（附帶個資法授權保護）(功能 6)
     學生/家長只能看本人 (綁定) 學號；老師只能看自己導師班學生；教職員/管理員可用 ?student_id= 查詢"""
     role = session.get("role")
     if role in ("學生", "家長"):
@@ -3460,7 +3569,7 @@ def staff_alerts():
             w = compute_early_warning(s["student_id"])
             if w["warning_level"] in ("warning", "critical"):
                 items.append({"key": f"warning-{s['student_id']}", "type": "預警", "goto": "tab-warning",
-                              "title": f"{s['full_name']}：{w['risk_level']}，建議約談",
+                              "title": f"{s['full_name']}：學業{w['risk_level']}，建議找他談談",
                               "detail": f"{w['semester']} 學期不及格 {w['failed_credits']} / {w['current_credits']} 學分", "at": ""})
 
     # 4. 行政人員：教室借用、宿舍申請

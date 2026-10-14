@@ -10,7 +10,7 @@ function rpCanManage() { return isLoggedIn() && isStaff(); }
 
 async function loadReports() {
     const body = document.getElementById('reportsBody');
-    body.innerHTML = '<div class="text-sm text-slate-400 py-6 text-center">載入中…</div>';
+    body.innerHTML = '<div class="text-sm text-slate-400 py-6 text-center">讀取中…</div>';
     try {
         const [filesRes, catRes] = await Promise.all([
             api(rpCategoryFilter ? `/api/campus/reports?category=${encodeURIComponent(rpCategoryFilter)}` : '/api/campus/reports'),

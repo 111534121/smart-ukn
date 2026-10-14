@@ -38,7 +38,7 @@ CLASSES = [
 RENAMES = [("資管四孝", "資管五孝")]
 EXTRA_TEACHERS = [("teacher2", "林志明 老師", "資管五孝")]
 
-# 補兩門 114-2 的選修課，讓每學期至少兩門課 (二一預警才算得出 1/2)
+# 補兩門 114-2 的選修課，讓每學期至少兩門課 (學業預警才算得出一半)
 EXTRA_COURSES = [
     ("CS305", "系統分析與設計", 3, "CS201", 0, "專業選修", DEPT_ID, "大四上", "需求訪談、UML、系統規格書撰寫。"),
     ("CS306", "行動應用程式開發", 3, "CS102", 0, "專業選修", DEPT_ID, "大四下", "Android / Flutter 行動 App 開發與上架。"),
@@ -63,7 +63,7 @@ ATTEND_COURSES = {
 }
 
 # 資管五忠：每一列是一位要產生的學生 (由上往下取用，班上原本的人越多、取用越少)
-#   identity：身分別 (逗號分隔可多個)；study：good 優秀 / normal 一般 / retake 需重補修 / two_one 二一預警
+#   identity：身分別 (逗號分隔可多個)；study：good 優秀 / normal 一般 / retake 需重補修 / two_one 學業要注意 (不及格超過一半)
 #   attend：full 全勤 / normal 偶爾遲到請假 / warning 快扣考 / banned 已扣考 / absent 幾乎沒來
 FIVE_ZHONG = [
     {"identity": "低收入戶", "study": "normal", "attend": "normal"},
@@ -160,11 +160,134 @@ def make_attendance(rng, sid, grade, attend):
     return rows
 
 
+# ---------------------------------------------------------------------
+# T18 證照、比賽、作品、幹部、獎懲 (全部虛構)
+#   證照、比賽、作品寫進 certificates (kind = 證照 / 競賽 / 作品)，file_name 標成 SEED_MARK 方便重跑時清掉
+#   幹部、獎懲寫進 student_records (需先執行 init_db.py 建表)
+# ---------------------------------------------------------------------
+SEED_MARK = "seed_classes.py"
+TODAY = date(2026, 10, 10)  # 示範資料的「今天」(與缺曠紀錄同一週)
+
+# (證照名稱, 發證單位, 最低年級)
+CERT_POOL = [
+    ("丙級電腦軟體應用技術士", "勞動部勞動力發展署技能檢定中心", 1),
+    ("丙級網頁設計技術士", "勞動部勞動力發展署技能檢定中心", 2),
+    ("丙級電腦硬體裝修技術士", "勞動部勞動力發展署技能檢定中心", 2),
+    ("乙級電腦軟體應用技術士", "勞動部勞動力發展署技能檢定中心", 4),
+    ("TQC 文書處理（Word）", "財團法人中華民國電腦技能基金會", 1),
+    ("TQC 電子試算表（Excel）", "財團法人中華民國電腦技能基金會", 1),
+    ("TQC 程式語言（Python）", "財團法人中華民國電腦技能基金會", 3),
+    ("全民英檢初級", "財團法人語言訓練測驗中心", 2),
+    ("多益測驗 600 分", "忠欣股份有限公司", 4),
+]
+# (比賽名稱, 主辦單位, 最低年級, 層級：校內 / 全國)
+CONTEST_POOL = [
+    ("校內程式設計競賽", "康寧大學資訊管理科", 1, "校內"),
+    ("校內英文單字比賽", "康寧大學語言中心", 1, "校內"),
+    ("校內簡報競賽", "康寧大學學務處", 2, "校內"),
+    ("全國技藝競賽 資訊技術類", "教育部國民及學前教育署", 2, "全國"),
+    ("全國大專校院資訊應用服務創新競賽", "教育部", 4, "全國"),
+    ("全國專科學校專題實作競賽", "教育部技術及職業教育司", 5, "全國"),
+]
+AWARDS = ["第一名", "第二名", "第三名", "佳作", "入圍決賽", "參賽"]
+WORK_POOL = [
+    ("班級網站製作", "用 HTML、CSS 做的班級介紹網站", 2),
+    ("校園失物招領 App", "課堂期末專案，可以拍照登記失物", 3),
+    ("畢業專題：校園選課小幫手", "畢業專題，幫同學檢查衝堂與擋修", 5),
+    ("畢業專題：社團活動報名系統", "畢業專題，社團線上報名與點名", 5),
+]
+POSITIONS = ["班長", "副班長", "學藝股長", "總務股長", "風紀股長", "衛生股長", "康樂股長", "資訊股長"]
+GOOD_DEEDS = ["擔任志工服務認真", "協助校慶活動", "協助新生訓練", "熱心公務", "拾金不昧"]
+MINOR_FAULTS = ["上課使用手機經勸導未改善", "服儀不整經勸導未改善", "未依規定時間繳交班級資料"]
+
+
+def _date_in(rng, year, half):
+    """學年 year 的上 (1) 或下 (2) 學期中隨機一天 (西元)"""
+    y = year + 1911
+    start = date(y, 9, 15) if half == 1 else date(y + 1, 2, 20)
+    last = min(start + timedelta(days=110), TODAY)  # 這學期的日期不超過今天
+    return (start + timedelta(days=rng.randint(0, max(0, (last - start).days)))).isoformat()
+
+
+def make_achievements(sid, year, grade, study, attend):
+    """一位學生的證照、比賽、作品 (certificates 列) 與獎懲 (student_records 列)"""
+    rng = random.Random(f"{SEED}-achieve-{sid}")
+    certs, records = [], []
+    done = max(1, 2 * (grade - 1))  # 已經讀完幾學期 (一年級算 1，才有機會考第一張)
+
+    def when():
+        k = rng.randrange(done)
+        return year + k // 2, k % 2 + 1
+
+    # 證照：年級越高越多，成績好的多一張，成績差的少一張
+    n = {1: 0, 2: 1, 3: 1, 4: 2, 5: 2}[grade] + rng.randint(0, 1) + (study == "good") - (study == "two_one")
+    pool = [c for c in CERT_POOL if c[2] <= grade]
+    for name, org, _ in rng.sample(pool, max(0, min(n, len(pool)))):
+        y, h = when()
+        certs.append({"kind": "證照", "name": name, "issuer": org, "number": f"{y}-{rng.randint(100000, 999999)}",
+                      "issue_date": _date_in(rng, y, h), "award": None, "description": None, "status": "已通過"})
+    # 比賽：大約一半的人參加過
+    if rng.random() < (0.75 if study == "good" else 0.4):
+        pool = [c for c in CONTEST_POOL if c[2] <= grade]
+        for name, org, _, level in rng.sample(pool, min(len(pool), rng.choice([1, 1, 2]))):
+            y, h = when()
+            award = rng.choice(AWARDS[:4] if study == "good" else AWARDS)
+            d = _date_in(rng, y, h)
+            certs.append({"kind": "競賽", "name": name, "issuer": org, "number": None, "issue_date": d,
+                          "award": award, "description": None, "status": "已通過"})
+            if award in ("第一名", "第二名", "第三名"):
+                big = level == "全國"
+                records.append(("獎懲", "小功" if big else "嘉獎", 1 if big else 2 if award == "第一名" else 1,
+                                f"參加{name}獲得{award}，為校爭光", f"{y}-{h}", d))
+    # 作品
+    if grade >= 2 and rng.random() < 0.35:
+        pool = [w for w in WORK_POOL if w[2] <= grade and (w[2] < 5 or grade == 5)]
+        name, desc, _ = rng.choice(pool)
+        y, h = when()
+        certs.append({"kind": "作品", "name": name, "issuer": "", "number": None, "issue_date": _date_in(rng, y, h),
+                      "award": None, "description": desc, "status": "已通過"})
+    # 這學期剛上傳、還沒審核的 (讓班導有東西可以審)
+    if rng.random() < 0.15:
+        name, org, _ = rng.choice([c for c in CERT_POOL if c[2] <= grade])
+        certs.append({"kind": "證照", "name": name, "issuer": org, "number": f"{CURRENT_YEAR}-{rng.randint(100000, 999999)}",
+                      "issue_date": "2026-10-03", "award": None, "description": None, "status": "待審核"})
+    # 獎懲：好人好事、小過錯、曠課
+    if rng.random() < 0.3:
+        y, h = when()
+        records.append(("獎懲", "嘉獎", 1, rng.choice(GOOD_DEEDS), f"{y}-{h}", _date_in(rng, y, h)))
+    if rng.random() < 0.12:
+        y, h = when()
+        records.append(("獎懲", "申誡", 1, rng.choice(MINOR_FAULTS), f"{y}-{h}", _date_in(rng, y, h)))
+    if attend in ("banned", "absent"):
+        records.append(("獎懲", "小過" if attend == "absent" else "申誡", 1 if attend == "banned" else 2,
+                        "無故曠課累計達規定節數", f"{CURRENT_YEAR}-1", "2026-10-08"))
+    return certs, records
+
+
+def assign_positions(class_name, grade, members):
+    """members：[(學號, study, attend)]。這學期 (115-1) 的班級幹部與課程小老師；上學期當幹部的記一次嘉獎"""
+    rng = random.Random(f"{SEED}-cadre-{class_name}")
+    ok = [m for m in members if m[2] in ("full", "normal")]
+    rng.shuffle(ok)
+    rows = []
+    for title, (sid, _, _) in zip(POSITIONS, ok):
+        rows.append((sid, "幹部", title, 1, None, f"{CURRENT_YEAR}-1", "2026-09-14"))
+    good = [m for m in ok if m[1] in ("good", "normal")]
+    for course, (sid, _, _) in zip(ATTEND_COURSES[grade], rng.sample(good, min(len(good), len(ATTEND_COURSES[grade])))):
+        rows.append((sid, "幹部", "課程小老師", 1, course, f"{CURRENT_YEAR}-1", "2026-09-14"))
+    if grade >= 2:  # 上學期 (114-2) 的幹部 + 期末嘉獎
+        rng.shuffle(ok)
+        for title, (sid, _, _) in zip(POSITIONS[:4], ok):
+            rows.append((sid, "幹部", title, 1, None, f"{CURRENT_YEAR - 1}-2", "2026-02-23"))
+            rows.append((sid, "獎懲", "嘉獎", rng.choice([1, 2]), f"擔任{title}認真負責", f"{CURRENT_YEAR - 1}-2", "2026-06-19"))
+    return rows
+
+
 def plan(existing):
     """existing：{學號: {"full_name", "class_name"}} 資料庫裡已有的學生。回傳要寫入的資料"""
     rng = random.Random(SEED)
     used_names = set()  # 名字只依亂數種子決定，不受資料庫內容影響，重跑才認得出自己產生的學生
-    out = {"students": [], "profiles": [], "grades": [], "attendance": [], "summary": []}
+    out = {"students": [], "profiles": [], "grades": [], "attendance": [], "summary": [], "certs": [], "records": []}
     for class_name, year, start, target in CLASSES:
         grade = CURRENT_YEAR - year + 1
         # 名字與身分先依座號固定好，班上已有其他人佔用的座號就跳過
@@ -181,6 +304,7 @@ def plan(existing):
         chosen = [(sid, name) for sid, name in slots
                   if sid not in existing or existing[sid]["full_name"] == name][:need]
         crng = random.Random(f"{SEED}-{class_name}")
+        members = []
         for i, (sid, name) in enumerate(chosen):
             p = mix[i % len(mix)]
             out["students"].append((sid, name, DEPT_ID, year, class_name, f"09{crng.randint(10, 99)}-{crng.randint(100, 999)}-{crng.randint(100, 999)}"))
@@ -192,8 +316,36 @@ def plan(existing):
             out["grades"] += grades
             out["attendance"] += make_attendance(crng, sid, grade, p["attend"])
             out["summary"].append((class_name, sid, name, p["identity"] or "", p["study"], p["attend"]))
+            members.append((sid, p["study"], p["attend"]))
+            certs, records = make_achievements(sid, year, grade, p["study"], p["attend"])
+            out["certs"] += [(sid, c) for c in certs]
+            out["records"] += [(sid, *r) for r in records]
+        out["records"] += assign_positions(class_name, grade, members)
         out.setdefault("class_counts", []).append((class_name, len(legacy), len(chosen)))
     return out
+
+
+def write_achievements(cur, ids, data):
+    """證照、比賽、作品 → certificates；幹部、獎懲 → student_records。表或欄位還沒建好就略過並提示"""
+    if not ids:
+        return
+    marks = ",".join(["%s"] * len(ids))
+    try:
+        cur.execute(f"DELETE FROM `certificates` WHERE `student_id` IN ({marks}) AND `file_name` = %s", (*ids, SEED_MARK))
+        cur.executemany("""INSERT INTO `certificates` (`student_id`, `kind`, `cert_name`, `issuing_org`, `cert_number`, `issue_date`,
+            `award`, `description`, `attachments`, `review_status`, `reviewer`, `reviewed_at`, `file_name`)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, '[]', %s, %s, %s, %s)""",
+            [(sid, c["kind"], c["name"], c["issuer"], c["number"], c["issue_date"], c["award"], c["description"], c["status"],
+              "示範資料" if c["status"] == "已通過" else None, c["issue_date"] if c["status"] == "已通過" else None, SEED_MARK)
+             for sid, c in data["certs"]])
+    except Exception as e:
+        print(f"   (略過證照與比賽：{e}；請先執行 python init_db.py)")
+    try:
+        cur.execute(f"DELETE FROM `student_records` WHERE `student_id` IN ({marks})", ids)
+        cur.executemany("""INSERT INTO `student_records` (`student_id`, `kind`, `item`, `count`, `reason`, `semester`, `record_date`)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)""", data["records"])
+    except Exception as e:
+        print(f"   (略過獎懲與幹部：{e}；請先執行 python init_db.py)")
 
 
 def write(conn, data):
@@ -225,6 +377,7 @@ def write(conn, data):
                     data["grades"])
     cur.executemany("INSERT INTO `attendance_records` (`student_id`, `date`, `course_name`, `type`, `notified`) VALUES (%s, %s, %s, %s, 1)",
                     data["attendance"])
+    write_achievements(cur, ids, data)
     cur.executemany("""INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `student_id`, `full_name`, `advised_class`)
         VALUES (%s, %s, '學生', %s, %s, NULL)""", [(s[0], PASSWORD_HASH_123456, s[0], s[1]) for s in data["students"]])
     cur.executemany("""INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `student_id`, `full_name`, `advised_class`)
@@ -265,8 +418,13 @@ def main():
     for class_name, legacy, new in data["class_counts"]:
         print(f"   {class_name}：原本 {legacy} 人 + 產生 {new} 人 = {legacy + new} 人")
     print(f"   成績 {len(data['grades'])} 筆、缺曠 {len(data['attendance'])} 筆")
+    kinds = [c["kind"] for _, c in data["certs"]]
+    items = [r[2] for r in data["records"]]
+    print(f"   證照 {kinds.count('證照')} 筆、比賽 {kinds.count('競賽')} 筆、作品 {kinds.count('作品')} 筆、"
+          f"幹部 {sum(1 for r in data['records'] if r[1] == '幹部')} 筆 (小老師 {items.count('課程小老師')})、"
+          f"獎懲 {sum(1 for r in data['records'] if r[1] == '獎懲')} 筆")
     if dry:
-        label = {"good": "成績好", "normal": "", "retake": "需重補修", "two_one": "二一預警",
+        label = {"good": "成績好", "normal": "", "retake": "需重補修", "two_one": "學業要注意",
                  "full": "全勤", "warning": "快扣考", "banned": "已扣考", "absent": "幾乎沒來"}
         for c, sid, name, ident, study, attend in data["summary"]:
             if c == "資管五忠":

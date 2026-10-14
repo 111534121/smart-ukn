@@ -313,7 +313,7 @@ SCHOLARSHIPS = [
                   {"id": "first", "text": "同一張證照未曾申請過獎勵"}]},
     {"id": "SCH04", "name": "工讀助學金", "category": "校內", "amount": "時薪 190 元", "deadline": "2026-10-02", "office": "學務處生輔組",
      "criteria": [{"id": "time", "text": "每週可排 4 小時以上工讀時段"},
-                  {"id": "avg", "text": "前一學期無二一預警", "auto": "no_warning"}]},
+                  {"id": "avg", "text": "前一學期沒有不及格科目", "auto": "no_warning"}]},
     {"id": "SCH05", "name": "臺北市希望助學金", "category": "市府", "amount": "依核定金額發給（參考金額，依公告為準）", "deadline": "2026-10-20", "office": "臺北市政府社會局（可洽學務處生輔組協助）",
      "criteria": [{"id": "residence", "text": "學生本人或監護人設籍臺北市"},
                   {"id": "need", "text": "符合低收入戶、中低收入戶或特殊境遇家庭等經濟弱勢資格"},

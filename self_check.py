@@ -649,7 +649,7 @@ def t_student_dashboard(c):
     return "學生儀表板查詢正常"
 
 
-@check("學業預警", "二一預警查詢")
+@check("學業預警", "學業預警查詢")
 def t_early_warning(c):
     r = c.student.get("/api/student/early-warning")
     assert r.status_code == 200, _j(r)

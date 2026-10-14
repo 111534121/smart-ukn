@@ -388,7 +388,7 @@ function renderGuideStep() {
         bubble.innerHTML = `
             <div class="flex gap-2"><span class="text-2xl">🤖</span><div class="bg-slate-100 rounded-lg rounded-tl-sm px-3 py-2 text-sm space-y-2 max-w-[85%]">
                 <p>我暫時找不到符合的規定 😥 可以試試：</p>
-                <ul class="list-disc pl-5 text-xs space-y-0.5"><li>換個說法再描述一次</li><li>切到「看完整申辦流程」從清單找</li><li>直接詢問承辦處室（課務組分機 310、註冊組分機 321、生輔組分機 211）</li></ul>
+                <ul class="list-disc pl-5 text-xs space-y-0.5"><li>換個說法再描述一次</li><li>切到「看完整申請步驟」從清單找</li><li>直接詢問承辦處室（課務組分機 310、註冊組分機 321、生輔組分機 211）</li></ul>
                 <p class="text-[11px] text-slate-500">你的問題已記錄，管理員會補充到規章資料庫。</p>
             </div></div>`;
         if (guideState.q) api('/api/search', { json: { query: guideState.q } }).catch(() => {});
@@ -612,7 +612,12 @@ async function loadCerts() {
     loadCertStats();
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入學生帳號即可上傳證照與獎狀。'); return; }
     if (isStaff()) { loadCertReview('待審核'); return; }
-    if (currentUser.role === '家長') { body.innerHTML = '<div class="text-sm text-slate-500">家長帳號可在「畢業門檻」查看子女的證照進度。</div>'; return; }
+    if (currentUser.role === '家長') {
+        body.innerHTML = `<div class="text-sm text-slate-500">家長帳號可在「畢業進度」查看子女的證照進度。</div>
+            <div><h3 class="font-bold text-slate-900 mb-2">🎖️ 子女的獎懲與幹部</h3><div id="myRecordsBox"></div></div>`;
+        loadMyRecords();
+        return;
+    }
     body.innerHTML = `
         <div id="certExemptionReminder"></div>
         <form onsubmit="submitCert(event)" class="rounded border border-slate-200 bg-slate-50 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -637,8 +642,10 @@ async function loadCerts() {
                 <li>想考自己想要的證照（不一定是班導要求的）也可以上傳在這裡，之後寫自傳、找實習都用得到。</li>
             </ul>
         </details>
-        <div><h3 class="font-bold text-slate-900 mb-2">我的紀錄</h3><div id="myCertList" class="space-y-2"></div></div>`;
+        <div><h3 class="font-bold text-slate-900 mb-2">我的紀錄</h3><div id="myCertList" class="space-y-2"></div></div>
+        <div><h3 class="font-bold text-slate-900 mb-2">🎖️ 我的獎懲與幹部</h3><div id="myRecordsBox"></div></div>`;
     loadMyCerts();
+    loadMyRecords();
     loadCertExemptionReminder();
 }
 
@@ -653,6 +660,35 @@ async function loadCertExemptionReminder() {
             ${items.map(r => `<div class="text-xs text-ukn-800">・<strong>${esc(r.label)}</strong> → 可抵免「${esc(r.exempts_course)}」共 ${r.credits} 學分（${esc(r.note)}申請請洽 ${esc(r.office)}）</div>`).join('')}
         </div>`;
     } catch (e) { /* 非必要功能，失敗就不顯示 */ }
+}
+
+// 獎懲與幹部 (T18)：學生、家長 GET /api/campus/records/mine；班導在學生個人總覽看
+async function loadMyRecords() {
+    const box = document.getElementById('myRecordsBox');
+    if (!box) return;
+    try { box.innerHTML = renderRecords(await api('/api/campus/records/mine')); }
+    catch (e) { box.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+const RECORD_TONE = { '嘉獎': 'bg-emerald-100 text-emerald-800', '小功': 'bg-emerald-200 text-emerald-900', '大功': 'bg-emerald-600 text-white',
+    '申誡': 'bg-amber-100 text-amber-900', '小過': 'bg-rose-100 text-rose-800', '大過': 'bg-rose-600 text-white' };
+
+function renderRecords(r) {
+    if (!r.data.length) return '<div class="text-sm text-slate-500">還沒有獎懲或幹部紀錄</div>';
+    const t = r.totals;
+    const count = names => names.filter(n => t[n]).map(n => `${n} ${t[n]} 次`).join('、');
+    const summary = `<div class="flex flex-wrap gap-2 text-sm">
+        ${r.positions.length ? `<span class="rounded border border-ukn-200 bg-ukn-50 text-ukn-900 px-2.5 py-1">這學期擔任：<strong>${r.positions.map(esc).join('、')}</strong></span>` : ''}
+        <span class="rounded border border-emerald-200 bg-emerald-50 text-emerald-900 px-2.5 py-1">獎勵：${r.rewards ? count(['嘉獎', '小功', '大功']) : '沒有'}</span>
+        <span class="rounded border ${r.punishments ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-600'} px-2.5 py-1">懲處：${r.punishments ? count(['申誡', '小過', '大過']) : '沒有'}</span>
+    </div>`;
+    const rows = r.data.map(x => `<div class="flex flex-wrap items-center gap-2 text-sm rounded border border-slate-200 px-3 py-2">
+        <span class="text-xs text-slate-500 w-12">${esc(x.semester)}</span>
+        ${x.kind === '幹部'
+            ? `<span class="text-xs font-bold rounded px-2 py-0.5 bg-ukn-100 text-ukn-900">幹部</span><span class="font-semibold">${esc(x.item)}</span>${x.reason ? `<span class="text-slate-600">（${esc(x.reason)}）</span>` : ''}`
+            : `<span class="text-xs font-bold rounded px-2 py-0.5 ${RECORD_TONE[x.item] || ''}">${esc(x.item)}${x.count > 1 ? ` ${x.count} 次` : ''}</span><span class="text-slate-700">${esc(x.reason)}</span>`}
+    </div>`).join('');
+    return `<div class="space-y-2">${summary}<div class="space-y-1.5">${rows}</div></div>`;
 }
 
 const CERT_TONE = { '已通過': 'green', '待審核': 'amber', '已退回': 'red' };
@@ -772,7 +808,7 @@ async function loadMySchedule() {
         const hours = me.timetable.reduce((n, c) => n + c.period_end - c.period_start + 1, 0);
         const classes = [...new Set(me.timetable.map(c => c.class_name))];
         const isOfficeHour = (d, per) => me.office_hours.some(o => o.weekday === d && o.start <= per.s && per.e <= o.end);
-        const stateTone = { '上課中': 'bg-rose-100 text-rose-800', '晤談時間': 'bg-emerald-100 text-emerald-800' }[me.status.state] || 'bg-slate-100 text-slate-700';
+        const stateTone = { '上課中': 'bg-rose-100 text-rose-800', '可以找老師': 'bg-emerald-100 text-emerald-800' }[me.status.state] || 'bg-slate-100 text-slate-700';
         const rows = periods.map(per => `<tr>
             <th class="p-2 text-left align-top whitespace-nowrap bg-slate-50 border border-slate-200"><div class="text-xs font-bold text-slate-700">第 ${per.p} 節</div><div class="text-[10px] text-slate-500">${per.s}–${per.e}</div></th>
             ${days.map(d => {
@@ -886,7 +922,7 @@ function renderAttendTable() {
         <tbody>${rows.map(([st, i]) => {
             const lv = ATTEND_LEVEL[st.level];
             return `<tr class="${lv.row}">
-                <td class="p-2 border border-slate-200"><div class="font-semibold text-slate-900">${esc(st.full_name)}</div><div class="text-xs text-slate-500">${esc(st.student_id)}</div></td>
+                <td class="p-2 border border-slate-200"><button type="button" onclick="openStudentCard('${esc(st.student_id)}')" class="font-semibold text-ukn-800 hover:underline text-left">${esc(st.full_name)}</button><div class="text-xs text-slate-500">${esc(st.student_id)}</div></td>
                 <td class="p-2 border border-slate-200"><span class="inline-block text-sm font-bold rounded px-2 py-0.5 whitespace-nowrap ${lv.badge}">${lv.text}</span></td>
                 <td class="p-2 border border-slate-200 text-center font-bold ${st.totals['曠課'] ? 'text-rose-700' : 'text-slate-400'}">${st.totals['曠課']}${st.recent_absent ? `<div class="text-xs font-normal text-rose-700 whitespace-nowrap">近 7 天 ${st.recent_absent}</div>` : ''}</td>
                 <td class="p-2 border border-slate-200 text-center ${st.totals['遲到'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['遲到']}</td>
@@ -894,7 +930,7 @@ function renderAttendTable() {
                 <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-slate-400">—</span>'}</td>
                 <td class="p-2 border border-slate-200 text-slate-600 whitespace-nowrap">${st.last_date ? mmdd(st.last_date) : '—'}</td>
                 <td class="p-2 border border-slate-200 text-right whitespace-nowrap">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-sm font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">📣 提醒</button>` : ''}
-                    <button type="button" onclick="counselFromAttendance(${i})" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
+                    <button type="button" onclick="counselFromAttendance(${i})" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 新增關懷紀錄</button></td>
             </tr>`;
         }).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500 rounded border border-dashed border-slate-300 p-6 text-center">沒有符合的學生</div>');
 }
@@ -917,7 +953,7 @@ async function remindAttendance(index) {
 }
 
 // =====================================================================
-// 導生關懷紀錄 (T14)：班導記錄晤談與後續追蹤；教職員 / 管理員可切換班級
+// 導生關懷紀錄 (T14)：班導記錄關懷與後續追蹤；教職員 / 管理員可切換班級
 //   GET/POST /api/campus/counseling、PUT/DELETE /api/campus/counseling/<id>、匯出 /api/campus/counseling/export.csv
 // =====================================================================
 
@@ -925,7 +961,7 @@ const counselState = { className: '', student: '', editing: null, presetTopic: '
 const TOPIC_TONE = { '學業': 'bg-sky-100 text-sky-800', '出缺勤': 'bg-amber-100 text-amber-900', '生活': 'bg-emerald-100 text-emerald-800',
     '生涯': 'bg-violet-100 text-violet-800', '家庭': 'bg-orange-100 text-orange-800', '身心': 'bg-rose-100 text-rose-800', '其他': 'bg-slate-100 text-slate-700' };
 
-// 從「班級出缺勤」按「記一筆」：直接帶入學生，主題預設出缺勤
+// 從「班級出缺勤」按「新增關懷紀錄」：直接帶入學生，主題預設出缺勤
 function counselFromAttendance(index) {
     const st = classAttendData.students[index];
     Object.assign(counselState, { className: classAttendData.class_name, student: st.student_id, editing: null, presetTopic: '出缺勤' });
@@ -966,7 +1002,7 @@ function renderCounseling() {
     document.getElementById('counselBody').innerHTML = `
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${tile('已關懷學生', `${s.cared} / ${s.student_count} 位`, s.cared < s.student_count ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800')}
-            ${tile('本學期晤談', `${s.record_count} 次`, 'border-slate-200 text-slate-700')}
+            ${tile('本學期關懷', `${s.record_count} 次`, 'border-slate-200 text-slate-700')}
             ${tile('待追蹤', `${s.pending} 件`, s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -994,7 +1030,7 @@ function counselFormHtml() {
     const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     return `
         <form onsubmit="saveCounseling(event)" class="rounded border ${r ? 'border-ukn-700' : 'border-slate-200'} bg-slate-50 p-4 space-y-3 text-sm">
-            <div class="font-bold text-slate-900">${r ? '修改紀錄' : '記一筆晤談'}</div>
+            <div class="font-bold text-slate-900">${r ? '修改紀錄' : '新增關懷紀錄'}</div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <select name="student_id" required ${r ? 'disabled' : ''} class="border border-slate-300 rounded px-3 py-2 bg-white">
                     <option value="">選擇學生</option>${d.students.map(st => `<option value="${esc(st.student_id)}" ${st.student_id === sid ? 'selected' : ''}>${esc(st.full_name)}</option>`).join('')}</select>
@@ -1071,8 +1107,8 @@ async function deleteCounseling(id) {
 // T16 我的導師班 (總覽)：GET /api/teacher/class-overview
 // =====================================================================
 
-const STUDY_TONE = { '三二預警': 'bg-rose-600 text-white', '二一預警': 'bg-amber-500 text-white', '注意': 'bg-sky-100 text-sky-800',
-    '正常': 'bg-emerald-100 text-emerald-800', '未授權': 'bg-slate-100 text-slate-500' };
+const STUDY_TONE = { '很嚴重': 'bg-rose-600 text-white', '要注意': 'bg-amber-500 text-white', '有科目沒過': 'bg-sky-100 text-sky-800',
+    '正常': 'bg-emerald-100 text-emerald-800', '沒有開放查看': 'bg-slate-100 text-slate-500' };
 let classOverviewData = null;
 let overviewFilter = '';
 
@@ -1110,9 +1146,9 @@ function renderClassOverview() {
     document.getElementById('classOverviewBody').innerHTML = `
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
             ${tile('attend', '出缺勤要注意', `${s.banned + s.attendance_warning} 人`, `已扣考 ${s.banned} · 快扣考 ${s.attendance_warning}`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
-            ${tile('study', '學業預警', `${s.study_warning} 人`, s.restricted ? `${s.restricted} 位未授權導師查看` : '二一、三二預警', s.study_warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
+            ${tile('study', '學業預警', `${s.study_warning} 人`, s.restricted ? `${s.restricted} 位學生沒有開放導師查看` : '不及格學分超過一半的學生', s.study_warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
             ${tile('talk', '這學期還沒談過', `${s.not_talked} 人`, `全班 ${s.student_count} 人`, 'border-slate-200 text-slate-700')}
-            ${tile('pending', '待追蹤', `${s.pending} 件`, '晤談後要追蹤的事', s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+            ${tile('pending', '待追蹤', `${s.pending} 件`, '關懷後要追蹤的事', s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
         </div>
         <div class="text-sm text-slate-500">顯示 ${rows.length} / ${d.students.length} 位學生${overviewFilter ? '（再點一次上方格子取消篩選）' : ''}</div>
         ${rows.length ? `<div class="overflow-x-auto"><table class="w-full min-w-[680px] border-collapse text-left text-sm">
@@ -1128,51 +1164,163 @@ function renderClassOverview() {
                     ${x.counseling.pending ? `<div class="text-xs font-bold text-rose-700">待追蹤 ${x.counseling.pending}</div>` : ''}</td>
                 <td class="p-2 border border-slate-200 text-right whitespace-nowrap">
                     <button type="button" onclick="openStudentCard('${esc(x.student_id)}')" class="text-sm font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">查看</button>
-                    <button type="button" onclick="counselFor('${esc(x.student_id)}', '${x.attendance.level !== 'ok' ? '出缺勤' : ['warning', 'critical'].includes(x.study.level) ? '學業' : ''}')" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 記一筆</button></td>
+                    <button type="button" onclick="counselFor('${esc(x.student_id)}', '${x.attendance.level !== 'ok' ? '出缺勤' : ['warning', 'critical'].includes(x.study.level) ? '學業' : ''}')" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 新增關懷紀錄</button></td>
             </tr>`).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500 rounded border border-dashed border-slate-300 p-6 text-center">沒有符合的學生</div>'}`;
 }
 
-// 從總覽或學生卡片記一筆：跳到關懷紀錄並帶入學生
+// 設定幹部與小老師 (T19)：GET / POST /api/campus/records/cadres、DELETE /api/campus/records/<id>
+//   班級幹部每個職位一人 (換人自動取代)；小老師一科一位
+async function openCadreEditor() {
+    const className = classOverviewData?.class_name || '';
+    openModal('設定幹部與小老師', '<div class="text-sm text-slate-500">讀取中…</div>', true);
+    let d;
+    try { d = await api('/api/campus/records/cadres' + (className ? `?class_name=${encodeURIComponent(className)}` : '')); }
+    catch (e) { document.getElementById('uiModalBody').innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; return; }
+    document.getElementById('uiModalTitle').textContent = `設定幹部與小老師：${d.class_name}（${d.semester} 學期）`;
+    const options = (selected) => `<option value="">（還沒選）</option>` + d.students.map(s =>
+        `<option value="${esc(s.student_id)}" ${s.student_id === selected ? 'selected' : ''}>${esc(s.full_name)}（${esc(s.student_id)}）</option>`).join('');
+    const holder = item => d.cadres.find(c => c.item === item);
+    const tutors = d.cadres.filter(c => c.item === '課程小老師');
+    const select = 'border border-slate-300 rounded px-2 py-1.5 text-sm bg-white w-full';
+    document.getElementById('uiModalBody').innerHTML = `<div class="space-y-6">
+        <section class="space-y-2">
+            <h3 class="font-bold text-slate-900">班級幹部</h3>
+            <p class="text-xs text-slate-500">選了就會自動存起來；換人時原本的人會自動卸任。</p>
+            <div class="grid sm:grid-cols-2 gap-2">${d.positions.map(p => {
+                const h = holder(p);
+                return `<label class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2">
+                    <span class="w-20 shrink-0 text-sm font-semibold">${esc(p)}</span>
+                    <select onchange="saveCadre(this.value, '${esc(p)}', '', ${h ? h.id : 'null'})" class="${select}">${options(h?.student_id)}</select></label>`;
+            }).join('')}</div>
+        </section>
+        <section class="space-y-2">
+            <h3 class="font-bold text-slate-900">課程小老師</h3>
+            ${tutors.length ? `<div class="space-y-1.5">${tutors.map(t => `<div class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2 text-sm">
+                <span class="font-semibold">${esc(t.reason)}</span><span class="text-slate-600">${esc(t.full_name)}</span>
+                <button type="button" onclick="removeCadre(${t.id})" class="ml-auto text-xs border border-slate-300 hover:bg-slate-50 rounded px-2 py-1">取消</button></div>`).join('')}</div>`
+                : '<div class="text-sm text-slate-500">還沒有設定小老師</div>'}
+            <form onsubmit="event.preventDefault(); saveCadre(this.student.value, '課程小老師', this.course.value.trim(), null)" class="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                <input name="course" required maxlength="50" placeholder="科目，例如：資料結構" class="border border-slate-300 rounded px-2 py-1.5 text-sm">
+                <select name="student" required class="${select}">${options('')}</select>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-1.5 text-sm">新增小老師</button>
+            </form>
+        </section></div>`;
+}
+
+async function saveCadre(studentId, item, course, currentId) {
+    try {
+        if (!studentId) {
+            if (currentId) { await api(`/api/campus/records/${currentId}`, { method: 'DELETE' }); toast(`已取消${item}`); }
+        } else {
+            toast((await api('/api/campus/records/cadres', { method: 'POST', json: { student_id: studentId, item, reason: course } })).message);
+        }
+    } catch (e) { toast(e.message, 'error'); }
+    openCadreEditor();
+}
+
+async function removeCadre(id) {
+    try { await api(`/api/campus/records/${id}`, { method: 'DELETE' }); toast('已取消'); }
+    catch (e) { toast(e.message, 'error'); }
+    openCadreEditor();
+}
+
+// 從總覽或學生卡片新增關懷紀錄：跳到關懷紀錄並帶入學生
 function counselFor(studentId, topic) {
-    Object.assign(counselState, { className: classOverviewData?.class_name || counselState.className, student: studentId, editing: null, presetTopic: topic || '' });
+    Object.assign(counselState, { className: (profileStudent.id === studentId && profileStudent.className) || classOverviewData?.class_name || counselState.className, student: studentId, editing: null, presetTopic: topic || '' });
     closeModal();
     switchTab('tab-counseling');
     loadCounseling(counselState.className);
 }
 
-// 學生卡片：出缺勤、學業預警、晤談紀錄一次看
+// 學生個人總覽 (T17)：GET /api/teacher/student-profile
+//   一頁看完：基本資料、出缺勤、學業預警、畢業門檻、請假、證照與競賽、獎懲與幹部、關懷紀錄；找學生談話前打開這一頁就好
+const LEAVE_TONE = { '待審核': 'bg-amber-100 text-amber-900', '已核准': 'bg-emerald-100 text-emerald-800', '已退回': 'bg-rose-100 text-rose-800' };
+const CERT_BADGE = { '待審核': 'bg-amber-100 text-amber-900', '已通過': 'bg-emerald-100 text-emerald-800', '已退回': 'bg-rose-100 text-rose-800' };
+let profileStudent = { id: '', className: '' };
+
 async function openStudentCard(studentId) {
-    const x = classOverviewData.students.find(s => s.student_id === studentId);
-    openModal(`${x.full_name}（${x.student_id}）`, '<div class="text-sm text-slate-500">讀取中…</div>', true);
-    const q = `class_name=${encodeURIComponent(classOverviewData.class_name)}`;
-    const [att, warn, talk] = await Promise.all([
-        api(`/api/teacher/class-attendance?${q}`).catch(() => null),
-        x.study.level === 'restricted' ? Promise.resolve(null) : fetch(`/api/student/early-warning?student_id=${encodeURIComponent(studentId)}`).then(r => r.json()).catch(() => null),
-        api(`/api/campus/counseling?${q}&student_id=${encodeURIComponent(studentId)}`).catch(() => null),
-    ]);
-    const a = att && att.students.find(s => s.student_id === studentId);
-    const section = (title, html) => `<section class="space-y-2"><h3 class="font-bold text-slate-900">${title}</h3>${html}</section>`;
-    const attendHtml = a ? `<div class="flex flex-wrap gap-2 text-sm">
-            <span class="font-bold rounded px-2 py-0.5 ${ATTEND_LEVEL[a.level].badge}">${ATTEND_LEVEL[a.level].text}</span>
+    const known = classOverviewData?.students.find(s => s.student_id === studentId)
+        || classAttendData?.students.find(s => s.student_id === studentId);
+    openModal(known ? `${known.full_name}（${studentId}）` : studentId, '<div class="text-sm text-slate-500">讀取中…</div>', true);
+    let d;
+    try { d = await api(`/api/teacher/student-profile?student_id=${encodeURIComponent(studentId)}`); }
+    catch (e) { document.getElementById('uiModalBody').innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; return; }
+    const st = d.student, a = d.attendance, w = d.study, g = d.graduation, lv = d.leaves, ce = d.certificates, c = d.counseling, rec = d.records;
+    profileStudent = { id: st.student_id, className: st.class_name };
+    document.getElementById('uiModalTitle').textContent = `${st.full_name}（${st.student_id}）`;
+
+    const box = 'rounded border border-slate-200 p-3';
+    const section = (title, html, extra = '') => `<section class="space-y-2"><div class="flex items-center justify-between gap-2"><h3 class="font-bold text-slate-900">${title}</h3>${extra}</div>${html}</section>`;
+    const empty = text => `<div class="text-sm text-slate-500">${text}</div>`;
+    const chip = (label, value, tone) => `<div class="rounded border p-3 ${tone}"><div class="text-xs font-semibold opacity-80">${label}</div><div class="text-lg font-bold mt-0.5">${value}</div></div>`;
+    const plain = 'border-slate-200 text-slate-700', warnTone = 'border-amber-300 bg-amber-50 text-amber-900', badTone = 'border-rose-300 bg-rose-50 text-rose-800';
+
+    // 最上面：一眼看出要關心什麼
+    const chips = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        ${chip('出缺勤', ATTEND_LEVEL[a.level].text, a.level === 'banned' ? badTone : a.level === 'warning' ? warnTone : plain)}
+        ${chip('學業', esc(w.risk_level), w.warning_level === 'critical' ? badTone : w.warning_level === 'warning' ? warnTone : plain)}
+        ${chip('畢業學分', g ? `${g.credits_earned} / ${g.credits_threshold}` : '—', plain)}
+        ${chip('證照', g ? `${g.certs_owned} / ${g.certs_required} 張` : `${ce.approved} 張`, g && g.certs_owned < g.certs_required ? warnTone : plain)}
+        ${chip('待審假單', `${lv.pending} 張`, lv.pending ? warnTone : plain)}
+        ${chip('關懷', c.count ? `${c.count} 次` : '還沒談過', c.pending ? badTone : c.count ? plain : warnTone)}
+    </div>`;
+
+    const basic = `<div class="text-sm text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+        <span>${esc(st.class_name)}</span><span>${esc(st.dept_name)}</span>${st.admission_year ? `<span>${esc(st.admission_year)} 學年度入學</span>` : ''}
+        ${st.parent_phone ? `<span>家長電話：<a href="tel:${esc(st.parent_phone)}" class="text-ukn-800 font-semibold hover:underline">${esc(st.parent_phone)}</a></span>` : ''}</div>`;
+
+    const attendHtml = `<div class="flex flex-wrap gap-2 text-sm">
             <span>曠課 ${a.totals['曠課']}</span><span>遲到 ${a.totals['遲到']}</span><span>病假 ${a.totals['病假']}</span>
-            ${a.recent_absent ? `<span class="text-rose-700">近 7 天曠課 ${a.recent_absent}</span>` : ''}</div>
-        ${a.risk_courses.map(c => `<div class="text-sm"><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('')}`
-        : '<div class="text-sm text-slate-500">沒有出缺勤資料</div>';
-    const studyHtml = x.study.level === 'restricted'
-        ? '<div class="text-sm text-slate-500">學生沒有授權導師查看學業預警。</div>'
-        : (warn && warn.status === 'success' ? `<div class="text-sm"><span class="font-bold rounded px-2 py-0.5 ${STUDY_TONE[warn.risk_level] || STUDY_TONE['正常']}">${esc(warn.risk_level)}</span>
-            ${warn.semester ? `<span class="ml-1">${esc(warn.semester)} 學期不及格 ${warn.failed_credits} / ${warn.current_credits} 學分</span>` : ''}</div>
-            ${(warn.warning_details || []).map(t => `<div class="text-sm text-slate-700">• ${esc(t)}</div>`).join('')}` : '<div class="text-sm text-slate-500">無法取得學業資料</div>');
-    const talks = talk ? talk.data : [];
-    const talkHtml = talks.length ? talks.slice(0, 5).map(r => `<div class="rounded border border-slate-200 px-3 py-2 text-sm">
+            ${a.recent_absent ? `<span class="text-rose-700 font-semibold">近 7 天曠課 ${a.recent_absent}</span>` : ''}</div>
+        ${a.risk_courses.map(x => `<div class="text-sm"><span class="font-semibold">${esc(x.course_name)}</span>：曠 ${x.absent_hours} / ${x.exam_ban_threshold_hours} 小時${x.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${x.remaining_hours} 小時扣考`}</div>`).join('')}
+        ${a.recent_records.length ? `<details class="text-sm"><summary class="cursor-pointer text-slate-500">最近 ${a.recent_records.length} 筆紀錄</summary>
+            <div class="mt-1 space-y-0.5">${a.recent_records.map(r => `<div>${mmdd(r.date)}　${esc(r.course_name)}　<span class="${r.type === '曠課' ? 'text-rose-700 font-semibold' : 'text-slate-600'}">${esc(r.type)}</span></div>`).join('')}</div></details>` : ''}`;
+
+    const studyHtml = w.warning_level === 'restricted'
+        ? empty('學生沒有授權導師查看學業預警。')
+        : `<div class="text-sm">${w.semester ? `${esc(w.semester)} 學期不及格 ${w.failed_credits} / ${w.current_credits} 學分` : '沒有成績資料'}
+            ${w.warning_level !== 'normal' && w.advisor_session ? `<span class="ml-1 text-amber-800 font-semibold">（${esc(w.advisor_session)}）</span>` : ''}</div>
+          ${(w.warning_details || []).map(t => `<div class="text-sm text-slate-700">• ${esc(t)}</div>`).join('')}`;
+
+    const gradHtml = g ? `<div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm"><div class="flex-1 h-2 rounded bg-slate-100 overflow-hidden"><div class="h-full ${g.overall_meets ? 'bg-emerald-500' : 'bg-ukn-700'}" style="width:${g.progress_percent}%"></div></div>
+                <span class="whitespace-nowrap">${g.progress_percent}%，還差 ${g.credits_remaining} 學分</span></div>
+            ${g.breakdown.map(b => `<div class="text-sm ${b.is_met ? 'text-slate-600' : 'text-slate-900'}">${esc(b.category)}：${b.earned} / ${b.required}${b.is_met ? ' ✓' : `（差 ${b.remaining}）`}</div>`).join('')}
+            <div class="text-sm font-semibold ${g.overall_meets ? 'text-emerald-700' : 'text-amber-800'}">${g.overall_meets ? '已達畢業門檻' : '尚未達畢業門檻'}</div></div>` : empty('沒有學分資料');
+
+    const leaveHtml = lv.data.length ? lv.data.map(r => `<div class="${box} text-sm">
+            <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-bold rounded px-2 py-0.5 ${LEAVE_TONE[r.status] || ''}">${esc(r.status)}</span>
+                <span class="font-semibold">${esc(r.leave_type)}</span><span class="text-slate-600">${mmdd(r.start_date)}${r.end_date && r.end_date !== r.start_date ? `～${mmdd(r.end_date)}` : ''}${r.periods ? ` 第 ${esc(r.periods)} 節` : ''}</span></div>
+            <div class="text-slate-700 mt-1">${esc(r.reason)}</div>${r.review_note ? `<div class="text-xs text-slate-500 mt-0.5">審核備註：${esc(r.review_note)}</div>` : ''}</div>`).join('')
+        : empty('沒有請假紀錄');
+
+    const certHtml = ce.data.length ? ce.data.map(i => `<div class="${box} text-sm flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold rounded px-2 py-0.5 ${CERT_BADGE[i.status] || ''}">${esc(i.status)}</span>
+            <span class="text-xs text-slate-500">${esc(i.kind)}</span><span class="font-semibold">${esc(i.name)}</span>
+            ${i.award ? `<span class="text-amber-800">${esc(i.award)}</span>` : ''}
+            <span class="text-slate-500">${esc(i.issuer)}${i.issue_date ? `　${esc(i.issue_date)}` : ''}</span>
+            ${i.files.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="text-ukn-800 hover:underline text-xs">📎 ${esc(f.name || '附件')}</a>`).join('')}</div>`).join('')
+        : empty('還沒有上傳證照、競賽或作品');
+
+    const talkHtml = c.data.length ? c.data.map(r => `<div class="${box} text-sm">
             <div class="text-xs text-slate-500">${esc(r.talk_date)} · ${esc(r.method)} · ${esc(r.topic)}${r.follow_up && !r.follow_up_done ? ' · <span class="text-rose-700 font-bold">待追蹤</span>' : ''}</div>
-            <div class="text-slate-700 whitespace-pre-line">${esc(r.content)}</div></div>`).join('') : '<div class="text-sm text-amber-800">這學期還沒談過</div>';
+            <div class="text-slate-700 whitespace-pre-line">${esc(r.content)}</div></div>`).join('')
+        : '<div class="text-sm text-amber-800">這學期還沒談過</div>';
+
     document.getElementById('uiModalBody').innerHTML = `<div class="space-y-5">
-        ${section('🕒 出缺勤', attendHtml)}
-        ${section('📚 學業', studyHtml)}
-        ${section(`📝 晤談紀錄${talks.length > 5 ? `（最近 5 筆，共 ${talks.length} 筆）` : ''}`, talkHtml)}
+        ${basic}
+        ${chips}
+        <div class="grid lg:grid-cols-2 gap-5">
+            ${section('🕒 出缺勤', attendHtml)}
+            ${section('📚 學業預警', studyHtml)}
+            ${section('🎓 畢業門檻', gradHtml)}
+            ${section(`📝 請假紀錄`, leaveHtml, lv.data.length ? `<span class="text-xs text-slate-500">核准 ${lv.approved} · 退回 ${lv.rejected}</span>` : '')}
+        </div>
+        ${section('🏅 證照與競賽', certHtml, ce.pending ? `<span class="text-xs font-bold text-amber-800">${ce.pending} 筆待審核</span>` : '')}
+        ${section('🎖️ 獎懲與幹部', renderRecords(rec))}
+        ${section('💬 關懷紀錄', `<div class="space-y-2 max-h-72 overflow-y-auto">${talkHtml}</div>`, c.count ? `<span class="text-xs text-slate-500">共 ${c.count} 次，最近 ${mmdd(c.last_date)}</span>` : '')}
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <button type="button" onclick="counselFor('${esc(studentId)}', '')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">📝 記一筆晤談</button>
+            <button type="button" onclick="counselFor('${esc(st.student_id)}', '${a.level !== 'ok' ? '出缺勤' : ['warning', 'critical'].includes(w.warning_level) ? '學業' : ''}')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">📝 新增關懷紀錄</button>
         </div></div>`;
 }
 

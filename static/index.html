@@ -243,7 +243,7 @@
                     <!-- 天氣 -->
                     <section id="homeWeatherCard" class="rounded border border-ukn-200 bg-gradient-to-br from-ukn-800 to-ukn-600 text-white p-5 space-y-2">
                         <div class="text-xs opacity-80">康寧大學 · 目前天氣</div>
-                        <div class="text-sm opacity-80">載入中…</div>
+                        <div class="text-sm opacity-80">讀取中…</div>
                     </section>
                     <!-- 近期行事曆 -->
                     <section class="bg-white rounded border border-slate-200 p-5 space-y-3">
@@ -268,7 +268,7 @@
             <section id="homeDashboard" class="hidden bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-1">
                     <div>
-                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900" id="dashGreeting">今日儀表板</h2>
+                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900" id="dashGreeting">今天的重點</h2>
                         <p class="text-xs text-slate-500 mt-1" id="dashSubtitle"></p>
                     </div>
                     <span id="dashSourceTag" class="hidden text-[11px] text-slate-400"></span>
@@ -344,7 +344,7 @@
                     <h2 class="ukn-title font-bold text-slate-900">登入一次，今天的事一頁看完</h2>
                     <p class="text-xs text-slate-600 mt-1">今日課表、未讀公告、待繳作業、請假進度與缺曠紀錄，不用再一個個系統點進去。</p>
                 </div>
-                <a href="/login" class="shrink-0 text-center bg-ukn-800 hover:bg-ukn-700 text-white text-sm font-bold px-4 py-2 rounded transition">登入查看我的儀表板</a>
+                <a href="/login" class="shrink-0 text-center bg-ukn-800 hover:bg-ukn-700 text-white text-sm font-bold px-4 py-2 rounded transition">登入看我今天的重點</a>
             </section>
 
             <!-- 本週可辦橫幅 (資料來源 /api/calendar/now) -->
@@ -371,7 +371,7 @@
             <!-- 我的缺曠課摘要 (登入學生才顯示，資料來源 /api/student/attendance) -->
             <section id="homeAttendance" class="hidden bg-white rounded border border-slate-200 px-5 py-4 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <h2 class="ukn-title text-sm font-bold text-slate-900 flex items-center gap-1.5">我的缺曠課摘要</h2>
+                    <h2 class="ukn-title text-sm font-bold text-slate-900 flex items-center gap-1.5">我的缺曠課統計</h2>
                     <div id="attTotals" class="flex flex-wrap gap-2 text-xs"></div>
                 </div>
                 <div id="attWarning" class="hidden"></div>
@@ -401,7 +401,7 @@
                 <div class="flex flex-wrap gap-2 text-sm" role="tablist">
                     <button type="button" data-rules-mode="search" onclick="setRulesMode('search')" class="rules-mode active">🔎 我知道要查什麼</button>
                     <button type="button" data-rules-mode="guide" onclick="setRulesMode('guide')" class="rules-mode">🤔 我不確定，幫我問</button>
-                    <button type="button" data-rules-mode="process" onclick="setRulesMode('process')" class="rules-mode">📋 看完整申辦流程</button>
+                    <button type="button" data-rules-mode="process" onclick="setRulesMode('process')" class="rules-mode">📋 看完整申請步驟</button>
                 </div>
 
                 <!-- 模式 1：輸入第一個字就出現選項 + 大分類 -->
@@ -451,11 +451,11 @@
                 <div class="flex items-center flex-wrap gap-2 text-xs pt-2 border-t border-slate-100">
                     <span class="text-slate-400 font-medium">常見問題：</span>
                     <button onclick="quickSearch('棄修')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">棄修 (停修申請)</button>
-                    <button onclick="quickSearch('英文抵免')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">英文抵免 (多益)</button>
+                    <button onclick="quickSearch('英文抵免')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">英文可免修 (多益)</button>
                     <button onclick="quickSearch('擋修')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">先修擋修規定</button>
                     <button onclick="quickSearch('病假')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">學生請假辦法</button>
                     <button onclick="quickSearch('證照補助')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">專業證照獎勵金</button>
-                    <button onclick="quickSearch('二一')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">學業二一與退學</button>
+                    <button onclick="quickSearch('學業退學規定')" class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">成績不及格與退學</button>
                 </div>
 
                 <!-- 搜尋結果展示區 -->
@@ -521,7 +521,7 @@
                             <div class="font-bold text-slate-900">若有急切申辦需求，歡迎直接洽詢各專責處室：</div>
                             <div>• 課務組 (選課、停修、先修課程)：康寧樓 2 樓 A201 (分機 310, 312)</div>
                             <div>• 註冊組 (學籍、成績、學分抵免)：康寧樓 2 樓 A202 (分機 321, 322)</div>
-                            <div>• 生輔組 (請假、獎懲、二一預警)：行政大樓 1 樓 (分機 211)</div>
+                            <div>• 生輔組 (請假、獎懲、學業預警)：行政大樓 1 樓 (分機 211)</div>
                         </div>
                     </div>
 
@@ -625,7 +625,7 @@
                         </div>
                         <p>1. 若學期中評量落後，可於第 10-12 週申請「停修」，避免不及格成績拉低學期平均。</p>
                         <p>2. 下學期初請留意科辦暑期重修開班調查，以利大二上學期順利銜接【資料結構】課程。</p>
-                        <p>3. 請主動與班級導師晤談，安排個人修業計畫調整。</p>
+                        <p>3. 請主動找班級導師談談，安排個人修業計畫調整。</p>
                     </div>
                 </div>
             </section>
@@ -699,7 +699,7 @@
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="ukn-title text-xl font-bold text-slate-900">畢業門檻儀表板</h2>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">畢業進度</h2>
                         <p class="text-xs sm:text-sm text-slate-500 mt-1">五專畢業學分 220 學分 · 專業證照畢業門檻 2 張 · 與同屆同學比較證照取得情形</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -880,7 +880,7 @@
                         <div class="bg-white p-4 rounded border border-slate-200 flex items-center justify-between">
                             <div>
                                 <div class="font-bold text-slate-800 text-sm">授權家長查閱預警通知</div>
-                                <div class="text-xs text-slate-500">允許綁定家長帳號查閱學期二一預警與修課警示</div>
+                                <div class="text-xs text-slate-500">允許綁定家長帳號查看學業預警與修課提醒</div>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="consentParentToggle" onchange="updatePrivacyConsent()" class="sr-only peer" checked>
@@ -960,7 +960,7 @@
                             </select>
                         </label>
                         <label class="flex items-center gap-1.5 text-slate-600 cursor-pointer">
-                            <input type="checkbox" id="deadlinesRadarShowOverdue" onchange="renderDeadlines()" checked class="accent-rose-600"> 顯示已逾期
+                            <input type="checkbox" id="deadlinesRadarShowOverdue" onchange="renderDeadlines()" checked class="accent-rose-600"> 顯示已超過期限的
                         </label>
                     </div>
                 </div>
@@ -1009,7 +1009,7 @@
         <div id="tab-scholarship" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">獎助學金資格自我檢核</h2>
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">我可以申請哪些獎助學金</h2>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">逐條勾選自己是否符合，系統能判斷的（例如學業平均、證照）會自動幫你勾好。</p>
                 </div>
                 <div id="scholarshipBody" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -1122,7 +1122,7 @@
                     <div id="favLinksList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"></div>
                 </div>
                 <div id="studentLinksGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="text-xs text-slate-400">載入中...</div>
+                    <div class="text-xs text-slate-400">讀取中…</div>
                 </div>
             </section>
         </div>
@@ -1175,9 +1175,12 @@
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                         <h2 class="ukn-title text-xl font-bold text-slate-900" id="classOverviewTitle">我的導師班</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">需要關心的學生排在最前面；點學生名字可以一次看他的出缺勤、成績和晤談紀錄。</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">需要關心的學生排在最前面；點學生名字可以一次看他的出缺勤、成績和關懷紀錄。</p>
                     </div>
-                    <select id="classOverviewPicker" onchange="loadClassOverview(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white self-start sm:self-auto"></select>
+                    <div class="flex gap-2 self-start sm:self-auto">
+                        <button type="button" onclick="openCadreEditor()" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-bold rounded px-3 py-2 text-sm whitespace-nowrap">🎖️ 設定幹部與小老師</button>
+                        <select id="classOverviewPicker" onchange="loadClassOverview(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white"></select>
+                    </div>
                 </div>
                 <div id="classOverviewBody"></div>
             </section>
@@ -1207,7 +1210,7 @@
                     </div>
                     <div class="flex items-center gap-2 self-start sm:self-auto">
                         <select id="counselPicker" onchange="counselState.student = ''; loadCounseling(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white"></select>
-                        <a id="counselExport" href="#" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-semibold text-sm rounded px-3 py-2 whitespace-nowrap">匯出 Excel (CSV)</a>
+                        <a id="counselExport" href="#" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-semibold text-sm rounded px-3 py-2 whitespace-nowrap">下載成表格檔</a>
                     </div>
                 </div>
                 <div id="counselBody"></div>
@@ -1240,7 +1243,7 @@
         <div id="tab-assistant" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">AI 申辦小幫手</h2>
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">申請問題小幫手</h2>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">用一句話描述你的狀況，小幫手會從學校的申辦流程與規章資料庫找出要辦什麼、步驟、要帶的文件和去哪裡辦。</p>
                 </div>
                 <div id="assistantBody"></div>
@@ -1399,7 +1402,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                grid.innerHTML = '<div class="text-xs text-rose-600">連結載入失敗，請稍後再試。</div>';
+                grid.innerHTML = '<div class="text-xs text-rose-600">連結讀取失敗，請稍後再試。</div>';
             }
         }
 
@@ -1501,7 +1504,7 @@
 
         function formatDue(item) {
             const due = item.due_at.slice(5).replace('-', '/');
-            if (item.overdue) return `<span class="text-rose-700 font-semibold">已逾期</span> · ${due}`;
+            if (item.overdue) return `<span class="text-rose-700 font-semibold">已超過期限</span> · ${due}`;
             if (item.hours_left <= 24) return `<span class="text-rose-700 font-semibold">剩 ${Math.max(1, Math.round(item.hours_left))} 小時</span> · ${due}`;
             if (item.hours_left <= 72) return `<span class="text-amber-700 font-semibold">剩 ${Math.floor(item.hours_left / 24)} 天</span> · ${due}`;
             return `剩 ${Math.floor(item.hours_left / 24)} 天 · ${due}`;
@@ -1538,7 +1541,7 @@
             document.getElementById('dashStats').innerHTML = [
                 dashStat(s.is_today ? '今天還有' : `${s.label || '近期'}有`, `${upcoming.length} 堂`,
                     nextClass ? `${nextClass.status === 'ongoing' ? '上課中' : nextClass.start_time}：${escapeHtml(nextClass.course_name)}` : '近期沒有課', 'normal', 'dashScheduleCard'),
-                dashStat('待繳作業', a.pending_count, a.overdue_count ? `${a.overdue_count} 份已逾期` : a.due_within_48h ? `${a.due_within_48h} 份 48 小時內截止` : '沒有急件',
+                dashStat('待繳作業', a.pending_count, a.overdue_count ? `${a.overdue_count} 份已超過期限` : a.due_within_48h ? `${a.due_within_48h} 份 48 小時內截止` : '沒有急件',
                     a.overdue_count ? 'alert' : a.due_within_48h ? 'warn' : 'normal', 'dashAssignmentCard'),
                 dashStat('未讀公告', ann.unread_count, `共 ${ann.total} 則`, ann.unread_count ? 'warn' : 'normal', 'dashAnnouncementCard'),
                 dashStat('請假審核中', lv.pending_count, lv.items[0] ? `最近：${escapeHtml(lv.items[0].leave_type)} ${escapeHtml(lv.items[0].status)}` : '沒有請假紀錄', 'normal', 'dashLeaveCard'),
@@ -1696,7 +1699,7 @@
                     loadDashboard();
                 }
             } catch (err) {
-                showLeaveFormMsg('無法連線至伺服器', false);
+                showLeaveFormMsg('連不上系統，請稍後再試', false);
             }
         }
 
@@ -2225,7 +2228,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="bg-white rounded border border-slate-200 p-3 space-y-2">
-                            <div class="text-xs font-bold text-slate-700">📎 要準備的資料（自評表，準備好就打勾）</div>
+                            <div class="text-xs font-bold text-slate-700">📎 要準備的資料（準備好就打勾）</div>
                             ${docs.length ? docs.map((d, i) => `
                                 <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                                     <input type="checkbox" data-doc-item="${item.checklist_id}" data-doc-index="${i}" onchange="toggleDocCheck(this)" class="h-4 w-4 rounded border-slate-300">
@@ -2245,7 +2248,7 @@
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <div class="text-xs font-bold text-slate-700">辦理檢核步驟（勾選後自動儲存進度）：</div>
+                        <div class="text-xs font-bold text-slate-700">辦理步驟（打勾後會自動存起來）：</div>
                         <div class="space-y-2">${stepsHtml}</div>
                     </div>
                 `;
@@ -2338,7 +2341,7 @@
             if (GD_STAFF_ROLES.includes(currentUser.role)) {
                 searchBar.classList.remove('hidden');
                 searchBar.classList.add('flex');
-                emptyState.textContent = '請於上方輸入學號，查詢該生的畢業門檻儀表板。';
+                emptyState.textContent = '請在上方輸入學號，查詢這位學生的畢業進度。';
                 emptyState.classList.remove('hidden');
                 document.getElementById('gdStudentIdInput').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') handleGraduationSearch();
@@ -2570,7 +2573,7 @@
         // 10. 學業預警與個資授權
         // 學業預警明細 (學生本人、家長、老師點開學生時共用)
         function warningDetailHtml(data) {
-                const tone = { '正常': 'bg-emerald-100 text-emerald-800', '注意': 'bg-sky-100 text-sky-800', '二一預警': 'bg-amber-100 text-amber-900', '三二預警': 'bg-rose-100 text-rose-800' };
+                const tone = { '正常': 'bg-emerald-100 text-emerald-800', '有科目沒過': 'bg-sky-100 text-sky-800', '要注意': 'bg-amber-100 text-amber-900', '很嚴重': 'bg-rose-100 text-rose-800' };
                 const list = (title, items) => items.length ? `
                     <div><div class="text-xs font-bold text-slate-700 mb-1">${title}</div>
                     <ul class="text-xs text-slate-700 space-y-1">${items.map(i => `<li class="rounded border border-slate-200 px-3 py-1.5">${i}</li>`).join('')}</ul></div>` : '';
@@ -2580,7 +2583,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                             <div>
                                 <h4 class="font-bold text-slate-900 text-sm sm:text-base">${escapeHtml(data.warning_title)}</h4>
-                                <p class="text-xs text-slate-500">${data.semester ? `依 ${escapeHtml(data.semester)} 學期成績計算；` : ''}不及格學分達修習學分 1/2 為二一、2/3 為三二。</p>
+                                <p class="text-xs text-slate-500">${data.semester ? `依 ${escapeHtml(data.semester)} 學期成績計算；` : ''}不及格學分超過這學期修習學分的一半為「要注意」，超過三分之二為「很嚴重」。</p>
                             </div>
                             <span class="text-xs font-bold px-2.5 py-1 rounded ${tone[data.risk_level] || ''}">${escapeHtml(data.risk_level)}</span>
                         </div>
@@ -2594,7 +2597,7 @@
                                 <div class="text-lg font-bold ${data.failed_credits ? 'text-rose-700' : 'text-slate-800'} mt-0.5">${data.failed_credits} 學分</div>
                             </div>
                             <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                                <div class="text-slate-500">導師晤談建議</div>
+                                <div class="text-slate-500">導師關懷建議</div>
                                 <div class="text-lg font-bold text-slate-800 mt-0.5">${escapeHtml(data.advisor_session)}</div>
                             </div>
                         </div>
@@ -2628,8 +2631,8 @@
 
         // 學業預警 (老師版)：班導看導師班全班；教職員 / 管理員依學號查詢
         //   後端 /api/student/early-warning 已限制老師只能查自己導師班，且學生沒有授權導師時只回傳 consent_restricted
-        const WARNING_ORDER = { '三二預警': 0, '二一預警': 1, '注意': 2, '正常': 3 };
-        const WARNING_TONE = { '正常': 'bg-emerald-100 text-emerald-800', '注意': 'bg-sky-100 text-sky-800', '二一預警': 'bg-amber-100 text-amber-900', '三二預警': 'bg-rose-100 text-rose-800' };
+        const WARNING_ORDER = { '很嚴重': 0, '要注意': 1, '有科目沒過': 2, '正常': 3 };
+        const WARNING_TONE = { '正常': 'bg-emerald-100 text-emerald-800', '有科目沒過': 'bg-sky-100 text-sky-800', '要注意': 'bg-amber-100 text-amber-900', '很嚴重': 'bg-rose-100 text-rose-800' };
 
         async function fetchWarning(studentId) {
             const res = await fetch(`/api/student/early-warning?student_id=${encodeURIComponent(studentId)}`);
@@ -2662,18 +2665,18 @@
                 const restricted = rows.filter(r => r.w.status === 'consent_restricted').length;
                 panel.innerHTML = `
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                        ${[['三二預警', count('三二預警')], ['二一預警', count('二一預警')], ['注意', count('注意')], ['未授權導師查看', restricted]].map(([label, n]) => `
+                        ${[['很嚴重', count('很嚴重')], ['要注意', count('要注意')], ['有科目沒過', count('有科目沒過')], ['沒有開放導師查看', restricted]].map(([label, n]) => `
                             <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">${label}</div>
-                                <div class="text-lg font-bold ${n && label !== '注意' ? 'text-rose-700' : 'text-slate-800'} mt-0.5">${n} 人</div></div>`).join('')}
+                                <div class="text-lg font-bold ${n && label !== '有科目沒過' ? 'text-rose-700' : 'text-slate-800'} mt-0.5">${n} 人</div></div>`).join('')}
                     </div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-xs sm:text-sm border-collapse">
-                        <thead><tr class="bg-slate-50 text-slate-600"><th class="p-2">學號</th><th class="p-2">姓名</th><th class="p-2">狀態</th><th class="p-2">不及格 / 修習學分</th><th class="p-2">晤談</th><th class="p-2"></th></tr></thead>
+                        <thead><tr class="bg-slate-50 text-slate-600"><th class="p-2">學號</th><th class="p-2">姓名</th><th class="p-2">狀態</th><th class="p-2">不及格 / 修習學分</th><th class="p-2">關懷</th><th class="p-2"></th></tr></thead>
                         <tbody class="divide-y divide-slate-100">${rows.map(({ s, w }) => {
                             const ok = w.status === 'success';
                             return `<tr>
                                 <td class="p-2 font-mono">${escapeHtml(s.student_id)}</td><td class="p-2">${escapeHtml(s.full_name)}</td>
                                 <td class="p-2">${ok ? `<span class="font-bold px-2 py-0.5 rounded ${WARNING_TONE[w.risk_level] || ''}">${escapeHtml(w.risk_level)}</span>`
-                                    : `<span class="text-slate-500">${w.status === 'consent_restricted' ? '🔒 學生未授權' : escapeHtml(w.message || '無法取得')}</span>`}</td>
+                                    : `<span class="text-slate-500">${w.status === 'consent_restricted' ? '🔒 學生沒有開放導師查看' : escapeHtml(w.message || '無法取得')}</span>`}</td>
                                 <td class="p-2">${ok ? `${w.failed_credits} / ${w.current_credits}` : '—'}</td>
                                 <td class="p-2">${ok ? escapeHtml(w.advisor_session) : '—'}</td>
                                 <td class="p-2 text-right">${ok ? `<button type="button" onclick="showStaffWarningDetail('${escapeHtml(s.student_id)}')" class="text-ukn-700 hover:underline">明細</button>` : ''}</td>
@@ -2752,7 +2755,7 @@
                 const overdue = end < today;
                 const left = dayDiff(end, today);
                 const notOpen = !overdue && start > today;
-                const status = overdue ? `已逾期 ${-left} 天` : notOpen ? `${dayDiff(start, today)} 天後開放` : left === 0 ? '今天截止' : `剩 ${left} 天`;
+                const status = overdue ? `已超過期限 ${-left} 天` : notOpen ? `${dayDiff(start, today)} 天後開放` : left === 0 ? '今天截止' : `剩 ${left} 天`;
                 const level = overdue ? 'overdue' : notOpen ? 'later' : left <= DEADLINE_SOON_DAYS ? 'soon' : 'open';
                 return { ...dl, end, start, overdue, left, status, level };
             });
@@ -2768,7 +2771,7 @@
             const overdueCount = items.filter(d => d.overdue).length;
             const soonCount = items.filter(d => d.level === 'soon').length;
             document.getElementById('deadlinesRadarSummary').innerHTML =
-                `共 ${items.length} 項 · <span class="text-amber-700 font-semibold">${DEADLINE_SOON_DAYS} 天內到期 ${soonCount} 項</span> · <span class="text-rose-700 font-semibold">已逾期 ${overdueCount} 項</span>`;
+                `共 ${items.length} 項 · <span class="text-amber-700 font-semibold">${DEADLINE_SOON_DAYS} 天內到期 ${soonCount} 項</span> · <span class="text-rose-700 font-semibold">已超過期限 ${overdueCount} 項</span>`;
 
             const showOverdue = document.getElementById('deadlinesRadarShowOverdue').checked;
             const visible = showOverdue ? items : items.filter(d => !d.overdue);

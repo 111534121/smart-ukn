@@ -112,7 +112,7 @@ function renderAssistantAnswers() {
                         <p class="text-[11px] text-slate-400">${a.mode === 'claude' ? '由 Claude 依資料庫內容整理' : '資料庫比對結果'}${a.understood_as.length ? `・理解為：${a.understood_as.map(escapeHtml).join('、')}` : ''}</p>
                     </div>
                 </div>
-                ${a.flows.length ? `<div class="space-y-2"><h3 class="text-xs font-bold text-slate-600">相關申辦流程</h3>${a.flows.map((f, j) => renderAssistantFlow(f, i === 0 && j === 0)).join('')}</div>` : ''}
+                ${a.flows.length ? `<div class="space-y-2"><h3 class="text-xs font-bold text-slate-600">相關申請步驟</h3>${a.flows.map((f, j) => renderAssistantFlow(f, i === 0 && j === 0)).join('')}</div>` : ''}
                 ${a.rules.length ? `<div class="space-y-1.5"><h3 class="text-xs font-bold text-slate-600">相關規章</h3>${a.rules.map(r => `
                     <div class="text-xs rounded bg-slate-50 border border-slate-200 px-3 py-2"><span class="font-semibold text-slate-800">${escapeHtml(r.title)}</span>
                         <span class="text-slate-500">《${escapeHtml(r.doc_name || '')}》${r.page ? ` 第 ${escapeHtml(r.page)} 頁` : ''}</span>

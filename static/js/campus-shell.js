@@ -13,10 +13,10 @@ const FEATURES = [
     { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修', staff: false },
     { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看', staff: { group: '導師班', name: '導師班級總表', desc: '全班學分與證照進度、依學號查詢', otherStaffName: '畢業門檻查詢' } },
     { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認', staff: { name: '證照審核', desc: '審核學生上傳的證照與獎狀 (班導只看導師班)' } },
-    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '二一預警與個資授權', staff: { group: '導師班', desc: '導師班的二一、三二預警 (行政人員依學號查詢)' } },
+    { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '這學期不及格科目與擋修提醒', staff: { group: '導師班', desc: '導師班誰有科目沒過、誰要特別注意（行政人員可用學號查詢）' } },
     { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在', staff: false },
     { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
-    { key: 'assistant', tab: 'tab-assistant', name: 'AI 申辦小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
+    { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
     { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
     { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
@@ -476,7 +476,7 @@ async function loadHomeUpcoming() {
             <li class="flex items-start gap-2.5"><span class="shrink-0 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 mt-0.5">${mmdd(d)}</span>
                 <span class="text-rose-700">放假：${escapeHtml(h.name)}</span></li>`).join('') || '<li class="text-slate-400 text-xs">近期沒有行事曆事項。</li>';
     } catch (e) {
-        list.innerHTML = '<li class="text-slate-400 text-xs">行事曆載入失敗。</li>';
+        list.innerHTML = '<li class="text-slate-400 text-xs">行事曆讀取失敗，請稍後再試。</li>';
     }
 }
 

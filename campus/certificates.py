@@ -34,6 +34,15 @@ CERT_EXEMPTION_RULES = [
 ]
 
 
+# 示範模式的比賽與作品：(學號, 類別, 名稱, 主辦單位, 日期, 名次, 說明)
+DEMO_CONTESTS_AND_WORKS = [
+    ("S112001", "競賽", "校內程式設計競賽", "康寧大學資訊管理科", "2026-05-20", "第二名", ""),
+    ("S112002", "競賽", "全國技藝競賽 資訊技術類", "教育部國民及學前教育署", "2026-05-15", "佳作", ""),
+    ("S112002", "作品", "校園失物招領 App", "", "2026-06-10", "", "課堂期末專案，可以拍照登記失物"),
+    ("S112005", "競賽", "校內英文單字比賽", "康寧大學語言中心", "2026-04-22", "第一名", ""),
+]
+
+
 def exemption_reminder(student_id):
     """回傳這位學生「還沒有，但考到可以抵免學分」的證照清單；已持有同一條規則的證照就不再提醒"""
     held = [i["name"] for i in submissions() if i["student_id"] == student_id and i["status"] == "已通過"]
@@ -157,6 +166,16 @@ def _json_submissions():
                 "number": c.get("cert_number", ""), "issue_date": c.get("issue_date", ""), "award": "",
                 "description": "", "files": [], "status": "已通過", "reviewer": "系統匯入", "review_note": "",
                 "created_at": f"{c.get('issue_date', '')} 00:00:00", "reviewed_at": now_str(),
+            })
+        # 示範用的比賽與作品 (虛構)
+        for sid, kind, name, issuer, issue_date, award, desc in DEMO_CONTESTS_AND_WORKS:
+            stu = find_student(sid) or {}
+            items.append({
+                "id": len(items) + 1, "student_id": sid, "student_name": stu.get("full_name", ""),
+                "class_name": stu.get("class_name", ""), "admission_year": stu.get("admission_year"),
+                "kind": kind, "name": name, "issuer": issuer, "number": "", "issue_date": issue_date, "award": award,
+                "description": desc, "files": [], "status": "已通過", "reviewer": "系統匯入", "review_note": "",
+                "created_at": f"{issue_date} 00:00:00", "reviewed_at": now_str(),
             })
         return items
     return store.section("cert_submissions", seed)

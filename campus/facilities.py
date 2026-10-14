@@ -146,7 +146,7 @@ def teacher_status(t, schedule, now):
             return {"state": "上課中", "detail": f"{cur['course_name']} @ {cur['classroom']}，{PERIODS[cur['period_end']][1]} 下課"}
     for oh in t["office_hours"]:
         if oh["weekday"] == wd and oh["start"] <= hm <= oh["end"]:
-            return {"state": "晤談時間", "detail": f"在 {t['office']} 辦公室，到 {oh['end']}"}
+            return {"state": "可以找老師", "detail": f"在 {t['office']} 辦公室，到 {oh['end']}"}
     nxt = next((s for s in classes if PERIODS[s["period_start"]][0] > hm), None)
     if wd > 5 or hm > "18:00" or hm < "08:00":
         return {"state": "非上班時間", "detail": "可以先寄信預約"}

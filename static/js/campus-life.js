@@ -324,7 +324,7 @@ async function loadLockers() {
         body.innerHTML = (r.mine ? `
             <div class="rounded border border-ukn-200 bg-ukn-50 px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
                 <div>🔑 我的櫃子：<strong>${esc(r.mine.locker_id)}</strong>（${esc(r.mine.area)}）· ${esc(r.mine.status)}
-                    ${r.mine.status === '保留中' ? `<div class="text-xs text-slate-600 mt-0.5">請在 <strong>${esc(r.mine.pay_deadline)}</strong> 前到${esc(r.mine.pay_at)}繳費 ${r.mine.fee} 元，逾期會自動釋出。</div>` : ''}</div>
+                    ${r.mine.status === '保留中' ? `<div class="text-xs text-slate-600 mt-0.5">請在 <strong>${esc(r.mine.pay_deadline)}</strong> 前到${esc(r.mine.pay_at)}繳費 ${r.mine.fee} 元，超過期限沒繳費，櫃子會自動取消。</div>` : ''}</div>
                 ${r.mine.status === '保留中' ? `<button type="button" onclick="cancelLocker('${esc(r.mine.locker_id)}')" class="text-xs border border-slate-300 bg-white rounded px-2 py-1">取消保留</button>` : ''}
             </div>` : '') + `
             <div class="flex flex-wrap gap-3 text-[11px] text-slate-600 my-3">
@@ -432,7 +432,7 @@ async function showOnMap(locationText) {
     if (b) selectBuilding(b.code); else if (code) findOnMap(code + '1'); else findOnMap(locationText);
 }
 
-const TEACHER_TONE = { '上課中': 'red', '晤談時間': 'green', '沒有課': 'blue', '非上班時間': 'gray' };
+const TEACHER_TONE = { '上課中': 'red', '可以找老師': 'green', '沒有課': 'blue', '非上班時間': 'gray' };
 
 async function loadTeachers() {
     const body = document.getElementById('teachersBody');
@@ -451,13 +451,13 @@ async function loadTeachers() {
                     </div>
                     <div class="text-xs text-slate-700">${esc(t.status.detail)}</div>
                     <div class="text-xs text-slate-600">🚪 ${esc(t.building_name)} ${esc(t.office)} · ${esc(t.ext)}</div>
-                    <div class="text-xs text-slate-600">🕒 晤談時間：${t.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')}</div>
+                    <div class="text-xs text-slate-600">🕒 可以找老師的時間：${t.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')}</div>
                     <div class="flex gap-2 pt-1">
                         <button type="button" onclick="showTeacherTimetable('${esc(t.name)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">看課表</button>
                         <button type="button" onclick="showOnMap('${esc(t.building_name)} ${esc(t.office)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">在地圖上看 🗺️</button>
                     </div>
                 </div>`).join('')}</div>
-            <p class="text-[11px] text-slate-400 mt-3">老師辦公室、分機與晤談時間為示範資料，請依各科公告更新。</p>`;
+            <p class="text-[11px] text-slate-400 mt-3">老師辦公室、分機與可以找老師的時間為示範資料，請依各科公告更新。</p>`;
         window._teachers = r;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
@@ -473,14 +473,14 @@ function showTeacherTimetable(name) {
         const c = t.timetable.find(s => s.weekday === wd && s.period_start <= p && s.period_end >= p);
         const oh = t.office_hours.find(o => o.weekday === wd && o.start <= periods[p][0] && o.end >= periods[p][1]);
         return c ? `<td class="border border-slate-100 bg-ukn-100 text-ukn-900 text-[10px] leading-tight p-0.5">${esc(c.course_name)}<div class="text-slate-500">${esc(c.classroom)}</div></td>`
-            : oh ? '<td class="border border-slate-100 bg-emerald-50 text-emerald-700 text-[10px]">晤談</td>' : '<td class="border border-slate-100"></td>';
+            : oh ? '<td class="border border-slate-100 bg-emerald-50 text-emerald-700 text-[10px]">可找</td>' : '<td class="border border-slate-100"></td>';
     };
     openModal(`${t.name} 老師的課表`, `
         <div class="overflow-x-auto"><table class="w-full min-w-[420px] table-fixed text-center text-xs border-collapse">
             <thead><tr class="text-slate-500"><th></th>${[1, 2, 3, 4, 5].map(d => `<th class="py-1">週${WEEKDAY_TEXT[d]}</th>`).join('')}</tr></thead>
             <tbody>${Object.keys(periods).map(p => `<tr><td class="text-[10px] text-slate-400 w-12">${p}<div>${periods[p][0]}</div></td>${[1, 2, 3, 4, 5].map(d => cell(d, Number(p))).join('')}</tr>`).join('')}</tbody>
         </table></div>
-        <p class="text-xs text-slate-500">藍色是上課時段，綠色是晤談時間，空白代表沒有排課（可能在辦公室 ${esc(t.office)}）。</p>`);
+        <p class="text-xs text-slate-500">藍色是上課時段，綠色是可以找老師的時間，空白代表沒有排課（可能在辦公室 ${esc(t.office)}）。</p>`);
 }
 
 // =====================================================================

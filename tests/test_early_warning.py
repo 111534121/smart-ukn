@@ -11,9 +11,9 @@ def test_student_sees_own_warning_from_credits(client, login):
     # 示範資料：最近學期 112-2 只修程式設計(二) 且不及格
     assert data["semester"] == "112-2"
     assert data["failed_credits"] == data["current_credits"] > 0
-    assert data["risk_level"] == "三二預警"
+    assert data["risk_level"] == "很嚴重"
     assert [c["course_id"] for c in data["failed_courses"]] == ["CS102"]
-    assert data["advisor_session"] == "建議預約晤談"
+    assert data["advisor_session"] == "建議找導師談談"
     assert data["counselling_office"]["advisor_name"] == "彭賓鈺 老師"
 
 

@@ -37,6 +37,7 @@ GET,/api/student/graduation/dashboard,/api/student/graduation/dashboard?student_
 GET,/api/student/graduation/export.csv,/api/student/graduation/export.csv?student_id=S112001,,畢業門檻匯出,401,403,OK,OK,OK,OK,OK,同上
 GET,/api/teacher/class-attendance,/api/teacher/class-attendance,,【班級出缺勤】導師班出缺勤一覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班 (別班 403)；教職員、管理員可用 ?class_name= 切換班級
 GET,/api/teacher/class-overview,/api/teacher/class-overview,,【我的導師班】總覽,401,403,403,403,OK,OK,OK,老師只能看自己的導師班；學業預警遵守學生授權
+GET,/api/teacher/student-profile,/api/teacher/student-profile?student_id=S112001,,【學生個人總覽】出缺勤、學業、畢業門檻、請假、證照、晤談一頁看完,401,403,403,403,OK,OK,OK,老師只能看自己導師班的學生；學業預警遵守學生授權
 GET,/api/teacher/class-summary,/api/teacher/class-summary,,導師班級總表,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
 GET,/api/checklist/progress,/api/checklist/progress,,申辦進度查詢,OK,OK,OK,OK,OK,OK,OK,未登入回 is_authenticated=false
 POST,/api/checklist/progress,/api/checklist/progress,,勾選申辦進度,401,403*,OK,403*,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
@@ -82,6 +83,10 @@ GET,/api/campus/rules/suggest,/api/campus/rules/suggest?q=請假,,校規輸入�
 GET,/api/campus/rules/candidates,/api/campus/rules/candidates?q=請假,,校規候選,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/rules/tree,/api/campus/rules/tree,,校規分類樹,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/certs/mine,/api/campus/certs/mine,,我的證照,401,403,OK,OK,403,403,403,
+GET,/api/campus/records/mine,/api/campus/records/mine,,【獎懲與幹部】我的紀錄,401,403,OK,OK,403,403,403,家長看綁定子女的紀錄
+GET,/api/campus/records/cadres,/api/campus/records/cadres,,【幹部與小老師】班級幹部,401,403,403,403,OK,OK,OK,老師只能看自己的導師班
+POST,/api/campus/records/cadres,/api/campus/records/cadres,,【幹部與小老師】設定,401,403,403,403,OK,OK,OK,老師只能設定導師班的學生 (別班 403)
+DELETE,/api/campus/records/<int:record_id>,/api/campus/records/999999,,【幹部與小老師】取消,401,403,403,403,OK,OK,OK,只能取消幹部，獎懲不能刪
 POST,/api/campus/certs,/api/campus/certs,,上傳證照,401,403,OK,403,403,403,403,
 DELETE,/api/campus/certs/<int:item_id>,/api/campus/certs/999999,,刪除證照,401,403,OK,403,403,403,403,
 GET,/api/campus/certs/review,/api/campus/certs/review,,待審證照,401,403,403,403,OK,OK,OK,

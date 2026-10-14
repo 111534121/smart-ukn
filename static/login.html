@@ -76,7 +76,7 @@
                     <span class="block text-[11px] text-slate-500 mt-0.5">單一身分登入</span>
                 </span>
             </a>
-            <a href="/" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">直接瀏覽前台 ➔</a>
+            <a href="/" class="text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">不登入，直接逛逛 ➔</a>
         </div>
     </header>
 
@@ -319,7 +319,7 @@
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                errBox.textContent = '無法連線至伺服器，請確認後端已啟動';
+                errBox.textContent = '連不上系統，請確認程式已經開啟';
                 errBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -355,11 +355,11 @@
                 if (res.ok && data.status === 'success') {
                     window.location.href = '/';
                 } else {
-                    errBox.textContent = data.message || '登記失敗，請檢查欄位';
+                    errBox.textContent = data.message || '登記失敗，請檢查有沒有漏填';
                     errBox.classList.remove('hidden');
                 }
             } catch (err) {
-                errBox.textContent = '無法連線至伺服器';
+                errBox.textContent = '連不上系統，請稍後再試';
                 errBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;

@@ -19,7 +19,7 @@ def test_homeroom_teacher_sees_pending_leave_until_reviewed(client, login):
 
 def test_homeroom_teacher_sees_academic_warnings_of_own_class(client, login):
     warn = [a for a in alerts(client, login, "teacher1") if a["type"] == "預警"]
-    assert any("王小明" in a["title"] for a in warn)          # 資管五忠、三二預警
+    assert any("王小明" in a["title"] for a in warn)          # 資管五忠、學業很嚴重
     assert all("陳冠宇" not in a["title"] for a in warn)       # 別班的學生不會出現
 
 

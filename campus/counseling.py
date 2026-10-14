@@ -158,7 +158,7 @@ def clean(data, partial=False):
     if not partial or "content" in data:
         content = str(data.get("content") or "").strip()[:2000]
         if not content:
-            return None, "請輸入晤談內容"
+            return None, "請輸入關懷內容"
         out["content"] = content
     if not partial or "follow_up" in data:
         out["follow_up"] = bool(data.get("follow_up"))
@@ -227,7 +227,7 @@ def create_counseling():
     record = insert_record({**fields, "student_id": student["student_id"], "class_name": student.get("class_name") or "",
                             "counselor_username": u["username"], "counselor_name": u["full_name"]})
     deps.write_audit_log("counseling_records", record["id"], "新增", after=audit_summary(record))
-    return ok(message=f"已記錄與 {student['full_name']} 的晤談", data=record)
+    return ok(message=f"已記錄與 {student['full_name']} 的關懷紀錄", data=record)
 
 
 @bp.route("/api/campus/counseling/<int:record_id>", methods=["PUT", "DELETE"])
@@ -264,7 +264,7 @@ def export_counseling():
     students = {s["student_id"]: s["full_name"] for s in all_students() if s.get("class_name") == class_name}
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["日期", "學號", "姓名", "方式", "主題", "晤談內容", "需要追蹤", "追蹤事項", "已追蹤完成", "記錄人"])
+    writer.writerow(["日期", "學號", "姓名", "方式", "主題", "關懷內容", "需要追蹤", "追蹤事項", "已追蹤完成", "記錄人"])
     for r in sorted(load_records(list(students)), key=lambda r: (r["talk_date"], r["id"])):
         writer.writerow([r["talk_date"], r["student_id"], students.get(r["student_id"], ""), r["method"], r["topic"],
                          r["content"], "是" if r["follow_up"] else "", r["follow_up_note"],

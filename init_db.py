@@ -750,6 +750,24 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
         """)
 
+        # 學生表現紀錄 (campus/records.py)：獎懲與幹部
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `student_records` (
+                `record_id` int(11) NOT NULL AUTO_INCREMENT,
+                `student_id` varchar(20) NOT NULL,
+                `kind` enum('獎懲','幹部') NOT NULL COMMENT '獎懲 或 幹部',
+                `item` varchar(20) NOT NULL COMMENT '獎懲：嘉獎、小功、大功、申誡、小過、大過；幹部：班長、課程小老師…',
+                `count` tinyint(4) NOT NULL DEFAULT 1 COMMENT '獎懲次數，例如嘉獎 2 次；幹部固定 1',
+                `reason` varchar(200) DEFAULT NULL COMMENT '獎懲事由；小老師填負責的科目',
+                `semester` varchar(10) NOT NULL COMMENT '學期，例如 115-1',
+                `record_date` date DEFAULT NULL COMMENT '核定或擔任日期',
+                `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (`record_id`),
+                KEY `idx_records_student` (`student_id`, `record_date`),
+                CONSTRAINT `fk_records_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生表現紀錄：獎懲與幹部 (T18)';
+        """)
+
         # T10：證照上傳與班導審核改存在 certificates (原本在 campus_store.json)；舊資料庫補欄位
         cursor.execute("ALTER TABLE `certificates` MODIFY `issue_date` date DEFAULT NULL")
         for column, definition in (

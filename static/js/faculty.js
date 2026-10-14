@@ -7,7 +7,7 @@ let facultyLastData = null;
 
 const FACULTY_STATUS_TONE = {
     '上課中': 'bg-amber-50 border-amber-200 text-amber-900',
-    '晤談時間': 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    '可以找老師': 'bg-emerald-50 border-emerald-200 text-emerald-800',
     '沒有課': 'bg-sky-50 border-sky-200 text-sky-800',
     '非上班時間': 'bg-slate-50 border-slate-200 text-slate-500'
 };
