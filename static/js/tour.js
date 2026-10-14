@@ -1,11 +1,10 @@
-// 網站導覽：第一次進站時逐步介紹主要功能，可隨時跳過；頁尾「重新觀看網站導覽」可再看一次。
-// 結束 (完成或跳過) 時發出 window 事件 'ukn-tour-finished'。依賴 index.html 的 currentUser。
-
-const TOUR_KEY = 'ukn-site-tour-v1';
+// 網站導覽：每個帳號第一次登入時逐步介紹主要功能，可隨時跳過；之後由上方工具列的「🧭 導覽」再看一次。
+// 看過與否存在帳號 (/api/campus/prefs 的 tour_seen)，換裝置登入也不會再跳出；未登入與訪客不自動開始。
+// 結束 (完成或跳過) 時發出 window 事件 'ukn-tour-finished'。依賴 index.html 的 currentUser、campus-shell.js 的 api。
 
 // target 依序找第一個「看得到」的元素；都找不到就跳過這一步 (例如手機版沒有大選單、非校慶期間沒有跑馬燈)
 const TOUR_STEPS = [
-    { title: '歡迎來到康寧大學服務系統 👋', text: '花 30 秒帶你認識常用功能。隨時可以按「跳過導覽」，之後也能從頁尾重新觀看。' },
+    { title: '歡迎來到康寧大學服務系統 👋', text: '花 30 秒帶你認識常用功能。隨時可以按「跳過導覽」，之後也能從上方的「🧭 導覽」重新觀看。' },
     { target: ['#megaNav', '#mobileMenuBtn'], title: '功能選單', text: '所有功能分成「學習、校務、校園生活、社群」四大類，滑過或點開就能看到每個功能的說明。' },
     { target: ['#pinnedServices'], title: '常用服務可以置頂', text: '點功能右上角的 ☆ 就能把它釘在最前面，下次打開首頁直接點。' },
     { target: ['#deptScopeBtn'], title: '我的科系', text: '設定科系後，可以選擇「只看公開資訊與本科資訊」，其他科系專屬的期限、課程就不會干擾你。轉系也可以在這裡改。' },
@@ -15,7 +14,7 @@ const TOUR_STEPS = [
           ? '今天的課、待繳作業、未讀公告、請假與缺曠都在這裡；「學習」選單裡還有學期自評表，寫到一半也會幫你存著。'
           : '用學號登入後，可以看到自己的課表、成績預警、請假進度，還能填學期自評表，下次登入都還在。' },
     { target: ['#annivBar'], title: '校慶跑馬燈', text: '校慶期間最上方會出現跑馬燈，可以切換中文 / English / 日本語，也能留下匿名祝福。' },
-    { title: '導覽結束 🎉', text: '想再看一次，點頁尾的「重新觀看網站導覽」就可以了。' },
+    { target: ['#tourReplayBtn'], title: '導覽結束 🎉', text: '想再看一次，點上方這個「🧭 導覽」就可以了。' },
 ];
 
 window.siteTourActive = false;
@@ -158,7 +157,9 @@ function startSiteTour() {
 function endSiteTour(result) {
     if (!window.siteTourActive) return;
     window.siteTourActive = false;
-    try { localStorage.setItem(TOUR_KEY, result); } catch (e) { /* 無痕模式：下次仍會出現 */ }
+    if (isTourLoggedIn()) {
+        api('/api/campus/prefs', { method: 'PUT', json: { tour_seen: true } }).catch(() => { /* 存不到就下次登入再出現一次 */ });
+    }
     document.removeEventListener('keydown', onTourKey);
     window.removeEventListener('resize', positionTour);
     window.removeEventListener('scroll', positionTour, true);
@@ -169,12 +170,13 @@ function endSiteTour(result) {
     window.dispatchEvent(new Event('ukn-tour-finished'));
 }
 
-// 第一次進站才自動開始；回傳是否已開始
-function maybeStartSiteTour() {
+// 帳號第一次登入才自動開始；回傳 Promise<是否已開始>
+async function maybeStartSiteTour() {
+    if (!isTourLoggedIn()) return false;
     try {
-        if (localStorage.getItem(TOUR_KEY)) return false;
+        if ((await api('/api/campus/prefs')).data.tour_seen) return false;
     } catch (e) {
-        return false; // 無法記住「看過了」的環境 (例如部分無痕模式) 不自動跳出，避免每次都出現
+        return false; // 查不到是否看過時不自動跳出，避免每次都出現
     }
     startSiteTour();
     return true;

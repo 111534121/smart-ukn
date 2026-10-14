@@ -20,6 +20,25 @@ def fresh_state(monkeypatch):
     monkeypatch.setattr(assistant, "claude_enabled", lambda: False)
 
 
+# ---------- 網站導覽 (每個帳號第一次登入才出現) ----------
+
+def test_tour_seen_is_per_account_and_keeps_pinned(client, login, monkeypatch, tmp_path):
+    from campus.common import store
+    monkeypatch.setattr(store, "path", str(tmp_path / "campus_store.json"))
+    monkeypatch.setattr(store, "data", {})
+
+    login("student1")
+    first = client.get("/api/campus/prefs").get_json()["data"]
+    assert first["tour_seen"] is False
+    client.put("/api/campus/prefs", json={"pinned": ["calendar"]})
+    data = client.put("/api/campus/prefs", json={"tour_seen": True}).get_json()["data"]
+    assert data["tour_seen"] is True and data["pinned"] == ["calendar"]  # 只送 tour_seen 不會清掉置頂
+
+    client.post("/api/auth/logout")
+    login("student2")
+    assert client.get("/api/campus/prefs").get_json()["data"]["tour_seen"] is False
+
+
 # ---------- 我的科系與顯示範圍 ----------
 
 def test_student_defaults_to_official_dept(client, login):

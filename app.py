@@ -74,6 +74,14 @@ CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o
 if CORS_ORIGINS:
     CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
 
+@app.errorhandler(500)
+def api_internal_error(e):
+    """API 未預期的錯誤也回 JSON，前端才顯示得出原因，不會只剩「連線失敗 (500)」"""
+    if request.path.startswith("/api/"):
+        app.logger.error("API 錯誤 %s %s：%s", request.method, request.path, getattr(e, "original_exception", e))
+        return jsonify({"status": "error", "message": "伺服器處理時發生錯誤，請稍後再試；若持續發生請通知管理員"}), 500
+    return e
+
 # 檔案上傳設定 (支援 PDF 檔與證照、比賽照片)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
 FORMS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms")
@@ -273,6 +281,52 @@ DEMO_DEPARTMENTS = [
     {"dept_id": "ENG", "dept_name": "應用外語科（五專）", "college_name": "商業資訊學院"}
 ]
 
+# 科系簡介 (供訪客/新生參考用的一般性介紹，非學校正式招生文宣)；
+# 以 dept_id 對應，不存資料庫 — 跟科系主檔分開維護，資料庫連線與否都看得到同一份內容。
+# 詳細課程地圖、學分數與最新公告仍以官網招生專區與系所公告為準。
+DEPARTMENT_INTRO = {
+    "LTC": {
+        "intro": "培養具備長期照護專業知能的人才，學習老人與失能者的照護、管理與資源整合。",
+        "highlights": ["長期照護概論", "老人服務與照護", "照護機構經營管理", "輔具與居家環境改善"],
+        "careers": ["長照機構照護服務員／社工", "居家照顧服務", "照護機構行政管理", "考取照顧服務員等相關證照"],
+    },
+    "ECE": {
+        "intro": "培養嬰幼兒教育與保育專業人才，兼顧教保理論與實務，重視遊戲、課程設計與親職教育。",
+        "highlights": ["幼兒發展", "教保課程設計", "嬰幼兒健康與安全", "親職教育與溝通"],
+        "careers": ["幼兒園教保員", "托嬰中心保育人員", "早期療育相關服務", "考取幼兒園教師證、保母證照"],
+    },
+    "NUR": {
+        "intro": "培養具備臨床照護能力的護理人才，課程涵蓋基礎醫學、臨床護理與臨床實習。",
+        "highlights": ["基本護理學", "內外科護理學", "臨床實習（醫院合作）", "健康評估與衛教"],
+        "careers": ["醫院／診所護理師（需通過護理師國考）", "長照機構護理人員", "企業健康管理", "繼續升學攻讀學士學位"],
+    },
+    "OPT": {
+        "intro": "培養驗光與視力保健專業人才，學習眼睛生理構造、驗光技術與隱形眼鏡配戴等實務。",
+        "highlights": ["視光學", "驗光學與實習", "隱形眼鏡學", "雙眼視覺與視機能檢查"],
+        "careers": ["眼鏡公司驗光人員（需考取驗光人員證照）", "眼科診所視光技術人員", "隱形眼鏡相關產業"],
+    },
+    "BA": {
+        "intro": "培養企業經營管理基礎能力，涵蓋行銷、人資、財務等核心商管知識與實作專題。",
+        "highlights": ["管理學", "行銷管理", "人力資源管理", "創業與專題實作"],
+        "careers": ["企業行政／人資／行銷企劃", "門市與連鎖業管理", "自行創業", "繼續升學攻讀商管相關學位"],
+    },
+    "CS": {
+        "intro": "結合程式設計與商業管理知識，培養能開發系統、分析資料並理解企業需求的資訊人才。",
+        "highlights": ["程式設計（Python/C）", "資料庫系統", "網頁前後端開發", "畢業專題實作"],
+        "careers": ["軟體工程師／網頁工程師", "資訊系統維運、技術支援", "資料分析相關職務", "考取 TQC、程式設計等相關證照"],
+    },
+    "ANI": {
+        "intro": "培養動畫、影視後製與數位內容創作人才，課程涵蓋繪圖基礎、2D/3D動畫與剪輯製作。",
+        "highlights": ["動畫原理與分鏡", "3D動畫製作", "影視剪輯與特效", "作品集實作"],
+        "careers": ["動畫師／繪圖師", "影視後製與剪輯", "遊戲美術相關職務", "自由接案創作者"],
+    },
+    "ENG": {
+        "intro": "強化英語聽說讀寫與跨文化溝通能力，並結合觀光、商務應用情境訓練。",
+        "highlights": ["會話與簡報訓練", "商務英文", "觀光與導覽英語", "國際檢定輔導（多益等）"],
+        "careers": ["國際業務／商務助理", "觀光旅遊相關產業", "外語補教", "繼續升學攻讀外語相關學位"],
+    },
+}
+
 DEMO_STUDENTS = [
     {"student_id": "S112001", "full_name": "王小明", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0912-345-678"},
     {"student_id": "S112002", "full_name": "李美華", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0922-333-444"},
@@ -288,6 +342,8 @@ DEMO_USERS = [
     {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
+    # S112002 尚未開啟家長預警授權 (DEMO_PRIVACY_SETTINGS)，用來示範「家長未授權時系統不會寄信」
+    {"user_id": 9, "username": "parent2", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112002", "full_name": "李建國 (美華家長)"},
     {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
     {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "彭賓鈺 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管五忠"},
     {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"},
@@ -582,6 +638,8 @@ DEMO_PRIVACY_SETTINGS = {
     "S112004": {"parent_alert_consent": 1, "advisor_alert_consent": 1}
 }
 
+DEMO_NOTIFICATION_LOG = []  # 示範模式下的獎學金/預警通知寄送紀錄 (MySQL 連不上時使用)
+
 DEMO_GRADUATION_REQUIREMENTS = {
     "CS": {
         "dept_id": "CS",
@@ -829,7 +887,9 @@ def auth_me():
                 "student_id": session.get("student_id"),
                 "dept_name": session.get("dept_name", "資訊管理科（五專）"),
                 "class_name": session.get("class_name", ""),
-                "advised_class": session.get("advised_class")
+                "advised_class": session.get("advised_class"),
+                "visitor_type": session.get("visitor_type"),
+                "visitor_name": session.get("visitor_name")
             }
         }), 200
     return jsonify({"status": "success", "is_authenticated": False, "user": None}), 200
@@ -851,8 +911,8 @@ def register_visitor():
 
     try:
         saved = db_execute(
-            "INSERT INTO visitor_logs (visitor_name, phone, school_from, purpose, target_dept, ip_address) VALUES (%s, %s, %s, %s, %s, %s)",
-            (vname, phone, school, purpose, target_dept, ip))
+            "INSERT INTO visitor_logs (visitor_name, phone, school_from, purpose, target_dept, visitor_type, ip_address) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (vname, phone, school, purpose, target_dept, visitor_type, ip))
     except Exception:
         saved = None
     if saved:
@@ -861,7 +921,8 @@ def register_visitor():
         new_id = max((v["log_id"] for v in DEMO_VISITOR_LOGS), default=0) + 1
         DEMO_VISITOR_LOGS.insert(0, {
             "log_id": new_id, "visitor_name": vname, "phone": phone, "school_from": school, "purpose": purpose,
-            "target_dept": target_dept, "visited_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "ip_address": ip
+            "target_dept": target_dept, "visitor_type": visitor_type,
+            "visited_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "ip_address": ip
         })
 
     session.clear()
@@ -869,6 +930,7 @@ def register_visitor():
     session["username"] = f"visitor_{new_id}"
     session["role"] = "訪客"
     session["visitor_type"] = visitor_type
+    session["visitor_name"] = vname
     session["full_name"] = f"{vname} ({visitor_type})"
     session["student_id"] = None
     session["dept_name"] = target_dept
@@ -1636,8 +1698,9 @@ def get_visitor_logs():
         "total": len(rows),
         "by_purpose": count_by("purpose"),
         "by_dept": count_by("target_dept"),
+        "by_visitor_type": count_by("visitor_type"),
         "daily": [{"date": d, "count": daily[d]} for d in sorted(daily)],
-        "data": [{**{k: r[k] for k in ("log_id", "visitor_name", "school_from", "purpose", "target_dept", "visited_at")},
+        "data": [{**{k: r[k] for k in ("log_id", "visitor_name", "school_from", "purpose", "target_dept", "visitor_type", "visited_at")},
                   "phone": mask_phone(r["phone"])} for r in rows]
     }), 200
 
@@ -1648,9 +1711,9 @@ def export_visitor_logs():
     rows = load_visitor_logs(days)
     buf = StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["編號", "登記時間", "姓名", "手機", "學校", "來訪目的", "感興趣科系"])
+    writer.writerow(["編號", "登記時間", "姓名", "手機", "學校", "來訪目的", "感興趣科系", "身分"])
     for r in rows:
-        writer.writerow([r["log_id"], r["visited_at"], r["visitor_name"], r["phone"], r["school_from"], r["purpose"], r["target_dept"]])
+        writer.writerow([r["log_id"], r["visited_at"], r["visitor_name"], r["phone"], r["school_from"], r["purpose"], r["target_dept"], r.get("visitor_type", "")])
     # 匯出含完整手機號碼，留下誰在何時匯出的紀錄
     write_audit_log("visitor_logs", f"export-{days}d", "匯出", after={"days": days, "count": len(rows)})
     return Response("﻿" + buf.getvalue(), mimetype="text/csv",
@@ -1732,7 +1795,8 @@ def summarize_credits(credit_records):
 def get_all_courses():
     """取得完整課程地圖（優先讀取 MySQL，離線回退 DEMO_COURSES）；?scope=mine 時只留通識、共同必修與本科課程"""
     courses = preferences.scope_filter(
-        load_course_map(), lambda c: [] if c.get("course_type") in PUBLIC_COURSE_TYPES else [c.get("dept_id")])
+        load_course_map(),
+        lambda c: [c["dept_id"]] if c.get("dept_id") and c.get("course_type") not in PUBLIC_COURSE_TYPES else [])
     return jsonify({"status": "success", "data": courses}), 200
 
 @app.route("/api/courses/check", methods=["POST", "GET"])
@@ -2478,7 +2542,7 @@ def teacher_student_profile():
 def load_checklists():
     """申辦流程清單：有連 MySQL 時讀 checklist_items，離線時回退 DEMO_CHECKLISTS"""
     rows = fetch_db_rows("SELECT * FROM checklist_items ORDER BY item_id ASC")
-    if not rows:
+    if rows is None:
         return DEMO_CHECKLISTS
     for r in rows:
         if isinstance(r.get("steps_json"), str):
@@ -2593,6 +2657,8 @@ def get_my_applications():
 # 10. 導師/家長預警通知與個資授權同意 API (功能 6)
 # ==========================================
 
+DEFAULT_PRIVACY_CONSENT = {"parent_alert_consent": 1, "advisor_alert_consent": 1}  # 預設兩項皆同意 (opt-out 而非 opt-in)
+
 def load_privacy_settings(student_id):
     """讀取學生個資授權 (student_privacy_settings)；沒有紀錄時預設兩項皆同意"""
     rows = fetch_db_rows(
@@ -2601,8 +2667,8 @@ def load_privacy_settings(student_id):
     if rows:
         return {k: int(v) for k, v in rows[0].items()}
     if rows is None:
-        return DEMO_PRIVACY_SETTINGS.get(student_id, {"parent_alert_consent": 1, "advisor_alert_consent": 1})
-    return {"parent_alert_consent": 1, "advisor_alert_consent": 1}
+        return DEMO_PRIVACY_SETTINGS.get(student_id, dict(DEFAULT_PRIVACY_CONSENT))
+    return dict(DEFAULT_PRIVACY_CONSENT)
 
 @app.route("/api/student/privacy-consent", methods=["GET", "POST"])
 def manage_privacy_consent():
@@ -2641,6 +2707,33 @@ def manage_privacy_consent():
             "message": "個資授權設定更新成功！依個人資料保護法規定已生效。",
             "settings": settings
         }), 200
+
+@app.route("/api/student/emergency-contact", methods=["GET", "PUT"])
+def manage_emergency_contact():
+    """緊急聯絡電話 (students.parent_phone)：學生與綁定家長皆可查看／自行更新，不需要經過行政單位"""
+    student_id = current_student_id()
+    if not student_id:
+        return jsonify({"status": "error", "message": "請先以學生或家長帳號登入"}), 401
+
+    if request.method == "PUT":
+        data = request.get_json(silent=True) or {}
+        phone = str(data.get("parent_phone", "")).strip()[:30]
+        if not phone:
+            return jsonify({"status": "error", "message": "請輸入聯絡電話"}), 400
+        saved = db_execute("UPDATE students SET parent_phone = %s WHERE student_id = %s", (phone, student_id))
+        if saved is None:
+            stu = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+            if stu:
+                stu["parent_phone"] = phone
+        return jsonify({"status": "success", "message": "緊急聯絡電話已更新", "parent_phone": phone}), 200
+
+    rows = fetch_db_rows("SELECT parent_phone FROM students WHERE student_id = %s", (student_id,))
+    if rows:
+        phone = rows[0]["parent_phone"]
+    else:
+        stu = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
+        phone = stu.get("parent_phone") if stu else None
+    return jsonify({"status": "success", "student_id": student_id, "parent_phone": phone or ""}), 200
 
 def find_class_advisor(class_name):
     """班級導師姓名 (users.advised_class)；查無時回傳 None"""
@@ -3105,6 +3198,41 @@ def department_names():
     rows = fetch_db_rows("SELECT dept_id, dept_name FROM departments") or DEMO_DEPARTMENTS
     return {r["dept_id"]: r["dept_name"] for r in rows}
 
+@app.route("/api/departments", methods=["GET"])
+def list_departments_with_intro():
+    """科系清單與簡介 (一般性介紹，非正式招生文宣)；不需要登入，給訪客/新生參考用"""
+    rows = fetch_db_rows("SELECT dept_id, dept_name, college_name FROM departments ORDER BY college_name, dept_id")
+    if rows is None:
+        rows = DEMO_DEPARTMENTS
+    data = [{**r, **DEPARTMENT_INTRO.get(r["dept_id"], {"intro": "", "highlights": [], "careers": []})} for r in rows]
+    return jsonify({"status": "success", "data": data}), 200
+
+# 訪客/新生常見問題 (FAQ)：一般性說明，金額/名額/時程等以官網正式公告與各承辦單位回覆為準
+VISITOR_FAQ = [
+    {"category": "入學方式", "q": "五專要怎麼考進來？有哪些入學管道？",
+     "a": "主要管道有甄選入學、申請入學與獨招等，各管道名額與資格每年公告略有不同，請以官網「招生專區」當年度公告為準，或電洽招生組確認。"},
+    {"category": "入學方式", "q": "可以轉系嗎？", "a": "在學期間若想轉系，需在學校公告的申請期間提出，並符合轉入科系的名額與資格條件，請洽教務處註冊組。"},
+    {"category": "學費與獎助", "q": "學雜費大概多少？有沒有減免？",
+     "a": "學雜費會因科系與學年度公告而不同，實際金額請以註冊繳費通知為準；符合條件可申請學雜費減免、清寒助學金或市府/勞動部等政府補助，入學後可在本系統「獎助學金」頁面看到比對結果。"},
+    {"category": "學費與獎助", "q": "有哪些獎學金可以申請？",
+     "a": "校內有學業優秀獎學金、清寒助學金、專業證照獎勵金、工讀助學金等；另外還有臺北市希望助學金、勞動部青年就業讚計畫等政府管道，登入學生帳號後系統會自動比對資格。"},
+    {"category": "宿舍", "q": "一定要住宿舍嗎？宿舍怎麼申請？",
+     "a": "宿舍非強制，有需要可線上申請，床位依通勤距離與身分排序分配；申請與進度查詢需用學生帳號登入「宿舍與總務申請」頁面。"},
+    {"category": "宿舍", "q": "宿舍安全與門禁怎麼管理？",
+     "a": "校內宿舍設有門禁時間與晚歸登記機制，生活輔導組會協助處理住宿相關生活問題，實際門禁時間與規定請洽宿舍服務台。"},
+    {"category": "交通", "q": "學校怎麼去？附近有什麼大眾運輸？",
+     "a": "可在本系統登入後查看「天氣與交通」頁面，會顯示學校地址與大眾運輸建議路線；也可以直接用 Google 地圖搜尋學校名稱規劃路線。"},
+    {"category": "證照與學分", "q": "有證照可以抵免學分嗎？",
+     "a": "目前已開放多益 (TOEIC) 550 分以上、全民英檢中高級複試通過者，可申請抵免基礎英文(一)(二) 共 4 學分，其他抵免規則請洽教務處註冊組或通識教育中心最新公告。"},
+    {"category": "聯絡窗口", "q": "有問題要找誰？要怎麼聯絡學校？",
+     "a": "可以直接打學校總機 (02)2632-1181，請總機轉接相關單位（招生組、教務處、學務處等），或是先用本系統的 AI 小幫手問問看，常見的校務問題多半能立即得到答案。"},
+]
+
+@app.route("/api/faq", methods=["GET"])
+def list_visitor_faq():
+    """訪客/新生常見問題，不需要登入"""
+    return jsonify({"status": "success", "data": VISITOR_FAQ}), 200
+
 def _fmt(value):
     return int(value) if float(value).is_integer() else value
 
@@ -3221,6 +3349,127 @@ def match_scholarships():
         # 已截止的不列入符合清單，另外放在已截止區
         "expired": [r for r in results if r["days_left"] < 0]
     }), 200
+
+# ==========================================
+# 11i. 獎學金符合資格 / 學業預警 Email 推播 (功能 6 延伸)
+#      後台按鈕手動觸發 (比照缺曠通知)，寄給學生本人；家長需本人開啟「家長預警授權」才會一併收到。
+#      同一件事 (同一筆獎學金 / 同一次預警等級) 只會通知一次，直到比對結果改變才會再寄一次。
+# ==========================================
+
+NOTIFY_SCHOLARSHIP_SUBJECT = "【康寧大學】您有符合資格的獎助學金"
+NOTIFY_WARNING_SUBJECT = "【康寧大學】學業預警通知"
+
+def find_parent_account(student_id):
+    """該學生綁定的家長帳號 (username/full_name)；查無回傳 None"""
+    rows = fetch_db_rows("SELECT username, full_name FROM users WHERE role = '家長' AND student_id = %s LIMIT 1", (student_id,))
+    if rows:
+        return rows[0]
+    return next(({"username": u["username"], "full_name": u["full_name"]} for u in DEMO_USERS
+                 if u["role"] == "家長" and u.get("student_id") == student_id), None)
+
+def already_notified(student_id, notify_type, ref_key, recipient_role):
+    rows = fetch_db_rows(
+        "SELECT 1 FROM notification_log WHERE student_id=%s AND notify_type=%s AND ref_key=%s AND recipient_role=%s",
+        (student_id, notify_type, ref_key, recipient_role))
+    if rows is not None:
+        return bool(rows)
+    return any(n["student_id"] == student_id and n["notify_type"] == notify_type
+               and n["ref_key"] == ref_key and n["recipient_role"] == recipient_role for n in DEMO_NOTIFICATION_LOG)
+
+def mark_notified(student_id, notify_type, ref_key, recipient_role):
+    saved = db_execute(
+        "INSERT IGNORE INTO notification_log (student_id, notify_type, ref_key, recipient_role) VALUES (%s, %s, %s, %s)",
+        (student_id, notify_type, ref_key, recipient_role))
+    if saved is None:
+        DEMO_NOTIFICATION_LOG.append({"student_id": student_id, "notify_type": notify_type, "ref_key": ref_key,
+                                       "recipient_role": recipient_role, "sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+
+def _send_once(mailer, to_addr, subject, body, student_id, kind, failed):
+    """寄送失敗不中斷整批流程，記下來讓後台顯示哪幾位失敗"""
+    try:
+        mailer.send(to_addr, subject, body)
+        return True
+    except Exception as e:
+        failed.append({"student_id": student_id, "type": kind, "error": str(e)})
+        return False
+
+def _notify_once(mailer, sid, addr, all_ref_keys, notify_type, recipient_role, subject, body_template, failed):
+    """只對『這個人還沒被通知過』的 ref_key 寄一封信 (多筆合併成一封)；全部成功才記錄已通知。
+    回傳 1 (有寄出) 或 0 (沒有新項目可通知)，方便外層直接加總計數。"""
+    new_keys = [k for k in all_ref_keys if not already_notified(sid, notify_type, k, recipient_role)]
+    if not new_keys:
+        return 0
+    body = body_template.format(n=len(new_keys))
+    if not _send_once(mailer, addr, subject, body, sid, notify_type, failed):
+        return 0
+    for k in new_keys:
+        mark_notified(sid, notify_type, k, recipient_role)
+    return 1
+
+@app.route("/api/admin/notify/scholarship-warning", methods=["POST"])
+@role_required("管理員", "教職員")
+def notify_scholarship_and_warning():
+    """一鍵比對全校學生目前『符合資格的獎助學金』與『學業預警』，寄信給學生本人；
+    家長只有在該學生開啟「家長預警授權」時才會一併收到，且信件內容不含成績等個資，只請登入查看。"""
+    today = datetime.now().date()
+    dept_names = department_names()
+    scholarships = load_scholarships()
+    mailer = get_mailer()
+    sent = {"scholarship": {"student": 0, "parent": 0}, "early_warning": {"student": 0, "parent": 0}}
+    skipped_no_consent = 0
+    failed = []
+
+    for s in list_students():
+        sid = s["student_id"]
+        privacy = load_privacy_settings(sid)
+        parent = find_parent_account(sid)
+        consent_parent = bool(parent) and bool(privacy["parent_alert_consent"])
+
+        # ---- 獎學金符合資格比對 ----
+        profile = load_scholarship_profile(sid, today)
+        if profile:
+            fail_info = latest_semester_fails(sid)
+            eligible_ids = [sch["id"] for sch in scholarships
+                             if evaluate_scholarship(sch, profile, fail_info, dept_names, today, False)["status"] == "符合"
+                             and (datetime.strptime(sch["deadline"], "%Y-%m-%d").date() - today).days >= 0]
+            if eligible_ids:
+                sent["scholarship"]["student"] += _notify_once(
+                    mailer, sid, campus_email(sid), eligible_ids, "scholarship", "student", NOTIFY_SCHOLARSHIP_SUBJECT,
+                    "系統比對到您有 {n} 項新符合資格的獎助學金，請登入系統查看詳情並把握申請期限。", failed)
+                if consent_parent:
+                    sent["scholarship"]["parent"] += _notify_once(
+                        mailer, sid, campus_email(parent["username"]), eligible_ids, "scholarship", "parent", NOTIFY_SCHOLARSHIP_SUBJECT,
+                        "系統比對到您子女有 {n} 項新符合資格的獎助學金，建議提醒子女登入系統查看並把握申請期限。", failed)
+                elif parent and not privacy["parent_alert_consent"]:
+                    skipped_no_consent += 1
+
+        # ---- 學業預警 ----
+        warning = compute_early_warning(sid)
+        if warning["warning_level"] in ("warning", "critical"):
+            ref_keys = [f"{warning['warning_level']}:{warning['semester']}"]
+            sent["early_warning"]["student"] += _notify_once(
+                mailer, sid, campus_email(sid), ref_keys, "early_warning", "student", NOTIFY_WARNING_SUBJECT,
+                "系統偵測到您本學期學業狀況出現警示，請登入系統查看詳情，並儘速與導師預約晤談。", failed)
+            if consent_parent:
+                sent["early_warning"]["parent"] += _notify_once(
+                    mailer, sid, campus_email(parent["username"]), ref_keys, "early_warning", "parent", NOTIFY_WARNING_SUBJECT,
+                    "系統偵測到您子女本學期學業狀況出現警示，請登入系統查看詳情，或與導師聯繫了解狀況。", failed)
+            elif parent and not privacy["parent_alert_consent"]:
+                skipped_no_consent += 1
+
+    total = sum(v for d in sent.values() for v in d.values())
+    if total == 0 and not failed:
+        message = "目前沒有需要通知的新項目"
+    else:
+        where = "已寄出" if mailer.mode == "smtp" else "demo 模式：已印在伺服器終端機"
+        message = (f"{where}，獎學金通知 學生 {sent['scholarship']['student']} / 家長 {sent['scholarship']['parent']} 封；"
+                   f"預警通知 學生 {sent['early_warning']['student']} / 家長 {sent['early_warning']['parent']} 封")
+        if skipped_no_consent:
+            message += f"；{skipped_no_consent} 位家長因尚未開啟授權而跳過"
+        if failed:
+            message += f"；{len(failed)} 封寄送失敗"
+    return jsonify({"status": "success", "message": message, "sent": sent,
+                     "skipped_no_consent": skipped_no_consent, "failed": failed, "notify_mode": mailer.mode}), 200
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
@@ -3646,17 +3895,13 @@ self_review.init_app(app, SimpleNamespace(
 # AI 申辦小幫手 (assistant 套件)：先查資料庫，有設定 Claude 時再由 Claude 整理成口語回答
 import assistant
 
-def load_rules_for_assistant():
-    rows = fetch_db_rows("SELECT k.*, c.category_name FROM knowledge_base k LEFT JOIN knowledge_categories c ON k.category_id = c.category_id")
-    return rows if rows else DEMO_KNOWLEDGE_BASE
-
 def load_synonyms_for_assistant():
-    rows = fetch_db_rows("SELECT user_keyword, official_term FROM synonym_dictionary")
-    return {r["user_keyword"]: r["official_term"] for r in (rows if rows else DEMO_SYNONYMS)}
+    """同義詞轉成 {口語關鍵字: 官方名稱} 字典，供小幫手比對用；資料來源與其他地方共用 load_synonyms()"""
+    return {r["user_keyword"]: r["official_term"] for r in load_synonyms()}
 
 assistant.init_app(app, SimpleNamespace(
     load_checklists=load_checklists,
-    load_rules=load_rules_for_assistant,
+    load_rules=load_rules,
     load_synonyms=load_synonyms_for_assistant,
     log_search=log_search,
     record_unmatched_query=record_unmatched_query,

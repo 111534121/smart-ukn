@@ -17,11 +17,13 @@
     class_notice_recipients  每則通知發給誰、什麼時候讀的 (read_at)
 - MySQL 連不上或還沒建表 → 退回 data/campus_store.json (示範模式)
 - 第一次連上 MySQL 且表是空的：自動把 campus_store.json 裡原有的班級與通知搬進 MySQL
+
+家長留言給導師 (advisor_messages)：家長留言給子女的導師，導師回覆。
 """
 from flask import Blueprint, request
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from .common import deps, error, ok, require, store, next_id, now_str, current_user, all_students, STAFF_ROLES
+from .common import deps, error, ok, require, store, next_id, now_str, current_user, all_students, find_student, STAFF_ROLES
 
 bp = Blueprint("campus_messaging", __name__)
 
@@ -292,6 +294,7 @@ def create_class():
 @bp.route("/api/campus/classes/password", methods=["POST"])
 @require(*STAFF_ROLES)
 def reset_password():
+    u = current_user()
     data = request.get_json(silent=True) or {}
     password = str(data.get("password", "")).strip()
     if len(password) < 4:
@@ -377,7 +380,7 @@ def sent():
 
 
 @bp.route("/api/campus/notices/inbox", methods=["GET"])
-@require("學生")
+@require("學生", "家長")
 def inbox():
     sid = current_user()["student_id"]
     items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username")}
@@ -525,3 +528,69 @@ def send_broadcast():
     deps.write_audit_log("notices", item["id"], "新增", after={k: item[k] for k in (
         "target_type", "target_label", "title", "priority", "recipients", "due_date", "content")})
     return ok(message=f"已廣播給「{label}」{len(recipient_ids)} 位學生", data=item)
+# ---------- 家長留言給導師 ----------
+
+def advisor_messages():
+    return store.section("advisor_messages", list)
+
+
+@bp.route("/api/campus/advisor-messages", methods=["GET", "POST"])
+@require()
+def advisor_messages_route():
+    u = current_user()
+
+    if request.method == "POST":
+        if u["role"] != "家長":
+            return error("只有家長可以留言給導師", 403)
+        data = request.get_json(silent=True) or {}
+        subject = str(data.get("subject", "")).strip()[:60]
+        content = str(data.get("content", "")).strip()[:1000]
+        if not subject or not content:
+            return error("請輸入主旨與內容")
+        stu = find_student(u["student_id"]) or {}
+        class_name = stu.get("class_name")
+        if not class_name:
+            return error("查無子女班級資料，請洽教務處")
+        with store.lock:
+            items = advisor_messages()
+            item = {"id": next_id(items), "student_id": u["student_id"], "student_name": stu.get("full_name", ""),
+                    "class_name": class_name, "parent_username": u["username"], "parent_name": u["full_name"],
+                    "subject": subject, "content": content, "status": "待回覆", "reply": "", "replied_by": "",
+                    "replied_at": "", "created_at": now_str()}
+            items.append(item)
+            store.save()
+        return ok(message="已送出，導師確認後會回覆", data=item)
+
+    # GET：家長只看自己留言；老師只看自己導師班；教職員/管理員看全部
+    if u["role"] == "家長":
+        items = [m for m in advisor_messages() if m["student_id"] == u["student_id"]]
+    elif u["role"] == "老師":
+        items = [m for m in advisor_messages() if m["class_name"] == u.get("advised_class")]
+    elif u["role"] in ("教職員", "管理員"):
+        items = list(advisor_messages())
+    else:
+        return error("沒有權限", 403)
+    items.sort(key=lambda x: x["created_at"], reverse=True)
+    return ok(data=items)
+
+
+@bp.route("/api/campus/advisor-messages/<int:msg_id>/reply", methods=["POST"])
+@require("老師", "教職員", "管理員")
+def reply_advisor_message(msg_id):
+    u = current_user()
+    data = request.get_json(silent=True) or {}
+    reply = str(data.get("reply", "")).strip()[:1000]
+    if not reply:
+        return error("請輸入回覆內容")
+    with store.lock:
+        m = next((m for m in advisor_messages() if m["id"] == msg_id), None)
+        if not m:
+            return error("找不到這則留言", 404)
+        if u["role"] == "老師" and m["class_name"] != u.get("advised_class"):
+            return error("只能回覆自己導師班的留言", 403)
+        m["reply"] = reply
+        m["replied_by"] = u["full_name"]
+        m["replied_at"] = now_str()
+        m["status"] = "已回覆"
+        store.save()
+    return ok(message="已回覆", data=m)

@@ -106,7 +106,7 @@ POST,/api/campus/counseling,/api/campus/counseling,,【導生關懷紀錄】新�
 PUT,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】修改,401,403,403,403,OK,OK,OK,只有記錄人或管理員能改
 DELETE,/api/campus/counseling/<int:record_id>,/api/campus/counseling/999999,,【導生關懷紀錄】刪除,401,403,403,403,OK,OK,OK,只有記錄人或管理員能刪
 GET,/api/campus/counseling/export.csv,/api/campus/counseling/export.csv,,【導生關懷紀錄】匯出 CSV,401,403,403,403,OK,OK,OK,
-GET,/api/campus/notices/inbox,/api/campus/notices/inbox,,【科上通知】收件匣,401,403,OK,403,403,403,403,
+GET,/api/campus/notices/inbox,/api/campus/notices/inbox,,【班級通知】收件匣（家長唯讀查看子女的通知）,401,403,OK,OK,403,403,403,
 POST,/api/campus/notices/<int:notice_id>/read,/api/campus/notices/999999/read,,【科上通知】標記已讀,401,403,OK,403,403,403,403,只能標記發給自己的通知 (別人的回 404)
 GET,/api/campus/map,/api/campus/map,,校園地圖,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/map/find,/api/campus/map/find?q=A101,,找教室,OK,OK,OK,OK,OK,OK,OK,
@@ -127,7 +127,7 @@ GET,/api/campus/prefs,/api/campus/prefs,,置頂設定,401,403*,OK,OK,OK,OK,OK,�
 PUT,/api/campus/prefs,/api/campus/prefs,,修改置頂,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
 GET,/api/campus/checklist-docs,/api/campus/checklist-docs,,申辦文件勾選,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
 POST,/api/campus/checklist-docs,/api/campus/checklist-docs,,儲存文件勾選,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
-GET,/api/campus/dorm/mine,/api/campus/dorm/mine,,我的宿舍申請,401,403,OK,403,403,403,403,
+GET,/api/campus/dorm/mine,/api/campus/dorm/mine,,我的宿舍申請（家長可查看子女的）,401,403,OK,OK,403,403,403,
 POST,/api/campus/dorm/apply,/api/campus/dorm/apply,,申請宿舍,401,403,OK,403,403,403,403,
 GET,/api/campus/dorm/applications,/api/campus/dorm/applications,,宿舍申請列表,401,403,403,403,OK,OK,OK,⚠️ 老師也看得到全校宿舍申請 (含通勤時間等個資)，待討論
 POST,/api/campus/dorm/applications/<int:app_id>,/api/campus/dorm/applications/999999,,審核宿舍,401,403,403,403,403,OK,OK,
@@ -171,3 +171,15 @@ POST,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favor
 DELETE,/api/campus/reports/<int:file_id>/favorite,/api/campus/reports/999999/favorite,,取消收藏,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
 GET,/api/campus/reports/<int:file_id>/stats,/api/campus/reports/999999/stats,,報表下載統計,401,403,403,403,OK,OK,OK,
 GET,/api/staff/alerts,/api/staff/alerts,,老師 / 行政人員待辦通知,401,403,403,403,OK,OK,OK,老師只看到導師班；行政人員看全校並多了教室借用、宿舍
+GET,/api/student/emergency-contact,/api/student/emergency-contact,,緊急聯絡電話,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+PUT,/api/student/emergency-contact,/api/student/emergency-contact,"{""parent_phone"": ""0912-345-678""}",修改緊急聯絡電話,401,403*,OK,OK,403*,403*,403*,已登入但身分不符目前回 401（請先登入），應為 403（權限不足）
+GET,/api/departments,/api/departments,,科系清單與簡介,OK,OK,OK,OK,OK,OK,OK,公開資訊
+GET,/api/faq,/api/faq,,訪客常見問題,OK,OK,OK,OK,OK,OK,OK,公開資訊
+POST,/api/admin/notify/scholarship-warning,/api/admin/notify/scholarship-warning,,寄送獎學金／預警通知信,401,403,403,403,403,OK,OK,
+GET,/api/campus/advisor-messages,/api/campus/advisor-messages,,家長留言給導師：查看,401,403,403,OK,OK,OK,OK,老師只看自己導師班
+POST,/api/campus/advisor-messages,/api/campus/advisor-messages,,家長留言給導師：送出,401,403,403,OK,403,403,403,
+POST,/api/campus/advisor-messages/<int:msg_id>/reply,/api/campus/advisor-messages/1/reply,,回覆家長留言,401,403,403,403,OK,OK,OK,老師只能回覆自己導師班
+GET,/api/campus/visits/slots,/api/campus/visits/slots,,校園參觀可預約時段,OK,OK,OK,OK,OK,OK,OK,公開資訊
+GET,/api/campus/visits,/api/campus/visits,,校園參觀預約：查看,401,OK,OK,OK,OK,OK,OK,教職員看全部，其他人只看自己的
+POST,/api/campus/visits,/api/campus/visits,,校園參觀預約：送出,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/visits/<int:visit_id>,/api/campus/visits/1,"{""action"": ""cancel""}",校園參觀預約：取消／確認,401,OK,OK,OK,OK,OK,OK,本人只能取消自己的；教職員可確認或取消

@@ -10,7 +10,7 @@ function campusFeaturesInit() {
         'tab-calendar': () => calendarShift(0),
         'tab-plan': loadPlan,
         'tab-certs': loadCerts,
-        'tab-scholarship': loadScholarships,
+        'tab-scholarship': () => { loadScholarshipMatch(); loadScholarships(); },
         'tab-services': () => { loadDorm(); loadAffairs(); },
         'tab-rent': () => {
             loadRooms();

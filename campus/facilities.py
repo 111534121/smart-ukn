@@ -283,7 +283,7 @@ def update_booking(booking_id):
         store.save()
     deps.write_audit_log("room_bookings", booking_id, "修改", before=before,
                          after={**before, "status": bk["status"], "review_note": bk.get("review_note", "")})
-    return ok(message=f"已{bk['status']}", data=bk)
+    return ok(message=f"狀態已更新為「{bk['status']}」", data=bk)
 
 
 # ---------- 櫃子租借 ----------

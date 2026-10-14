@@ -10,10 +10,12 @@
 
 app.py 呼叫 preferences.init_app(app, deps) 註冊；deps 提供 fetch_db_rows、db_execute、departments (示範資料)。
 """
+import logging
 from types import SimpleNamespace
 
 from flask import Blueprint, jsonify, request, session
 
+log = logging.getLogger(__name__)
 bp = Blueprint("preferences", __name__)
 deps = SimpleNamespace()
 
@@ -56,7 +58,7 @@ def _saved_preference():
     if _has_account():
         username = session["username"]
         rows = deps.fetch_db_rows("SELECT dept_id, content_scope FROM user_preferences WHERE username = %s", (username,))
-        if rows is None:
+        if rows is None or username in DEMO_PREFS:
             saved = DEMO_PREFS.get(username)
         else:
             saved = rows[0] if rows else None
@@ -105,12 +107,20 @@ def preferences():
 
         pref = {"dept_id": dept_id, "content_scope": scope}
         if _has_account():
-            saved = deps.db_execute(
-                "INSERT INTO user_preferences (username, dept_id, content_scope) VALUES (%s, %s, %s) "
-                "ON DUPLICATE KEY UPDATE dept_id = VALUES(dept_id), content_scope = VALUES(content_scope)",
-                (session["username"], dept_id, scope))
+            try:
+                saved = deps.db_execute(
+                    "INSERT INTO user_preferences (username, dept_id, content_scope) VALUES (%s, %s, %s) "
+                    "ON DUPLICATE KEY UPDATE dept_id = VALUES(dept_id), content_scope = VALUES(content_scope)",
+                    (session["username"], dept_id, scope))
+            except Exception as e:
+                # 舊資料庫沒有 user_preferences 表 (未重跑 init_db.py) 或科系外鍵不符時，
+                # 先存在記憶體讓使用者能繼續用，不要讓「確認」按鈕直接失敗
+                log.warning("我的科系：寫入 user_preferences 失敗，暫存於記憶體 (%s)", e)
+                saved = None
             if saved is None:
                 DEMO_PREFS[session["username"]] = pref
+            else:
+                DEMO_PREFS.pop(session["username"], None)
         else:
             session["preferences"] = pref
 
