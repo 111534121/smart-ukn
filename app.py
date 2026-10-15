@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()  # 讀取專案根目錄的 .env (SMTP 帳密等機密設定)；檔案不存在時安靜略過，行為不變
+
 from flask import Flask, request, jsonify, session, redirect, send_from_directory, make_response, Response
 from flask_cors import CORS
 # pyrefly: ignore [missing-import]
@@ -7,7 +11,6 @@ from werkzeug.utils import secure_filename, safe_join
 from functools import wraps
 # pyrefly: ignore [missing-import]
 import mysql.connector
-import os
 import re
 import sys
 import json
@@ -15,6 +18,7 @@ import uuid
 import csv
 import threading
 import time
+from collections import deque
 from io import StringIO
 from datetime import datetime, timedelta
 from attendance.sources import MemoryAttendanceSource, MySQLAttendanceSource, VALID_TYPES as ATTENDANCE_TYPES
@@ -73,12 +77,21 @@ app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
+# 上傳檔案總大小上限 (20MB)：避免單一請求夾帶過大檔案耗盡記憶體/硬碟 (例如手機掃描 PDF 動輒幾十MB)
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 # 前端與 API 同一個網域時不需要 CORS；另有前端網域時以 CORS_ORIGINS (逗號分隔) 指定，
 # 不可開放所有網域攜帶 session cookie，否則任何網站都能以登入者身分呼叫 API
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 if CORS_ORIGINS:
     CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
+
+@app.errorhandler(413)
+def api_file_too_large(e):
+    """上傳檔案總大小超過 MAX_CONTENT_LENGTH 時，API 要回清楚的 JSON 訊息而不是連線直接斷掉"""
+    if request.path.startswith("/api/"):
+        return jsonify({"status": "error", "message": "上傳檔案太大，請確認檔案大小後再試一次"}), 413
+    return e
 
 @app.errorhandler(500)
 def api_internal_error(e):
@@ -915,11 +928,39 @@ def serve_admin():
 # 4. 身分認證與 Session 管理 API (/api/auth)
 # ==========================================
 
+# 登入防呆：同一個 IP 在 LOGIN_RATE_WINDOW_SECONDS 內連續失敗達 LOGIN_RATE_LIMIT 次就先擋著，
+# 不管帳號打對打錯都算一次失敗 (避免被拿來猜哪個帳號存在)；登入成功會清掉這個 IP 的失敗紀錄。
+LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW_SECONDS = 8, 300
+_login_rate_lock = threading.Lock()
+_login_failures = {}
+
+def _login_too_many(ip):
+    now = time.monotonic()
+    with _login_rate_lock:
+        recent = _login_failures.setdefault(ip, deque())
+        while recent and now - recent[0] > LOGIN_RATE_WINDOW_SECONDS:
+            recent.popleft()
+        return len(recent) >= LOGIN_RATE_LIMIT
+
+def _record_login_failure(ip):
+    with _login_rate_lock:
+        _login_failures.setdefault(ip, deque()).append(time.monotonic())
+
+def _clear_login_failures(ip):
+    with _login_rate_lock:
+        _login_failures.pop(ip, None)
+
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
+    ip = request.remote_addr or "unknown"
+    if _login_too_many(ip):
+        return jsonify({"status": "error", "message": "登入失敗次數過多，請 5 分鐘後再試"}), 429
+
     data = request.get_json(silent=True) or {}
-    username = str(data.get("username", "")).strip()
-    password = str(data.get("password", "")).strip()
+    # 防呆：trim 頭尾空白、擋超長輸入 (例如貼錯整段文字)，帳號一律用小寫比對避免大小寫鎖死
+    username = str(data.get("username", "")).strip()[:100]
+    password = str(data.get("password", "")).strip()[:200]
+    username_key = username.lower()
 
     if not username or not password:
         return jsonify({"status": "error", "message": "請輸入帳號與密碼"}), 400
@@ -930,17 +971,17 @@ def auth_login():
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
-            # 可用帳號或學號登入；學號只比對學生身分 (家長帳號也綁學號，不可用學號登入家長)
+            # 可用帳號或學號登入 (大小寫不敏感)；學號只比對學生身分 (家長帳號也綁學號，不可用學號登入家長)
             sql = """
                 SELECT u.*, s.dept_id, s.class_name, d.dept_name
                 FROM users u
                 LEFT JOIN students s ON u.student_id = s.student_id
                 LEFT JOIN departments d ON s.dept_id = d.dept_id
-                WHERE u.username = %s OR (u.student_id = %s AND u.role = '學生')
-                ORDER BY u.username = %s DESC
+                WHERE LOWER(u.username) = %s OR (u.student_id = %s AND u.role = '學生')
+                ORDER BY LOWER(u.username) = %s DESC
                 LIMIT 1
             """
-            cursor.execute(sql, (username, username, username))
+            cursor.execute(sql, (username_key, username.upper(), username_key))
             candidate = cursor.fetchone()
             cursor.close()
             conn.close()
@@ -950,8 +991,8 @@ def auth_login():
             if conn: conn.close()
 
     if not user_record:
-        for u in sorted(DEMO_USERS, key=lambda x: x["username"] != username):
-            is_login_name = u["username"] == username or (u.get("student_id") == username.upper() and u["role"] == "學生")
+        for u in sorted(DEMO_USERS, key=lambda x: x["username"].lower() != username_key):
+            is_login_name = u["username"].lower() == username_key or (u.get("student_id") == username.upper() and u["role"] == "學生")
             if is_login_name and check_password_hash(u["password_hash"], password):
                 user_record = dict(u)
                 if u.get("student_id"):
@@ -963,6 +1004,7 @@ def auth_login():
                 break
 
     if user_record:
+        _clear_login_failures(ip)
         session.clear()
         session.permanent = data.get("remember", True) is not False
         session["user_id"] = user_record["user_id"]
@@ -990,6 +1032,7 @@ def auth_login():
             }
         }), 200
 
+    _record_login_failure(ip)
     return jsonify({"status": "error", "message": "帳號或密碼錯誤，請重新確認！"}), 401
 
 @app.route("/api/auth/logout", methods=["POST"])
@@ -1032,6 +1075,9 @@ def register_visitor():
 
     if not vname or not phone or not school or not purpose:
         return jsonify({"status": "error", "message": "姓名、手機號碼、畢業學校與來訪目的為必填欄位！"}), 400
+    # 防呆：手機號碼至少要有 7 個數字 (容許 -、空白、+、() 等常見格式)，擋掉「abc」這類明顯打錯的輸入
+    if len(re.sub(r"\D", "", phone)) < 7:
+        return jsonify({"status": "error", "message": "手機號碼格式不正確，請確認後重新輸入"}), 400
 
     try:
         saved = db_execute(
@@ -2847,6 +2893,9 @@ def manage_emergency_contact():
         phone = str(data.get("parent_phone", "")).strip()[:30]
         if not phone:
             return jsonify({"status": "error", "message": "請輸入聯絡電話"}), 400
+        # 防呆：至少要有 7 個數字 (容許 -、空白、+、() 等常見格式)，理由同訪客登記的手機號碼檢查
+        if len(re.sub(r"\D", "", phone)) < 7:
+            return jsonify({"status": "error", "message": "聯絡電話格式不正確，請確認後重新輸入"}), 400
         saved = db_execute("UPDATE students SET parent_phone = %s WHERE student_id = %s", (phone, student_id))
         if saved is None:
             stu = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id), None)
@@ -2998,8 +3047,12 @@ def manage_checklists():
     if session.get("role") not in ("管理員", "教職員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
+    try:
+        category_id = int(data.get("category_id", 1))
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "類別 ID 格式錯誤"}), 400
     item = {
-        "category_id": int(data.get("category_id", 1)),
+        "category_id": category_id,
         "category_name": data.get("category_name", "課務組"),
         "business_name": str(data.get("business_name", "")).strip(),
         "steps_json": data.get("steps_json", []),
@@ -3065,7 +3118,10 @@ def manage_synonyms():
     data = request.get_json(silent=True) or {}
     uk = str(data.get("user_keyword", "")).strip()
     ot = str(data.get("official_term", "")).strip()
-    cid = int(data.get("category_id", 1))
+    try:
+        cid = int(data.get("category_id", 1))
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "類別 ID 格式錯誤"}), 400
     if not uk or not ot:
         return jsonify({"status": "error", "message": "俗稱關鍵字與官方標準名稱為必填"}), 400
     try:
@@ -3677,12 +3733,14 @@ def manage_certificates():
     else:
         data = request.get_json(silent=True) or {}
 
-    cert_name = str(data.get("cert_name", "")).strip()
-    issuing_org = str(data.get("issuing_org", "")).strip() or "勞動部勞動力發展署技能檢定中心"
-    cert_number = str(data.get("cert_number", "")).strip()
+    # 長度上限對齊資料庫欄位 (varchar(100)/varchar(50)/varchar(255))，避免貼上過長文字時
+    # DB 寫入失敗卻被 except 吃掉、誤回「新增成功」但資料其實沒存進去
+    cert_name = str(data.get("cert_name", "")).strip()[:100]
+    issuing_org = (str(data.get("issuing_org", "")).strip() or "勞動部勞動力發展署技能檢定中心")[:100]
+    cert_number = str(data.get("cert_number", "")).strip()[:50]
     issue_date = str(data.get("issue_date", "")).strip()
-    cert_status = str(data.get("cert_status", "")).strip() or "及格發證"
-    verify_url = str(data.get("verify_url", "")).strip()
+    cert_status = (str(data.get("cert_status", "")).strip() or "及格發證")[:50]
+    verify_url = str(data.get("verify_url", "")).strip()[:255]
     raw_theory = data.get("theory_score")
     raw_practical = data.get("practical_score")
 
@@ -3848,10 +3906,11 @@ def manage_competitions():
     else:
         data = request.get_json(silent=True) or {}
 
-    competition_name = str(data.get("competition_name", "")).strip()
-    award_title = str(data.get("award_title", "")).strip()
-    organizer = str(data.get("organizer", "")).strip() or "主辦單位"
-    project_name = str(data.get("project_name", "")).strip()
+    # 長度上限對齊資料庫欄位 (varchar(150)/varchar(100))，理由同證照新增那段
+    competition_name = str(data.get("competition_name", "")).strip()[:150]
+    award_title = str(data.get("award_title", "")).strip()[:100]
+    organizer = (str(data.get("organizer", "")).strip() or "主辦單位")[:100]
+    project_name = str(data.get("project_name", "")).strip()[:150]
     award_date = str(data.get("award_date", "")).strip()
 
     if not competition_name or not award_title or not award_date:

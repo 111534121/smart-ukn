@@ -20,6 +20,10 @@
 
 家長留言給導師 (advisor_messages)：家長留言給子女的導師，導師回覆。
 """
+import threading
+import time
+from collections import deque
+
 from flask import Blueprint, request
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -28,6 +32,23 @@ from .common import deps, error, ok, require, store, next_id, now_str, current_u
 bp = Blueprint("campus_messaging", __name__)
 
 DEFAULT_CLASS_PASSWORD = "ukn2026"  # 示範用；老師可在「科上通知」重設
+
+# 加入班級防呆：密碼最短只要 4 碼，沒有這層限制的話幾秒鐘就能暴力試完，
+# 所以同一個學生 10 分鐘內最多試 10 次 (路由本身已要求登入，用 student_id 當 key)
+JOIN_CLASS_RATE_LIMIT, JOIN_CLASS_RATE_WINDOW_SECONDS = 10, 600
+_join_class_rate_lock = threading.Lock()
+_join_class_attempts = {}
+
+def _join_class_too_many(sid):
+    now = time.monotonic()
+    with _join_class_rate_lock:
+        recent = _join_class_attempts.setdefault(sid, deque())
+        while recent and now - recent[0] > JOIN_CLASS_RATE_WINDOW_SECONDS:
+            recent.popleft()
+        if len(recent) >= JOIN_CLASS_RATE_LIMIT:
+            return True
+        recent.append(now)
+        return False
 NOT_YOUR_CLASS = "只能管理自己的導師班或自己建立的班級"
 
 
@@ -317,6 +338,8 @@ def reset_password():
 def join_class():
     data = request.get_json(silent=True) or {}
     sid = current_user()["student_id"]
+    if _join_class_too_many(sid):
+        return error("嘗試次數過多，請 10 分鐘後再試", 429)
     target = find_class(data.get("class_name"))
     if not target:
         return error("找不到班級", 404)

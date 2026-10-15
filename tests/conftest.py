@@ -36,6 +36,10 @@ def offline_db(monkeypatch, tmp_path):
             sent.append((to_addr, subject, body))
 
     monkeypatch.setattr(app_module, "get_mailer", lambda: FakeMailer())
+    # 登入失敗次數限制是模組層級的全域字典，每個測試開始前清空，避免測試之間互相鎖死
+    app_module._login_failures.clear()
+    from campus import messaging as messaging_module
+    messaging_module._join_class_attempts.clear()
     return sent
 
 
