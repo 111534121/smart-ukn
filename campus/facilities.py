@@ -219,8 +219,9 @@ def book_room():
     try:
         day = datetime.strptime(str(data.get("date", "")), "%Y-%m-%d").date()
         ps, pe = int(data.get("period_start")), int(data.get("period_end", data.get("period_start")))
+        people = int(data.get("people") or 1)
     except (TypeError, ValueError):
-        return error("請選擇日期與節次")
+        return error("請選擇日期與節次，人數請填數字")
     if day < date.today():
         return error("不能借過去的日期")
     if ps not in PERIODS or pe not in PERIODS or pe < ps:
@@ -228,7 +229,6 @@ def book_room():
     purpose = str(data.get("purpose", "")).strip()[:80]
     if not purpose:
         return error("請填寫借用用途")
-    people = int(data.get("people") or 1)
     if people > room["capacity"]:
         return error(f"人數超過教室容量 ({room['capacity']} 人)")
     wd = day.isoweekday()

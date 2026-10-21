@@ -82,8 +82,11 @@ def checklist_docs():
         mine = all_docs.setdefault(key, {})
         if request.method == "POST":
             data = request.get_json(silent=True) or {}
-            item = str(int(data.get("item_id", 0)))
-            idx = int(data.get("doc_index", -1))
+            try:
+                item = str(int(data.get("item_id", 0)))
+                idx = int(data.get("doc_index", -1))
+            except (TypeError, ValueError):
+                return error("item_id 或 doc_index 格式錯誤")
             if idx < 0:
                 return error("doc_index 錯誤")
             done = set(mine.get(item, []))

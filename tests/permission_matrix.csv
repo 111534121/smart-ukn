@@ -211,3 +211,14 @@ POST,/api/campus/admin-cases,/api/campus/admin-cases,,學生送件,401,403,OK,40
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,案件內容,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,分派補件與重送,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/99999/files/missing,,私有案件附件,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+GET,/api/campus/events,/api/campus/events,,活動列表,401,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/events/<int:event_id>,/api/campus/events/999999,,活動詳情,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/events,/api/campus/events,,新增活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可建立活動
+PUT,/api/campus/events/<int:event_id>,/api/campus/events/999999,,編輯活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可編輯
+DELETE,/api/campus/events/<int:event_id>,/api/campus/events/999999,,取消活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可取消整場活動
+POST,/api/campus/events/<int:event_id>/register,/api/campus/events/999999/register,,活動報名,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/events/<int:event_id>/registrations/<int:reg_id>/cancel,/api/campus/events/999999/registrations/999999/cancel,,取消報名,401,OK,OK,OK,OK,OK,OK,本人取消用登入身分比對；教職員可代為取消
+POST,/api/campus/events/<int:event_id>/checkin,/api/campus/events/999999/checkin,,現場簽到,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可操作簽到
+GET,/api/campus/events/<int:event_id>/registrations,/api/campus/events/999999/registrations,,查看報名名單,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可查看完整名單
+POST,/api/campus/events/send-reminders,/api/campus/events/send-reminders,,批次寄送活動提醒信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
+POST,/api/campus/events/<int:event_id>/feedback,/api/campus/events/999999/feedback,,活動滿意度評分,401,OK,OK,OK,OK,OK,OK,

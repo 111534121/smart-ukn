@@ -15,6 +15,41 @@ def test_login_wrong_password(client):
     assert res.status_code == 401
 
 
+def test_login_username_is_case_insensitive(client):
+    res = client.post("/api/auth/login", json={"username": "STUDENT1", "password": "123456"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["user"]["username"] == "student1"
+
+
+def test_login_blank_or_missing_fields(client):
+    assert client.post("/api/auth/login", json={"username": "", "password": "123456"}).status_code == 400
+    assert client.post("/api/auth/login", json={"username": "student1", "password": "  "}).status_code == 400
+    assert client.post("/api/auth/login", json={}).status_code == 400
+
+
+def test_login_rate_limited_after_repeated_failures(client):
+    for _ in range(app_module.LOGIN_RATE_LIMIT):
+        res = client.post("/api/auth/login", json={"username": "student1", "password": "wrong"})
+        assert res.status_code == 401
+    blocked = client.post("/api/auth/login", json={"username": "student1", "password": "wrong"})
+    assert blocked.status_code == 429
+    # 密碼打對了也一樣先被擋，不會因為這次是對的就放行
+    still_blocked = client.post("/api/auth/login", json={"username": "student1", "password": "123456"})
+    assert still_blocked.status_code == 429
+
+
+def test_login_success_clears_failure_count(client):
+    client.post("/api/auth/login", json={"username": "student1", "password": "wrong"})
+    client.post("/api/auth/login", json={"username": "student1", "password": "wrong"})
+    ok = client.post("/api/auth/login", json={"username": "student1", "password": "123456"})
+    assert ok.status_code == 200
+    # 成功登入後失敗次數會歸零，之後再連續失敗要能重新累計到上限才會被擋
+    for _ in range(app_module.LOGIN_RATE_LIMIT):
+        res = client.post("/api/auth/login", json={"username": "student1", "password": "wrong"})
+        assert res.status_code == 401
+    assert client.post("/api/auth/login", json={"username": "student1", "password": "wrong"}).status_code == 429
+
+
 def test_visitor_register_creates_visitor_session(client):
     res = client.post("/api/visitor/register", json={
         "visitor_name": "測試訪客", "phone": "0912345678", "school_from": "南港高中",
@@ -44,6 +79,14 @@ def test_anonymous_user_has_no_visitor_type(client):
     """沒登記過的使用者 (純瀏覽) 不應該被當成已登記的訪客顯示客製化首頁內容"""
     data = client.get("/api/auth/me").get_json()
     assert data["is_authenticated"] is False
+
+
+def test_visitor_register_rejects_bad_phone(client):
+    res = client.post("/api/visitor/register", json={
+        "visitor_name": "亂填電話", "phone": "abc", "school_from": "南港高中", "purpose": "參觀校園",
+    })
+    assert res.status_code == 400
+    assert "手機號碼" in res.get_json()["message"]
 
 
 def test_visitor_register_requires_fields(client):

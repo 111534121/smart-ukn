@@ -14,6 +14,23 @@ def class_names(client):
     return {c["class_name"] for c in client.get("/api/campus/classes").get_json()["data"]}
 
 
+def test_join_class_rate_limited_after_repeated_failures(client, login):
+    import campus.messaging as messaging_module
+
+    login("teacher1")
+    assert client.post("/api/campus/classes", json={"class_name": "防呆測試班", "password": "abcd1234"}).status_code == 200
+
+    login("student1")
+    for _ in range(messaging_module.JOIN_CLASS_RATE_LIMIT):
+        res = client.post("/api/campus/classes/join", json={"class_name": "防呆測試班", "password": "wrong"})
+        assert res.status_code == 403
+    blocked = client.post("/api/campus/classes/join", json={"class_name": "防呆測試班", "password": "wrong"})
+    assert blocked.status_code == 429
+    # 密碼打對了也一樣先被擋，避免短時間內暴力試完 4 碼密碼
+    still_blocked = client.post("/api/campus/classes/join", json={"class_name": "防呆測試班", "password": "abcd1234"})
+    assert still_blocked.status_code == 429
+
+
 def test_whole_flow_teacher_to_student(client, login):
     """老師建群組 → 學生用密碼加入 → 老師發通知 → 學生收到未讀 → 點開變已讀 → 老師看到已讀人數"""
     login("teacher1")
