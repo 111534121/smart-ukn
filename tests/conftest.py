@@ -36,6 +36,12 @@ def offline_db(monkeypatch, tmp_path):
             sent.append((to_addr, subject, body))
 
     monkeypatch.setattr(app_module, "get_mailer", lambda: FakeMailer())
+    # campus/reports.py、campus/events.py 是直接 from attendance.notify import get_mailer，
+    # 是各自模組自己的一份參照，patch app_module.get_mailer 影響不到它們，要分別補上，
+    # 否則測試觸發到寄信邏輯時會呼叫到真正的 SMTP (若本機 .env 設定了真實帳密)
+    from campus import reports as reports_module, events as events_module
+    monkeypatch.setattr(reports_module, "get_mailer", lambda: FakeMailer())
+    monkeypatch.setattr(events_module, "get_mailer", lambda: FakeMailer())
     # 登入失敗次數限制是模組層級的全域字典，每個測試開始前清空，避免測試之間互相鎖死
     app_module._login_failures.clear()
     from campus import messaging as messaging_module
