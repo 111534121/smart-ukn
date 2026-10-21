@@ -2,6 +2,7 @@
 services:
   - type: web
     name: smart-ukn
+    branch: deploy/public-campus-20261021
     runtime: python
     plan: starter
     region: singapore
