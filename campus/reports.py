@@ -21,7 +21,7 @@ bp = Blueprint("campus_reports", __name__)
 VALID_ROLES = ("學生", "家長", "老師", "教職員", "管理員")
 MANAGE_ROLES = STAFF_ROLES  # 老師、教職員、管理員皆可上傳管理；下方個別路由視需要再收斂
 # save_uploaded_file() 一律存到 <project_root>/static/uploads，URL 固定回傳 /uploads/<檔名>
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "uploads")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "uploads"))
 
 
 def files():

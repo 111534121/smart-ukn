@@ -71,6 +71,7 @@ app.secret_key = load_secret_key()
 # 登入時勾選「記住我」：30 天內不用再登入 (session.permanent)
 app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE") == "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
@@ -89,8 +90,8 @@ def api_internal_error(e):
     return e
 
 # 檔案上傳設定 (支援 PDF 檔與證照、比賽照片)
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
-FORMS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms")
+UPLOAD_FOLDER = os.getenv("UPLOAD_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads"))
+FORMS_FOLDER = os.getenv("FORMS_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms"))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(FORMS_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp", "svg"}
@@ -3207,7 +3208,7 @@ def update_or_delete_rule(rule_id):
 #     連結網址集中存放於 links.json，後台可新增/修改/刪除
 # ==========================================
 
-LINKS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json")
+LINKS_FILE = os.getenv("LINKS_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json"))
 links_lock = threading.Lock()
 
 def load_quick_links():
@@ -4569,6 +4570,10 @@ anniversary.init_app(app, SimpleNamespace(
     db_execute=db_execute,
     write_audit_log=write_audit_log,
 ))
+
+# Public sharing and deployment health
+from public_portal import bp as public_portal_bp
+app.register_blueprint(public_portal_bp)
 
 # ==========================================
 # 14. 伺服器主入口

@@ -1,0 +1,28 @@
+# This configuration uses a paid service + persistent disk. Review Render's price before creating it.
+services:
+  - type: web
+    name: smart-ukn
+    runtime: python
+    plan: starter
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /healthz
+    autoDeployTrigger: 'off'
+    disk:
+      name: campus-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.12
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: '1'
+      - key: PERSISTENT_ROOT
+        value: /var/data
+      - key: FLASK_DEBUG
+        value: '0'
+      - key: TZ
+        value: Asia/Taipei

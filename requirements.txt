@@ -7,3 +7,7 @@ Werkzeug>=3.1,<4
 
 # 測試用 (python -m pytest)
 pytest>=8.0,<9
+
+# Public hosting and locally generated QR Code
+gunicorn>=23,<24; sys_platform != "win32"
+qrcode>=8.2,<9

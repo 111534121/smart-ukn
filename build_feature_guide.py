@@ -37,13 +37,14 @@ FEATURES = [
     ('messages', '校園公告、班級與師生聯繫', '導師班', '/api/campus/announcements|/api/campus/classes|/api/campus/broadcast|/api/campus/advisor-messages', '依身分與班級權限讀取公告、管理班級或傳遞訊息。'),
     ('transport', '交通資訊與校園偏好', '校園生活', '/api/campus/transport|/api/campus/prefs', '提供交通資訊，讀取或儲存校園生活偏好。'),
     ('admin-cases', '行政案件工作台、補件與處室分工', '校務', '/api/campus/admin-cases', '學生送出申請後依類別分流；承辦處室可分派、要求補件、重新受理與結案，案件及附件依身分隔離。'),
+    ('public-site', '公開網址、QR Code 與 LINE 分享', '系統', '/api/public-site', '使用固定公開首頁網址產生 QR Code 與 LINE 分享入口，不包含個人資料。'),
     ('admin', '管理、稽核與系統狀態', '系統', '/api/admin|/api/health|/api/stats|/api/staff/alerts|/api/faq|/api/student/moodle', '依端點檢查權限，處理管理查詢、系統檢查或外部平台連結。'),
 ]
 
 
 def build():
     modules = {}
-    paths = [ROOT / 'app.py']
+    paths = [ROOT / 'app.py', ROOT / 'public_portal.py']
     for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar'):
         paths.extend((ROOT / directory).glob('*.py'))
     for path in sorted(paths):

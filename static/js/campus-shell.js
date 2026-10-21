@@ -193,7 +193,7 @@ function switchTab(tabId, { updateHash = true } = {}) {
         const f = featureByTab(tabId);
         history.replaceState(null, '', f ? `#${f.key}` : location.pathname);
     }
-    document.title = `${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
+    document.title = `校園智慧官網｜${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
     if (tabLoaders[tabId] && (!loadedTabs.has(tabId) || ['tab-home', 'tab-counseling', 'tab-notices', 'tab-classattend'].includes(tabId))) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
@@ -332,9 +332,10 @@ function toggleAllServices() {
 let homeAnnouncements = [];
 let homeNotices = [];
 let newsTab = 'ann';
+let homeNewsError = false;
 
 async function loadHomeNews() {
-    try { homeAnnouncements = (await api('/api/campus/announcements')).data; } catch (e) { homeAnnouncements = []; }
+    try { homeAnnouncements = (await api('/api/campus/announcements')).data; homeNewsError = false; } catch (e) { homeAnnouncements = []; homeNewsError = true; }
     renderHomeNews();
 }
 
@@ -354,6 +355,8 @@ function newsDateBlock(iso) {
 
 function renderHomeNews() {
     const list = document.getElementById('homeNewsList');
+    if (typeof renderPortalNewsFilters === 'function') renderPortalNewsFilters();
+    ['Ann', 'Notice'].forEach((name, i) => document.getElementById('newsTab' + name).setAttribute('aria-selected', String(newsTab === (i ? 'notice' : 'ann'))));
     if (newsTab === 'notice') {
         if (currentUser.role !== '學生') {
             list.innerHTML = `<li class="px-6 py-6 text-sm text-slate-500">${isStaff() ? '老師可到「班級通知」發送與查看已讀情形。' : '登入學生帳號後，這裡會顯示老師發給你的通知。'}
@@ -370,13 +373,14 @@ function renderHomeNews() {
             : '<li class="px-6 py-6 text-sm text-slate-500">目前沒有班級通知。</li>';
         return;
     }
-    list.innerHTML = homeAnnouncements.length ? homeAnnouncements.slice(0, 7).map(a => `
+    const visibleAnnouncements = typeof filterPortalNews === 'function' ? filterPortalNews(homeAnnouncements) : homeAnnouncements;
+    list.innerHTML = visibleAnnouncements.length ? visibleAnnouncements.map(a => `
         <li class="flex gap-4 px-5 sm:px-6 py-3.5">
             ${newsDateBlock(a.publish_date)}
             <details class="min-w-0 flex-1 group">
                 <summary class="cursor-pointer list-none">
                     <span class="text-sm font-semibold text-slate-900 group-open:text-ukn-800 hover:text-ukn-700">${escapeHtml(a.title)}</span>
-                    <span class="block text-[11px] text-slate-500 mt-0.5">${escapeHtml(a.office)}${a.target_class ? ` · ${escapeHtml(a.target_class)}` : ''}</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">${typeof portalNewsCategory === 'function' ? escapeHtml(portalNewsCategory(a)) + ' · ' : ''}${escapeHtml(a.office)}${a.target_class ? ` · ${escapeHtml(a.target_class)}` : ''}</span>
                 </summary>
                 <p class="text-xs text-slate-700 mt-2 leading-relaxed">${escapeHtml(a.content || '')}</p>
             </details>
@@ -386,7 +390,7 @@ function renderHomeNews() {
                     : `<button type="button" onclick="addAnnouncementToCalendar(${Number(a.id)})" class="text-[11px] border border-ukn-200 text-ukn-800 hover:bg-ukn-50 rounded px-2 py-1 whitespace-nowrap">＋ 加入月曆</button>`}
             </div>
         </li>`).join('')
-        : '<li class="px-6 py-6 text-sm text-slate-500">目前沒有公告。</li>';
+        : `<li class="px-6 py-6 text-sm text-slate-500">${homeNewsError ? '公告暫時無法載入，請稍後重試。<button type="button" onclick="loadHomeNews()" class="text-ukn-700 underline ml-2">重新載入</button>' : '此分類目前沒有公告，可切換「全部」查看。'}</li>`;
 }
 
 function addAnnouncementToCalendar(id) {
@@ -600,6 +604,7 @@ function applyStaffView() {
 
 function campusInit() {
     applyStaffView();
+    if (typeof initHomePortal === 'function') initHomePortal();
     renderNav();
     renderHero();
     loadPinned();
