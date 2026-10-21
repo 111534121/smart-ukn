@@ -3,6 +3,8 @@ __pycache__/
 db_backups/
 data/
 .pytest_cache/
+.pytest-tmp-admin-*/
+.pytest-tmp-*/
 static/forms/
 .env
 

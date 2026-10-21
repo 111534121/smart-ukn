@@ -2,9 +2,11 @@
 申辦資料自評表、常用功能置頂設定。
 """
 from datetime import date, datetime
+from functools import wraps
 
 from flask import Blueprint, request
 
+from . import dorm_store
 from .common import deps, error, ok, require, store, next_id, now_str, current_user, user_key, STAFF_ROLES
 
 bp = Blueprint("campus_services", __name__)
@@ -107,8 +109,26 @@ DORM_NEXT_ACTION = {
 }
 
 
+def can_manage_dorm(user):
+    if user.get("role") == "管理員": return True
+    if user.get("role") != "教職員": return False
+    rows = deps.fetch_db_rows("SELECT role, can_manage_dorm FROM users WHERE username=%s", (user.get("username"),))
+    if rows is not None:
+        return bool(rows and rows[0].get("role") == "教職員" and rows[0].get("can_manage_dorm"))
+    return bool(user.get("can_manage_dorm"))
+
+
+def dorm_manager_required(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        if not can_manage_dorm(current_user()):
+            return error("此帳號沒有宿舍管理權限", 403)
+        return fn(*args, **kwargs)
+    return wrapped
+
+
 def dorm_apps():
-    return store.section("dorm_applications", list)
+    return dorm_store.all_applications()
 
 
 @bp.route("/api/campus/dorm/mine", methods=["GET"])
@@ -127,42 +147,60 @@ def dorm_apply():
     u = current_user()
     data = request.get_json(silent=True) or {}
     semester = str(data.get("semester", "")).strip() or "115-2"
+    if len(semester) > 20:
+        return error("學期名稱最多 20 字")
     room_type = data.get("room_type") if data.get("room_type") in ("四人房", "六人房", "不限") else None
     try:
         commute = int(data.get("commute_minutes", 0))
     except (TypeError, ValueError):
         commute = 0
-    missing = [label for label, v in (("房型", room_type), ("通勤時間", commute > 0), ("緊急聯絡人電話", data.get("emergency_phone")))
+    missing = [label for label, v in (("房型", room_type), ("通勤時間", 0 < commute <= 1440), ("緊急聯絡人電話", data.get("emergency_phone")))
                if not v]
+    if len(str(data.get("emergency_phone") or "").strip()) > 20:
+        return error("緊急聯絡電話最多 20 字")
     if missing:
         return error(f"還沒填：{'、'.join(missing)}")
     with store.lock:
         apps = dorm_apps()
         if any(a["student_id"] == u["student_id"] and a["semester"] == semester and a["status"] != "已取消" for a in apps):
             return error(f"{semester} 學期已經申請過了", 409)
-        item = {"id": next_id(apps), "student_id": u["student_id"], "student_name": u["full_name"], "semester": semester,
+        item = {"student_id": u["student_id"], "student_name": u["full_name"], "semester": semester,
                 "room_type": room_type, "commute_minutes": commute, "special_needs": str(data.get("special_needs", ""))[:200],
                 "emergency_phone": str(data.get("emergency_phone", ""))[:20], "stage": 0, "status": "進行中",
                 "bed": "", "note": "", "history": [{"stage": 0, "at": now_str(), "note": "線上送件"}], "created_at": now_str()}
-        apps.append(item)
-        store.save()
+        try:
+            item = dorm_store.insert(item)
+        except ValueError as exc:
+            return error(str(exc), 409)
+    deps.write_audit_log("dorm_applications", item["id"], "新增", after={"student_id": item["student_id"], "semester": semester, "stage": 0})
     return ok(message="已送出宿舍申請，可隨時回來查看進度", data=item)
 
 
 @bp.route("/api/campus/dorm/applications", methods=["GET"])
-@require(*STAFF_ROLES)
+@require("管理員", "教職員")
+@dorm_manager_required
 def dorm_all():
     return ok(data=sorted(dorm_apps(), key=lambda a: (-a["commute_minutes"], a["created_at"])), stages=DORM_STAGES)
 
 
 @bp.route("/api/campus/dorm/applications/<int:app_id>", methods=["POST"])
 @require("管理員", "教職員")
+@dorm_manager_required
 def dorm_update(app_id):
     data = request.get_json(silent=True) or {}
+    if data.get("action") not in ("advance", "reject"):
+        return error("請選擇推進或不通過")
+    if data.get("action") == "reject" and not str(data.get("note") or "").strip():
+        return error("不通過請填寫原因")
     with store.lock:
         a = next((x for x in dorm_apps() if x["id"] == app_id), None)
         if not a:
             return error("找不到申請", 404)
+        if a["status"] != "進行中":
+            return error("此申請已結案，無法重複審核", 409)
+        previous_stage = a["stage"]
+        if data["action"] == "advance" and previous_stage >= 2 and not (str(data.get("bed") or "").strip() or a.get("bed")):
+            return error("分配床位前請填寫床號")
         snap = lambda: {"name": a.get("student_name"), "student_id": a.get("student_id"), "status": a.get("status"),
                         "stage": DORM_STAGES[a["stage"]] if isinstance(a.get("stage"), int) and a["stage"] < len(DORM_STAGES) else a.get("stage"),
                         "bed": a.get("bed")}
@@ -175,8 +213,10 @@ def dorm_update(app_id):
                 a["bed"] = str(data["bed"])[:20]
             if a["stage"] == len(DORM_STAGES) - 1:
                 a["status"] = "已完成"
-        a["history"].append({"stage": a["stage"], "at": now_str(), "note": str(data.get("note", ""))[:200]})
-        store.save()
+        a["history"].append({"stage": a["stage"], "at": now_str(), "note": str(data.get("note", ""))[:200],
+                             "status": a["status"], "reviewed_by": current_user()["username"]})
+        if not dorm_store.save_review(a, previous_stage):
+            return error("資料已由其他人處理，請重新載入", 409)
     deps.write_audit_log("dorm_applications", app_id, "修改", before=before, after={**snap(), "note": str(data.get("note", ""))[:200]})
     return ok(data=a)
 

@@ -2,18 +2,30 @@
 不洩漏成績等具體數值；家長也不能代為操作申請、也只能看到自己綁定的子女。"""
 
 
+import copy
+import pytest
+import app as app_module
+
+
+@pytest.fixture(autouse=True)
+def fixed_scholarship_profiles(monkeypatch):
+    profiles = copy.deepcopy(app_module.DEMO_SCHOLARSHIP_PROFILES)
+    profiles['S112001']['gpa'] = 2.8
+    monkeypatch.setattr(app_module, 'DEMO_SCHOLARSHIP_PROFILES', profiles)
+
+
 def test_requires_login(client):
-    assert client.get("/api/scholarships/match").status_code == 401
+    assert client.get("/api/scholarships/match?date=2026-10-01").status_code == 401
 
 
 def test_requires_student_or_parent(client, login):
     login("teacher1")
-    assert client.get("/api/scholarships/match").status_code == 403
+    assert client.get("/api/scholarships/match?date=2026-10-01").status_code == 403
 
 
 def test_student_sees_full_reasons_and_can_apply(client, login):
     login("student1")
-    data = client.get("/api/scholarships/match").get_json()
+    data = client.get("/api/scholarships/match?date=2026-10-01").get_json()
     assert data["can_apply"] is True
     assert data["student"]["student_id"] == "S112001"
     book_award = next(r for r in data["partial"] + data["ineligible"] if r["id"] == 1)
@@ -23,7 +35,7 @@ def test_student_sees_full_reasons_and_can_apply(client, login):
 
 def test_parent_redacts_personal_criteria_and_cannot_apply(client, login):
     login("parent1")
-    data = client.get("/api/scholarships/match").get_json()
+    data = client.get("/api/scholarships/match?date=2026-10-01").get_json()
     # 家長只能看到自己綁定的子女，不能操作申請
     assert data["student"]["student_id"] == "S112001"
     assert data["can_apply"] is False
@@ -38,9 +50,9 @@ def test_parent_redacts_personal_criteria_and_cannot_apply(client, login):
 def test_parent_and_student_see_same_set_of_eligible_scholarships(client, login):
     """符合/不符合的判定結果本身對家長和學生應該一致，只有「原因文字」詳細程度不同"""
     login("student1")
-    student_data = client.get("/api/scholarships/match").get_json()
+    student_data = client.get("/api/scholarships/match?date=2026-10-01").get_json()
     login("parent1")
-    parent_data = client.get("/api/scholarships/match").get_json()
+    parent_data = client.get("/api/scholarships/match?date=2026-10-01").get_json()
 
     assert {r["id"] for r in student_data["eligible"]} == {r["id"] for r in parent_data["eligible"]}
     assert {r["id"] for r in student_data["ineligible"]} == {r["id"] for r in parent_data["ineligible"]}

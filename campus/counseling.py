@@ -26,7 +26,7 @@ COUNSEL_ROLES = ("老師", "教職員", "管理員")
 SCHOOL_WIDE_ROLES = ("教職員", "管理員")
 METHODS = ("面談", "電話", "線上", "家長聯繫")
 TOPICS = ("學業", "出缺勤", "生活", "生涯", "家庭", "身心", "其他")
-FIELDS = ("student_id", "talk_date", "method", "topic", "content", "follow_up", "follow_up_note", "follow_up_done")
+FIELDS = ("student_id", "talk_date", "method", "topic", "content", "follow_up", "follow_up_note", "follow_up_done", "follow_up_date", "tracking_status", "tracking_result")
 
 
 # =====================================================================
@@ -40,6 +40,9 @@ def use_db():
 def _row(r):
     return {**r, "talk_date": str(r.get("talk_date") or "")[:10],
             "follow_up": bool(r.get("follow_up")), "follow_up_done": bool(r.get("follow_up_done")),
+            "follow_up_date": str(r.get("follow_up_date") or "")[:10],
+            "tracking_status": "已結案" if r.get("follow_up_done") else (r.get("tracking_status") or "待聯繫"),
+            "tracking_result": r.get("tracking_result") or "",
             "created_at": str(r.get("created_at") or "")[:19], "updated_at": str(r.get("updated_at") or "")[:19]}
 
 
@@ -70,10 +73,10 @@ def insert_record(item):
     if use_db():
         res = deps.db_execute(
             "INSERT INTO counseling_records (student_id, class_name, talk_date, method, topic, content, follow_up, "
-            "follow_up_note, follow_up_done, counselor_username, counselor_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "follow_up_note, follow_up_done, counselor_username, counselor_name, follow_up_date, tracking_status, tracking_result) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (item["student_id"], item["class_name"], item["talk_date"], item["method"], item["topic"], item["content"],
              int(item["follow_up"]), item["follow_up_note"], int(item["follow_up_done"]),
-             item["counselor_username"], item["counselor_name"]))
+             item["counselor_username"], item["counselor_name"], item["follow_up_date"] or None, item["tracking_status"], item["tracking_result"]))
         return find_record(res["lastrowid"])
     with store.lock:
         items = store.section("counseling", list)
@@ -166,6 +169,23 @@ def clean(data, partial=False):
         out["follow_up_note"] = str(data.get("follow_up_note") or "").strip()[:200]
     if not partial or "follow_up_done" in data:
         out["follow_up_done"] = bool(data.get("follow_up_done"))
+    if not partial or "follow_up_date" in data:
+        value = str(data.get("follow_up_date") or "").strip()
+        if value:
+            try:
+                date.fromisoformat(value)
+            except ValueError:
+                return None, "追蹤日期格式須為 YYYY-MM-DD"
+        out["follow_up_date"] = value or None
+    if not partial or "tracking_result" in data:
+        out["tracking_result"] = str(data.get("tracking_result") or "").strip()[:1000]
+    if "tracking_status" in data:
+        if data["tracking_status"] not in ("待聯繫", "已聯繫", "追蹤中", "已結案"):
+            return None, "無效的追蹤階段"
+        out["tracking_status"] = data["tracking_status"]
+        out["follow_up_done"] = data["tracking_status"] == "已結案"
+    elif not partial or "follow_up_done" in data:
+        out["tracking_status"] = "已結案" if out.get("follow_up_done") else "待聯繫"
     return out, None
 
 
@@ -264,11 +284,11 @@ def export_counseling():
     students = {s["student_id"]: s["full_name"] for s in all_students() if s.get("class_name") == class_name}
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["日期", "學號", "姓名", "方式", "主題", "關懷內容", "需要追蹤", "追蹤事項", "已追蹤完成", "記錄人"])
+    writer.writerow(["日期", "學號", "姓名", "方式", "主題", "關懷內容", "需要追蹤", "追蹤事項", "已追蹤完成", "記錄人", "追蹤日期", "處理階段", "處理結果"])
     for r in sorted(load_records(list(students)), key=lambda r: (r["talk_date"], r["id"])):
         writer.writerow([r["talk_date"], r["student_id"], students.get(r["student_id"], ""), r["method"], r["topic"],
                          r["content"], "是" if r["follow_up"] else "", r["follow_up_note"],
-                         "是" if r["follow_up_done"] else "", r["counselor_name"]])
+                         "是" if r["follow_up_done"] else "", r["counselor_name"], r["follow_up_date"], r["tracking_status"], r["tracking_result"]])
     deps.write_audit_log("counseling_records", class_name, "匯出", after={"class_name": class_name})
     response = make_response(buf.getvalue().encode("utf-8-sig"))
     response.headers["Content-Type"] = "text/csv; charset=utf-8"

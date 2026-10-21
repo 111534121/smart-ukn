@@ -105,7 +105,11 @@ function updateScholarship(id) {
 async function loadDorm() {
     const body = document.getElementById('dormBody');
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入學生帳號即可線上申請宿舍床位。'); return; }
-    if (isStaff()) { loadDormAdmin(); return; }
+    if (isStaff()) {
+        if (currentUser.role === '管理員' || (currentUser.role === '教職員' && currentUser.can_manage_dorm)) loadDormAdmin();
+        else body.innerHTML = '<div class="text-sm text-slate-500">宿舍管理僅限行政人員與管理員。</div>';
+        return;
+    }
     if (!['學生', '家長'].includes(currentUser.role)) { body.innerHTML = '<div class="text-sm text-slate-500">僅學生本人與家長可以查看。</div>'; return; }
     const isParent = currentUser.role === '家長';
     try {
@@ -141,7 +145,7 @@ function dormProgressHtml(a) {
                 </li>`).join('')}</ol>
             <div class="text-sm bg-ukn-50 border border-ukn-100 rounded px-3 py-2">👉 ${esc(a.next_action)}${a.bed ? `（床位：${esc(a.bed)}）` : ''}</div>
             <details class="text-xs text-slate-500"><summary class="cursor-pointer">處理紀錄</summary>
-                <ul class="mt-1 space-y-0.5">${a.history.map(h => `<li>${esc(h.at.slice(0, 16))} · ${esc(a.stages[h.stage])}${h.note ? ` · ${esc(h.note)}` : ''}</li>`).join('')}</ul></details>
+                <ul class="mt-1 space-y-0.5">${a.history.map(h => `<li>${esc(h.at.slice(0, 16))} · ${esc(h.status === '未通過' ? h.status : a.stages[h.stage])}${h.reviewed_by ? ' · ' + esc(h.reviewed_by) : ''}${h.note ? ` · ${esc(h.note)}` : ''}</li>`).join('')}</ul></details>
         </div>`;
 }
 
@@ -156,7 +160,7 @@ async function loadDormAdmin() {
     const body = document.getElementById('dormBody');
     try {
         const r = await api('/api/campus/dorm/applications');
-        const canEdit = ['管理員', '教職員'].includes(currentUser.role);
+        const canEdit = currentUser.role === '管理員' || (currentUser.role === '教職員' && currentUser.can_manage_dorm);
         body.innerHTML = r.data.length ? `<div class="overflow-x-auto"><table class="w-full text-sm text-left">
             <thead><tr class="text-xs text-slate-500 bg-slate-50"><th class="p-2">學生</th><th class="p-2">學期 / 房型</th><th class="p-2">通勤</th><th class="p-2">目前進度</th><th class="p-2"></th></tr></thead>
             <tbody class="divide-y divide-slate-100">${r.data.map(a => `<tr>
@@ -172,6 +176,7 @@ async function loadDormAdmin() {
 async function advanceDorm(id, reject = false) {
     const note = prompt(reject ? '不通過原因：' : '備註（選填，分配床位時可填床號，例如：床號 S305-2）：') ?? null;
     if (note === null) return;
+    if (reject && !note.trim()) { toast('不通過請填寫原因', 'error'); return; }
     const bed = /床號\s*(\S+)/.exec(note)?.[1] || '';
     try { await api(`/api/campus/dorm/applications/${id}`, { json: { action: reject ? 'reject' : 'advance', note, bed } }); loadDormAdmin(); }
     catch (e) { toast(e.message, 'error'); }
@@ -605,7 +610,7 @@ function noticeListHtml(inbox, readonly) {
                         <span class="font-semibold text-slate-900">${esc(n.title)}</span></div>
                     <div class="text-[11px] text-slate-500 mt-0.5">${noticeTargetText(n)} · ${esc(n.sender)} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}${n.whole_class ? '' : ' · 個別通知'}${n.due_date ? ` · 期限 ${mmdd(n.due_date)}` : ''}</div>
                 </summary>
-                <div class="px-4 pb-4 text-sm text-slate-700 whitespace-pre-line">${esc(n.content)}</div>
+                <div class="px-4 pb-4 text-sm text-slate-700 whitespace-pre-line">${esc(n.content)}</div>${noticeReplyHtml(n, readonly)}
             </details>`).join('') : '<div class="text-sm text-slate-500">目前沒有通知。</div>'}`;
 }
 
@@ -785,6 +790,7 @@ async function loadNoticesTeacher() {
                                     ${statusBadge(`已讀 ${n.read_count} / ${n.total}`, n.read_count === n.total ? 'green' : 'blue')}</div>
                                 <div class="text-[11px] text-slate-500">${noticeTargetText(n)} · ${n.target_type !== '班級' ? `${n.total} 位學生` : (n.whole_class ? '整班' : '個別通知')} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}</div></summary>
                                 <p class="text-sm text-slate-700 mt-2 whitespace-pre-line">${esc(n.content)}</p>
+                                ${sentReplyHtml(n)}
                                 ${n.unread_names.length ? `<p class="text-xs text-amber-800 mt-2">尚未讀：${n.unread_names.map(esc).join('、')}</p>` : ''}
                             </details>`).join('')}</div>` : '<div class="text-sm text-slate-500">還沒有發送紀錄。</div>'}</div>
                 </div>
@@ -811,6 +817,7 @@ function noticeComposeHtml() {
             </div>
             <textarea name="content" required rows="3" maxlength="2000" placeholder="通知內容" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
             ${priorityPickerHtml()}
+            <label class="flex items-center gap-2"><input type="checkbox" name="reply_required">需要學生回條（收到／會參加／無法參加／需要協助；期限同上方日期）</label>
             <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">發送通知</button></div>
         </form>`;
 }
@@ -838,6 +845,7 @@ function broadcastComposeHtml() {
             </div>
             <textarea name="content" required rows="3" maxlength="2000" placeholder="通知內容" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
             ${priorityPickerHtml()}
+            <label class="flex items-center gap-2"><input type="checkbox" name="reply_required">需要學生回條（收到／會參加／無法參加／需要協助；期限同上方日期）</label>
             <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">發送廣播</button></div>
         </form>`;
 }
@@ -849,7 +857,7 @@ async function sendBroadcast(event) {
     const option = event.target.target.selectedOptions[0];
     if (target_type === '全校' && !confirm(`確定要發給${option ? option.textContent : '全校學生'}？`)) return;
     try {
-        const r = await api('/api/campus/broadcast', { json: { target_type, target: rest.join('|'), title: fd.get('title'), content: fd.get('content'), priority: fd.get('priority'), due_date: fd.get('due_date') } });
+        const r = await api('/api/campus/broadcast', { json: { target_type, target: rest.join('|'), title: fd.get('title'), content: fd.get('content'), priority: fd.get('priority'), due_date: fd.get('due_date'), reply_required: fd.get('reply_required') === 'on' } });
         toast(r.message);
         loadNoticesTeacher();
     } catch (e) { toast(e.message, 'error'); }
@@ -861,7 +869,7 @@ async function sendNotice(event) {
     const recipients = fd.get('scope') === 'all' ? 'all' : fd.getAll('recipients');
     if (recipients !== 'all' && !recipients.length) { toast('請勾選要通知的學生', 'error'); return; }
     try {
-        const r = await api('/api/campus/notices', { json: { class_name: noticeSelectedClass, recipients, title: fd.get('title'), content: fd.get('content'), priority: fd.get('priority'), due_date: fd.get('due_date') } });
+        const r = await api('/api/campus/notices', { json: { class_name: noticeSelectedClass, recipients, title: fd.get('title'), content: fd.get('content'), priority: fd.get('priority'), due_date: fd.get('due_date'), reply_required: fd.get('reply_required') === 'on' } });
         toast(r.message);
         loadNoticesTeacher();
     } catch (e) { toast(e.message, 'error'); }
@@ -883,4 +891,41 @@ async function createClass(event) {
 async function resetClassPassword(form) {
     try { const r = await api('/api/campus/classes/password', { json: { class_name: noticeSelectedClass, password: form.password.value } }); toast(`${noticeSelectedClass}：${r.message}`); }
     catch (e) { toast(e.message, 'error'); }
+}
+
+
+function noticeReplyHtml(n, readonly) {
+    if (!n.reply_required) return '';
+    const expired = n.due_date && n.due_date < new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Taipei'}).format(new Date());
+    return `<div class="px-4 pb-4 text-sm space-y-2"><p class="font-semibold">回條：${n.my_reply ? esc(n.my_reply.reply) + ' · ' + esc(n.my_reply.reply_at) : '尚未回覆'}</p>
+        ${readonly ? '' : expired ? '<p class="text-slate-500">回條已截止</p>' : `<form onsubmit="submitNoticeReply(event, ${n.id})" class="flex flex-wrap gap-2">
+        <select name="reply" aria-label="回條內容" class="border rounded px-3 py-2">${['收到', '會參加', '無法參加', '需要協助'].map(v => `<option ${n.my_reply?.reply === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <button class="bg-ukn-800 text-white rounded px-3 py-2">${n.my_reply ? '更新回條' : '送出回條'}</button></form>`}</div>`;
+}
+
+function sentReplyHtml(n) {
+    if (!n.reply_required) return '';
+    return `<div class="mt-3 rounded bg-slate-50 p-3 text-sm space-y-2"><b>回條 ${n.reply_count} / ${n.total}</b>
+        ${n.due_date ? `<span class="ml-2 text-xs">期限 ${esc(n.due_date)}</span>` : ''}
+        <p class="text-amber-800">未回覆：${n.pending_reply_names.map(esc).join('、') || '無'}</p>
+        <ul>${n.reply_details.map(r => `<li>${esc(r.full_name)}（${esc(r.student_id)}）：${esc(r.reply)} · ${esc(r.reply_at)}</li>`).join('')}</ul>
+        ${n.pending_reply_names.length ? `<button type="button" onclick="remindNotice(${n.id}, this)" class="border border-ukn-300 rounded px-3 py-1 text-ukn-800">只提醒未回覆學生</button>` : ''}</div>`;
+}
+
+async function submitNoticeReply(event, id) {
+    event.preventDefault();
+    const button = event.target.querySelector('button');
+    button.disabled = true;
+    try {
+        const r = await api(`/api/campus/notices/${id}/reply`, {json: {reply: new FormData(event.target).get('reply')}});
+        toast(r.message); await loadNotices(); pollNotices(false);
+    } catch (e) { toast(e.message, 'error'); }
+    finally { button.disabled = false; }
+}
+
+async function remindNotice(id, button) {
+    button.disabled = true;
+    try { const r = await api(`/api/campus/notices/${id}/remind`, {method: 'POST'}); toast(r.message); await loadNoticesTeacher(); }
+    catch (e) { toast(e.message, 'error'); }
+    finally { button.disabled = false; }
 }

@@ -93,6 +93,7 @@ INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, 
 -- 3. 系統使用者與登入帳號資料表 `users`
 -- --------------------------------------------------------
 CREATE TABLE `users` (
+  `can_manage_dorm` tinyint(1) NOT NULL DEFAULT 0,
   `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '使用者唯一識別碼 (PK)',
   `username` varchar(50) NOT NULL COMMENT '登入帳號',
   `password_hash` varchar(255) NOT NULL COMMENT '密碼雜湊或測試明碼',
@@ -119,6 +120,7 @@ INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id
 -- 4. 課程地圖與先修關係表 `course_map`
 -- --------------------------------------------------------
 CREATE TABLE `course_map` (
+  `semester_hours` decimal(8,2) DEFAULT NULL,
   `course_id` varchar(20) NOT NULL COMMENT '課程代碼 (PK)',
   `course_name` varchar(100) NOT NULL COMMENT '課程名稱',
   `credits` int(11) NOT NULL COMMENT '學分數',
@@ -470,6 +472,7 @@ CREATE TABLE IF NOT EXISTS `class_group_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級成員';
 
 CREATE TABLE IF NOT EXISTS `class_notices` (
+  `reply_required` tinyint(1) NOT NULL DEFAULT 0,
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `class_name` varchar(50) DEFAULT NULL COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL',
   `target_type` enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型',
@@ -492,6 +495,8 @@ CREATE TABLE IF NOT EXISTS `class_notice_recipients` (
   `notice_id` int(11) NOT NULL,
   `student_id` varchar(20) NOT NULL,
   `read_at` timestamp NULL DEFAULT NULL COMMENT 'NULL = 尚未讀',
+  `reply` varchar(20) DEFAULT NULL,
+  `reply_at` datetime DEFAULT NULL,
   PRIMARY KEY (`notice_id`, `student_id`),
   KEY `fk_cnr_student` (`student_id`),
   CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
@@ -509,6 +514,9 @@ CREATE TABLE IF NOT EXISTS `counseling_records` (
   `follow_up` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 需要追蹤',
   `follow_up_note` varchar(200) DEFAULT NULL COMMENT '要追蹤什麼',
   `follow_up_done` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 已追蹤完成',
+  `follow_up_date` date DEFAULT NULL,
+  `tracking_status` varchar(20) NOT NULL DEFAULT '待聯繫',
+  `tracking_result` text DEFAULT NULL,
   `counselor_username` varchar(50) NOT NULL COMMENT '記錄人帳號',
   `counselor_name` varchar(50) NOT NULL COMMENT '記錄人姓名',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -518,6 +526,27 @@ CREATE TABLE IF NOT EXISTS `counseling_records` (
   KEY `idx_counsel_class` (`class_name`),
   CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
+
+
+CREATE TABLE IF NOT EXISTS dorm_applications (
+ id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ student_id varchar(20) NOT NULL,
+ student_name varchar(50) NOT NULL,
+ semester varchar(20) NOT NULL,
+ room_type varchar(20) NOT NULL,
+ commute_minutes int NOT NULL,
+ special_needs varchar(200) NOT NULL DEFAULT '',
+ emergency_phone varchar(20) NOT NULL,
+ stage int NOT NULL DEFAULT 0,
+ status varchar(20) NOT NULL DEFAULT '進行中',
+ bed varchar(20) NOT NULL DEFAULT '',
+ note varchar(200) NOT NULL DEFAULT '',
+ history_json longtext NOT NULL,
+ created_at datetime NOT NULL,
+ UNIQUE KEY uq_dorm_student_semester (student_id, semester),
+ CONSTRAINT fk_dorm_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
 
 COMMIT;
 

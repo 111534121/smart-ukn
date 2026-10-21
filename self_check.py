@@ -559,7 +559,7 @@ def t_checklist_docs(c):
 
 @check("行政服務", "宿舍床位申請送出與審查（正常，含清理）")
 def t_dorm_apply(c):
-    semester = f"SELFCHECK-{RUN_TAG}"
+    semester = f"SC-{RUN_TAG}"
     r = c.student.post("/api/campus/dorm/apply", json={
         "semester": semester, "room_type": "四人房", "commute_minutes": 90, "emergency_phone": "0900000000",
     })
@@ -567,12 +567,13 @@ def t_dorm_apply(c):
     assert r.status_code == 200, data
     app_id = data["data"]["id"]
     try:
-        all_apps = _j(c.staff.get("/api/campus/dorm/applications"))["data"]
+        dorm_operator = _login(app_module.app.test_client(), "dorm_demo")
+        all_apps = _j(dorm_operator.get("/api/campus/dorm/applications"))["data"]
         assert any(a["id"] == app_id for a in all_apps), "承辦人員應能在清單看到新申請"
         return "宿舍申請送出成功，承辦可見"
     finally:
         with services_module.store.lock:
-            apps = services_module.dorm_apps()
+            apps = services_module.store.section("dorm_applications", list)
             apps[:] = [a for a in apps if a["id"] != app_id]
             services_module.store.save()
 

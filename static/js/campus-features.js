@@ -7,6 +7,7 @@ const esc = s => escapeHtml(s);
 
 function campusFeaturesInit() {
     Object.assign(tabLoaders, {
+        'tab-home': () => { if (isStaff()) { loadStaffHome(); loadLeaveReview(); } },
         'tab-calendar': () => calendarShift(0),
         'tab-plan': loadPlan,
         'tab-certs': loadCerts,
@@ -843,7 +844,7 @@ async function loadMySchedule() {
 // =====================================================================
 
 const ATTEND_LEVEL = {
-    banned: { text: '已達扣考', badge: 'bg-rose-600 text-white', row: 'bg-rose-50/60' },
+    banned: { text: '達門檻（待確認）', badge: 'bg-rose-600 text-white', row: 'bg-rose-50/60' },
     warning: { text: '快扣考', badge: 'bg-amber-500 text-white', row: 'bg-amber-50/50' },
     ok: { text: '正常', badge: 'bg-emerald-100 text-emerald-800', row: '' },
 };
@@ -918,7 +919,7 @@ function renderAttendTable() {
         <thead><tr class="bg-slate-50 text-slate-600 text-sm">
             <th class="p-2 border border-slate-200 whitespace-nowrap">學生</th><th class="p-2 border border-slate-200 whitespace-nowrap">狀態</th>
             <th class="p-2 border border-slate-200 text-center whitespace-nowrap">曠課</th><th class="p-2 border border-slate-200 text-center whitespace-nowrap">遲到</th><th class="p-2 border border-slate-200 text-center whitespace-nowrap">病假</th>
-            <th class="p-2 border border-slate-200">要注意的科目</th><th class="p-2 border border-slate-200 whitespace-nowrap">最近紀錄</th><th class="p-2 border border-slate-200"></th></tr></thead>
+            <th class="p-2 border border-slate-200" title="請假狀態供比對；核准不會自動改寫點名紀錄">請假串接 ⓘ</th><th class="p-2 border border-slate-200">要注意的科目</th><th class="p-2 border border-slate-200 whitespace-nowrap">最近紀錄</th><th class="p-2 border border-slate-200"></th></tr></thead>
         <tbody>${rows.map(([st, i]) => {
             const lv = ATTEND_LEVEL[st.level];
             return `<tr class="${lv.row}">
@@ -927,7 +928,8 @@ function renderAttendTable() {
                 <td class="p-2 border border-slate-200 text-center font-bold ${st.totals['曠課'] ? 'text-rose-700' : 'text-slate-400'}">${st.totals['曠課']}${st.recent_absent ? `<div class="text-xs font-normal text-rose-700 whitespace-nowrap">近 7 天 ${st.recent_absent}</div>` : ''}</td>
                 <td class="p-2 border border-slate-200 text-center ${st.totals['遲到'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['遲到']}</td>
                 <td class="p-2 border border-slate-200 text-center ${st.totals['病假'] ? 'text-slate-800' : 'text-slate-400'}">${st.totals['病假']}</td>
-                <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div><span class="font-semibold">${esc(c.course_name)}</span>：曠 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-slate-400">—</span>'}</td>
+                <td class="p-2 border border-slate-200 text-xs"><button type="button" onclick="openStudentCard('${esc(st.student_id)}')" class="text-ukn-800 hover:underline">待審 ${st.leaves?.pending || 0} · 核准 ${st.leaves?.approved || 0} · 退回 ${st.leaves?.rejected || 0}<span class="block text-slate-500">查看假單與節次</span></button></td>
+                <td class="p-2 border border-slate-200">${st.risk_courses.length ? st.risk_courses.map(c => `<div>${c.estimated ? '<span class="text-xs text-amber-800">估算 · </span>' : ''}${c.manual_review ? '<span class="text-xs text-amber-800">特殊假別待核對 · </span>' : ''}<span class="font-semibold">${esc(c.course_name)}</span>：缺曠 ${c.counted_hours ?? c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? ' <span class="text-rose-700 font-bold">達扣考門檻（待確認）</span>' : `，再 ${c.remaining_hours} 小時扣考`}</div>`).join('') : '<span class="text-slate-400">—</span>'}</td>
                 <td class="p-2 border border-slate-200 text-slate-600 whitespace-nowrap">${st.last_date ? mmdd(st.last_date) : '—'}</td>
                 <td class="p-2 border border-slate-200 text-right whitespace-nowrap">${st.level !== 'ok' || st.totals['曠課'] ? `<button type="button" onclick="remindAttendance(${i})" class="text-sm font-bold border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-2.5 py-1">📣 提醒</button>` : ''}
                     <button type="button" onclick="counselFromAttendance(${i})" class="text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded px-2.5 py-1 ml-1">📝 新增關懷紀錄</button></td>
@@ -935,13 +937,13 @@ function renderAttendTable() {
         }).join('')}</tbody></table></div>` : '<div class="text-sm text-slate-500 rounded border border-dashed border-slate-300 p-6 text-center">沒有符合的學生</div>');
 }
 
-// 用「班級通知」只發給這位學生；已扣考發緊急，其餘發重要
+// 用「班級通知」只發給這位學生；達扣考門檻（待確認）發緊急，其餘發重要
 async function remindAttendance(index) {
     const st = classAttendData.students[index];
     const courses = st.risk_courses.map(c => c.level === 'banned'
-        ? `「${c.course_name}」已曠課 ${c.absent_hours} 小時，達到扣考門檻`
-        : `「${c.course_name}」已曠課 ${c.absent_hours} 小時，再 ${c.remaining_hours} 小時就會扣考`);
-    const content = `${st.full_name} 同學您好：\n${courses.length ? courses.join('；\n') + '。' : `本學期已曠課 ${st.totals['曠課']} 次。`}\n請注意出席；如果是請假，記得盡快補辦假單。有困難可以來找導師談。`;
+        ? `「${c.course_name}」缺曠課 ${c.counted_hours ?? c.absent_hours} 小時，達到扣考門檻，須由任課教師確認`
+        : `「${c.course_name}」缺曠課 ${c.counted_hours ?? c.absent_hours} 小時，距門檻 ${c.remaining_hours} 小時，請核對`);
+    const content = `${st.full_name} 同學您好：\n${courses.length ? courses.join('；\n') + '。' : `本學期已曠課 ${st.totals['曠課']} 次。`}\n此為缺曠課預警；未提供實際時數的紀錄屬估算，特殊假別及正式扣考須另行確認。\n請注意出席；如果是請假，記得盡快補辦假單。有困難可以來找導師談。`;
     if (!confirm(`要用「班級通知」提醒 ${st.full_name} 嗎？\n\n${content}`)) return;
     try {
         const r = await api('/api/campus/notices', { json: {
@@ -977,6 +979,11 @@ async function loadCounseling(className) {
         const q = counselState.className ? `?class_name=${encodeURIComponent(counselState.className)}` : '';
         const d = await api('/api/campus/counseling' + q);
         counselState.data = d;
+        if (counselState.focusRecord) {
+            const record = d.data.find(r => r.id === counselState.focusRecord);
+            if (record) { counselState.student = record.student_id; counselState.editing = record.can_edit ? record.id : null; }
+            delete counselState.focusRecord;
+        }
         counselState.className = d.class_name;
         document.getElementById('counselTitle').textContent = `導生關懷紀錄：${d.class_name}`;
         const picker = document.getElementById('counselPicker');
@@ -989,7 +996,8 @@ async function loadCounseling(className) {
 
 function renderCounseling() {
     const d = counselState.data, s = d.summary;
-    const records = d.data.filter(r => !counselState.student || r.student_id === counselState.student);
+    const records = d.data.filter(r => (!counselState.student || r.student_id === counselState.student)
+        && (!counselState.filter || (counselState.filter === 'pending' ? r.follow_up && !r.follow_up_done : r.follow_up && !r.follow_up_done && r.follow_up_date && r.follow_up_date <= taipeiToday())));
     const tile = (label, value, tone) => `<div class="rounded border ${tone} p-4"><div class="text-xs font-semibold">${label}</div><div class="text-2xl font-bold mt-1">${value}</div></div>`;
     const studentBtn = st => {
         const on = st.student_id === counselState.student;
@@ -1012,6 +1020,8 @@ function renderCounseling() {
                 ${d.students.map(studentBtn).join('') || '<div class="text-sm text-slate-500">這個班級沒有學生資料。</div>'}
             </div>
             <div class="lg:col-span-2 space-y-4">
+                <label class="text-sm">追蹤篩選 <select onchange="counselState.filter=this.value; renderCounseling()" class="border rounded px-3 py-2">
+                ${[['', '全部紀錄'], ['pending', '待追蹤'], ['due', '今日到期與逾期']].map(([v, t]) => `<option value="${v}" ${counselState.filter === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
                 ${counselFormHtml()}
                 <div class="space-y-2">
                     <h3 class="font-bold text-slate-900">${counselState.student ? `${esc((d.students.find(x => x.student_id === counselState.student) || {}).full_name || '')} 的紀錄` : '全班紀錄'}</h3>
@@ -1044,6 +1054,11 @@ function counselFormHtml() {
                 <label class="flex items-center gap-1.5 font-semibold text-slate-700"><input type="checkbox" name="follow_up" ${r && r.follow_up ? 'checked' : ''}> 需要追蹤</label>
                 <input name="follow_up_note" maxlength="200" value="${r ? esc(r.follow_up_note || '') : ''}" placeholder="要追蹤什麼，例如：下週確認有沒有補請假" class="flex-1 min-w-[12rem] border border-slate-300 rounded px-3 py-1.5">
             </div>
+            <div class="grid sm:grid-cols-2 gap-2">
+                <label>追蹤日期 <input type="date" name="follow_up_date" onchange="if(this.value) this.form.follow_up.checked=true" value="${esc(r?.follow_up_date || '')}" class="border rounded px-3 py-2 w-full"></label>
+                <label>處理階段 <select name="tracking_status" onchange="if(this.value!=='待聯繫') this.form.follow_up.checked=true" class="border rounded px-3 py-2 w-full">${['待聯繫', '已聯繫', '追蹤中', '已結案'].map(v => `<option ${r?.tracking_status === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+            </div>
+            <label class="block">處理結果<textarea name="tracking_result" maxlength="1000" rows="2" class="w-full border rounded px-3 py-2" placeholder="已採取的協助與後續結果">${esc(r?.tracking_result || '')}</textarea></label>
             <div class="flex justify-end gap-2">
                 ${r ? '<button type="button" onclick="counselState.editing = null; renderCounseling()" class="border border-slate-300 rounded px-4 py-2">取消</button>' : ''}
                 <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">${r ? '儲存修改' : '儲存紀錄'}</button>
@@ -1066,7 +1081,8 @@ function counselCardHtml(r) {
         </div>
         <p class="text-sm text-slate-700 whitespace-pre-line">${esc(r.content)}</p>
         <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>${follow}</div>
+            <div>${follow}${r.follow_up ? `<div class="text-xs mt-1 ${!r.follow_up_done && r.follow_up_date && r.follow_up_date < taipeiToday() ? 'text-rose-700' : 'text-slate-600'}">${esc(r.tracking_status)} · ${r.follow_up_date ? '追蹤日期 ' + esc(r.follow_up_date) : '尚未設定日期'}</div>` : ''}
+            ${r.tracking_result ? `<p class="text-sm whitespace-pre-line">處理結果：${esc(r.tracking_result)}</p>` : ''}</div>
             ${r.can_edit ? `<div class="text-xs"><button type="button" onclick="counselState.editing = ${r.id}; renderCounseling(); document.getElementById('counselBody').scrollIntoView({ behavior: 'smooth' })" class="text-ukn-700 hover:underline">修改</button>
                 <button type="button" onclick="deleteCounseling(${r.id})" class="text-slate-500 hover:text-rose-700 ml-2">刪除</button></div>` : ''}
         </div>
@@ -1077,7 +1093,7 @@ async function saveCounseling(event) {
     event.preventDefault();
     const fd = new FormData(event.target);
     const body = { talk_date: fd.get('talk_date'), method: fd.get('method'), topic: fd.get('topic'), content: fd.get('content'),
-        follow_up: fd.get('follow_up') === 'on', follow_up_note: fd.get('follow_up_note') };
+        follow_up: fd.get('follow_up') === 'on', follow_up_note: fd.get('follow_up_note'), follow_up_date: fd.get('follow_up_date'), tracking_status: fd.get('tracking_status'), tracking_result: fd.get('tracking_result') };
     try {
         let r;
         if (counselState.editing) {
@@ -1088,18 +1104,18 @@ async function saveCounseling(event) {
         }
         toast(r.message);
         Object.assign(counselState, { editing: null, presetTopic: '' });
-        loadCounseling();
+        loadCounseling(); loadStaffHome(); pollStaffAlerts();
     } catch (e) { toast(e.message, 'error'); }
 }
 
 async function counselDone(id) {
-    try { await api(`/api/campus/counseling/${id}`, { method: 'PUT', json: { follow_up_done: true } }); toast('已標記追蹤完成'); loadCounseling(); }
+    try { await api(`/api/campus/counseling/${id}`, { method: 'PUT', json: { follow_up_done: true } }); toast('已標記追蹤完成'); loadCounseling(); loadStaffHome(); pollStaffAlerts(); }
     catch (e) { toast(e.message, 'error'); }
 }
 
 async function deleteCounseling(id) {
     if (!confirm('確定刪除這筆紀錄？刪除後無法復原。')) return;
-    try { await api(`/api/campus/counseling/${id}`, { method: 'DELETE' }); toast('已刪除'); loadCounseling(); }
+    try { await api(`/api/campus/counseling/${id}`, { method: 'DELETE' }); toast('已刪除'); loadCounseling(); loadStaffHome(); pollStaffAlerts(); }
     catch (e) { toast(e.message, 'error'); }
 }
 
@@ -1145,7 +1161,7 @@ function renderClassOverview() {
         : `<span class="inline-block text-sm font-bold rounded px-2 py-0.5 ${ATTEND_LEVEL[a.level].badge}">${ATTEND_LEVEL[a.level].text}</span>`;
     document.getElementById('classOverviewBody').innerHTML = `
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            ${tile('attend', '出缺勤要注意', `${s.banned + s.attendance_warning} 人`, `已扣考 ${s.banned} · 快扣考 ${s.attendance_warning}`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
+            ${tile('attend', '出缺勤要注意', `${s.banned + s.attendance_warning} 人`, `達扣考門檻（待確認） ${s.banned} · 快扣考 ${s.attendance_warning}`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
             ${tile('study', '學業預警', `${s.study_warning} 人`, s.restricted ? `${s.restricted} 位學生沒有開放導師查看` : '不及格學分超過一半的學生', s.study_warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
             ${tile('talk', '這學期還沒談過', `${s.not_talked} 人`, `全班 ${s.student_count} 人`, 'border-slate-200 text-slate-700')}
             ${tile('pending', '待追蹤', `${s.pending} 件`, '關懷後要追蹤的事', s.pending ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
@@ -1272,7 +1288,7 @@ async function openStudentCard(studentId) {
     const attendHtml = `<div class="flex flex-wrap gap-2 text-sm">
             <span>曠課 ${a.totals['曠課']}</span><span>遲到 ${a.totals['遲到']}</span><span>病假 ${a.totals['病假']}</span>
             ${a.recent_absent ? `<span class="text-rose-700 font-semibold">近 7 天曠課 ${a.recent_absent}</span>` : ''}</div>
-        ${a.risk_courses.map(x => `<div class="text-sm"><span class="font-semibold">${esc(x.course_name)}</span>：曠 ${x.absent_hours} / ${x.exam_ban_threshold_hours} 小時${x.level === 'banned' ? ' <span class="text-rose-700 font-bold">已扣考</span>' : `，再 ${x.remaining_hours} 小時扣考`}</div>`).join('')}
+        ${a.risk_courses.map(x => `<div class="text-sm"><span class="font-semibold">${esc(x.course_name)}</span>：曠 ${x.absent_hours} / ${x.exam_ban_threshold_hours} 小時${x.level === 'banned' ? ' <span class="text-rose-700 font-bold">達扣考門檻（待確認）</span>' : `，再 ${x.remaining_hours} 小時扣考`}</div>`).join('')}
         ${a.recent_records.length ? `<details class="text-sm"><summary class="cursor-pointer text-slate-500">最近 ${a.recent_records.length} 筆紀錄</summary>
             <div class="mt-1 space-y-0.5">${a.recent_records.map(r => `<div>${mmdd(r.date)}　${esc(r.course_name)}　<span class="${r.type === '曠課' ? 'text-rose-700 font-semibold' : 'text-slate-600'}">${esc(r.type)}</span></div>`).join('')}</div></details>` : ''}`;
 
@@ -1329,8 +1345,11 @@ async function openStudentCard(studentId) {
 // =====================================================================
 
 const ALERT_TILES = [
+    { type: '行政案件', icon: '📋', label: '行政案件待辦', goto: '/admin-workbench' },
     { type: '請假', icon: '📝', label: '待審假單', goto: 'tab-home', anchor: 'homeLeaveReview' },
     { type: '證照', icon: '🏅', label: '待審證照', goto: 'tab-certs' },
+    { type: '關懷', icon: '📝', label: '追蹤到期', goto: 'tab-counseling' },
+    { type: '回條', icon: '📩', label: '待收回條', goto: 'tab-notices' },
     { type: '預警', icon: '⚠️', label: '學業預警', goto: 'tab-myclass' },
     { type: '教室借用', icon: '🔑', label: '待審教室借用', goto: '/admin' },
     { type: '宿舍', icon: '🏢', label: '待審宿舍申請', goto: 'tab-services' },
@@ -1342,20 +1361,23 @@ async function loadStaffHome() {
     box.classList.remove('hidden');
     box.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
     const isTeacher = currentUser.role === '老師';
-    const [teachers, alerts, overview] = await Promise.all([
+    const [teachers, alerts, overview, care, receipts] = await Promise.all([
         isTeacher ? api('/api/campus/teachers').catch(() => null) : Promise.resolve(null),
-        api('/api/staff/alerts').catch(() => ({ data: [] })),
+        api('/api/staff/alerts').catch(e => ({data: [], error: e.message})),
         api('/api/teacher/class-overview').catch(() => null),
+        api('/api/campus/counseling').catch(e => ({error: e.message})),
+        api('/api/campus/notices/sent').catch(e => ({error: e.message})),
     ]);
-    const parts = [];
+    const parts = [`<section class="rounded border border-ukn-200 bg-ukn-50 p-5 flex flex-wrap justify-between gap-3"><div><h2 class="text-xl font-bold text-ukn-900">${isTeacher ? '老師今日工作台' : '今日工作台'}</h2><p class="text-sm mt-1">${esc(currentUser.full_name)} · ${taipeiToday()}${currentUser.advised_class ? ' · 導師班 ' + esc(currentUser.advised_class) : ' · 校務與授課事項'}</p></div><button type="button" onclick="loadStaffHome()" class="border rounded px-3 py-2 bg-white text-sm">重新整理</button></section>`];
 
+    if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">行政人員工作台</h2><p class="text-sm text-slate-600">查看所屬處室案件、分派承辦人、要求補件與完成結案。</p><a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">開啟行政案件工作台 →</a></section>`);
     // 1. 今天的課
     if (isTeacher && teachers) {
         const me = teachers.data.find(t => t.name === currentUser.full_name.replace(/\s*老師$/, ''));
         if (me) {
-            const today = new Date().getDay() || 7;
+            const today = new Date(taipeiToday() + 'T12:00:00Z').getUTCDay() || 7;
             const per = teachers.periods;
-            const hm = new Date().toTimeString().slice(0, 5);
+            const hm = new Intl.DateTimeFormat('en-GB', {timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(new Date());
             const list = me.timetable.filter(c => c.weekday === today).sort((a, b) => a.period_start - b.period_start);
             const start = c => per[c.period_start][0], end = c => per[c.period_end][1];
             const now = list.find(c => start(c) <= hm && hm <= end(c));
@@ -1375,15 +1397,16 @@ async function loadStaffHome() {
     // 2. 今天要處理
     const items = alerts.data || [];
     const tiles = ALERT_TILES.map(t => ({ ...t, n: items.filter(a => a.type === t.type).length }))
-        .filter(t => t.n || (isTeacher ? ['請假', '證照', '預警'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
+        .filter(t => t.n || (isTeacher ? ['請假', '證照', '預警', '關懷', '回條'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
     const go = t => t.goto.startsWith('/') ? `window.open('${t.goto}', '_blank')`
         : `switchTab('${t.goto}')${t.anchor ? `; document.getElementById('${t.anchor}')?.scrollIntoView({ behavior: 'smooth' })` : ''}`;
     parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
+        ${alerts.error ? `<p class="text-sm text-rose-700">待辦讀取失敗：${esc(alerts.error)}</p>` : ''}
         <h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>
         <div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
             class="text-left rounded border p-4 hover:shadow ${t.n ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-500'}">
             <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>
-        ${items.length ? '' : '<div class="text-sm text-slate-500">目前沒有待處理的事項 🎉</div>'}
+        ${items.length || alerts.error ? '' : '<div class="text-sm text-slate-500">目前沒有待處理的事項 🎉</div>'}
     </section>`);
 
     // 3. 我的導師班
@@ -1396,5 +1419,36 @@ async function loadStaffHome() {
             <button type="button" onclick="switchTab('tab-myclass')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm whitespace-nowrap self-start sm:self-auto">打開我的導師班 ➔</button>
         </section>`);
     }
+    parts.push(staffFollowUpHtml(care), staffReceiptsHtml(receipts));
     box.innerHTML = parts.join('');
+}
+
+
+function taipeiToday() {
+    return new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Taipei'}).format(new Date());
+}
+
+function staffFollowUpHtml(care) {
+    if (care.error) return `<section class="bg-white border rounded p-5 text-sm">關懷追蹤：${esc(care.error)}</section>`;
+    const pending = care.data.filter(r => r.follow_up && !r.follow_up_done).sort((a, b) => (a.follow_up_date || '9999').localeCompare(b.follow_up_date || '9999'));
+    return `<section class="bg-white border rounded p-5 space-y-3"><div class="flex flex-wrap justify-between gap-2"><h2 class="font-bold text-lg">關懷追蹤 · 待處理 ${pending.length} 件</h2><button type="button" onclick="openPendingCare()" class="text-ukn-700 text-sm">查看全部關懷紀錄 ➔</button></div>
+        ${pending.length ? pending.slice(0, 8).map(r => `<div class="border rounded p-3 flex flex-wrap justify-between gap-2"><div><b>${esc(r.full_name)}</b> · ${esc(r.topic)} · ${esc(r.tracking_status)}<p class="text-sm ${r.follow_up_date && r.follow_up_date <= taipeiToday() ? 'text-rose-700 font-semibold' : 'text-slate-600'}">${r.follow_up_date ? (r.follow_up_date < taipeiToday() ? '已逾期 ' : r.follow_up_date === taipeiToday() ? '今日到期 ' : '預定 ') + esc(r.follow_up_date) : '尚未設定追蹤日期'}</p><p class="text-sm">${esc(r.follow_up_note || '')}</p></div><button type="button" onclick="openCareRecord(${r.id})" class="text-ukn-700 text-sm">查看與處理 ➔</button></div>`).join('') : '<p class="text-sm text-slate-500">目前沒有待追蹤事項。</p>'}</section>`;
+}
+
+function openCareRecord(id) {
+    Object.assign(counselState, {filter: '', student: '', editing: null, focusRecord: id});
+    switchTab('tab-counseling');
+}
+
+function openPendingCare() {
+    Object.assign(counselState, {filter: 'pending', student: '', editing: null});
+    switchTab('tab-counseling');
+}
+
+function staffReceiptsHtml(receipts) {
+    if (receipts.error) return `<section class="bg-white border rounded p-5 text-sm">通知回條：${esc(receipts.error)}</section>`;
+    const pending = receipts.data.filter(n => n.reply_required && n.reply_count < n.total);
+    return `<section class="bg-white border rounded p-5 space-y-3"><h2 class="font-bold text-lg">通知回條 · 尚有 ${pending.length} 則未收齊</h2>
+        ${pending.length ? pending.slice(0, 6).map(n => `<div class="border rounded p-3"><b>${esc(n.title)}</b><p class="text-sm mt-1">已讀 ${n.read_count} / ${n.total} · 已回覆 ${n.reply_count} / ${n.total}${n.due_date ? ' · 期限 ' + esc(n.due_date) : ''}</p></div>`).join('') : '<p class="text-sm text-slate-500">目前沒有待收回條。</p>'}
+        <button type="button" onclick="switchTab('tab-notices')" class="text-ukn-700 text-sm">查看回覆與提醒學生 ➔</button></section>`;
 }

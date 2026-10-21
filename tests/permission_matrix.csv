@@ -1,4 +1,4 @@
-﻿method,rule,url,body,說明,未登入,訪客,學生,家長,老師,教職員,管理員,備註
+method,rule,url,body,說明,未登入,訪客,學生,家長,老師,教職員,管理員,備註
 GET,/uploads/<path:filename>,/uploads/not_exist.png,,上傳檔案,OK,OK,OK,OK,OK,OK,OK,⚠️ 證照、比賽照片不用登入就能讀，檔名有亂數但仍屬公開，建議討論是否加登入檢查
 GET,/forms/<path:filename>,/forms/not_exist.txt,,申辦表單下載,OK,OK,OK,OK,OK,OK,OK,
 GET,/,/,,首頁,OK,OK,OK,OK,OK,OK,OK,
@@ -129,8 +129,8 @@ GET,/api/campus/checklist-docs,/api/campus/checklist-docs,,申辦文件勾選,40
 POST,/api/campus/checklist-docs,/api/campus/checklist-docs,,儲存文件勾選,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
 GET,/api/campus/dorm/mine,/api/campus/dorm/mine,,我的宿舍申請（家長可查看子女的）,401,403,OK,OK,403,403,403,
 POST,/api/campus/dorm/apply,/api/campus/dorm/apply,,申請宿舍,401,403,OK,403,403,403,403,
-GET,/api/campus/dorm/applications,/api/campus/dorm/applications,,宿舍申請列表,401,403,403,403,OK,OK,OK,⚠️ 老師也看得到全校宿舍申請 (含通勤時間等個資)，待討論
-POST,/api/campus/dorm/applications/<int:app_id>,/api/campus/dorm/applications/999999,,審核宿舍,401,403,403,403,403,OK,OK,
+GET,/api/campus/dorm/applications,/api/campus/dorm/applications,,宿舍申請列表,401,403,403,403,403,403,OK,行政人員需另外授權宿舍管理
+POST,/api/campus/dorm/applications/<int:app_id>,/api/campus/dorm/applications/999999,,審核宿舍,401,403,403,403,403,403,OK,行政人員需另外授權宿舍管理
 GET,/api/campus/affairs/mine,/api/campus/affairs/mine,,我的總務申請,401,403,OK,403,403,403,403,
 POST,/api/campus/affairs/check,/api/campus/affairs/check,,報帳檢查,401,403,OK,403,403,403,403,
 POST,/api/campus/affairs/submit,/api/campus/affairs/submit,,送出總務申請,401,403,OK,403,403,403,403,
@@ -193,3 +193,21 @@ GET,/api/school-calendar,/api/school-calendar,,學校行事曆,OK,OK,OK,OK,OK,OK
 POST,/api/admin/school-calendar/sync,/api/admin/school-calendar/sync,,同步學校行事曆,401,403,403,403,403,OK,OK,
 POST,/api/student/moodle/link,/api/student/moodle/link,,連結 Moodle 帳號,401,403,OK,403,403,403,403,僅學生本人
 DELETE,/api/student/moodle/link,/api/student/moodle/link,,解除 Moodle 連結,401,403,OK,403,403,403,403,僅學生本人
+POST,/api/campus/notices/<int:notice_id>/reply,/api/campus/notices/999999/reply,,學生通知回條,401,403,OK,403,403,403,403,
+POST,/api/campus/notices/<int:notice_id>/remind,/api/campus/notices/999999/remind,,提醒未回覆者,401,403,403,403,OK,OK,OK,
+GET,/admin-workbench,/admin-workbench,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,403,403,403,403,OK,
+GET,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,403,403,
+GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/999999/files/missing,,行政案件整合權限,401,403,OK,403,403,OK,OK,
+GET,/admin-workbench,/admin-workbench,,行政案件工作台,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,讀取處室設定,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,管理處室分工,401,403,403,403,403,403,OK,案件可見範圍另由 test_admin_cases.py 驗證
+GET,/api/campus/admin-cases,/api/campus/admin-cases,,案件清單,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,學生送件,401,403,OK,403,403,403,403,案件可見範圍另由 test_admin_cases.py 驗證
+GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,案件內容,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,分派補件與重送,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
+GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/99999/files/missing,,私有案件附件,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證

@@ -194,7 +194,7 @@ function switchTab(tabId, { updateHash = true } = {}) {
         history.replaceState(null, '', f ? `#${f.key}` : location.pathname);
     }
     document.title = `${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
-    if (tabLoaders[tabId] && !loadedTabs.has(tabId)) {
+    if (tabLoaders[tabId] && (!loadedTabs.has(tabId) || ['tab-home', 'tab-counseling', 'tab-notices', 'tab-classattend'].includes(tabId))) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
     }
@@ -581,7 +581,7 @@ function applyStaffView() {
     const visible = FEATURES.filter(f => !f.onlyRoles || f.onlyRoles.includes(currentUser.role));
     FEATURES.splice(0, FEATURES.length, ...visible);
     if (!isStaff()) return;
-    const keep = FEATURES.filter(f => f.staff !== false && !(f.staff?.roles && !f.staff.roles.includes(currentUser.role)))
+    const keep = FEATURES.filter(f => (f.key !== 'services' || currentUser.role === '管理員' || currentUser.can_manage_dorm) && f.staff !== false && !(f.staff?.roles && !f.staff.roles.includes(currentUser.role)))
         .map(f => (f.staff ? { ...f, ...f.staff } : f))
         .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
     FEATURES.splice(0, FEATURES.length, ...keep);
@@ -623,8 +623,7 @@ function campusInit() {
         bell.title = '待辦通知';
         bell.onclick = openStaffAlerts;
         pollStaffAlerts();
-        if (typeof loadStaffHome === 'function') loadStaffHome();
-        setInterval(() => { if (document.visibilityState === 'visible') pollStaffAlerts(); }, NOTIFY_POLL_MS);
+        setInterval(() => { if (document.visibilityState === 'visible') { pollStaffAlerts(); if (!document.getElementById('tab-home').classList.contains('hidden')) loadStaffHome(); } }, NOTIFY_POLL_MS);
     }
     if (isLoggedIn()) document.getElementById('calAddBtn').classList.remove('hidden');
     loadHomeCertReminder();

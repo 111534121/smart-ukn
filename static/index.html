@@ -252,6 +252,7 @@
                         </div>
                         <div class="text-[11px] text-slate-500 hidden md:block" id="userSubInfo"></div>
                     </div>
+                    <a href="/feature-guide.html" class="text-xs text-ukn-700 hover:text-ukn-900 whitespace-nowrap">功能對照說明</a>
                     <button type="button" id="logoutBtn" onclick="logoutUser()" class="hidden text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">登出</button>
                     <button type="button" id="mobileMenuBtn" onclick="toggleMobileMenu()" class="lg:hidden border border-slate-300 rounded px-2.5 py-1.5 text-slate-700" aria-label="開啟選單" aria-expanded="false">☰</button>
                 </div>
@@ -518,7 +519,7 @@
                 </div>
                 <div id="attWarning" class="hidden"></div>
                 <div id="attCourseList" class="space-y-2.5"></div>
-                <p class="text-[11px] text-slate-400">依學則，單科曠課時數達授課總時數 1/3 即扣考（遲到、病假不計入）；每次曠課以該科每週授課時數計。</p>
+                <p class="text-[11px] text-slate-400">依官網學則，計算一般缺曠課時數；普通病假亦列入。公假、重大傷病及核准排除情形須另核對。缺少實際時數時顯示估算，正式扣考由任課教師與教務處確認。</p>
             </section>
 
         </div>
@@ -1254,6 +1255,11 @@
 
         <!-- 宿舍與總務線上申請 -->
         <div id="tab-services" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 space-y-3">
+                <h2 class="ukn-title text-xl font-bold text-slate-900">行政申請與補件</h2>
+                <p class="text-sm text-slate-500">送出行政申請、查看承辦進度與補件要求；行政人員可依處室受理及分派案件。</p>
+                <a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">開啟行政案件工作台 →</a>
+            </section>
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
                     <h2 class="ukn-title text-xl font-bold text-slate-900">宿舍床位申請與送件進度</h2>
@@ -1428,7 +1434,7 @@
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                         <h2 class="ukn-title text-xl font-bold text-slate-900" id="classAttendTitle">班級出缺勤</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">曠課達該科授課時數 1/3 會扣考；快扣考、已扣考的學生排在最前面，可以直接發通知提醒。</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">依最新官網學則核對缺曠課門檻；列出預警、實際或估算時數與請假紀錄。達門檻仍須由任課教師及教務處確認，可一鍵提醒學生。</p>
                     </div>
                     <select id="classAttendPicker" onchange="loadClassAttendance(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white self-start sm:self-auto"></select>
                 </div>
@@ -2034,6 +2040,7 @@
             const data = await res.json();
             if (!res.ok) return alert(data.message || '審核失敗');
             loadLeaveReview();
+            if (typeof loadStaffHome === "function" && ["老師", "教職員", "管理員"].includes(currentUser?.role)) loadStaffHome();
         }
 
         // 從背景切回 (例如手機桌面再次打開) 時更新儀表板，讓「上課中」與截止倒數保持正確
@@ -2065,21 +2072,21 @@
                 if (risky.length) {
                     const banned = risky.some(c => c.level === 'banned');
                     warning.className = `rounded border px-3 py-2 text-xs space-y-1 ${banned ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-amber-50 border-amber-300 text-amber-900'}`;
-                    warning.innerHTML = `<div class="font-bold">⚠️ ${banned ? '已有科目達扣考門檻，請儘速洽詢生輔組與任課教師' : '有科目曠課時數接近扣考門檻'}</div>` +
-                        risky.map(c => `<div>• ${escapeHtml(c.course_name)}：曠課 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? '，<strong>已達扣考門檻</strong>' : `，再曠課 ${c.remaining_hours} 小時將扣考`}</div>`).join('');
+                    warning.innerHTML = `<div class="font-bold">⚠️ ${banned ? '已有科目達扣考門檻，請儘速洽詢生輔組與任課教師' : '有科目缺曠課時數接近扣考門檻'}</div>` +
+                        risky.map(c => `<div>• ${escapeHtml(c.course_name)}${c.estimated ? '（估算）' : ''}${c.manual_review ? '（特殊假別待核對）' : ''}：缺曠課 ${c.counted_hours ?? c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${c.level === 'banned' ? '，<strong>已達扣考門檻</strong>' : `，距門檻 ${c.remaining_hours} 小時（待確認）`}</div>`).join('');
                 } else {
                     warning.className = 'hidden';
                 }
 
                 document.getElementById('attCourseList').innerHTML = data.courses.length
                     ? data.courses.map(c => {
-                        const pct = Math.min(100, c.absent_hours / c.exam_ban_threshold_hours * 100);
+                        const pct = Math.min(100, (c.counted_hours ?? c.absent_hours) / c.exam_ban_threshold_hours * 100);
                         const bar = c.level === 'banned' ? 'bg-rose-600' : c.level === 'warning' ? 'bg-amber-500' : 'bg-emerald-500';
                         return `
                             <div class="space-y-1">
                                 <div class="flex justify-between text-xs">
                                     <span class="font-semibold text-slate-800">${escapeHtml(c.course_name)}</span>
-                                    <span class="text-slate-500">曠課 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時 · 遲到 ${c.late_count} · 病假 ${c.sick_count}</span>
+                                    <span class="text-slate-500">缺曠課 ${c.counted_hours ?? c.absent_hours} / ${c.exam_ban_threshold_hours} 小時 · 遲到 ${c.late_count} · 病假 ${c.sick_count}</span>
                                 </div>
                                 <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="${bar} h-1.5 rounded-full" style="width: ${pct}%"></div></div>
                             </div>`;
@@ -2823,7 +2830,7 @@
                     const banned = c.level === 'banned';
                     list.push({ id: `att-${c.course_name}-${c.level}`, level: banned ? 'urgent' : 'warning', icon: '⚠️',
                         title: banned ? `${c.course_name} 已達扣考門檻` : `${c.course_name} 曠課接近扣考`,
-                        desc: `曠課 ${c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${banned ? '，請儘速洽詢生輔組與任課教師。' : `，再曠課 ${c.remaining_hours} 小時將扣考。`}`,
+                        desc: `缺曠課 ${c.counted_hours ?? c.absent_hours} / ${c.exam_ban_threshold_hours} 小時${banned ? '，請儘速洽詢生輔組與任課教師。' : `，距門檻 ${c.remaining_hours} 小時（待確認）。`}`,
                         time: '本學期', anchor: 'homeAttendance' });
                 });
             }

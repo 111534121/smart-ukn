@@ -6,6 +6,7 @@
 import json
 import os
 import threading
+import time
 from datetime import datetime
 from functools import wraps
 from types import SimpleNamespace
@@ -51,7 +52,15 @@ class JsonStore:
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=1)
-            os.replace(tmp, self.path)
+            # Windows 防毒或索引服務可能短暫鎖住目標檔；仍保留原子替換。
+            for attempt in range(6):
+                try:
+                    os.replace(tmp, self.path)
+                    break
+                except PermissionError:
+                    if attempt == 5:
+                        raise
+                    time.sleep(0.02 * (2 ** attempt))
 
 
 store = JsonStore(os.path.join(DATA_DIR, "campus_store.json"))
@@ -85,6 +94,7 @@ def current_user():
         "student_id": session.get("student_id"),
         "class_name": session.get("class_name", ""),
         "advised_class": session.get("advised_class"),
+        "can_manage_dorm": bool(session.get("can_manage_dorm")),
         "dept_id": session.get("dept_id"),
     }
 

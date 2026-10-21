@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>行政案件工作台｜康寧大學</title><link rel="stylesheet" href="/css/admin-workbench.css?v=20261021"></head>
+<body>
+<header><a href="/">康寧大學 <span>UKN</span></a><nav><a href="/">返回校務首頁</a><a href="/admin" id="legacy" hidden>管理後台</a><span id="identity"></span></nav></header>
+<main>
+<section class="hero"><div><p class="eyebrow">CAMPUS SERVICES · 行政服務</p><h1 id="heading">行政案件工作台</h1><p id="intro">讓每一份申請，都有清楚的下一步。</p></div><button id="refresh" type="button">重新整理</button></section>
+<p id="message" role="status" aria-live="polite"></p>
+<section id="shortcuts" class="card" hidden><h2>原有審核與校務管理</h2><p class="muted">下方案件清單管理本工作台送出的申請；原有業務請從以下入口辦理。</p><div class="actions"><a href="/">請假、證照與導師事項</a><a href="/admin">教室借用與校務資料</a><a href="/">宿舍與報帳原有流程</a></div></section>
+<section id="stats" class="stats" aria-label="案件摘要"></section>
+<section id="newRequest" class="card" hidden><h2>新增行政申請</h2><p class="muted">選擇類別後，系統會送交對應處室。既有請假、宿舍與報帳請使用原本申請頁面。</p>
+<form id="createForm"><div class="formgrid"><label>申請類別<select name="kind" id="kind" required></select></label><label>案件標題<input name="title" maxlength="100" required placeholder="請簡述需要協助的事項"></label></div><label>申請說明<textarea name="detail" maxlength="4000" rows="4" required></textarea></label><label>附件（選填，最多 5 個，每個 10 MB）<input type="file" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt"></label><p class="muted">支援 PDF、JPG、PNG、DOCX、XLSX、TXT；附件僅提供申請人與承辦處室下載。</p><button class="primary" type="submit">送出申請</button></form></section>
+<section id="officeSettings" class="card" hidden><h2>處室分工設定</h2><p class="muted">只有管理員能設定。未指定處室的行政帳號無法查看案件；移除處室後立即生效。</p><form id="settingsForm"><div id="members" class="formgrid"></div><button type="submit">儲存處室分工</button></form></section>
+<section class="card"><div class="sectionhead"><div><h2 id="listTitle">案件清單</h2><p id="scope" class="muted"></p></div></div>
+<div class="filters"><label>搜尋<input id="search" type="search" placeholder="標題、學號或案件編號"></label><label>案件狀態<select id="status"><option value="">全部狀態</option><option>待受理</option><option>處理中</option><option>待補件</option><option>重新送審</option><option>已完成</option><option>已退件</option></select></label><label>處室<select id="officeFilter"><option value="">全部處室</option></select></label><label class="check"><input type="checkbox" id="mine">只看我承辦</label><label class="check"><input type="checkbox" id="overdue">只看逾期</label></div>
+<div id="caseList" class="case-list">讀取中…</div></section>
+<section id="detail" class="card" hidden aria-label="案件內容" tabindex="-1"></section>
+</main><footer>康寧大學 · 行政服務與申請進度</footer><script src="/js/admin-workbench.js?v=20261021"></script>
+</body></html>

@@ -1,76 +1,97 @@
-"""
-缺曠課扣考判定規則 (與資料來源無關)
-
-依《學生扣考與出勤規定》：一學期中某科曠課時數達該科授課總時數三分之一以上者，
-該科目不得參加期末考試 (扣考)。遲到與病假不計入扣考時數，僅列出供學生參考。
-
-假設 (學校規定若不同，調整下方常數即可)：
-  - 每學期 18 週
-  - 每門課每週授課時數 = 學分數；查不到課程時以 3 小時計
-  - 每筆「曠課」紀錄代表缺席該課程一次 (一週的授課時數)
+"""扣考門檻預警：依 115/04 公告學則，非正式扣考名單。
+專科班第17條／大學第11條。一般缺曠課達1/3；公假、重大傷病假及核准排除情形需核對適用條件。
+缺少實際時數或課程總時數時，沿用舊資料估算並明確標記，不當成正式判定。
 """
 from collections import OrderedDict
+from decimal import Decimal, InvalidOperation
 
 SEMESTER_WEEKS = 18
-EXAM_BAN_RATIO = 1 / 3      # 曠課時數達授課總時數 1/3 即扣考
-WARNING_RATIO = 2 / 3       # 達扣考門檻的 2/3 時提前警告
+EXAM_BAN_RATIO = 1 / 3
+WARNING_RATIO = 2 / 3  # 系統提早提醒的產品設定，非校規門檻。
 DEFAULT_WEEKLY_HOURS = 3
+POLICY_SOURCE = 'https://daa.ukn.edu.tw/p/406-1021-42550,r11.php?Lang=zh-tw'
+
+
+def _number(value):
+    try:
+        number = Decimal(str(value))
+        return number if number.is_finite() and number > 0 else None
+    except (InvalidOperation, ValueError, TypeError):
+        return None
 
 
 def _round(value):
-    return int(value) if float(value).is_integer() else round(value, 1)
+    return int(value) if value == int(value) else round(float(value), 2)
 
 
-def summarize_attendance(records, weekly_hours_by_course):
-    """
-    records：AttendanceSource 回傳的紀錄列表
-    weekly_hours_by_course：{課程名稱: 每週授課時數}
-    回傳每科統計與整體狀態 (ok / warning / banned)
-    """
+def record_semester(record):
+    if record.get('semester'): return record['semester']
+    try:
+        from datetime import date
+        day = date.fromisoformat(str(record['date'])[:10])
+        year = day.year - 1911 if day.month >= 8 else day.year - 1912
+        return f"{year}-{1 if day.month >= 8 or day.month == 1 else 2}"
+    except (ValueError, KeyError):
+        return None
+
+
+def summarize_attendance(records, weekly_hours_by_course, semester_hours_by_course=None, semester=None):
+    semester_hours_by_course = semester_hours_by_course or {}
     courses = OrderedDict()
-    for r in sorted(records, key=lambda x: x["course_name"]):
-        weekly_hours = weekly_hours_by_course.get(r["course_name"], DEFAULT_WEEKLY_HOURS)
-        c = courses.setdefault(r["course_name"], {
-            "course_name": r["course_name"],
-            "weekly_hours": weekly_hours,
-            "absent_count": 0,
-            "late_count": 0,
-            "sick_count": 0
+    if semester:
+        records = [r for r in records if record_semester(r) == semester]
+    for r in sorted(records, key=lambda x: x['course_name']):
+        weekly = _number(weekly_hours_by_course.get(r['course_name'])) or Decimal(DEFAULT_WEEKLY_HOURS)
+        total = _number(semester_hours_by_course.get(r['course_name']))
+        c = courses.setdefault(r['course_name'], {
+            'course_name': r['course_name'], 'weekly_hours': _round(weekly),
+            'absent_count': 0, 'late_count': 0, 'sick_count': 0, 'leave_count': 0,
+            '_absent': Decimal(0), '_counted': Decimal(0), '_half': Decimal(0), '_ordinary': Decimal(0),
+            '_total': total or weekly * SEMESTER_WEEKS,
+            'estimated': total is None, 'manual_review': False,
         })
-        if r["type"] == "曠課":
-            c["absent_count"] += 1
-        elif r["type"] == "遲到":
-            c["late_count"] += 1
-        elif r["type"] == "病假":
-            c["sick_count"] += 1
-
-    level_rank = {"ok": 0, "warning": 1, "banned": 2}
-    overall = "ok"
+        kind = r['type']
+        if kind == '遲到':
+            c['late_count'] += 1
+            continue
+        if kind == '曠課': c['absent_count'] += 1
+        elif kind == '病假': c['sick_count'] += 1
+        else: c['leave_count'] += 1
+        hours = _number(r.get('hours'))
+        if hours is None:
+            hours = weekly; c['estimated'] = True
+        policy = r.get('exam_policy') or 'ordinary'
+        # 排除與延長門檻須由有權限資料提供者明確確認，不從病名／文字推測。
+        if policy == 'exempt':
+            continue
+        if policy == 'manual' or (kind in ('公假', '重大傷病假', '產假') and policy == 'ordinary'):
+            c['manual_review'] = True
+        c['_counted'] += hours
+        if kind == '曠課': c['_absent'] += hours
+        if policy == 'half': c['_half'] += hours
+        else: c['_ordinary'] += hours
+    rank = {'ok': 0, 'warning': 1, 'banned': 2}
+    overall = 'ok'
     for c in courses.values():
-        threshold = c["weekly_hours"] * SEMESTER_WEEKS * EXAM_BAN_RATIO
-        absent_hours = c["absent_count"] * c["weekly_hours"]
-        if absent_hours >= threshold:
-            level = "banned"
-        elif absent_hours >= threshold * WARNING_RATIO:
-            level = "warning"
-        else:
-            level = "ok"
-        c.update({
-            "absent_hours": _round(absent_hours),
-            "exam_ban_threshold_hours": _round(threshold),
-            "remaining_hours": _round(max(0, threshold - absent_hours)),
-            "level": level
-        })
-        if level_rank[level] > level_rank[overall]:
-            overall = level
-
-    return {
-        "overall_level": overall,
-        "totals": {
-            "曠課": sum(c["absent_count"] for c in courses.values()),
-            "遲到": sum(c["late_count"] for c in courses.values()),
-            "病假": sum(c["sick_count"] for c in courses.values())
-        },
-        # 風險高的科目排前面
-        "courses": sorted(courses.values(), key=lambda c: (-level_rank[c["level"]], -c["absent_hours"]))
-    }
+        # 混合假別的適用方式交由校方確認；不擅自放寬所有缺曠課。
+        if c['_half'] and c['_ordinary']: c['manual_review'] = True
+        denominator = 2 if c['_half'] and not c['_ordinary'] else 3
+        total, counted = c['_total'], c['_counted']
+        threshold = total / Decimal(denominator)
+        # 交叉相乘避免三分之一的浮點邊界誤判。
+        if counted * denominator >= total: level = 'banned'
+        elif counted * denominator * 3 >= total * 2: level = 'warning'
+        else: level = 'ok'
+        c.update(absent_hours=_round(c['_absent']), counted_hours=_round(counted),
+                 leave_hours=_round(counted-c['_absent']), semester_hours=_round(total),
+                 exam_ban_threshold_hours=_round(threshold), remaining_hours=_round(max(Decimal(0), threshold-counted)),
+                 threshold_ratio=f'1/{denominator}', level=level,
+                 calculation_basis='estimated' if c['estimated'] else 'recorded_hours',
+                 official_decision=False, policy_source=POLICY_SOURCE)
+        for key in [k for k in c if k.startswith('_')]: del c[key]
+        if rank[level] > rank[overall]: overall=level
+    return {'overall_level': overall,
+            'totals': {'曠課': sum(c['absent_count'] for c in courses.values()),
+                       '遲到': sum(c['late_count'] for c in courses.values()), '病假': sum(c['sick_count'] for c in courses.values())},
+            'policy_source': POLICY_SOURCE, 'official_decision': False,
+            'courses': sorted(courses.values(), key=lambda c: (-rank[c['level']], -c['counted_hours']))}

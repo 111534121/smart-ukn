@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>功能對照說明｜Smart UKN</title>
+  <link rel="stylesheet" href="/css/feature-guide.css">
+  <script defer src="/feature-guide-data.js"></script>
+  <script defer src="/js/feature-guide.js"></script>
+</head>
+<body>
+  <header><a class="brand" href="/">UKN <span>智慧校園服務平台</span></a><nav><a href="/">返回校園首頁 ↗</a><button id="print" type="button">列印此功能</button></nav></header>
+  <section class="hero"><div class="eyebrow">SMART UKN / SYSTEM GUIDE</div><h1>從一個功能，<br>看懂整個運作流程。</h1><p>給老師的系統導覽：點選功能，查看網頁如何呼叫程式、使用哪些資料，以及結果如何回到畫面。</p><div id="stats" class="stats"></div></section>
+  <main>
+    <section class="architecture" aria-labelledby="architecture-title">
+      <div class="architecture-heading"><div><div class="eyebrow">EXPLORE THE CONNECTIONS</div><h2 id="architecture-title">功能 → 程式檔 → 資料表</h2><p class="muted">點左欄功能，查看相關程式與資料表連線；下方同步顯示完整說明。</p></div><a class="detail-link" href="#detail" id="show-detail">查看詳細說明 ↓</a></div>
+      <div class="graph-filters"><div><label for="search">尋找功能、程式檔或資料表</label><input id="search" type="search" placeholder="例如：證照、app.py、users"></div><div><label for="group">功能分類</label><select id="group"><option value="">所有分類</option></select></div><div id="count" role="status"></div></div>
+      <p id="graph-status" class="graph-status" role="status"></p>
+      <p class="mobile-graph-hint">小螢幕可左右滑動查看三欄連線圖。</p>
+      <div class="graph-scroll"><div id="architecture-diagram" class="architecture-diagram">
+        <svg id="architecture-lines" aria-hidden="true" focusable="false"></svg>
+        <section class="graph-column"><h3><span>01</span> 網頁功能</h3><div id="features" aria-label="功能選擇"></div></section>
+        <section class="graph-column"><h3><span>02</span> 對應程式檔</h3><div id="graph-files" class="graph-nodes"></div></section>
+        <section class="graph-column"><h3><span>03</span> SQL 資料表</h3><div id="graph-tables" class="graph-nodes"></div></section>
+      </div></div>
+      <p class="graph-note">藍線：功能連到後端入口或已追蹤的 SQL 程式檔。綠線：程式檔內已確認的 SQL 表名引用。僅顯示目前選取功能的關係；未找到 SQL 引用時會另外說明 JSON 等資料來源。</p>
+    </section>
+    <article id="detail" aria-live="polite"><p>正在載入功能對照資料…</p></article>
+  </main>
+  <footer>本頁只呈現程式結構與資料來源名稱，不讀取學生紀錄。程式異動後請重新產生對照資料。</footer>
+  <noscript>請啟用 JavaScript，以瀏覽功能對照說明。</noscript>
+</body>
+</html>

@@ -359,6 +359,7 @@ _DEMO_PW_123456 = "pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c
 _DEMO_PW_ADMIN123 = "pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c"
 
 DEMO_USERS = [
+    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True},
     {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
@@ -949,7 +950,7 @@ def auth_login():
         except Exception:
             if conn: conn.close()
 
-    if not user_record:
+    if not user_record and conn is None:
         for u in sorted(DEMO_USERS, key=lambda x: x["username"] != username):
             is_login_name = u["username"] == username or (u.get("student_id") == username.upper() and u["role"] == "學生")
             if is_login_name and check_password_hash(u["password_hash"], password):
@@ -974,6 +975,7 @@ def auth_login():
         session["dept_name"] = user_record.get("dept_name", "資訊管理科（五專）")
         session["class_name"] = user_record.get("class_name", "")
         session["advised_class"] = user_record.get("advised_class")
+        session["can_manage_dorm"] = bool(user_record.get("can_manage_dorm")) or user_record["role"] == "管理員"
 
         return jsonify({
             "status": "success",
@@ -1012,6 +1014,7 @@ def auth_me():
                 "dept_name": session.get("dept_name", "資訊管理科（五專）"),
                 "class_name": session.get("class_name", ""),
                 "advised_class": session.get("advised_class"),
+                "can_manage_dorm": bool(session.get("can_manage_dorm")),
                 "visitor_type": session.get("visitor_type"),
                 "visitor_name": session.get("visitor_name")
             }
@@ -2462,18 +2465,25 @@ def teacher_class_attendance():
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     rank = {"ok": 0, "warning": 1, "banned": 2}
     students = []
-    for sid in _get_class_student_ids(class_name):
+    class_ids = _get_class_student_ids(class_name)
+    leave_rows = get_dashboard_source().list_leave_requests_for_review(class_ids, None)
+    for sid in class_ids:
         records = source.list_records(sid)
-        summary = summarize_attendance(records, hours)
+        leaves = [r for r in leave_rows if r["student_id"] == sid]
+        summary = summarize_attendance(records, hours, course_semester_hours(), current_attendance_semester())
         students.append({
             "student_id": sid,
             "full_name": names.get(sid, sid),
             "totals": summary["totals"],
             "level": summary["overall_level"],
-            "risk_courses": [{k: c[k] for k in ("course_name", "absent_count", "absent_hours", "exam_ban_threshold_hours", "remaining_hours", "level")}
+            "risk_courses": [{k: c[k] for k in ("course_name", "absent_count", "absent_hours", "counted_hours", "estimated", "manual_review", "exam_ban_threshold_hours", "remaining_hours", "level")}
                              for c in summary["courses"] if c["level"] != "ok"],
             "recent_absent": sum(1 for r in records if r["type"] == "曠課" and str(r["date"])[:10] >= week_ago),
             "last_date": max((str(r["date"])[:10] for r in records), default=""),
+            "leaves": {"pending": sum(r["status"] == "待審核" for r in leaves),
+                       "approved": sum(r["status"] == "已核准" for r in leaves),
+                       "rejected": sum(r["status"] == "已退回" for r in leaves),
+                       "items": [{k: r.get(k) for k in ("id", "leave_type", "start_date", "end_date", "periods", "status", "review_note")} for r in leaves]},
         })
     students.sort(key=lambda x: (-rank[x["level"]], -x["totals"]["曠課"], x["student_id"]))
     return jsonify({
@@ -2516,7 +2526,7 @@ def teacher_class_overview():
     records = counseling.load_records(ids)
     students = []
     for sid in ids:
-        att = summarize_attendance(source.list_records(sid), hours)
+        att = summarize_attendance(source.list_records(sid), hours, course_semester_hours(), current_attendance_semester())
         if load_privacy_settings(sid)["advisor_alert_consent"]:
             w = compute_early_warning(sid)
             study = {"risk": w["risk_level"], "level": w["warning_level"], "failed_credits": w["failed_credits"],
@@ -2580,13 +2590,13 @@ def teacher_student_profile():
 
     # 出缺勤
     att_records = get_attendance_source().list_records(student_id)
-    att = summarize_attendance(att_records, course_weekly_hours())
+    att = summarize_attendance(att_records, course_weekly_hours(), course_semester_hours(), current_attendance_semester())
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     attendance = {
         "level": att["overall_level"],
         "totals": att["totals"],
         "recent_absent": sum(1 for r in att_records if r["type"] == "曠課" and str(r["date"])[:10] >= week_ago),
-        "risk_courses": [{k: c[k] for k in ("course_name", "absent_hours", "exam_ban_threshold_hours", "remaining_hours", "level")}
+        "risk_courses": [{k: c[k] for k in ("course_name", "absent_hours", "counted_hours", "estimated", "manual_review", "exam_ban_threshold_hours", "remaining_hours", "level")}
                          for c in att["courses"] if c["level"] != "ok"],
         "recent_records": [{"date": str(r["date"])[:10], "course_name": r.get("course_name", ""), "type": r["type"]}
                            for r in att_records[:10]],
@@ -4063,6 +4073,16 @@ def course_weekly_hours():
     """{課程名稱: 每週授課時數}，以學分數計"""
     return {c["course_name"]: c["credits"] for c in load_course_map()}
 
+def current_attendance_semester():
+    term = current_academic_term(datetime.now().date())
+    return f"{term['academic_year']}-{term['semester']}"
+
+
+def course_semester_hours():
+    rows = fetch_db_rows("SELECT course_name, semester_hours FROM course_map WHERE semester_hours IS NOT NULL")
+    return {r["course_name"]: r["semester_hours"] for r in rows or []}
+
+
 @app.route("/api/student/attendance", methods=["GET"])
 def get_my_attendance():
     """登入學生 (或家長) 的缺曠課摘要與扣考警告"""
@@ -4070,7 +4090,7 @@ def get_my_attendance():
     if not student_id:
         return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
     records = get_attendance_source().list_records(student_id)
-    summary = summarize_attendance(records, course_weekly_hours())
+    summary = summarize_attendance(records, course_weekly_hours(), course_semester_hours(), current_attendance_semester())
     return jsonify({
         "status": "success",
         "student_id": student_id,
@@ -4112,7 +4132,20 @@ def manage_attendance_records():
     except ValueError:
         return jsonify({"status": "error", "message": "日期格式須為 YYYY-MM-DD"}), 400
     try:
-        record = source.add_record(student_id, record_date, course_name, record_type)
+        from decimal import Decimal, InvalidOperation
+        hours = data.get("hours")
+        if hours not in (None, ""):
+            try:
+                hours = Decimal(str(hours))
+                if not hours.is_finite() or not 0 < hours <= 24: raise ValueError()
+                hours = float(hours)
+            except (InvalidOperation, ValueError):
+                return jsonify({"status": "error", "message": "缺課時數須介於 0 與 24 小時之間"}), 400
+        else: hours = None
+        exam_policy = data.get("exam_policy", "ordinary")
+        if exam_policy not in ("ordinary", "half", "exempt", "manual"):
+            return jsonify({"status": "error", "message": "無效的扣考計算分類"}), 400
+        record = source.add_record(student_id, record_date, course_name, record_type, hours, exam_policy)
     except Exception as e:
         return jsonify({"status": "error", "message": f"新增失敗：{e}"}), 500
     write_audit_log("attendance_records", record.get("id", student_id), "新增", after=record)
@@ -4238,7 +4271,7 @@ def get_student_dashboard():
     data = build_dashboard(source, class_name, student_id, now)
     data["moodle"] = moodle
 
-    attendance = summarize_attendance(get_attendance_source().list_records(student_id), course_weekly_hours())
+    attendance = summarize_attendance(get_attendance_source().list_records(student_id), course_weekly_hours(), course_semester_hours(), current_attendance_semester())
     data["attendance"] = {
         "totals": attendance["totals"],
         "warning_count": sum(1 for c in attendance["courses"] if c["level"] == "warning"),
@@ -4414,6 +4447,24 @@ def staff_alerts():
                               "title": f"{s['full_name']}：學業{w['risk_level']}，建議找他談談",
                               "detail": f"{w['semester']} 學期不及格 {w['failed_credits']} / {w['current_credits']} 學分", "at": ""})
 
+    # 待追蹤關懷與未收齊回條沿用原功能的班級、作者範圍。
+    from campus import counseling, messaging
+    from datetime import date as _date
+    today = _date.today().isoformat()
+    scoped_ids = [s["student_id"] for s in counseling.all_students()
+                  if role != "老師" or (advised and s.get("class_name") == advised)]
+    for r in counseling.load_records(scoped_ids):
+        if r["follow_up"] and not r["follow_up_done"] and r["follow_up_date"] and r["follow_up_date"] <= today:
+            items.append({"key": f"care-{r['id']}", "type": "關懷", "goto": "tab-counseling",
+                          "title": f"{names.get(r['student_id'], r['student_id'])}：關懷追蹤到期",
+                          "detail": r["follow_up_date"], "at": r["follow_up_date"]})
+    for n in messaging.load_notices(sender_username=None if role == "管理員" else session["username"]):
+        missing = len(n["recipients"]) - len(n.get("replies", {}))
+        if n.get("reply_required") and missing:
+            items.append({"key": f"receipt-{n['id']}", "type": "回條", "goto": "tab-notices",
+                          "title": f"{n['title']}：{missing} 人尚未回覆",
+                          "detail": n.get("due_date") or "未設定期限", "at": n["created_at"]})
+
     # 4. 行政人員：教室借用、宿舍申請
     if role in ("教職員", "管理員"):
         for b in facilities.bookings():
@@ -4422,12 +4473,20 @@ def staff_alerts():
                               "title": f"{b['applicant']} 借用 {b['room_name']}，等你審核",
                               "detail": f"{b['date']} 第 {b['period_start']}-{b['period_end']} 節 · {b.get('purpose', '')}",
                               "at": str(b.get("created_at", ""))[:16]})
-        for a in services.dorm_apps():
+        for a in (services.dorm_apps() if services.can_manage_dorm({"role": role, "username": session["username"], "can_manage_dorm": session.get("can_manage_dorm")}) else []):
             if a["status"] == "進行中" and a["stage"] == 0:
                 items.append({"key": f"dorm-{a['id']}", "type": "宿舍", "goto": "tab-services",
                               "title": f"{a.get('student_name') or a['student_id']} 送出宿舍申請，等你審查",
                               "detail": f"{a.get('semester', '')} · {a.get('room_type', '')}", "at": str(a.get("created_at", ""))[:16]})
 
+    if role in ("教職員", "管理員"):
+        from campus import admin_cases
+        with admin_cases.store.lock:
+            for c in admin_cases.cases():
+                if admin_cases.visible(c) and c['status'] in ('待受理', '處理中', '重新送審'):
+                    items.append({'key': f"admin-case-{c['id']}", 'type': '行政案件', 'goto': '/admin-workbench',
+                                  'title': f"{c['student_name']}：{c['title']}",
+                                  'detail': f"{c['office']} · {c['status']} · 期限 {c['due_date']}", 'at': c['updated_at']})
     return jsonify({"status": "success", "count": len(items), "data": items}), 200
 
 # ==========================================
@@ -4438,6 +4497,7 @@ import campus
 from types import SimpleNamespace
 
 campus.init_app(app, SimpleNamespace(
+    users=DEMO_USERS,
     fetch_db_rows=fetch_db_rows,
     db_execute=db_execute,
     fetch_calendar_events=fetch_calendar_events,

@@ -15,7 +15,7 @@
 """
 from datetime import date, datetime
 
-VALID_TYPES = ("曠課", "遲到", "病假")
+VALID_TYPES = ("曠課", "遲到", "病假", "事假", "公假", "重大傷病假", "產假")
 
 
 class AttendanceSource:
@@ -35,7 +35,7 @@ class AttendanceSource:
         """將紀錄標記為已通知"""
         raise NotImplementedError
 
-    def add_record(self, student_id, record_date, course_name, record_type):
+    def add_record(self, student_id, record_date, course_name, record_type, hours=None, exam_policy="ordinary"):
         """新增一筆紀錄並回傳它 (僅模擬展示用；正式介接學校 API 時通常不支援)"""
         raise NotImplementedError
 
@@ -45,6 +45,7 @@ def _normalize(row):
     if isinstance(item.get("date"), (date, datetime)):
         item["date"] = item["date"].strftime("%Y-%m-%d")
     item["notified"] = bool(item.get("notified"))
+    if item.get("hours") is not None: item["hours"] = float(item["hours"])
     return item
 
 
@@ -69,14 +70,14 @@ class MemoryAttendanceSource(AttendanceSource):
             if r["id"] in ids:
                 r["notified"] = True
 
-    def add_record(self, student_id, record_date, course_name, record_type):
+    def add_record(self, student_id, record_date, course_name, record_type, hours=None, exam_policy="ordinary"):
         record = {
             "id": max([r["id"] for r in self._records], default=0) + 1,
             "student_id": student_id,
             "date": record_date,
             "course_name": course_name,
             "type": record_type,
-            "notified": False
+            "notified": False, "hours": hours, "exam_policy": exam_policy
         }
         self._records.append(record)
         return _normalize(record)
@@ -116,7 +117,7 @@ class MySQLAttendanceSource(AttendanceSource):
             conn.close()
 
     def list_records(self, student_id=None):
-        sql = "SELECT id, student_id, date, course_name, type, notified FROM attendance_records"
+        sql = "SELECT id, student_id, date, course_name, type, notified, hours, exam_policy FROM attendance_records"
         params = ()
         if student_id is not None:
             sql += " WHERE student_id = %s"
@@ -125,7 +126,7 @@ class MySQLAttendanceSource(AttendanceSource):
         return [_normalize(r) for r in self._query(sql, params)]
 
     def list_unnotified(self):
-        rows = self._query("SELECT id, student_id, date, course_name, type, notified FROM attendance_records WHERE notified = 0")
+        rows = self._query("SELECT id, student_id, date, course_name, type, notified, hours, exam_policy FROM attendance_records WHERE notified = 0")
         return [_normalize(r) for r in rows]
 
     def mark_notified(self, record_ids):
@@ -134,14 +135,14 @@ class MySQLAttendanceSource(AttendanceSource):
         placeholders = ", ".join(["%s"] * len(record_ids))
         self._query(f"UPDATE attendance_records SET notified = 1 WHERE id IN ({placeholders})", tuple(record_ids), write=True)
 
-    def add_record(self, student_id, record_date, course_name, record_type):
+    def add_record(self, student_id, record_date, course_name, record_type, hours=None, exam_policy="ordinary"):
         new_id = self._query(
-            "INSERT INTO attendance_records (student_id, date, course_name, type, notified) VALUES (%s, %s, %s, %s, 0)",
-            (student_id, record_date, course_name, record_type),
+            "INSERT INTO attendance_records (student_id, date, course_name, type, notified, hours, exam_policy) VALUES (%s, %s, %s, %s, 0, %s, %s)",
+            (student_id, record_date, course_name, record_type, hours, exam_policy),
             write=True
         )
         return {"id": new_id, "student_id": student_id, "date": record_date,
-                "course_name": course_name, "type": record_type, "notified": False}
+                "course_name": course_name, "type": record_type, "notified": False, "hours": hours, "exam_policy": exam_policy}
 
 
 class SchoolApiAttendanceSource(AttendanceSource):

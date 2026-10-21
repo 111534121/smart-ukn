@@ -781,6 +781,15 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
         """)
 
+        from campus.dorm_store import CREATE_TABLE_SQL as DORM_TABLE_SQL
+        cursor.execute(DORM_TABLE_SQL)
+        from integration_schema import upgrade_columns
+        upgrade_columns(cursor)
+
+        # 同時供既有資料庫單獨執行的增量升級。
+        from teacher_workbench_schema import upgrade_cursor
+        upgrade_cursor(cursor)
+
         # 學生表現紀錄 (campus/records.py)：獎懲與幹部
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `student_records` (

@@ -20,6 +20,7 @@
 
 家長留言給導師 (advisor_messages)：家長留言給子女的導師，導師回覆。
 """
+from datetime import date, datetime, timedelta, timezone
 from flask import Blueprint, request
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -79,16 +80,17 @@ def _import_into_db():
                                 (c["class_name"], sid))
     for n in store.data.get("notices") or []:
         res = deps.db_execute(
-            "INSERT INTO class_notices (class_name, target_type, target_label, whole_class, title, content, priority, sender, sender_username, due_date, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO class_notices (class_name, target_type, target_label, whole_class, title, content, priority, sender, sender_username, due_date, created_at, reply_required) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (n.get("class_name"), n.get("target_type") or "班級", n.get("target_label"), 1 if n.get("whole_class") else 0,
              n["title"], n["content"], n.get("priority") or "一般",
-             n.get("sender") or "", n.get("sender_username"), n.get("due_date") or None, n.get("created_at") or now_str()))
+             n.get("sender") or "", n.get("sender_username"), n.get("due_date") or None, n.get("created_at") or now_str(), int(n.get("reply_required", False))))
         for sid in n["recipients"]:
             if sid in existing:
                 deps.db_execute(
-                    "INSERT IGNORE INTO class_notice_recipients (notice_id, student_id, read_at) VALUES (%s, %s, %s)",
-                    (res["lastrowid"], sid, now_str() if sid in n.get("read_by", []) else None))
+                    "INSERT IGNORE INTO class_notice_recipients (notice_id, student_id, read_at, reply, reply_at) VALUES (%s, %s, %s, %s, %s)",
+                    (res["lastrowid"], sid, now_str() if sid in n.get("read_by", []) else None,
+                     n.get("replies", {}).get(sid, {}).get("reply"), n.get("replies", {}).get(sid, {}).get("reply_at")))
 
 
 def all_classes():
@@ -162,15 +164,15 @@ def remove_member(name, student_id):
 def add_notice(item):
     """item 不含 id / created_at；回傳完整的通知 (含 id、created_at、read_by)
     班級通知：class_name = 班級；廣播：class_name = None，target_type / target_label 說明對象"""
-    item = {"target_type": "班級", "target_label": item.get("class_name"), **item}
+    item = {"reply_required": False, "target_type": "班級", "target_label": item.get("class_name"), **item}
     created_at = now_str()
     if use_db():
         res = deps.db_execute(
-            "INSERT INTO class_notices (class_name, target_type, target_label, whole_class, title, content, priority, sender, sender_username, due_date, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO class_notices (class_name, target_type, target_label, whole_class, title, content, priority, sender, sender_username, due_date, created_at, reply_required) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (item["class_name"], item["target_type"], item["target_label"], 1 if item["whole_class"] else 0,
              item["title"], item["content"], item["priority"],
-             item["sender"], item["sender_username"], item["due_date"] or None, created_at))
+             item["sender"], item["sender_username"], item["due_date"] or None, created_at, int(item["reply_required"])))
         for sid in item["recipients"]:
             deps.db_execute("INSERT INTO class_notice_recipients (notice_id, student_id) VALUES (%s, %s)", (res["lastrowid"], sid))
         return {"id": res["lastrowid"], **item, "read_by": [], "created_at": created_at}
@@ -199,12 +201,13 @@ def load_notices(sender_username=None, student_id=None):
             return []
         ids = [r["id"] for r in rows]
         recs = deps.fetch_db_rows(
-            "SELECT notice_id, student_id, read_at FROM class_notice_recipients WHERE notice_id IN (%s)" % ",".join(["%s"] * len(ids)),
+            "SELECT notice_id, student_id, read_at, reply, reply_at FROM class_notice_recipients WHERE notice_id IN (%s)" % ",".join(["%s"] * len(ids)),
             tuple(ids)) or []
         return [{**r, **_target_fields(r), "whole_class": bool(r["whole_class"]), "due_date": str(r["due_date"] or "")[:10],
                  "created_at": _fmt_time(r["created_at"]),
                  "recipients": [x["student_id"] for x in recs if x["notice_id"] == r["id"]],
-                 "read_by": [x["student_id"] for x in recs if x["notice_id"] == r["id"] and x["read_at"]]} for r in rows]
+                 "read_by": [x["student_id"] for x in recs if x["notice_id"] == r["id"] and x["read_at"]],
+                 "replies": {x["student_id"]: {"reply": x["reply"], "reply_at": _fmt_time(x["reply_at"])} for x in recs if x["notice_id"] == r["id"] and x["reply"]}} for r in rows]
     items = [{**n, **_target_fields(n)} for n in store.section("notices", list)
              if (not sender_username or n["sender_username"] == sender_username)
              and (not student_id or student_id in n["recipients"])]
@@ -345,6 +348,13 @@ def send_notice():
     priority = data.get("priority") if data.get("priority") in ("一般", "重要", "緊急") else "一般"
     if not title or not content:
         return error("請輸入通知標題與內容")
+    due_date = str(data.get("due_date") or "").strip()
+    if due_date:
+        try:
+            if date.fromisoformat(due_date).isoformat() != due_date:
+                raise ValueError()
+        except ValueError:
+            return error("期限格式須為 YYYY-MM-DD")
     target = find_class(class_name)
     if not target:
         return error("請選擇班級", 404)
@@ -355,12 +365,14 @@ def send_notice():
     if recipients == "all":
         recipient_ids = members
     else:
-        recipient_ids = [s for s in recipients if s in members]
+        if not isinstance(recipients, list) or any(not isinstance(s, str) for s in recipients):
+            return error("收件人須為學號清單")
+        recipient_ids = list(dict.fromkeys(s for s in recipients if s in members))
     if not recipient_ids:
         return error("這個班級沒有可以通知的學生")
     item = add_notice({"class_name": class_name, "whole_class": recipients == "all", "recipients": recipient_ids,
                        "title": title, "content": content, "priority": priority, "sender": u["full_name"],
-                       "sender_username": u["username"], "due_date": str(data.get("due_date", "") or "")[:10]})
+                       "sender_username": u["username"], "due_date": due_date, "reply_required": data.get("reply_required") is True})
     deps.write_audit_log("notices", item["id"], "新增", after={k: item[k] for k in (
         "class_name", "title", "priority", "whole_class", "recipients", "due_date", "content")})
     who = "整班" if item["whole_class"] else f"{len(recipient_ids)} 位學生"
@@ -374,7 +386,10 @@ def sent():
     names = student_names()
     items = load_notices(sender_username=None if u["role"] == "管理員" else u["username"])
     result = [{**n, "read_count": len(n["read_by"]), "total": len(n["recipients"]),
-               "unread_names": [names.get(s, s) for s in n["recipients"] if s not in n["read_by"]]}
+               "unread_names": [names.get(s, s) for s in n["recipients"] if s not in n["read_by"]],
+               "reply_count": len(n.get("replies", {})),
+               "pending_reply_names": [names.get(s, s) for s in n["recipients"] if s not in n.get("replies", {})],
+               "reply_details": [{"student_id": sid, "full_name": names.get(sid, sid), **reply} for sid, reply in n.get("replies", {}).items()]}
               for n in items]
     return ok(data=result)
 
@@ -383,8 +398,8 @@ def sent():
 @require("學生", "家長")
 def inbox():
     sid = current_user()["student_id"]
-    items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username")}
-             | {"is_read": sid in n["read_by"]}
+    items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username", "replies")}
+             | {"is_read": sid in n["read_by"], "my_reply": n.get("replies", {}).get(sid)}
              for n in load_notices(student_id=sid)]
     return ok(data=items, unread_count=sum(1 for i in items if not i["is_read"]))
 
@@ -516,6 +531,13 @@ def send_broadcast():
         return error("請選擇廣播對象 (課程、科系、年級或全校)")
     if not title or not content:
         return error("請輸入通知標題與內容")
+    due_date = str(data.get("due_date") or "").strip()
+    if due_date:
+        try:
+            if date.fromisoformat(due_date).isoformat() != due_date:
+                raise ValueError()
+        except ValueError:
+            return error("期限格式須為 YYYY-MM-DD")
     label, recipient_ids = resolve_target(u, target_type, data.get("target"))
     if recipient_ids is None:
         return error("班導只能廣播給自己任教的課程；科系、年級、全校廣播限教職員", 403)
@@ -524,7 +546,7 @@ def send_broadcast():
     item = add_notice({"class_name": None, "target_type": target_type, "target_label": label[:100],
                        "whole_class": True, "recipients": recipient_ids,
                        "title": title, "content": content, "priority": priority, "sender": u["full_name"],
-                       "sender_username": u["username"], "due_date": str(data.get("due_date", "") or "")[:10]})
+                       "sender_username": u["username"], "due_date": due_date, "reply_required": data.get("reply_required") is True})
     deps.write_audit_log("notices", item["id"], "新增", after={k: item[k] for k in (
         "target_type", "target_label", "title", "priority", "recipients", "due_date", "content")})
     return ok(message=f"已廣播給「{label}」{len(recipient_ids)} 位學生", data=item)
@@ -594,3 +616,56 @@ def reply_advisor_message(msg_id):
         m["status"] = "已回覆"
         store.save()
     return ok(message="已回覆", data=m)
+
+
+REPLY_OPTIONS = ("收到", "會參加", "無法參加", "需要協助")
+
+
+@bp.route("/api/campus/notices/<int:notice_id>/reply", methods=["POST"])
+@require("學生")
+def reply_notice(notice_id):
+    sid = current_user()["student_id"]
+    notice = next((n for n in load_notices(student_id=sid) if n["id"] == notice_id), None)
+    if not notice:
+        return error("找不到通知", 404)
+    if not notice.get("reply_required"):
+        return error("這則通知不需要回條")
+    if notice.get("due_date") and notice["due_date"] < datetime.now(timezone(timedelta(hours=8))).date().isoformat():
+        return error("回條已截止", 409)
+    reply = (request.get_json(silent=True) or {}).get("reply")
+    if reply not in REPLY_OPTIONS:
+        return error("請選擇有效的回覆")
+    if use_db():
+        deps.db_execute("UPDATE class_notice_recipients SET reply = %s, reply_at = CURRENT_TIMESTAMP, read_at = COALESCE(read_at, CURRENT_TIMESTAMP) WHERE notice_id = %s AND student_id = %s", (reply, notice_id, sid))
+    else:
+        with store.lock:
+            target = next(n for n in store.section("notices", list) if n["id"] == notice_id)
+            target.setdefault("replies", {})[sid] = {"reply": reply, "reply_at": now_str()}
+            if sid not in target["read_by"]:
+                target["read_by"].append(sid)
+            store.save()
+    return ok(message="已送出回條")
+
+
+@bp.route("/api/campus/notices/<int:notice_id>/remind", methods=["POST"])
+@require(*STAFF_ROLES)
+def remind_notice(notice_id):
+    u = current_user()
+    notice = next((n for n in load_notices(sender_username=None if u["role"] == "管理員" else u["username"]) if n["id"] == notice_id), None)
+    if not notice:
+        return error("找不到通知或無權提醒", 404)
+    if not notice.get("reply_required"):
+        return error("這則通知不需要回條")
+    if notice.get("due_date") and notice["due_date"] < datetime.now(timezone(timedelta(hours=8))).date().isoformat():
+        return error("回條已截止，無法再提醒", 409)
+    pending = [sid for sid in notice["recipients"] if sid not in notice.get("replies", {})]
+    if not pending:
+        return ok(message="所有學生都已回覆", count=0)
+    # Reminder points to the original response; it does not create a second receipt task.
+    item = add_notice({"class_name": notice.get("class_name"), "target_type": notice.get("target_type"),
+                       "target_label": notice.get("target_label"), "whole_class": False, "recipients": pending,
+                       "title": ("回條提醒：" + notice["title"])[:80],
+                       "content": f"請至班級通知回覆原通知「{notice['title']}」的回條。", "priority": "重要",
+                       "sender": u["full_name"], "sender_username": u["username"], "due_date": notice.get("due_date", "")})
+    deps.write_audit_log("notices", item["id"], "提醒", after={"original_notice_id": notice_id, "count": len(pending)})
+    return ok(message=f"已提醒 {len(pending)} 位尚未回覆的學生", count=len(pending))
