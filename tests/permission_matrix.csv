@@ -199,7 +199,7 @@ GET,/admin-workbench,/admin-workbench,,行政案件整合權限,401,403,OK,403,4
 GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,403,403,403,403,OK,
 GET,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,OK,OK,
-POST,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,403,403,
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,依流程適用身分送件（學生或行政人員）,401,403,OK,403,403,OK,OK,
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/999999/files/missing,,行政案件整合權限,401,403,OK,403,403,OK,OK,
@@ -207,7 +207,7 @@ GET,/admin-workbench,/admin-workbench,,行政案件工作台,401,403,OK,403,403,
 GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,讀取處室設定,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,管理處室分工,401,403,403,403,403,403,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases,/api/campus/admin-cases,,案件清單,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
-POST,/api/campus/admin-cases,/api/campus/admin-cases,,學生送件,401,403,OK,403,403,403,403,案件可見範圍另由 test_admin_cases.py 驗證
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,依流程適用身分送件（學生或行政人員）,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,案件內容,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,分派補件與重送,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/99999/files/missing,,私有案件附件,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證

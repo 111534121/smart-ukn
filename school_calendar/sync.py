@@ -15,7 +15,7 @@ from datetime import datetime
 from .parser import parse_calendar_text
 
 CALENDAR_PAGE_URL = "https://daa.ukn.edu.tw/p/412-1021-846.php?Lang=zh-tw"
-DATA_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "school_calendar.json")
+DATA_FILE = os.getenv("SCHOOL_CALENDAR_FILE", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "school_calendar.json"))
 _HEADERS = {"User-Agent": "Mozilla/5.0 (SmartUKN calendar sync)"}
 
 

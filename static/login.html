@@ -151,6 +151,10 @@
                             <div class="font-bold text-ukn-900">導師：彭賓鈺</div>
                             <div class="text-[10px] text-slate-500 font-normal">資管五忠導師</div>
                         </button>
+                        <button type="button" onclick="fillAccount('dorm_demo', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">宿舍行政人員</div>
+                            <div class="text-[10px] text-slate-500 font-normal">dorm_demo／123456 · 宿舍審核與住宿案件</div>
+                        </button>
                         <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-emerald-900">管理員：系統後台</div>
                             <div class="text-[10px] text-slate-500 font-normal">CMS 規章維護權限</div>
@@ -313,7 +317,7 @@
                 const data = await res.json();
 
                 if (res.ok && data.status === 'success') {
-                    window.location.href = '/';
+                    window.location.href = data.user.workbench_url || '/';
                 } else {
                     errBox.textContent = data.message || '帳號或密碼錯誤';
                     errBox.classList.remove('hidden');
@@ -374,5 +378,6 @@
         }
     </script>
     <script src="/js/anniversary.js"></script>
+    <script src="/js/admin-demo-login.js"></script>
 </body>
 </html>

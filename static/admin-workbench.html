@@ -1,20 +1,24 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>行政案件工作台｜康寧大學</title><link rel="stylesheet" href="/css/admin-workbench.css?v=20261021"></head>
+<title>行政案件工作台｜康寧大學</title><link rel="stylesheet" href="/css/admin-workbench.css?v=20261021-offices3"></head>
 <body>
 <header><a href="/">康寧大學 <span>UKN</span></a><nav><a href="/">返回校務首頁</a><a href="/admin" id="legacy" hidden>管理後台</a><span id="identity"></span></nav></header>
 <main>
 <section class="hero"><div><p class="eyebrow">CAMPUS SERVICES · 行政服務</p><h1 id="heading">行政案件工作台</h1><p id="intro">讓每一份申請，都有清楚的下一步。</p></div><button id="refresh" type="button">重新整理</button></section>
 <p id="message" role="status" aria-live="polite"></p>
+<section class="card" id="officePortal"><div class="sectionhead"><div><h2>依處室辦理</h2><p class="muted">處室名稱依學校官網建立，申辦步驟為可編修的示範流程。</p></div><a href="https://web.ukn.edu.tw/m/412-1000-377.php" target="_blank" rel="noopener">官網行政單位 ↗</a></div><div id="officeCards" class="office-grid"></div><div id="officeWorkflowInfo"></div></section>
+<details class="card" id="demoTools"><summary>切換示範身分</summary><p class="muted">每個處室都有自己的示範承辦帳號；學生可練習補件。示範密碼為 123456，切換後請按登入。</p><div class="actions"><select id="demoAccount" aria-label="示範帳號"></select><a id="demoLogin" href="/login">切換並登入 →</a></div></details>
 <section id="shortcuts" class="card" hidden><h2>原有審核與校務管理</h2><p class="muted">下方案件清單管理本工作台送出的申請；原有業務請從以下入口辦理。</p><div class="actions"><a href="/">請假、證照與導師事項</a><a href="/admin">教室借用與校務資料</a><a href="/">宿舍與報帳原有流程</a></div></section>
 <section id="stats" class="stats" aria-label="案件摘要"></section>
-<section id="newRequest" class="card" hidden><h2>新增行政申請</h2><p class="muted">選擇類別後，系統會送交對應處室。既有請假、宿舍與報帳請使用原本申請頁面。</p>
-<form id="createForm"><div class="formgrid"><label>申請類別<select name="kind" id="kind" required></select></label><label>案件標題<input name="title" maxlength="100" required placeholder="請簡述需要協助的事項"></label></div><label>申請說明<textarea name="detail" maxlength="4000" rows="4" required></textarea></label><label>附件（選填，最多 5 個，每個 10 MB）<input type="file" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt"></label><p class="muted">支援 PDF、JPG、PNG、DOCX、XLSX、TXT；附件僅提供申請人與承辦處室下載。</p><button class="primary" type="submit">送出申請</button></form></section>
-<section id="officeSettings" class="card" hidden><h2>處室分工設定</h2><p class="muted">只有管理員能設定。未指定處室的行政帳號無法查看案件；移除處室後立即生效。</p><form id="settingsForm"><div id="members" class="formgrid"></div><button type="submit">儲存處室分工</button></form></section>
+<details id="newRequest" class="card" hidden><summary>新增行政申請</summary><p class="muted">選擇類別後，系統會送交對應處室。既有請假、宿舍與報帳請使用原本申請頁面。</p>
+<form id="createForm"><div class="formgrid"><label>申請類別<select name="kind" id="kind" required></select></label><label>案件標題<input name="title" maxlength="100" required placeholder="請簡述需要協助的事項"></label></div><div id="requestGuide"></div><div id="requestFields" class="formgrid"></div><label>申請說明<textarea name="detail" maxlength="4000" rows="4" required></textarea></label><label>附件（選填，最多 5 個，每個 10 MB）<input type="file" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt"></label><p class="muted">支援 PDF、JPG、PNG、DOCX、XLSX、TXT；附件僅提供申請人與承辦處室下載。</p><button class="primary" type="submit">送出申請</button></form></details>
+<details id="officeSettings" class="card" hidden><summary>管理員設定：處室分工與流程</summary><p class="muted">可新增處室、分配帳號，以及逐項調整各處室的示範流程。已有案件保留送件當時的流程版本。</p><form id="settingsForm"><h3>帳號所屬處室</h3><div id="members" class="formgrid"></div><button type="submit">儲存處室分工</button></form>
+<form id="addOfficeForm"><h3>新增處室</h3><label>處室名稱<input id="newOfficeName" maxlength="50" required></label><button type="submit">新增處室</button></form>
+<form id="workflowForm"><h3>編修申辦流程</h3><div class="formgrid"><label>承辦處室<select id="editOffice"></select></label><label>選擇流程<select id="editWorkflow"></select></label></div><label>流程名稱<input id="workflowName" maxlength="60" required></label><div class="formgrid"><label>適用身分<select id="workflowRoles"><option value="all">學生與行政人員</option><option value="student">學生</option><option value="staff">行政人員</option></select></label><label>每階段辦理天數<input id="workflowDays" type="number" min="1" max="90" value="7" required></label><label>必要欄位（每行一項）<textarea id="workflowFields" rows="3"></textarea></label><label>應備文件（每行一項）<textarea id="workflowDocuments" rows="3"></textarea></label></div><h3>各步驟的承辦處室與檢核事項</h3><div id="workflowSteps"></div><button id="addStep" type="button">＋ 新增步驟</button><button class="primary" type="submit">儲存此流程</button></form></details>
 <section class="card"><div class="sectionhead"><div><h2 id="listTitle">案件清單</h2><p id="scope" class="muted"></p></div></div>
 <div class="filters"><label>搜尋<input id="search" type="search" placeholder="標題、學號或案件編號"></label><label>案件狀態<select id="status"><option value="">全部狀態</option><option>待受理</option><option>處理中</option><option>待補件</option><option>重新送審</option><option>已完成</option><option>已退件</option></select></label><label>處室<select id="officeFilter"><option value="">全部處室</option></select></label><label class="check"><input type="checkbox" id="mine">只看我承辦</label><label class="check"><input type="checkbox" id="overdue">只看逾期</label></div>
 <div id="caseList" class="case-list">讀取中…</div></section>
 <section id="detail" class="card" hidden aria-label="案件內容" tabindex="-1"></section>
-</main><footer>康寧大學 · 行政服務與申請進度</footer><script src="/js/admin-workbench.js?v=20261021"></script>
+</main><footer>康寧大學 · 行政服務與申請進度</footer><script src="/js/admin-workbench.js?v=20261022-dorm1"></script>
 </body></html>

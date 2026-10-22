@@ -37,3 +37,23 @@ def test_only_staff_can_read_alerts(client, login):
     assert client.get("/api/staff/alerts").status_code == 403
     login("staff1")
     assert client.get("/api/staff/alerts").status_code == 200
+
+
+def test_dorm_account_has_only_dorm_work_and_no_academic_review(client, login):
+    login('student1')
+    client.post('/api/student/leave-requests', json=LEAVE)
+    login('dorm_demo')
+    kinds = {item['type'] for item in client.get('/api/staff/alerts').get_json()['data']}
+    assert kinds <= {'宿舍', '行政案件'}
+    assert client.get('/api/leave-requests/review').status_code == 403
+    assert client.get('/api/campus/certs/review').status_code == 403
+    assert client.get('/api/campus/rooms/bookings?scope=all').status_code == 403
+    assert client.get('/api/campus/dorm/applications').status_code == 200
+    assert client.get('/api/auth/me').get_json()['user']['can_manage_dorm']
+
+
+def test_dorm_demo_is_available_from_login_page(client):
+    assert b'dorm_demo' in client.get('/login').data
+    response = client.post('/api/auth/login', json={'username':'dorm_demo','password':'123456'})
+    assert response.status_code == 200
+    assert response.get_json()['user']['workbench_url'] == '/'
