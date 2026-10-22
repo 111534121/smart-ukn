@@ -11,6 +11,7 @@ evidence/check_reports/
 
 # 個人資料與執行時產生的上傳檔 (不推上 GitHub)
 my_data.json
+daily_progress_log.csv
 static/uploads/report_*
 
 # 使用者上傳的證照/競賽檔案 (個人文件) 不進 git，只保留示範檔
