@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW"{% if word %} xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"{% endif %}>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ form.title }}{% if example %}（填寫範例）{% endif %} - 康寧大學</title>
+{% if word %}<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->{% endif %}
+<style>
+    @page { size: A4; margin: 16mm 14mm; }
+    body { margin: 0; background: #e9edf3; color: #111; font-family: "Microsoft JhengHei", "Noto Sans TC", "PingFang TC", sans-serif; font-size: 11pt; }
+    .toolbar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: #003377; color: #fff; }
+    .toolbar .name { font-weight: 700; margin-right: auto; }
+    .toolbar a, .toolbar button { font: inherit; font-size: 13px; color: #003377; background: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-decoration: none; }
+    .toolbar a.on { background: #ffd8c2; }
+    .sheet { position: relative; max-width: 182mm; margin: 20px auto; padding: 14mm 14mm 12mm; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.12); overflow: hidden; }
+    h1 { text-align: center; font-size: 18pt; margin: 0 0 2px; letter-spacing: 2px; }
+    .sub { text-align: center; font-size: 10pt; color: #444; margin: 0 0 10px; }
+    .intro { font-size: 9.5pt; color: #333; border-left: 3px solid #003377; padding: 4px 8px; margin: 0 0 10px; background: #f4f6fa; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #333; padding: 7px 8px; vertical-align: top; font-size: 10.5pt; }
+    th { width: 24%; background: #eef1f6; text-align: left; font-weight: 700; }
+    td.long { height: 70px; }
+    .fill { color: #1a4fd6; font-family: "DFKai-SB", "BiauKai", "標楷體", "Kaiti TC", serif; font-size: 12pt; }
+    .tipno { display: inline-block; min-width: 16px; height: 16px; line-height: 16px; border-radius: 8px; background: #d4380d; color: #fff; font-size: 9pt; text-align: center; margin-left: 4px; font-family: Arial, sans-serif; }
+    .section { font-weight: 700; margin: 12px 0 4px; font-size: 10.5pt; }
+    .sign td { height: 62px; text-align: center; vertical-align: bottom; font-size: 9pt; color: #555; width: 20%; }
+    .sign th { width: auto; text-align: center; font-size: 9.5pt; }
+    .stamp { display: inline-block; border: 2px solid #c41d1d; color: #c41d1d; border-radius: 4px; padding: 2px 6px; font-weight: 700; transform: rotate(-8deg); font-size: 10pt; }
+    ul { margin: 2px 0 0; padding-left: 20px; font-size: 9.5pt; }
+    .tips { margin-top: 12px; border: 2px dashed #d4380d; padding: 8px 12px; background: #fff7f2; font-size: 10pt; }
+    .tips b { color: #d4380d; }
+    .watermark { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%) rotate(-24deg); font-size: 64pt; font-weight: 700; color: rgba(212, 56, 13, .09); white-space: nowrap; pointer-events: none; }
+    .flow { display: flex; flex-wrap: wrap; gap: 4px; font-size: 9pt; color: #333; margin-top: 4px; }
+    .flow span { border: 1px solid #b7cfe6; border-radius: 10px; padding: 1px 8px; background: #f2f5fa; }
+    .foot { margin-top: 10px; font-size: 8.5pt; color: #666; display: flex; justify-content: space-between; }
+    @media (max-width: 640px) { .sheet { margin: 0; padding: 16px; box-shadow: none; } th { width: 34%; } }
+    @media print { body { background: #fff; } .toolbar { display: none; } .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; } }
+</style>
+</head>
+<body>
+{% if not word %}
+<div class="toolbar">
+    <span class="name">康寧大學 · {{ form.title }}</span>
+    <a href="/forms/{{ code }}" class="{{ '' if example else 'on' }}">空白表單</a>
+    <a href="/forms/{{ code }}?example=1" class="{{ 'on' if example else '' }}">👀 填寫範例</a>
+    <button type="button" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+    <a href="/forms/{{ code }}?download=doc{{ '&example=1' if example else '' }}">⬇️ 下載 Word 檔</a>
+    {% if item %}<a href="/#checklist" title="不用印出來，直接在系統送出並追蹤進度">📤 改用線上申請</a>{% endif %}
+</div>
+{% endif %}
+
+<div class="sheet">
+    {% if example and not word %}<div class="watermark">填寫範例</div>{% endif %}
+    <h1>康寧大學 {{ form.title }}{% if example and word %}（填寫範例）{% endif %}</h1>
+    <p class="sub">承辦單位：{{ form.office }}{% if item %}　｜　{{ item.office_location }}　｜　{{ item.contact_phone }}{% endif %}</p>
+    {% if form.intro %}<p class="intro">{{ form.intro }}</p>{% endif %}
+
+    <div class="section">一、申請人資料</div>
+    <table>
+        {% for f in common_fields %}{% if loop.index0 % 2 == 0 %}<tr>{% endif %}
+            <th>{{ f.label }}{% if example and f.key in tip_no %}<span class="tipno">{{ tip_no[f.key] }}</span>{% endif %}</th>
+            <td>{% if example %}<span class="fill">{{ f.example }}</span>{% else %}&nbsp;{% endif %}</td>
+        {% if loop.index0 % 2 == 1 or loop.last %}</tr>{% endif %}{% endfor %}
+    </table>
+
+    <div class="section">二、申請內容</div>
+    <table>
+        {% for f in form.fields %}
+        <tr>
+            <th>{{ f.label }}{% if example and f.key in tip_no %}<span class="tipno">{{ tip_no[f.key] }}</span>{% endif %}</th>
+            <td class="{{ 'long' if f.long else '' }}">{% if example %}<span class="fill">{{ f.example }}</span>{% else %}&nbsp;{% endif %}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <th>申請日期</th>
+            <td>{% if example %}<span class="fill">{{ example_date }}</span>{% else %}　　　 年　　 月　　 日{% endif %}</td>
+        </tr>
+    </table>
+
+    <div class="section">三、簽核欄（依序送簽）</div>
+    <table class="sign">
+        <tr>
+            <th>申請人</th>
+            {% for s in form.signers %}<th>{{ s.name }}</th>{% endfor %}
+        </tr>
+        <tr>
+            <td>{% if example %}<span class="fill">王小明</span>{% endif %}</td>
+            {% for s in form.signers %}<td>{% if example %}<span class="stamp">{{ s.name[:2] }}章</span>{% endif %}</td>{% endfor %}
+        </tr>
+    </table>
+    <div class="flow">線上申請時的進度：{% for s in stages %}<span>{{ s.icon }} {{ s.name }}</span>{% if not loop.last %} → {% endif %}{% endfor %}</div>
+
+    {% if form.attachments %}
+    <div class="section">四、應附文件</div>
+    <ul>{% for a in form.attachments %}<li>□ {{ a }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if form.notes %}
+    <div class="section">注意事項</div>
+    <ul>{% for n in form.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if example and tips %}
+    <div class="tips">
+        <div><b>📌 填寫小提醒（對照表格上的紅色號碼）</b></div>
+        <ul>{% for f in tips %}<li><b>{{ loop.index }}</b>　{{ f.label }}：{{ f.tip }}</li>{% endfor %}</ul>
+        <div style="margin-top:4px">藍色字為範例內容，請換成自己的資料；簽核欄的紅章由各單位蓋，申請人不用填。</div>
+    </div>
+    {% endif %}
+
+    <div class="foot"><span>表單代碼：{{ code }}</span><span>Smart UKN 康寧大學智慧校園服務平台</span></div>
+</div>
+</body>
+</html>

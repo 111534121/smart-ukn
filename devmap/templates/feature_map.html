@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>功能對照表 - Smart UKN</title>
+<style>
+    :root { --bg: #f5f6f8; --card: #fff; --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --brand: #003377; --brand-soft: #e1e8f3;
+            --read: #0f766e; --read-bg: #ccfbf1; --write: #b45309; --write-bg: #fef3c7; --json: #7c3aed; --json-bg: #ede9fe; --code-bg: #f1f5f9; }
+    @media (prefers-color-scheme: dark) {
+        :root { --bg: #0b1220; --card: #111a2e; --ink: #e2e8f0; --muted: #94a3b8; --line: #23304a; --brand: #8fb0d6; --brand-soft: #1b2a47;
+                --read: #5eead4; --read-bg: #134e4a; --write: #fcd34d; --write-bg: #4a3410; --json: #c4b5fd; --json-bg: #2e1f5e; --code-bg: #0b1324; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; }
+    header { background: #003377; color: #fff; padding: 18px 16px; }
+    header h1 { margin: 0; font-size: 20px; }
+    header p { margin: 4px 0 0; font-size: 12.5px; opacity: .85; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+    .bar { position: sticky; top: 0; z-index: 3; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .bar .wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    input[type=search] { flex: 1 1 260px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--ink); font: inherit; }
+    .tabs a { font-size: 12.5px; color: var(--brand); text-decoration: none; padding: 4px 8px; border-radius: 4px; }
+    .tabs a:hover { background: var(--brand-soft); }
+    .status { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; }
+    .on { background: var(--read-bg); color: var(--read); } .off { background: var(--write-bg); color: var(--write); }
+    h2 { font-size: 16px; margin: 26px 0 10px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin: 12px 0; }
+    details.feat { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
+    details.feat > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    details.feat > summary::-webkit-details-marker { display: none; }
+    details.feat[open] > summary { border-bottom: 1px solid var(--line); }
+    .fname { font-weight: 700; font-size: 15px; margin-right: 4px; }
+    .grp { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+    .chip { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; font-family: Consolas, "Cascadia Mono", monospace; border-radius: 4px; padding: 1px 7px; text-decoration: none; }
+    .t-read { background: var(--read-bg); color: var(--read); } .t-write { background: var(--write-bg); color: var(--write); }
+    .t-json { background: var(--json-bg); color: var(--json); } .t-none { color: var(--muted); font-family: inherit; }
+    .body { padding: 12px 14px; display: grid; gap: 12px; }
+    .ep { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+    .ep-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+    .method { font: 700 11px Consolas, monospace; color: #fff; background: var(--brand); border-radius: 3px; padding: 1px 5px; }
+    @media (prefers-color-scheme: dark) { .method { color: #0b1220; } }
+    .rule { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; }
+    .grid { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin-top: 8px; font-size: 13px; }
+    .grid > dt { color: var(--muted); }
+    .grid > dd { margin: 0; min-width: 0; }
+    a.code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; color: var(--brand); text-decoration: none; word-break: break-all; }
+    a.code:hover { text-decoration: underline; }
+    .sql { display: block; background: var(--code-bg); border-radius: 4px; padding: 3px 8px; margin: 3px 0; font: 12px/1.5 Consolas, monospace; color: var(--muted); overflow-x: auto; white-space: pre; }
+    .muted { color: var(--muted); font-size: 12.5px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--code-bg); }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.unused td { opacity: .6; }
+    details.cols summary { cursor: pointer; color: var(--brand); font-size: 12px; }
+    .cols ul { margin: 6px 0 0; padding-left: 16px; font-size: 12px; }
+    .table-scroll { overflow-x: auto; }
+    footer { color: var(--muted); font-size: 12px; padding: 24px 0 40px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .grid > dt { margin-top: 6px; } }
+</style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>學生端功能對照表：功能 → API → 程式碼 → XAMPP 資料表</h1>
+        <p>每次開啟都從目前的程式碼重新分析，行號不會過期。點藍色的 <code>檔案:行號</code> 會直接在 VS Code 打開那一行。</p>
+    </div>
+</header>
+
+<div class="bar">
+    <div class="wrap">
+        <input type="search" id="q" placeholder="搜尋功能、API、資料表或函式名稱，例如 online_applications、請假、load_checklists" aria-label="搜尋">
+        <span class="status {{ 'on' if db_online else 'off' }}">{{ ('XAMPP MySQL 已連線：' ~ db_name) if db_online else 'XAMPP MySQL 未連線 (筆數不顯示)' }}</span>
+        <span class="tabs"><a href="#features">功能</a><a href="#tables">資料表</a><a href="/admin">回後台</a></span>
+    </div>
+</div>
+
+<main class="wrap">
+    <div class="legend">
+        <span><span class="chip t-read">資料表</span> 只讀取 (SELECT)</span>
+        <span><span class="chip t-write">資料表 ✎</span> 會寫入 (INSERT / UPDATE / DELETE)</span>
+        <span><span class="chip t-json">JSON</span> 存在 data/campus_store.json，尚未進 MySQL</span>
+        <span>📁 上傳檔案存在 static/uploads</span>
+        <span>DEMO_* = MySQL 沒開時改用的示範資料</span>
+    </div>
+
+    <h2 id="features">學生端功能（{{ features|length }} 項）</h2>
+    {% for f in features %}
+    <details class="feat" data-search="{{ f.name }} {{ f.group }} {{ f.tab or '' }} {% for e in f.endpoints %}{{ e.rule }} {% if e.main %}{{ e.main.name }} {{ e.main.file }} {% endif %}{% for h in e.helpers %}{{ h.name }} {% endfor %}{% endfor %}{% for t in f.tables %}{{ t.name }} {% endfor %}{{ f.stores|join(' ') }}">
+        <summary>
+            <span aria-hidden="true">{{ f.icon }}</span>
+            <span class="fname">{{ f.name }}</span>
+            <span class="grp">{{ f.group }}{% if f.tab %} · #{{ f.tab }}{% endif %}</span>
+            {% for t in f.tables %}<a class="chip {{ 't-write' if '寫' in t.ops else 't-read' }}" href="#table-{{ t.name }}" onclick="event.stopPropagation()">{{ t.name }}{% if '寫' in t.ops %} ✎{% endif %}</a>{% endfor %}
+            {% for s in f.stores %}<span class="chip t-json">JSON:{{ s }}</span>{% endfor %}
+            {% if f.uploads %}<span class="chip t-none">📁 uploads</span>{% endif %}
+            {% if not f.tables and not f.stores %}<span class="chip t-none">不使用資料表</span>{% endif %}
+        </summary>
+        <div class="body">
+            {% for e in f.endpoints %}
+            <div class="ep">
+                <div class="ep-head">
+                    {% for m in e.methods %}<span class="method">{{ m }}</span>{% endfor %}
+                    <span class="rule">{{ e.rule }}</span>
+                </div>
+                <dl class="grid">
+                    <dt>後端函式</dt>
+                    <dd>{% if e.main %}<a class="code" href="{{ e.main.vscode }}">{{ e.main.name }}()  {{ e.main.file }}:{{ e.main.line }}</a>{% endif %}</dd>
+                    {% if e.helpers %}
+                    <dt>往下呼叫</dt>
+                    <dd>{% for h in e.helpers %}<div style="padding-left: {{ (h.depth - 1) * 14 }}px"><a class="code" href="{{ h.vscode }}">{{ '└ ' if h.depth > 1 else '' }}{{ h.name }}()  {{ h.file }}:{{ h.line }}</a></div>{% endfor %}</dd>
+                    {% endif %}
+                    <dt>XAMPP 資料表</dt>
+                    <dd>
+                        {% for t in e.tables %}
+                        <div style="margin-bottom:4px">
+                            <a class="chip {{ 't-write' if '寫' in t.ops else 't-read' }}" href="#table-{{ t.name }}">{{ t.name }}</a>
+                            <span class="muted">{{ t.ops|join('、') }}</span>
+                            {% for r in t.refs %}<a class="sql" href="{{ r.vscode }}" title="{{ r.file }}:{{ r.line }}  {{ r.func }}()">{{ r.file }}:{{ r.line }}  {{ r.code }}</a>{% endfor %}
+                        </div>
+                        {% else %}<span class="muted">—</span>{% endfor %}
+                        {% for s in e.stores %}<span class="chip t-json">JSON:{{ s }}</span> {% endfor %}
+                        {% if e.uploads %}<span class="muted">📁 上傳檔案存到 static/uploads</span>{% endif %}
+                    </dd>
+                    {% if e.demos %}
+                    <dt>離線示範資料</dt>
+                    <dd class="muted">{{ e.demos|join('、') }}</dd>
+                    {% endif %}
+                    <dt>前端呼叫處</dt>
+                    <dd>{% for r in e.frontend %}<div><a class="code" href="{{ r.vscode }}">{{ r.file }}:{{ r.line }}</a>{% if r.func %} <span class="muted">{{ r.func }}()</span>{% endif %}</div>{% else %}<span class="muted">前端沒有直接呼叫 (後台或其他頁面使用)</span>{% endfor %}</dd>
+                </dl>
+            </div>
+            {% else %}<p class="muted">找不到對應的 API。</p>{% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+
+    <h2 id="tables">XAMPP 資料表（init_db.py 定義 {{ tables|length }} 張）</h2>
+    <div class="table-scroll">
+    <table>
+        <thead><tr><th>資料表</th><th>建立位置</th><th>欄位</th><th>被哪些學生功能使用</th><th class="num">目前筆數</th></tr></thead>
+        <tbody>
+        {% for t in tables %}
+        <tr id="table-{{ t.name }}" class="{{ '' if t.used_by else 'unused' }}" data-search="{{ t.name }} {{ t.used_by|join(' ') }} {% for c in t.columns %}{{ c.name }} {% endfor %}">
+            <td><span class="chip t-read">{{ t.name }}</span>{% if t.exists == false %}<div class="muted">⚠️ XAMPP 尚未建立，請執行 python init_db.py</div>{% endif %}</td>
+            <td><a class="code" href="{{ t.vscode }}">{{ t.file }}:{{ t.line }}</a></td>
+            <td>
+                <details class="cols"><summary>{{ t.columns|length }} 個欄位</summary>
+                    <ul>{% for c in t.columns %}<li><code>{{ c.name }}</code> <span class="muted">{{ c.type }}{% if c.comment %} · {{ c.comment }}{% endif %}</span></li>{% endfor %}</ul>
+                    {% if t.foreign_keys %}<div class="muted">外鍵：{% for col, ref in t.foreign_keys %}{{ col }} → {{ ref }}{% if not loop.last %}、{% endif %}{% endfor %}</div>{% endif %}
+                </details>
+            </td>
+            <td>{{ t.used_by|join('、') if t.used_by else '（只有後台或其他功能使用）' }}</td>
+            <td class="num">{{ t.rows if t.rows is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <footer>專案路徑：{{ root }} · 分析來源：Flask 路由、Python 原始碼的 SQL、init_db.py、static/index.html 與 static/js/*.js</footer>
+</main>
+
+<script>
+    // 搜尋：功能卡與資料表列同時過濾；搜尋時自動展開符合的功能
+    const q = document.getElementById('q');
+    q.addEventListener('input', () => {
+        const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        document.querySelectorAll('[data-search]').forEach(el => {
+            const text = (el.dataset.search + ' ' + el.textContent).toLowerCase();
+            const hit = words.every(w => text.includes(w));
+            el.hidden = !hit;
+            if (el.tagName === 'DETAILS') el.open = words.length > 0 && hit;
+        });
+    });
+</script>
+</body>
+</html>

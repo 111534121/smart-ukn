@@ -5,3 +5,4 @@ data/
 .pytest_cache/
 static/forms/
 .env
+tools/weekly_log_draft.json

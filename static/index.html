@@ -52,6 +52,10 @@
         body {
             background-color: #f5f6f8;
         }
+        /* 線上申辦進度條：目前這一關的外框呼吸燈 (applications.js) */
+        @keyframes appPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(47, 100, 173, .45); } 50% { box-shadow: 0 0 0 7px rgba(47, 100, 173, 0); } }
+        .app-pulse { animation: appPulse 1.8s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .app-pulse { animation: none; } }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -315,6 +319,20 @@
                 <ul id="leaveReviewList" class="space-y-2"></ul>
             </section>
 
+            <!-- 線上申辦審核 (老師：導師班、老師關卡；教職員/管理員：全校所有關卡) -->
+            <section id="homeAppReview" class="hidden bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900">線上申辦審核</h2>
+                        <p class="text-xs text-slate-500 mt-1" id="appReviewScope"></p>
+                    </div>
+                    <select id="appReviewFilter" onchange="loadAppReview()" class="text-xs border border-slate-300 rounded px-2 py-1.5 self-start sm:self-auto">
+                        <option value="pending">輪到我審</option><option value="all">全部</option>
+                    </select>
+                </div>
+                <div id="appReviewList" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+            </section>
+
             <!-- 未登入：說明登入後可看到的個人化資訊 -->
             <section id="homeDashboardGuest" class="hidden rounded border border-ukn-200 bg-ukn-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -334,6 +352,15 @@
                     <span class="shrink-0 text-slate-500 text-xs font-semibold px-2.5 py-1">即將開始</span>
                     <div id="calendarNowUpcoming" class="flex flex-wrap gap-2 text-xs"></div>
                 </div>
+            </section>
+
+            <!-- 我的線上申請進度 (審核中、被退回的才顯示，資料來源 /api/applications/mine) -->
+            <section id="homeOnlineApps" class="hidden bg-white rounded border border-slate-200 px-5 py-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="ukn-title text-sm font-bold text-slate-900">我的線上申請跑到哪了</h2>
+                    <button onclick="switchTab('tab-checklist')" class="text-xs text-ukn-700 hover:underline font-semibold">看詳細進度 ➔</button>
+                </div>
+                <div id="homeOnlineAppsList" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
             </section>
 
             <!-- 我進行中的申辦 (登入學生才顯示，資料來源 /api/student/my-applications) -->
@@ -632,12 +659,24 @@
         <!-- ======================================================== -->
         <div id="tab-checklist" class="tab-content hidden space-y-6">
 
+            <!-- 線上申請進度 (applications.js)：每一關用圖示顯示跑到哪 -->
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <h2 class="ukn-title text-lg font-bold text-slate-900">我的線上申請進度</h2>
+                        <span class="text-[10px] bg-ukn-50 text-ukn-800 font-bold px-2 py-0.5 rounded">線上簽核</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">線上送出後依序由老師、處室簽核。✓ 綠色為已通過、藍框閃爍為目前這一關、✕ 紅色為被退回、灰色為還沒到。</p>
+                </div>
+                <div id="onlineAppsList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+            </section>
+
             <!-- 我的申辦進度看板 -->
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="ukn-title text-lg font-bold text-slate-900">我的行政申辦進度</h2>
+                            <h2 class="ukn-title text-lg font-bold text-slate-900">我的辦理步驟（自己勾選）</h2>
                             <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">系統自動保存</span>
                         </div>
                         <p class="text-xs text-slate-500 mt-1">各申辦步驟勾選進度（例如：等候導師簽章中）均自動儲存於帳號中，隨時登入皆可追蹤續辦。</p>
@@ -1125,6 +1164,17 @@
             </section>
         </div>
 
+        <!-- 我的操行 (conduct.js) -->
+        <div id="tab-conduct" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">我的操行</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">每學期的操行成績與計算方式：基本分 + 導師評分 + 獎懲 + 缺曠扣分。本學期分數為暫定，期末導師評分與獎懲確定後才定案。</p>
+                </div>
+                <div id="conductBody"></div>
+            </section>
+        </div>
+
         <!-- 學期學習自評表 (self-review.js) -->
         <div id="tab-selfreview" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
@@ -1206,6 +1256,8 @@
             // 儀表板的「前往請假系統」連結取自統一入口設定，因此先載入連結
             loadStudentLinks().then(loadDashboard);
             loadLeaveReview();
+            loadAppReview();
+            loadOnlineApps();
             loadCalendarNow();
             await loadChecklists();
             await loadCalendarWeek();
@@ -2102,11 +2154,11 @@
                             </div>
                             <p class="text-xs text-slate-500 mt-0.5">辦公室：${item.office_location || '行政大樓'} · 分機：${item.office_phone || '#310'} · 期限：${item.deadline_desc || '學期第 10-12 週'}</p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="openApplyModal(${Number(item.checklist_id)})" class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold px-3 py-1.5 rounded transition">📤 線上申請</button>
                             ${item.form_url ? `
-                                <a href="${item.form_url}" target="_blank" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1">
-                                    <span>下載申請表單</span>
-                                </a>
+                                <a href="${escapeHtml(item.form_url)}" target="_blank" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded transition">📄 下載申請表</a>
+                                ${/^\/forms\/[a-z_]+$/.test(item.form_url) ? `<a href="${escapeHtml(item.form_url)}?example=1" target="_blank" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded transition">👀 填寫範例</a>` : ''}
                             ` : ''}
                         </div>
                     </div>
@@ -2615,6 +2667,8 @@
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js"></script>
     <script src="/js/self-review.js"></script>
+    <script src="/js/applications.js"></script>
+    <script src="/js/conduct.js"></script>
     <script src="/js/assistant.js"></script>
     <script src="/js/tour.js"></script>
     <script src="/js/anniversary.js"></script>

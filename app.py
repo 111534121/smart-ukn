@@ -3,7 +3,7 @@ from flask_cors import CORS
 # pyrefly: ignore [missing-import]
 from werkzeug.security import check_password_hash
 # pyrefly: ignore [missing-import]
-from werkzeug.utils import secure_filename, safe_join
+from werkzeug.utils import secure_filename
 from functools import wraps
 # pyrefly: ignore [missing-import]
 import mysql.connector
@@ -114,17 +114,7 @@ def serve_uploaded_file(filename):
     """安全提供靜態上傳檔案與 PDF 在線預覽"""
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-@app.route("/forms/<path:filename>")
-def serve_form_file(filename):
-    """提供申辦表單下載，若檔案不存在則動態生成示範表單以供下載"""
-    # safe_join 擋掉 ../ 路徑穿越；只替不存在的 .pdf 表單產生示範檔
-    target_path = safe_join(FORMS_FOLDER, filename)
-    if target_path is None or (not os.path.exists(target_path) and not filename.endswith(".pdf")):
-        return jsonify({"status": "error", "message": "找不到該表單"}), 404
-    if not os.path.exists(target_path):
-        with open(target_path, "w", encoding="utf-8") as f:
-            f.write(f"【康寧大學官方行政申辦表單範本】\n表單代碼：{filename}\n說明：請填妥本表後送交相關處室核章。\n下載時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    return send_from_directory(FORMS_FOLDER, filename, as_attachment=True)
+# 申辦表單下載 /forms/<code> (可列印、下載 Word、填寫範例)：見 applications 套件
 
 # ==========================================
 # 1. 資料庫連線配置
@@ -425,7 +415,7 @@ DEMO_CHECKLISTS = [
         "office_hours": "週一至週五 08:30 - 17:00",
         "office_location": "康寧樓 2 樓 A201 (課務組)",
         "contact_phone": "02-2632-1181 分機 310, 312",
-        "form_download_url": "/forms/course_withdraw_form.pdf",
+        "form_download_url": "/forms/course_withdraw_form",
         "system_url": "http://talk.ukn.edu.tw/class_redi/class.php",
         "deadline_week_info": "第 10-12 週 (本週受理中)",
         "related_kb_id": 1,
@@ -447,7 +437,7 @@ DEMO_CHECKLISTS = [
         "office_hours": "週一至週五 08:00 - 17:30",
         "office_location": "行政大樓 1 樓 學務處生輔組",
         "contact_phone": "02-2632-1181 分機 211",
-        "form_download_url": "/forms/leave_application_form.pdf",
+        "form_download_url": "/forms/leave_application_form",
         "system_url": "https://ec.ukn.edu.tw/AskLeave/login.aspx",
         "deadline_week_info": "請假日當日起 3 日內",
         "related_kb_id": 2,
@@ -469,7 +459,7 @@ DEMO_CHECKLISTS = [
         "office_hours": "週一至週五 09:00 - 16:30",
         "office_location": "卓越樓 3 樓 C305 (通識教育中心)",
         "contact_phone": "02-2632-1181 分機 520, 521",
-        "form_download_url": "/forms/english_waiver_form.pdf",
+        "form_download_url": "/forms/english_waiver_form",
         "system_url": "http://203.71.63.13/academic/",
         "deadline_week_info": "開學前至加退選截止 (已截止)",
         "related_kb_id": 3,
@@ -491,7 +481,7 @@ DEMO_CHECKLISTS = [
         "office_hours": "週一至週五 08:30 - 17:00",
         "office_location": "康寧樓 2 樓 A202 (註冊組)",
         "contact_phone": "02-2632-1181 分機 321, 322",
-        "form_download_url": "/forms/graduation_audit_form.pdf",
+        "form_download_url": "/forms/graduation_audit_form",
         "system_url": "http://203.71.63.13/academic/",
         "deadline_week_info": "大四第 8-16 週 (進行中)",
         "related_kb_id": 4,
@@ -513,7 +503,7 @@ DEMO_CHECKLISTS = [
         "office_hours": "週一至週五 09:00 - 17:00",
         "office_location": "圖資大樓 2 樓 研發處實習就業組",
         "contact_phone": "02-2632-1181 分機 612",
-        "form_download_url": "/forms/certificate_reward_form.pdf",
+        "form_download_url": "/forms/certificate_reward_form",
         "system_url": "https://oes3.ukn.edu.tw/~license/",
         "deadline_week_info": "每學期第 1-5 週",
         "related_kb_id": 5,
@@ -3270,6 +3260,53 @@ assistant.init_app(app, SimpleNamespace(
     record_unmatched_query=record_unmatched_query,
     contacts=CAMPUS_CONTACT_DIRECTORY,
 ))
+
+# 線上申辦與進度追蹤、申請表單 (applications 套件)
+import applications
+
+def notify_student(student_id, subject):
+    """通知信只說有結果，不含申請內容；寄送失敗不影響審核"""
+    try:
+        get_mailer().send(campus_email(student_id), subject, "您的線上申辦已有審核結果，請登入系統「行政申請流程」查看")
+        return True
+    except Exception:
+        return False
+
+applications.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    write_audit_log=write_audit_log,
+    load_checklists=load_checklists,
+    load_student=_load_student_info,
+    class_student_ids=_get_class_student_ids,
+    notify_student=notify_student,
+    forms_folder=FORMS_FOLDER,
+))
+
+# 我的操行 (conduct 套件)：基本分 + 導師評分 + 獎懲 + 缺曠扣分
+import conduct
+
+def term_of(date_str):
+    """日期字串 → 所屬學期，例如 2026-10-02 → 115-1"""
+    term = current_academic_term(datetime.strptime(str(date_str)[:10], "%Y-%m-%d").date())
+    return f"{term['academic_year']}-{term['semester']}"
+
+conduct.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    write_audit_log=write_audit_log,
+    load_student=_load_student_info,
+    list_students=list_students,
+    class_student_ids=_get_class_student_ids,
+    attendance_records=lambda student_id: get_attendance_source().list_records(student_id),
+    term_of=term_of,
+    current_semester=lambda: term_of(datetime.now().date().isoformat()),
+))
+
+# 功能對照表 /admin/feature-map (devmap 套件)：學生功能 → API → 程式碼行號 → XAMPP 資料表
+import devmap
+
+devmap.init_app(app, SimpleNamespace(fetch_db_rows=fetch_db_rows))
 
 # 校慶跑馬燈與匿名祝福 (anniversary 套件)
 import anniversary
