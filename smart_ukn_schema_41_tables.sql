@@ -1173,13 +1173,13 @@ ALTER TABLE `visitor_logs`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `academic_calendar`
 --
 ALTER TABLE `academic_calendar`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `anniversary_events`
 --
 ALTER TABLE `anniversary_events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `anniversary_wishes`
@@ -1191,115 +1191,115 @@ ALTER TABLE `anniversary_wishes`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `assignments`
 --
 ALTER TABLE `assignments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `attendance_records`
 --
 ALTER TABLE `attendance_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `certificates`
 --
 ALTER TABLE `certificates`
-  MODIFY `cert_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `cert_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `checklist_items`
 --
 ALTER TABLE `checklist_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `class_notices`
 --
 ALTER TABLE `class_notices`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `class_schedule`
 --
 ALTER TABLE `class_schedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `counseling_records`
 --
 ALTER TABLE `counseling_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `deadlines`
 --
 ALTER TABLE `deadlines`
-  MODIFY `deadline_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `deadline_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `dorm_applications`
 --
 ALTER TABLE `dorm_applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `faculty_profiles`
 --
 ALTER TABLE `faculty_profiles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `graduation_requirements`
 --
 ALTER TABLE `graduation_requirements`
-  MODIFY `req_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `req_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `knowledge_base`
 --
 ALTER TABLE `knowledge_base`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `knowledge_categories`
 --
 ALTER TABLE `knowledge_categories`
-  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `scholarships`
 --
 ALTER TABLE `scholarships`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `search_feedback`
 --
 ALTER TABLE `search_feedback`
-  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `search_logs`
 --
 ALTER TABLE `search_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `self_reviews`
@@ -1311,37 +1311,37 @@ ALTER TABLE `self_reviews`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `student_credits`
 --
 ALTER TABLE `student_credits`
-  MODIFY `credit_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `credit_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `student_privacy_settings`
 --
 ALTER TABLE `student_privacy_settings`
-  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `student_records`
 --
 ALTER TABLE `student_records`
-  MODIFY `record_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `record_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `synonym_dictionary`
 --
 ALTER TABLE `synonym_dictionary`
-  MODIFY `synonym_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `synonym_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `unmatched_queries`
 --
 ALTER TABLE `unmatched_queries`
-  MODIFY `query_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `query_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, ;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `visitor_logs`
