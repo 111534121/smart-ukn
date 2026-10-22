@@ -114,6 +114,9 @@ DORM_NEXT_ACTION = {
 
 def can_manage_dorm(user):
     if user.get("role") == "管理員": return True
+    if user.get("role") == "住宿管理員":
+        rows = deps.fetch_db_rows("SELECT role FROM users WHERE username=%s", (user.get("username"),))
+        return bool(rows and rows[0]['role'] == '住宿管理員') if rows is not None else True
     if user.get("role") != "教職員": return False
     rows = deps.fetch_db_rows("SELECT role, can_manage_dorm FROM users WHERE username=%s", (user.get("username"),))
     if rows is not None:
@@ -180,14 +183,14 @@ def dorm_apply():
 
 
 @bp.route("/api/campus/dorm/applications", methods=["GET"])
-@require("管理員", "教職員")
+@require("管理員", "教職員", "住宿管理員")
 @dorm_manager_required
 def dorm_all():
     return ok(data=sorted(dorm_apps(), key=lambda a: (-a["commute_minutes"], a["created_at"])), stages=DORM_STAGES)
 
 
 @bp.route("/api/campus/dorm/applications/<int:app_id>", methods=["POST"])
-@require("管理員", "教職員")
+@require("管理員", "教職員", "住宿管理員")
 @dorm_manager_required
 def dorm_update(app_id):
     data = request.get_json(silent=True) or {}

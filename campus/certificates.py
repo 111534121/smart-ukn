@@ -201,6 +201,10 @@ def init_sync():
 
 
 def can_review(u, item):
+    if u["role"] == "教職員":
+        from .admin_cases import is_dorm_staff
+        if is_dorm_staff(u):
+            return False
     if u["role"] in ("管理員", "教職員"):
         return True
     return u["role"] == "老師" and u.get("advised_class") and u["advised_class"] == item["class_name"]
@@ -267,6 +271,9 @@ def delete_cert(item_id):
 @require("老師", "教職員", "管理員")
 def review_list():
     u = current_user()
+    from .admin_cases import is_dorm_staff
+    if is_dorm_staff(u):
+        return error("住宿管理帳號不能審核證照", 403)
     status = request.args.get("status", "待審核")
     items = [i for i in submissions() if can_review(u, i) and (status == "全部" or i["status"] == status)]
     items.sort(key=lambda x: x["created_at"], reverse=True)
@@ -277,6 +284,9 @@ def review_list():
 @require("老師", "教職員", "管理員")
 def review(item_id):
     u = current_user()
+    from .admin_cases import is_dorm_staff
+    if is_dorm_staff(u):
+        return error("住宿管理帳號不能審核證照", 403)
     data = request.get_json(silent=True) or {}
     action = data.get("action")
     if action not in ("approve", "reject"):

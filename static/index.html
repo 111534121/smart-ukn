@@ -10,8 +10,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png">
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="康寧校園">
-    <title>康寧大學 學生學習與校務服務系統 - UKN Campus Services</title>
+    <meta name="apple-mobile-web-app-title" content="校園智慧官網">
+    <title>校園智慧官網｜Smart UKN 康寧校園服務</title>
     <!-- Google Fonts & Tailwind CSS CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -166,6 +166,8 @@
         .cal-ev.expired { background: #f1f5f9 !important; border-left-color: #cbd5e1 !important; color: #94a3b8 !important; text-decoration: line-through; }
         @media (prefers-reduced-motion: reduce) { #heroTrack { transition: none; } }
     </style>
+    <link rel="stylesheet" href="/css/home-portal.css?v=49">
+    <link rel="stylesheet" href="/css/campus-access.css?v=46">
 </head>
 
 <body class="min-h-screen flex flex-col font-sans antialiased selection:bg-ukn-700 selection:text-white">
@@ -203,7 +205,7 @@
                     <img src="/img/ukn-logo.png" alt="康寧大學 University of Kang Ning" class="h-9 sm:h-11 w-auto shrink-0">
                     <span class="hidden md:block border-l border-slate-300 pl-3 leading-tight">
                         <span id="siteNameText" class="block text-ukn-800 font-bold text-base">學生學習與校務服務系統</span>
-                        <span class="block text-[11px] text-slate-500 mt-0.5">UKN Campus Services</span>
+                        <span class="block text-[11px] text-slate-500 mt-0.5">校園智慧官網 · UKN Campus Services</span>
                     </span>
                 </a>
 
@@ -274,8 +276,24 @@
         <!-- ======================================================== -->
         <div id="tab-home" class="tab-content space-y-6">
 
-            <!-- 老師 / 教職員首頁：今天的課、今天要處理、我的導師班 (campus-features.js loadStaffHome) -->
+            <!-- 教職員登入後優先顯示今日工作台 -->
             <div id="staffHome" class="hidden space-y-4"></div>
+
+            <section class="portal-welcome" aria-labelledby="portalTitle">
+                <div class="portal-intro"><div><p class="portal-eyebrow">UKN CAMPUS · 校園服務入口</p><h1 id="portalTitle">你的校園日常，從這裡開始。</h1><p>找資訊、辦事情、掌握最新消息，一個入口就能出發。</p></div><a class="portal-login" href="/login">登入個人服務 ↗</a></div>
+                <form id="portalSearchForm" class="portal-search" role="search" aria-label="整合搜尋">
+                    <label for="portalQuery">今天想找什麼？</label>
+                    <div class="portal-search-row"><input id="portalQuery" type="search" enterkeyhint="search" maxlength="100" required placeholder="搜尋服務、公告、校規，例如：請假、獎學金" autocomplete="off"><button type="submit">搜尋 →</button></div>
+                    <div class="portal-popular">熱門搜尋 <button type="button" data-query="請假">請假</button><button type="button" data-query="獎學金">獎學金</button><button type="button" data-query="行事曆">行事曆</button><button type="button" data-query="校園地圖">校園地圖</button></div>
+                </form>
+                <section id="portalResults" class="portal-results" aria-label="搜尋結果" hidden><div class="portal-result-heading"><h2>搜尋結果</h2><button type="button" id="portalSearchClose">收合結果 ×</button></div><p id="portalSearchStatus" role="status" aria-live="polite"></p><div id="portalResultList"></div></section>
+            </section>
+            <section class="portal-audiences" aria-labelledby="portalAudienceTitle"><div class="portal-section-heading"><div><p class="portal-eyebrow">YOUR CAMPUS, YOUR WAY</p><h2 id="portalAudienceTitle">從你的身分開始</h2></div><p>選擇入口，快速找到需要的服務</p></div><div id="portalAudienceButtons" class="portal-audience-buttons" role="group" aria-label="選擇服務身分"></div><div class="portal-audience-detail"><div><h3 id="portalAudienceName"></h3><p id="portalAudienceHint"></p></div><div id="portalAudienceLinks" class="portal-audience-links"></div></div></section>
+
+            <section class="campus-access" aria-labelledby="campusAccessHeading">
+                <div><h2 id="campusAccessHeading">把校園智慧官網帶著走</h2><p id="campusAccessStatus" role="status" aria-live="polite">正在準備分享與主畫面捷徑…</p><button id="campusAccessRetry" type="button" hidden>重新載入</button></div>
+                <div class="campus-access-actions"><button id="campusQr" type="button" disabled>QR Code</button><button id="campusCopy" type="button" disabled>複製連結</button><a id="campusLine" class="campus-line" hidden target="_blank" rel="noopener noreferrer">分享到 LINE ↗</a><button id="campusInstall" type="button">加入手機主畫面</button></div>
+            </section>
 
             <!-- 主視覺輪播 (老師、教職員不顯示) -->
             <section id="heroSection" class="hero -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 relative overflow-hidden" aria-roledescription="carousel" aria-label="校園焦點">
@@ -333,6 +351,7 @@
                     </div>
                     <button type="button" onclick="toggleAllServices()" id="toggleServicesBtn" class="text-xs text-ukn-700 font-semibold hover:underline self-start sm:self-auto">顯示全部服務 ▾</button>
                 </div>
+                <div id="portalRecommendedSection"><h3 class="text-sm font-bold text-ukn-800 mb-2">常用服務捷徑</h3><div id="portalRecommended" class="portal-recommended"></div></div>
                 <div>
                     <div class="text-[11px] font-bold text-accent-500 mb-2 tracking-wider">★ 我的置頂</div>
                     <div id="pinnedServices" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5"></div>
@@ -350,6 +369,8 @@
                         </div>
                         <button type="button" onclick="switchTab('tab-calendar')" class="text-xs text-ukn-700 hover:underline pb-3">行事曆 ➔</button>
                     </div>
+                    <div id="portalNewsFilters" class="portal-news-filters" role="group" aria-label="公告分類"></div>
+                    <p id="portalNewsStatus" class="px-5 text-xs text-slate-500" role="status"></p>
                     <ul id="homeNewsList" class="divide-y divide-slate-100"></ul>
                 </section>
 
@@ -1267,7 +1288,7 @@
                 </div>
                 <div id="dormBody"></div>
             </section>
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+            <section id="affairsSection" class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
                     <h2 class="ukn-title text-xl font-bold text-slate-900">總務處：報帳與成果報告</h2>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">線上繳交前先幫你檢查有沒有漏填，並提醒報帳截止日與成果報告次數是否達標。</p>
@@ -2111,7 +2132,7 @@
                     document.getElementById('userRoleTag').textContent = currentUser.role;
                     document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (currentUser.dept_name || '');
                     if (adminBtn) {
-                        if (['管理員', '教職員'].includes(currentUser.role)) {
+                        if (currentUser.role === '管理員' || (currentUser.role === '教職員' && !currentUser.can_manage_dorm)) {
                             adminBtn.classList.remove('hidden');
                             adminBtn.classList.add('flex');
                         } else {
@@ -3760,8 +3781,10 @@
 
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
-    <script src="/js/campus-shell.js"></script>
-    <script src="/js/campus-features.js"></script>
+    <script src="/js/campus-shell.js?v=20261022-dorm2"></script>
+    <script src="/js/home-portal.js?v=49"></script>
+    <script src="/js/campus-access.js?v=46"></script>
+    <script src="/js/campus-features.js?v=20261022-dorm2"></script>
     <script src="/js/campus-life.js"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js"></script>
@@ -3803,6 +3826,7 @@
         document.title = document.title.replace(/(學生學習與校務服務系統|教職員校務服務系統)/, name);
     }
 </script>
+    <dialog id="campusAccessDialog" aria-labelledby="campusAccessTitle"><div class="campus-access-dialog-heading"><h2 id="campusAccessTitle"></h2><form method="dialog"><button type="submit" aria-label="關閉">×</button></form></div><div id="campusAccessBody"></div></dialog>
 </body>
 
 </html>

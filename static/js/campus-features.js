@@ -1354,6 +1354,41 @@ const ALERT_TILES = [
     { type: '教室借用', icon: '🔑', label: '待審教室借用', goto: '/admin' },
     { type: '宿舍', icon: '🏢', label: '待審宿舍申請', goto: 'tab-services' },
 ];
+let staffTodoItems = [];
+
+function staffTodoStatus(item, today) {
+    const due = /^\d{4}-\d{2}-\d{2}$/.test(item.due_date || '') ? item.due_date : '';
+    if (!due) return {rank: 3, label: '待處理', tone: 'text-slate-600'};
+    if (due < today) return {rank: 0, label: `已逾期 ${due}`, tone: 'text-rose-700'};
+    if (due === today) return {rank: 1, label: '今天到期', tone: 'text-rose-700'};
+    return {rank: 2, label: `期限 ${due}`, tone: 'text-amber-800'};
+}
+
+function openStaffTodo(index) {
+    const item = staffTodoItems[index];
+    if (!item) return;
+    if (item.type === '關懷' && /^care-\d+$/.test(item.key || '')) {
+        openCareRecord(Number(item.key.slice(5)));
+    } else if (item.goto === '/admin-workbench' || item.goto === '/admin') {
+        location.assign(item.goto);
+    } else if (ALERT_TILES.some(tile => tile.type === item.type && tile.goto === item.goto)) {
+        switchTab(item.goto);
+        if (item.type === '請假') document.getElementById('homeLeaveReview')?.scrollIntoView({behavior: 'smooth'});
+    }
+}
+
+async function sendLineDemo() {
+    const button = document.getElementById('lineDemoSend');
+    if (button) button.disabled = true;
+    try {
+        const result = await api('/api/line/demo-send', {method: 'POST'});
+        toast(result.message || '測試通知已送出');
+    } catch (error) {
+        toast(error.message || '測試通知送出失敗');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
 
 async function loadStaffHome() {
     const box = document.getElementById('staffHome');
@@ -1361,16 +1396,20 @@ async function loadStaffHome() {
     box.classList.remove('hidden');
     box.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
     const isTeacher = currentUser.role === '老師';
-    const [teachers, alerts, overview, care, receipts] = await Promise.all([
+    const dormStaff = isDormStaff();
+    const [teachers, alerts, overview, care, receipts, lineDemo] = await Promise.all([
         isTeacher ? api('/api/campus/teachers').catch(() => null) : Promise.resolve(null),
         api('/api/staff/alerts').catch(e => ({data: [], error: e.message})),
-        api('/api/teacher/class-overview').catch(() => null),
-        api('/api/campus/counseling').catch(e => ({error: e.message})),
-        api('/api/campus/notices/sent').catch(e => ({error: e.message})),
+        dormStaff ? Promise.resolve(null) : api('/api/teacher/class-overview').catch(() => null),
+        dormStaff ? Promise.resolve(null) : api('/api/campus/counseling').catch(e => ({error: e.message})),
+        dormStaff ? Promise.resolve(null) : api('/api/campus/notices/sent').catch(e => ({error: e.message})),
+        isTeacher ? api('/api/line/demo-status').catch(() => ({ready: false})) : Promise.resolve({ready: false}),
     ]);
-    const parts = [`<section class="rounded border border-ukn-200 bg-ukn-50 p-5 flex flex-wrap justify-between gap-3"><div><h2 class="text-xl font-bold text-ukn-900">${isTeacher ? '老師今日工作台' : '今日工作台'}</h2><p class="text-sm mt-1">${esc(currentUser.full_name)} · ${taipeiToday()}${currentUser.advised_class ? ' · 導師班 ' + esc(currentUser.advised_class) : ' · 校務與授課事項'}</p></div><button type="button" onclick="loadStaffHome()" class="border rounded px-3 py-2 bg-white text-sm">重新整理</button></section>`];
+    const parts = [`<section class="rounded border border-ukn-200 bg-ukn-50 p-5 flex flex-wrap justify-between gap-3"><div><h2 class="text-xl font-bold text-ukn-900">${isTeacher ? '老師今日工作台' : dormStaff ? '宿舍行政工作台' : '今日工作台'}</h2><p class="text-sm mt-1">${esc(currentUser.full_name)} · ${taipeiToday()}${currentUser.advised_class ? ' · 導師班 ' + esc(currentUser.advised_class) : dormStaff ? ' · 住宿管理' : ' · 校務與授課事項'}</p></div><button type="button" onclick="loadStaffHome()" class="border rounded px-3 py-2 bg-white text-sm">重新整理</button></section>`];
 
-    if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">行政人員工作台</h2><p class="text-sm text-slate-600">查看所屬處室案件、分派承辦人、要求補件與完成結案。</p><a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">開啟行政案件工作台 →</a></section>`);
+    if (isTeacher && lineDemo?.ready) parts.push(`<section class="bg-white rounded border border-ukn-200 p-4 flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold text-ukn-900">LINE 專題測試</h2><p class="text-xs text-slate-600">只發送一則假資料訊息到預設的測試帳號。</p></div><button id="lineDemoSend" type="button" onclick="sendLineDemo()" class="bg-ukn-800 text-white rounded px-4 py-2 text-sm disabled:opacity-50">傳送測試通知 →</button></section>`);
+
+    if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">${dormStaff ? '住宿行政案件' : '行政人員工作台'}</h2><p class="text-sm text-slate-600">${dormStaff ? '查看住宿異動、設備報修與補件案件。' : '查看所屬處室案件、分派承辦人、要求補件與完成結案。'}</p><a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">${dormStaff ? '查看住宿案件' : '開啟行政案件工作台'} →</a></section>`);
     // 1. 今天的課
     if (isTeacher && teachers) {
         const me = teachers.data.find(t => t.name === currentUser.full_name.replace(/\s*老師$/, ''));
@@ -1396,16 +1435,28 @@ async function loadStaffHome() {
 
     // 2. 今天要處理
     const items = alerts.data || [];
+    const today = taipeiToday();
+    staffTodoItems = items.slice().sort((a, b) => {
+        const priority = staffTodoStatus(a, today).rank - staffTodoStatus(b, today).rank;
+        return priority || (a.due_date || '9999').localeCompare(b.due_date || '9999') || String(b.at || '').localeCompare(String(a.at || ''));
+    });
     const tiles = ALERT_TILES.map(t => ({ ...t, n: items.filter(a => a.type === t.type).length }))
-        .filter(t => t.n || (isTeacher ? ['請假', '證照', '預警', '關懷', '回條'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
-    const go = t => t.goto.startsWith('/') ? `window.open('${t.goto}', '_blank')`
+        .filter(t => dormStaff ? ['行政案件', '宿舍'].includes(t.type) : t.n || (isTeacher ? ['請假', '證照', '預警', '關懷', '回條'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
+    const go = t => t.goto.startsWith('/') ? `location.assign('${t.goto}')`
         : `switchTab('${t.goto}')${t.anchor ? `; document.getElementById('${t.anchor}')?.scrollIntoView({ behavior: 'smooth' })` : ''}`;
     parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
         ${alerts.error ? `<p class="text-sm text-rose-700">待辦讀取失敗：${esc(alerts.error)}</p>` : ''}
         <h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
+        ${isTeacher ? (items.length ? `<p class="text-sm text-slate-600">${tiles.filter(t => t.n).map(t => `${t.label} ${t.n}`).join(' · ')}</p>` : '') : `<div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
             class="text-left rounded border p-4 hover:shadow ${t.n ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-500'}">
-            <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>
+            <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>`}
+        ${staffTodoItems.length ? `<ul class="divide-y divide-slate-100 border rounded" aria-label="待處理事項">${staffTodoItems.slice(0, isTeacher ? 5 : undefined).map((item, index) => {
+            const status = staffTodoStatus(item, today);
+            return `<li class="p-3 flex flex-wrap items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-xs font-semibold ${status.tone}">${esc(item.type)} · ${status.label}</p><p class="font-semibold text-slate-900">${esc(item.title)}</p>${item.detail ? `<p class="text-sm text-slate-600">${esc(item.detail)}</p>` : ''}</div><button type="button" onclick="openStaffTodo(${index})" class="text-sm font-semibold text-ukn-800 border border-ukn-200 rounded px-3 py-2 hover:bg-ukn-50">前往處理 →</button></li>`;
+        }).join('')}</ul>${isTeacher && staffTodoItems.length > 5 ? `<details class="border rounded px-3 py-2"><summary class="cursor-pointer font-semibold text-ukn-800">查看其餘 ${staffTodoItems.length - 5} 件待辦</summary><ul class="divide-y divide-slate-100" aria-label="其餘待處理事項">${staffTodoItems.slice(5).map((item, offset) => {
+            const status = staffTodoStatus(item, today);
+            return `<li class="py-3 flex flex-wrap items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-xs font-semibold ${status.tone}">${esc(item.type)} · ${status.label}</p><p class="font-semibold text-slate-900">${esc(item.title)}</p>${item.detail ? `<p class="text-sm text-slate-600">${esc(item.detail)}</p>` : ''}</div><button type="button" onclick="openStaffTodo(${offset + 5})" class="text-sm font-semibold text-ukn-800 border border-ukn-200 rounded px-3 py-2 hover:bg-ukn-50">前往處理 →</button></li>`;
+        }).join('')}</ul></details>` : ''}` : ''}
         ${items.length || alerts.error ? '' : '<div class="text-sm text-slate-500">目前沒有待處理的事項 🎉</div>'}
     </section>`);
 
@@ -1419,7 +1470,7 @@ async function loadStaffHome() {
             <button type="button" onclick="switchTab('tab-myclass')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm whitespace-nowrap self-start sm:self-auto">打開我的導師班 ➔</button>
         </section>`);
     }
-    parts.push(staffFollowUpHtml(care), staffReceiptsHtml(receipts));
+    if ((!isTeacher || alerts.error) && !dormStaff) parts.push(staffFollowUpHtml(care), staffReceiptsHtml(receipts));
     box.innerHTML = parts.join('');
 }
 

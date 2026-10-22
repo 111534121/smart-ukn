@@ -199,7 +199,7 @@ GET,/admin-workbench,/admin-workbench,,行政案件整合權限,401,403,OK,403,4
 GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,行政案件整合權限,401,403,403,403,403,403,OK,
 GET,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,OK,OK,
-POST,/api/campus/admin-cases,/api/campus/admin-cases,,行政案件整合權限,401,403,OK,403,403,403,403,
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,依流程適用身分送件（學生或行政人員）,401,403,OK,403,403,OK,OK,
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/999999,,行政案件整合權限,401,403,OK,403,403,OK,OK,
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/999999/files/missing,,行政案件整合權限,401,403,OK,403,403,OK,OK,
@@ -207,7 +207,7 @@ GET,/admin-workbench,/admin-workbench,,行政案件工作台,401,403,OK,403,403,
 GET,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,讀取處室設定,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 PUT,/api/campus/admin-cases/config,/api/campus/admin-cases/config,,管理處室分工,401,403,403,403,403,403,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases,/api/campus/admin-cases,,案件清單,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
-POST,/api/campus/admin-cases,/api/campus/admin-cases,,學生送件,401,403,OK,403,403,403,403,案件可見範圍另由 test_admin_cases.py 驗證
+POST,/api/campus/admin-cases,/api/campus/admin-cases,,依流程適用身分送件（學生或行政人員）,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,案件內容,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,分派補件與重送,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/99999/files/missing,,私有案件附件,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
@@ -227,3 +227,11 @@ PUT,/api/campus/events/<int:event_id>/registrations/<int:reg_id>,/api/campus/eve
 DELETE,/api/campus/events/<int:event_id>/registrations/<int:reg_id>,/api/campus/events/999999/registrations/999999,,刪除報名紀錄,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可刪除
 POST,/api/campus/events/<int:event_id>/registrations/<int:reg_id>/notify,/api/campus/events/999999/registrations/999999/notify,,重寄報名通知信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
 GET,/admin/events,/admin/events,,活動報名管理頁面,401,403,403,403,OK,OK,OK,頁面本身限老師/教職員/管理員，跟 admin-workbench 的防護作法一致
+GET,/api/campus/assistant/students,/api/campus/assistant/students?dept_id=CS,,科助查詢科系學生名單,401,403,403,403,403,403,OK,僅科助/管理員可用；科助只能查自己科系 (個別資料層級)；管理員需帶 dept_id 查詢參數
+GET,/api/line/demo-status,/api/line/demo-status,,LINE 推播示範狀態,401,403,403,403,OK,403,403,僅老師可用
+POST,/api/line/demo-send,/api/line/demo-send,,LINE 推播示範發送,401,403,403,403,OK,403,403,僅老師可用
+GET,/api/line/settings,/api/line/settings,,LINE 推播設定查詢,401,403,403,403,OK,403,403,僅老師可用
+PUT,/api/line/settings,/api/line/settings,,LINE 推播設定更新,401,403,403,403,OK,403,403,僅老師可用
+GET,/api/public-site,/api/public-site,,公開網址查詢,OK,OK,OK,OK,OK,OK,OK,公開資訊，不需登入
+GET,/api/public-site/qr.svg,/api/public-site/qr.svg,,公開網址 QR Code,OK,OK,OK,OK,OK,OK,OK,公開資訊，不需登入
+GET,/healthz,/healthz,,健康檢查探針,OK,OK,OK,OK,OK,OK,OK,不查身分/資料庫，僅回 {status:ok}

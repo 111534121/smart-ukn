@@ -1,0 +1,22 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const elements = new Map();
+const el = id => {if(!elements.has(id)) elements.set(id,{textContent:'',innerHTML:'',disabled:true,hidden:false,addEventListener(){},showModal(){this.open=true},close(){this.open=false}});return elements.get(id)};
+const events={};
+const ctx=vm.createContext({console,window:{addEventListener:(name,fn)=>events[name]=fn,matchMedia:()=>({matches:false})},navigator:{userAgent:'iPhone',platform:'iPhone'},document:{getElementById:el},escapeHtml:s=>String(s??'').replaceAll('<','&lt;').replaceAll('"','&quot;'),api:async()=>({ready:false})});
+vm.runInContext(fs.readFileSync('static/js/campus-access.js','utf8'),ctx);
+(async()=>{
+ await ctx.loadCampusSharing();assert.equal(el('campusQr').disabled,true);assert.equal(el('campusLine').hidden,true);
+ ctx.api=async()=>({ready:true,public_url:'https://campus.example.edu/',line_url:'https://line.me/R/share?text=test'});
+ await ctx.loadCampusSharing();assert.equal(el('campusQr').disabled,false);assert.match(el('campusLine').href,/line.me/);
+ ctx.showCampusQr();assert.match(el('campusAccessBody').innerHTML,/\/api\/public-site\/qr.svg/);assert.doesNotMatch(el('campusAccessBody').innerHTML,/api.qrserver/);
+ await ctx.copyCampusUrl();assert.match(el('campusAccessBody').innerHTML,/readonly/);
+ await ctx.installCampusHome();assert.match(el('campusAccessBody').innerHTML,/Safari/);
+ ctx.navigator.userAgent='Android Line/15.0';await ctx.installCampusHome();assert.match(el('campusAccessBody').innerHTML,/外部瀏覽器/);
+ let prompted=0;events.beforeinstallprompt({preventDefault(){},async prompt(){prompted++},userChoice:Promise.resolve({outcome:'accepted'})});await ctx.installCampusHome();assert.equal(prompted,1);
+ events.beforeinstallprompt({preventDefault(){},async prompt(){},userChoice:Promise.resolve({outcome:'dismissed'})});await ctx.installCampusHome();assert.match(el('campusAccessStatus').textContent,/取消/);
+ ctx.window.matchMedia=()=>({matches:true});await ctx.installCampusHome();assert.match(el('campusAccessTitle').textContent,/已從主畫面/);
+ ctx.api=async()=>{throw Error('offline')};await ctx.loadCampusSharing();assert.equal(el('campusAccessRetry').hidden,false);assert.equal(el('campusQr').disabled,true);assert.equal(el('campusLine').hidden,true);
+ console.log('分享預覽狀態、QR Code、複製備援、iPhone／LINE 引導、安裝接受與取消、離線錯誤測試通過。');
+})().catch(e=>{console.error(e);process.exitCode=1});

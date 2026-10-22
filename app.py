@@ -79,6 +79,7 @@ app.secret_key = load_secret_key()
 # 登入時勾選「記住我」：30 天內不用再登入 (session.permanent)
 app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE") == "1"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 # 上傳檔案總大小上限 (20MB)：避免單一請求夾帶過大檔案耗盡記憶體/硬碟 (例如手機掃描 PDF 動輒幾十MB)
@@ -106,8 +107,8 @@ def api_internal_error(e):
     return e
 
 # 檔案上傳設定 (支援 PDF 檔與證照、比賽照片)
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
-FORMS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms")
+UPLOAD_FOLDER = os.getenv("UPLOAD_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads"))
+FORMS_FOLDER = os.getenv("FORMS_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "forms"))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(FORMS_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp", "svg"}
@@ -389,6 +390,14 @@ DEMO_USERS = [
     {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇"},
     {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔"}
 ]
+
+# 虛構的處室操作帳號；正式資料庫需執行 seed_admin_offices_demo.py 才會建立。
+from campus.office_catalog import demo_accounts as office_demo_accounts
+DEMO_USERS.extend({"user_id": 9100 + i, "username": u['username'], "password_hash": _DEMO_PW_123456,
+                   "role": u['role'], "student_id": None, "full_name": u['full_name'],
+                   "can_manage_dorm": u['role'] == '住宿管理員'}
+                  for i, u in enumerate(office_demo_accounts())
+                  if not any(existing['username'] == u['username'] for existing in DEMO_USERS))
 
 DEMO_CATEGORIES = [
     {"category_id": 1, "category_name": "教務學則與選課", "icon": "📖", "sort_order": 1, "subcategories": ["停修/棄修手續", "先修與擋修規定", "畢業學分資格"]},
@@ -1030,6 +1039,7 @@ def auth_login():
                 "user_id": user_record["user_id"],
                 "username": user_record["username"],
                 "role": user_record["role"],
+                "workbench_url": "/admin-workbench" if user_record["role"] in ('處室承辦','科助','住宿管理員') else "/",
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
                 "dept_name": user_record.get("dept_name", "資訊管理科（五專）"),
@@ -3267,7 +3277,7 @@ def update_or_delete_rule(rule_id):
 #     連結網址集中存放於 links.json，後台可新增/修改/刪除
 # ==========================================
 
-LINKS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json")
+LINKS_FILE = os.getenv("LINKS_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json"))
 links_lock = threading.Lock()
 
 def load_quick_links():
@@ -4429,6 +4439,9 @@ def cancel_leave_request(leave_id):
 @app.route("/api/leave-requests/review", methods=["GET"])
 @role_required(*LEAVE_REVIEW_ROLES)
 def list_leave_requests_for_review():
+    from campus import admin_cases
+    if admin_cases.is_dorm_staff():
+        return jsonify({"status": "error", "message": "住宿管理帳號不能審核一般假單"}), 403
     status = request.args.get("status", "待審核")
     if status == "all":
         status = None
@@ -4445,6 +4458,9 @@ def list_leave_requests_for_review():
 @app.route("/api/leave-requests/<int:leave_id>/review", methods=["POST"])
 @role_required(*LEAVE_REVIEW_ROLES)
 def review_leave_request(leave_id):
+    from campus import admin_cases
+    if admin_cases.is_dorm_staff():
+        return jsonify({"status": "error", "message": "住宿管理帳號不能審核一般假單"}), 403
     data = request.get_json(silent=True) or {}
     result = str(data.get("status", "")).strip()
     note = str(data.get("review_note", "")).strip()[:255]
@@ -4478,17 +4494,33 @@ def review_leave_request(leave_id):
 @app.route("/api/staff/alerts", methods=["GET"])
 @role_required("老師", "教職員", "管理員")
 def staff_alerts():
-    from campus import certificates, facilities, services
+    from campus import admin_cases, certificates, facilities, services
     role, advised = session.get("role"), session.get("advised_class")
     names = {s["student_id"]: s["full_name"] for s in list_students()}
     items = []
+
+    if admin_cases.is_dorm_staff():
+        for a in services.dorm_apps():
+            if a['status'] == '進行中' and a['stage'] == 0:
+                items.append({'key': f"dorm-{a['id']}", 'type': '宿舍', 'goto': 'tab-services',
+                              'title': f"{a.get('student_name') or a['student_id']} 送出宿舍申請，等你審查",
+                              'detail': f"{a.get('semester', '')} · {a.get('room_type', '')}",
+                              'at': str(a.get('created_at', ''))[:16], 'due_date': ''})
+        with admin_cases.store.lock:
+            for c in admin_cases.cases():
+                if c['office'] == '學生事務處／住宿管理' and admin_cases.can_manage(c) and c['status'] in ('待受理', '處理中', '重新送審'):
+                    items.append({'key': f"admin-case-{c['id']}", 'type': '行政案件', 'goto': '/admin-workbench',
+                                  'title': f"{c['student_name']}：{c['title']}",
+                                  'detail': f"{c['office']} · {c['status']} · 期限 {c['due_date']}",
+                                  'at': c['updated_at'], 'due_date': c['due_date']})
+        return jsonify({"status": "success", "count": len(items), "data": items}), 200
 
     # 1. 待審核假單 (老師：導師班；行政人員：全校)
     for r in get_dashboard_source().list_leave_requests_for_review(reviewable_student_ids(), "待審核"):
         period = r["start_date"] + (f"～{r['end_date']}" if r.get("end_date") and r["end_date"] != r["start_date"] else "")
         items.append({"key": f"leave-{r['id']}", "type": "請假", "goto": "tab-home",
                       "title": f"{names.get(r['student_id'], r['student_id'])} 申請{r.get('leave_type') or '請假'}，等你審核",
-                      "detail": f"{period} · {r.get('reason') or ''}", "at": str(r.get("created_at") or r["start_date"])[:16]})
+                      "detail": f"{period} · {r.get('reason') or ''}", "at": str(r.get("created_at") or r["start_date"])[:16], "due_date": ""})
 
     # 2. 待審核證照 (老師：導師班；行政人員：全校)
     viewer = {"role": role, "advised_class": advised}
@@ -4496,7 +4528,7 @@ def staff_alerts():
         if c["status"] == "待審核" and certificates.can_review(viewer, c):
             items.append({"key": f"cert-{c['id']}", "type": "證照", "goto": "tab-certs",
                           "title": f"{c.get('student_name') or c['student_id']} 上傳{c.get('kind', '證照')}「{c['name']}」，等你確認",
-                          "detail": c.get("class_name", ""), "at": str(c.get("created_at", ""))[:16]})
+                          "detail": c.get("class_name", ""), "at": str(c.get("created_at", ""))[:16], "due_date": ""})
 
     # 3. 導師班學業預警 (只有班導；學生沒有授權導師查看時不顯示)
     if role == "老師" and advised:
@@ -4508,7 +4540,7 @@ def staff_alerts():
             if w["warning_level"] in ("warning", "critical"):
                 items.append({"key": f"warning-{s['student_id']}", "type": "預警", "goto": "tab-warning",
                               "title": f"{s['full_name']}：學業{w['risk_level']}，建議找他談談",
-                              "detail": f"{w['semester']} 學期不及格 {w['failed_credits']} / {w['current_credits']} 學分", "at": ""})
+                              "detail": f"{w['semester']} 學期不及格 {w['failed_credits']} / {w['current_credits']} 學分", "at": "", "due_date": ""})
 
     # 待追蹤關懷與未收齊回條沿用原功能的班級、作者範圍。
     from campus import counseling, messaging
@@ -4520,13 +4552,13 @@ def staff_alerts():
         if r["follow_up"] and not r["follow_up_done"] and r["follow_up_date"] and r["follow_up_date"] <= today:
             items.append({"key": f"care-{r['id']}", "type": "關懷", "goto": "tab-counseling",
                           "title": f"{names.get(r['student_id'], r['student_id'])}：關懷追蹤到期",
-                          "detail": r["follow_up_date"], "at": r["follow_up_date"]})
+                          "detail": r["follow_up_date"], "at": r["follow_up_date"], "due_date": r["follow_up_date"]})
     for n in messaging.load_notices(sender_username=None if role == "管理員" else session["username"]):
         missing = len(n["recipients"]) - len(n.get("replies", {}))
         if n.get("reply_required") and missing:
             items.append({"key": f"receipt-{n['id']}", "type": "回條", "goto": "tab-notices",
                           "title": f"{n['title']}：{missing} 人尚未回覆",
-                          "detail": n.get("due_date") or "未設定期限", "at": n["created_at"]})
+                          "detail": n.get("due_date") or "未設定期限", "at": n["created_at"], "due_date": n.get("due_date") or ""})
 
     # 4. 行政人員：教室借用、宿舍申請
     if role in ("教職員", "管理員"):
@@ -4535,12 +4567,12 @@ def staff_alerts():
                 items.append({"key": f"booking-{b['id']}", "type": "教室借用", "goto": "/admin",
                               "title": f"{b['applicant']} 借用 {b['room_name']}，等你審核",
                               "detail": f"{b['date']} 第 {b['period_start']}-{b['period_end']} 節 · {b.get('purpose', '')}",
-                              "at": str(b.get("created_at", ""))[:16]})
+                              "at": str(b.get("created_at", ""))[:16], "due_date": ""})
         for a in (services.dorm_apps() if services.can_manage_dorm({"role": role, "username": session["username"], "can_manage_dorm": session.get("can_manage_dorm")}) else []):
             if a["status"] == "進行中" and a["stage"] == 0:
                 items.append({"key": f"dorm-{a['id']}", "type": "宿舍", "goto": "tab-services",
                               "title": f"{a.get('student_name') or a['student_id']} 送出宿舍申請，等你審查",
-                              "detail": f"{a.get('semester', '')} · {a.get('room_type', '')}", "at": str(a.get("created_at", ""))[:16]})
+                              "detail": f"{a.get('semester', '')} · {a.get('room_type', '')}", "at": str(a.get("created_at", ""))[:16], "due_date": ""})
 
     if role in ("教職員", "管理員"):
         from campus import admin_cases
@@ -4549,7 +4581,7 @@ def staff_alerts():
                 if admin_cases.visible(c) and c['status'] in ('待受理', '處理中', '重新送審'):
                     items.append({'key': f"admin-case-{c['id']}", 'type': '行政案件', 'goto': '/admin-workbench',
                                   'title': f"{c['student_name']}：{c['title']}",
-                                  'detail': f"{c['office']} · {c['status']} · 期限 {c['due_date']}", 'at': c['updated_at']})
+                                  'detail': f"{c['office']} · {c['status']} · 期限 {c['due_date']}", 'at': c['updated_at'], 'due_date': c['due_date']})
     return jsonify({"status": "success", "count": len(items), "data": items}), 200
 
 # ==========================================
@@ -4632,6 +4664,10 @@ anniversary.init_app(app, SimpleNamespace(
     db_execute=db_execute,
     write_audit_log=write_audit_log,
 ))
+
+# Public sharing and deployment health
+from public_portal import bp as public_portal_bp
+app.register_blueprint(public_portal_bp)
 
 # ==========================================
 # 14. 伺服器主入口
