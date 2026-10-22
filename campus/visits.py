@@ -1,11 +1,15 @@
 """預約校園參觀：訪客 (未來學生/未來家長) 或家長線上選日期時段預約校園導覽；
 承辦單位 (教職員/管理員) 可查看名單、核准或取消。
+
+資料存取交給 campus/visits_store.py：有 MySQL 的 visit_bookings 表時走資料庫，
+連不上或還沒建表則退回 data/campus_store.json。
 """
 from datetime import date, datetime
 
 from flask import Blueprint, request
 
-from .common import error, ok, require, store, next_id, now_str, current_user, user_key, STAFF_ROLES
+from . import visits_store as db
+from .common import error, ok, require, store, now_str, current_user, user_key, STAFF_ROLES
 
 bp = Blueprint("campus_visits", __name__)
 
@@ -15,7 +19,7 @@ CLOSED_WEEKDAYS = (6, 7)  # 週六、週日不開放 (isoweekday)
 
 
 def bookings():
-    return store.section("visit_bookings", list)
+    return db.all_bookings()
 
 
 @bp.route("/api/campus/visits/slots", methods=["GET"])
@@ -64,12 +68,12 @@ def visits_route():
             existing = sum(1 for b in items if b["date"] == day.isoformat() and b["slot"] == slot and b["status"] != "已取消")
             if existing >= MAX_PER_SLOT:
                 return error("這個時段預約已滿，請選其他時段", 409)
-            item = {"id": next_id(items), "date": day.isoformat(), "slot": slot, "party_size": party_size,
-                    "contact_name": contact_name, "contact_phone": contact_phone, "note": note,
-                    "booked_by_key": user_key(), "booked_by_role": u["role"], "status": "待確認",
-                    "created_at": now_str()}
-            items.append(item)
-            store.save()
+            item = db.insert_booking({
+                "date": day.isoformat(), "slot": slot, "party_size": party_size,
+                "contact_name": contact_name, "contact_phone": contact_phone, "note": note,
+                "booked_by_key": user_key(), "booked_by_role": u["role"], "status": "待確認",
+                "created_at": now_str(),
+            })
         return ok(message=f"已送出 {day.isoformat()} {slot} 的參觀預約，承辦單位確認後會聯絡您", data=item)
 
     # GET
@@ -93,10 +97,10 @@ def update_visit(visit_id):
         if not b:
             return error("找不到這筆預約", 404)
         if action == "cancel" and b["booked_by_key"] == user_key():
-            b["status"] = "已取消"
+            new_status = "已取消"
         elif action in ("confirm", "cancel") and u["role"] in STAFF_ROLES:
-            b["status"] = "已確認" if action == "confirm" else "已取消"
+            new_status = "已確認" if action == "confirm" else "已取消"
         else:
             return error("沒有權限", 403)
-        store.save()
-    return ok(message=f"狀態已更新為「{b['status']}」", data=b)
+        updated = db.update_booking(visit_id, {"status": new_status})
+    return ok(message=f"狀態已更新為「{updated['status']}」", data=updated)

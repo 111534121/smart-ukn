@@ -6,15 +6,18 @@
   所以光知道別人的學號猜不出來、也取消不了別人的報名。
 - Email 欄位只用來寄送通知信，不是身分驗證依據。
 
-資料存於 data/campus_store.json (events / event_registrations)，與其他 campus 新功能一致。
+資料存取交給 campus/events_store.py：有 MySQL 的 events / event_registrations 表時走資料庫，
+連不上或還沒建表 (執行 init_db.py 就會建) 則退回 data/campus_store.json，跟其他 campus 新功能一致。
+這個檔案只處理路由、驗證與商業邏輯，不直接碰 store/SQL。
 """
 import re
 import uuid
 from datetime import date, timedelta
 
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
 
-from .common import deps, error, ok, require, store, next_id, now_str, current_user, user_key, STAFF_ROLES
+from . import events_store as db
+from .common import deps, error, ok, require, store, now_str, current_user, user_key, STAFF_ROLES
 from attendance.notify import get_mailer
 
 bp = Blueprint("campus_events", __name__)
@@ -22,18 +25,6 @@ bp = Blueprint("campus_events", __name__)
 MIN_AGE, MAX_AGE = 1, 120
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
-
-
-def events():
-    return store.section("events", list)
-
-
-def registrations():
-    return store.section("event_registrations", list)
-
-
-def find_event(event_id):
-    return next((e for e in events() if e["id"] == event_id), None)
 
 
 def clean_event(data, partial=False):
@@ -149,7 +140,7 @@ def list_events():
     date_to = (request.args.get("date_to") or "").strip()
     open_only = request.args.get("open_only") == "1"
 
-    items = events()
+    items = db.all_events()
     if u["role"] not in STAFF_ROLES:
         items = [e for e in items if not e.get("cancelled")]
     if q:
@@ -161,7 +152,7 @@ def list_events():
     if date_to:
         items = [e for e in items if e["event_date"] <= date_to]
 
-    all_regs = registrations()
+    all_regs = db.all_registrations()
     views = [event_view(e, all_regs) for e in items]
     if open_only:
         views = [v for v in views if v["can_register"] and not v["is_full"]]
@@ -172,10 +163,10 @@ def list_events():
 @bp.route("/api/campus/events/<int:event_id>", methods=["GET"])
 @require()
 def get_event(event_id):
-    ev = find_event(event_id)
+    ev = db.get_event(event_id)
     if not ev:
         return error("找不到該活動", 404)
-    all_regs = registrations()
+    all_regs = db.all_registrations()
     view = event_view(ev, all_regs)
     view["my_registration"] = next(
         (r for r in all_regs if r["event_id"] == event_id and r["registered_by_key"] == user_key()
@@ -187,18 +178,13 @@ def get_event(event_id):
 @require(*STAFF_ROLES)
 def create_event():
     data = request.get_json(silent=True) or {}
-    item, err = clean_event(data)
+    fields, err = clean_event(data)
     if err:
         return error(err)
-    if item["registration_deadline"] > item["event_date"]:
+    if fields["registration_deadline"] > fields["event_date"]:
         return error("報名截止日不能晚於活動日期")
     u = current_user()
-    with store.lock:
-        items = events()
-        item = {"id": next_id(items), **item, "cancelled": False,
-                "created_by": u["username"], "created_at": now_str()}
-        items.append(item)
-        store.save()
+    item = db.insert_event({**fields, "cancelled": 0, "created_by": u["username"], "created_at": now_str()})
     deps.write_audit_log("events", item["id"], "新增", after=item)
     return ok(message=f"已新增活動「{item['title']}」", data=item)
 
@@ -208,7 +194,7 @@ def create_event():
 def update_event(event_id):
     data = request.get_json(silent=True) or {}
     with store.lock:
-        ev = find_event(event_id)
+        ev = db.get_event(event_id)
         if not ev:
             return error("找不到該活動", 404)
         patch, err = clean_event(data, partial=True)
@@ -218,33 +204,78 @@ def update_event(event_id):
         if merged["registration_deadline"] > merged["event_date"]:
             return error("報名截止日不能晚於活動日期")
         if "capacity" in patch:
-            confirmed = sum(1 for r in registrations()
+            confirmed = sum(1 for r in db.all_registrations()
                              if r["event_id"] == event_id and r["status"] == "已報名")
             if patch["capacity"] < confirmed:
                 return error(f"目前已有 {confirmed} 人確認報名，名額不能設得比這個人數少")
         before = dict(ev)
-        ev.update(patch)
-        store.save()
-    deps.write_audit_log("events", event_id, "修改", before=before, after=ev)
-    return ok(message="活動已更新", data=ev)
+        updated = db.update_event(event_id, patch)
+    deps.write_audit_log("events", event_id, "修改", before=before, after=updated)
+    return ok(message="活動已更新", data=updated)
 
 
 @bp.route("/api/campus/events/<int:event_id>", methods=["DELETE"])
 @require(*STAFF_ROLES)
 def cancel_event(event_id):
     with store.lock:
-        ev = find_event(event_id)
+        ev = db.get_event(event_id)
         if not ev:
             return error("找不到該活動", 404)
         if ev.get("cancelled"):
             return error("這個活動已經取消過了")
-        ev["cancelled"] = True
-        store.save()
+        updated = db.update_event(event_id, {"cancelled": 1})
     deps.write_audit_log("events", event_id, "刪除", before={"cancelled": False}, after={"cancelled": True})
-    return ok(message=f"活動「{ev['title']}」已取消")
+    return ok(message=f"活動「{updated['title']}」已取消")
 
 
 # ---------- 報名 / 取消報名 (候補名單自動遞補) ----------
+
+def _confirmation_email(ev, fields, status):
+    if status == "已報名":
+        send_mail_safely(fields["email"], f"【康寧大學】{ev['title']} 報名成功通知",
+                          f"{fields['full_name']} 您好：\n\n您已成功報名「{ev['title']}」。\n"
+                          f"活動時間：{ev['event_date']} {ev.get('event_time', '')}\n活動地點：{ev['location']}")
+        return "報名成功！"
+    send_mail_safely(fields["email"], f"【康寧大學】{ev['title']} 已加入候補名單",
+                      f"{fields['full_name']} 您好：\n\n「{ev['title']}」目前名額已滿，已將您加入候補名單，"
+                      f"若有人取消會自動為您保留名額並寄信通知。")
+    return "目前名額已滿，已為您加入候補名單"
+
+
+def _add_registration(event_id, fields, registered_by_key, registered_by_role, bypass_deadline=False):
+    """共用的報名建立邏輯 (自助報名、教職員代登記都會用到)。
+    回傳 (item, status, error_response_or_None)；拿到鎖之後才做重複/名額檢查，避免兩人同時送出時超額。"""
+    with store.lock:
+        ev = db.get_event(event_id)
+        if not ev or ev.get("cancelled"):
+            return None, None, error("找不到該活動", 404)
+        if not bypass_deadline:
+            today = date.today().isoformat()
+            if ev["registration_deadline"] < today:
+                return None, None, error("報名已截止")
+            if ev["event_date"] < today:
+                return None, None, error("活動已結束，無法報名")
+
+        items = db.all_registrations()
+        # 防呆：同一個學號對同一場活動只能有一筆有效報名，不能重複報名佔用名額
+        dup = next((r for r in items if r["event_id"] == event_id and r["student_id"] == fields["student_id"]
+                    and r["status"] != "已取消"), None)
+        if dup:
+            return None, None, error("這個學號已經報名過這個活動了", 409)
+
+        # 名額在這裡 (拿到鎖之後) 重新確認一次，避免多人同時送出造成超額
+        confirmed = sum(1 for r in items if r["event_id"] == event_id and r["status"] == "已報名")
+        status = "已報名" if confirmed < ev["capacity"] else "候補中"
+        item = db.insert_registration({
+            "event_id": event_id, **fields,
+            "status": status, "checkin_code": uuid.uuid4().hex,
+            "registered_by_key": registered_by_key, "registered_by_role": registered_by_role,
+            "created_at": now_str(), "cancelled_at": None,
+            "checked_in": 0, "checked_in_at": None, "reminded": 0,
+            "rating": None, "feedback_comment": None, "feedback_at": None,
+        })
+    return item, status, None
+
 
 @bp.route("/api/campus/events/<int:event_id>/register", methods=["POST"])
 @require()
@@ -254,49 +285,43 @@ def register_event(event_id):
     fields, err = clean_registration(data)
     if err:
         return error(err)
-
-    with store.lock:
-        ev = find_event(event_id)
-        if not ev or ev.get("cancelled"):
-            return error("找不到該活動", 404)
-        today = date.today().isoformat()
-        if ev["registration_deadline"] < today:
-            return error("報名已截止")
-        if ev["event_date"] < today:
-            return error("活動已結束，無法報名")
-
-        items = registrations()
-        # 防呆：同一個學號對同一場活動只能有一筆有效報名，不能重複報名佔用名額
-        dup = next((r for r in items if r["event_id"] == event_id and r["student_id"] == fields["student_id"]
-                    and r["status"] != "已取消"), None)
-        if dup:
-            return error("你已經報名過這個活動了", 409)
-
-        # 名額在這裡 (拿到鎖之後) 重新確認一次，避免多人同時送出造成超額
-        confirmed = sum(1 for r in items if r["event_id"] == event_id and r["status"] == "已報名")
-        status = "已報名" if confirmed < ev["capacity"] else "候補中"
-        item = {
-            "id": next_id(items), "event_id": event_id, **fields,
-            "status": status, "checkin_code": uuid.uuid4().hex,
-            "registered_by_key": user_key(), "registered_by_role": u["role"],
-            "created_at": now_str(), "cancelled_at": None,
-            "checked_in": False, "checked_in_at": None, "reminded": False,
-            "rating": None, "feedback_comment": None, "feedback_at": None,
-        }
-        items.append(item)
-        store.save()
-
-    if status == "已報名":
-        send_mail_safely(fields["email"], f"【康寧大學】{ev['title']} 報名成功通知",
-                          f"{fields['full_name']} 您好：\n\n您已成功報名「{ev['title']}」。\n"
-                          f"活動時間：{ev['event_date']} {ev.get('event_time', '')}\n活動地點：{ev['location']}")
-        msg = "報名成功！"
-    else:
-        send_mail_safely(fields["email"], f"【康寧大學】{ev['title']} 已加入候補名單",
-                          f"{fields['full_name']} 您好：\n\n「{ev['title']}」目前名額已滿，已將您加入候補名單，"
-                          f"若有人取消會自動為您保留名額並寄信通知。")
-        msg = "目前名額已滿，已為您加入候補名單"
+    item, status, err_resp = _add_registration(event_id, fields, user_key(), u["role"])
+    if err_resp:
+        return err_resp
+    msg = _confirmation_email(db.get_event(event_id), fields, status)
     return ok(message=msg, data=item)
+
+
+@bp.route("/api/campus/events/<int:event_id>/registrations", methods=["POST"])
+@require(*STAFF_ROLES)
+def add_registration(event_id):
+    """教職員/管理員代為登記報名者 (例如現場或電話報名)，不受線上報名截止日限制"""
+    u = current_user()
+    data = request.get_json(silent=True) or {}
+    fields, err = clean_registration(data)
+    if err:
+        return error(err)
+    item, status, err_resp = _add_registration(event_id, fields, f"staff:{u['username']}", u["role"], bypass_deadline=True)
+    if err_resp:
+        return err_resp
+    msg = _confirmation_email(db.get_event(event_id), fields, status)
+    return ok(message=f"已新增報名者，{msg}", data=item)
+
+
+def _promote_next_waitlisted(items, event_id):
+    """從候補名單裡找出最早的一筆並轉正取、立刻寫回儲存層 (呼叫時要已經持有 store.lock)；回傳被遞補的那筆或 None"""
+    waiting = sorted((r for r in items if r["event_id"] == event_id and r["status"] == "候補中"),
+                      key=lambda r: r["id"])
+    if waiting:
+        return db.update_registration(waiting[0]["id"], {"status": "已報名"})
+    return None
+
+
+def _notify_promoted(ev, promoted):
+    if promoted:
+        send_mail_safely(promoted["email"], f"【康寧大學】{ev['title']} 候補轉為正式報名",
+                          f"{promoted['full_name']} 您好：\n\n原本候補中的名額已經轉為正式報名成功，"
+                          f"請留意「{ev['title']}」的活動時間與地點。")
 
 
 @bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>/cancel", methods=["POST"])
@@ -304,12 +329,11 @@ def register_event(event_id):
 def cancel_registration(event_id, reg_id):
     u = current_user()
     promoted = None
-    ev = None
     with store.lock:
-        ev = find_event(event_id)
+        ev = db.get_event(event_id)
         if not ev:
             return error("找不到該活動", 404)
-        items = registrations()
+        items = db.all_registrations()
         reg = next((r for r in items if r["id"] == reg_id and r["event_id"] == event_id), None)
         if not reg:
             return error("找不到這筆報名紀錄", 404)
@@ -320,25 +344,76 @@ def cancel_registration(event_id, reg_id):
             return error("這筆報名已經取消過了")
 
         was_confirmed = reg["status"] == "已報名"
-        reg["status"] = "已取消"
-        reg["cancelled_at"] = now_str()
-
+        db.update_registration(reg_id, {"status": "已取消", "cancelled_at": now_str()})
         if was_confirmed:
-            waiting = sorted((r for r in items if r["event_id"] == event_id and r["status"] == "候補中"),
-                              key=lambda r: r["id"])
-            if waiting:
-                promoted = waiting[0]
-                promoted["status"] = "已報名"
-        store.save()
+            promoted = _promote_next_waitlisted(items, event_id)
         cancelled_email, cancelled_name = reg["email"], reg["full_name"]
 
     send_mail_safely(cancelled_email, f"【康寧大學】{ev['title']} 已取消報名",
                       f"{cancelled_name} 您好：\n\n您對「{ev['title']}」的報名已經取消。")
-    if promoted:
-        send_mail_safely(promoted["email"], f"【康寧大學】{ev['title']} 候補轉為正式報名",
-                          f"{promoted['full_name']} 您好：\n\n原本候補中的名額已經轉為正式報名成功，"
-                          f"請留意「{ev['title']}」的活動時間與地點。")
+    _notify_promoted(ev, promoted)
     return ok(message="已取消報名" + ("，並已通知候補名單中的下一位" if promoted else ""))
+
+
+@bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>", methods=["PUT"])
+@require(*STAFF_ROLES)
+def edit_registration(event_id, reg_id):
+    """教職員/管理員修正報名者資料 (例如打錯的 email/電話/年齡)；不會動到報名狀態"""
+    data = request.get_json(silent=True) or {}
+    fields, err = clean_registration(data)
+    if err:
+        return error(err)
+    with store.lock:
+        items = db.all_registrations()
+        reg = next((r for r in items if r["id"] == reg_id and r["event_id"] == event_id), None)
+        if not reg:
+            return error("找不到這筆報名紀錄", 404)
+        # 防呆：改成別的學號時，不能跟同一場活動裡別筆有效報名撞學號
+        dup = next((r for r in items if r["id"] != reg_id and r["event_id"] == event_id
+                    and r["student_id"] == fields["student_id"] and r["status"] != "已取消"), None)
+        if dup:
+            return error("這個學號在這場活動已經有另一筆報名紀錄了", 409)
+        before = dict(reg)
+        updated = db.update_registration(reg_id, fields)
+    deps.write_audit_log("event_registrations", reg_id, "修改", before=before, after=updated)
+    return ok(message="報名者資料已更新", data=updated)
+
+
+@bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>", methods=["DELETE"])
+@require(*STAFF_ROLES)
+def delete_registration(event_id, reg_id):
+    """整筆刪除報名紀錄 (跟「取消」不同：取消會保留紀錄、刪除是真的移除，用於清除誤植/測試資料)"""
+    promoted = None
+    with store.lock:
+        ev = db.get_event(event_id)
+        if not ev:
+            return error("找不到該活動", 404)
+        items = db.all_registrations()
+        reg = next((r for r in items if r["id"] == reg_id and r["event_id"] == event_id), None)
+        if not reg:
+            return error("找不到這筆報名紀錄", 404)
+        deleted = db.delete_registration(reg_id)
+        if deleted and deleted["status"] == "已報名":
+            promoted = _promote_next_waitlisted([r for r in items if r["id"] != reg_id], event_id)
+    deps.write_audit_log("event_registrations", reg_id, "刪除", before=reg)
+    _notify_promoted(ev, promoted)
+    return ok(message=f"已刪除 {reg['full_name']} 的報名紀錄" + ("，並已通知候補名單中的下一位" if promoted else ""))
+
+
+@bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>/notify", methods=["POST"])
+@require(*STAFF_ROLES)
+def notify_registration(event_id, reg_id):
+    """手動重寄通知信 (報名成功/候補中依目前狀態判斷)，用於原本寄送失敗或報名者要求重寄"""
+    ev = db.get_event(event_id)
+    if not ev:
+        return error("找不到該活動", 404)
+    reg = next((r for r in db.all_registrations() if r["id"] == reg_id and r["event_id"] == event_id), None)
+    if not reg:
+        return error("找不到這筆報名紀錄", 404)
+    if reg["status"] == "已取消":
+        return error("這筆報名已取消，無法重寄報名通知")
+    _confirmation_email(ev, reg, reg["status"])
+    return ok(message=f"已重新寄送通知信給 {reg['full_name']}")
 
 
 # ---------- 現場簽到 (QR Code 掃描用，前端用 checkin_code 產生 QR Code 即可) ----------
@@ -351,7 +426,7 @@ def checkin(event_id):
     if not code:
         return error("請提供簽到代碼")
     with store.lock:
-        items = registrations()
+        items = db.all_registrations()
         reg = next((r for r in items if r["event_id"] == event_id and r["checkin_code"] == code), None)
         if not reg:
             return error("找不到對應的報名紀錄，請確認 QR Code 是否正確", 404)
@@ -359,19 +434,17 @@ def checkin(event_id):
             return error("這筆報名目前不是已確認狀態，無法簽到")
         if reg.get("checked_in"):
             return error(f"{reg['full_name']} 已經簽到過了", 409)
-        reg["checked_in"] = True
-        reg["checked_in_at"] = now_str()
-        store.save()
-    return ok(message=f"{reg['full_name']} 簽到成功", data=reg)
+        updated = db.update_registration(reg["id"], {"checked_in": 1, "checked_in_at": now_str()})
+    return ok(message=f"{updated['full_name']} 簽到成功", data=updated)
 
 
 @bp.route("/api/campus/events/<int:event_id>/registrations", methods=["GET"])
 @require(*STAFF_ROLES)
 def list_registrations(event_id):
-    ev = find_event(event_id)
+    ev = db.get_event(event_id)
     if not ev:
         return error("找不到該活動", 404)
-    all_regs = registrations()
+    all_regs = db.all_registrations()
     items = sorted((r for r in all_regs if r["event_id"] == event_id), key=lambda r: r["id"])
     return ok(data=items, event=event_view(ev, all_regs))
 
@@ -382,10 +455,10 @@ def list_registrations(event_id):
 @require(*STAFF_ROLES)
 def send_reminders():
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
-    targets = [e for e in events() if e["event_date"] == tomorrow and not e.get("cancelled")]
+    targets = [e for e in db.all_events() if e["event_date"] == tomorrow and not e.get("cancelled")]
     sent, failed = 0, 0
     with store.lock:
-        items = registrations()
+        items = db.all_registrations()
         for ev in targets:
             for r in items:
                 if r["event_id"] == ev["id"] and r["status"] == "已報名" and not r.get("reminded"):
@@ -394,11 +467,10 @@ def send_reminders():
                             r["email"], f"【康寧大學】提醒：{ev['title']} 明天舉行",
                             f"{r['full_name']} 您好：\n\n提醒您，「{ev['title']}」將於明天 "
                             f"{ev['event_date']} {ev.get('event_time', '')} 在 {ev['location']} 舉行，請準時出席。")
-                        r["reminded"] = True
+                        db.update_registration(r["id"], {"reminded": 1})
                         sent += 1
                     except Exception:
                         failed += 1
-        store.save()
     if sent == 0 and failed == 0:
         return ok(message="目前沒有明天要舉行且尚未提醒的活動", sent=0, failed=0)
     return ok(message=f"已寄出 {sent} 封提醒信" + (f"，{failed} 封失敗" if failed else ""), sent=sent, failed=failed)
@@ -419,18 +491,23 @@ def submit_feedback(event_id):
     comment = str(data.get("comment") or "").strip()[:500]
 
     with store.lock:
-        ev = find_event(event_id)
+        ev = db.get_event(event_id)
         if not ev:
             return error("找不到該活動", 404)
         if ev["event_date"] > date.today().isoformat():
             return error("活動尚未結束，還不能評分")
-        items = registrations()
+        items = db.all_registrations()
         reg = next((r for r in items if r["event_id"] == event_id and r["registered_by_key"] == user_key()
                     and r["status"] != "已取消"), None)
         if not reg:
             return error("查無你在這個活動的報名紀錄", 403)
-        reg["rating"] = rating
-        reg["feedback_comment"] = comment
-        reg["feedback_at"] = now_str()
-        store.save()
+        db.update_registration(reg["id"], {"rating": rating, "feedback_comment": comment, "feedback_at": now_str()})
     return ok(message="感謝您的回饋！")
+
+
+# ---------- 報名者管理介面 (教職員/管理員用的獨立頁面) ----------
+
+@bp.route("/admin/events")
+@require(*STAFF_ROLES)
+def serve_events_admin():
+    return current_app.send_static_file("events-admin.html")

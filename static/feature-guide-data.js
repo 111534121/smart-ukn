@@ -191,6 +191,10 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/campus-shell.js",
           "line": 101
+        },
+        {
+          "file": "static/js/events-admin.js",
+          "line": 118
         }
       ]
     },
@@ -4098,15 +4102,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 2077
+          "line": 2078
         },
         {
           "file": "static/admin.html",
-          "line": 2120
+          "line": 2121
         },
         {
           "file": "static/admin.html",
-          "line": 2146
+          "line": 2147
         },
         {
           "file": "static/index.html",
@@ -4998,7 +5002,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5013,7 +5017,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             }
@@ -5127,7 +5131,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5142,7 +5146,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5157,7 +5161,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             }
@@ -5292,7 +5296,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5307,7 +5311,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5322,7 +5326,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5337,7 +5341,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             }
@@ -5443,7 +5447,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -5458,7 +5462,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 782
                 }
               ]
             },
@@ -7342,13 +7346,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 159,
+          "line": 163,
           "function": "teachers",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 88,
+              "line": 92,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -7360,22 +7364,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 159,
+              "line": 163,
               "function": "teachers"
             },
             {
               "file": "campus/facilities.py",
-              "line": 137,
+              "line": 141,
               "function": "teacher_status"
             },
             {
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 96,
               "function": "period_at"
             },
             {
               "file": "campus/facilities.py",
-              "line": 87,
+              "line": 91,
               "function": "load_schedule"
             },
             {
@@ -7390,7 +7394,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 78,
+              "line": 82,
               "function": "parse_now"
             }
           ],
@@ -7419,7 +7423,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 88,
+              "line": 92,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -7461,17 +7465,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 137,
+              "line": 141,
               "function": "teacher_status"
             },
             {
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 96,
               "function": "period_at"
             },
             {
               "file": "campus/facilities.py",
-              "line": 87,
+              "line": 91,
               "function": "load_schedule"
             }
           ],
@@ -7877,15 +7881,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 1223
+          "line": 1224
         },
         {
           "file": "static/admin.html",
-          "line": 1289
+          "line": 1290
         },
         {
           "file": "static/admin.html",
-          "line": 1300
+          "line": 1301
         },
         {
           "file": "static/js/campus-features.js",
@@ -9181,27 +9185,27 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 1091
+          "line": 1092
         },
         {
           "file": "static/admin.html",
-          "line": 1120
+          "line": 1121
         },
         {
           "file": "static/admin.html",
-          "line": 1716
+          "line": 1717
         },
         {
           "file": "static/admin.html",
-          "line": 1758
+          "line": 1759
         },
         {
           "file": "static/admin.html",
-          "line": 1772
+          "line": 1773
         },
         {
           "file": "static/admin.html",
-          "line": 1783
+          "line": 1784
         },
         {
           "file": "static/index.html",
@@ -9544,7 +9548,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 1146
+          "line": 1147
         },
         {
           "file": "static/index.html",
@@ -10758,31 +10762,31 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 915
+          "line": 916
         },
         {
           "file": "static/admin.html",
-          "line": 1172
+          "line": 1173
         },
         {
           "file": "static/admin.html",
-          "line": 1897
+          "line": 1898
         },
         {
           "file": "static/admin.html",
-          "line": 1913
+          "line": 1914
         },
         {
           "file": "static/admin.html",
-          "line": 1927
+          "line": 1928
         },
         {
           "file": "static/admin.html",
-          "line": 1993
+          "line": 1994
         },
         {
           "file": "static/admin.html",
-          "line": 2013
+          "line": 2014
         },
         {
           "file": "static/index.html",
@@ -11282,7 +11286,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 2166
+          "line": 2167
         },
         {
           "file": "static/index.html",
@@ -11536,24 +11540,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 66,
+          "line": 67,
           "function": "list_categories",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 66,
+              "line": 67,
               "function": "list_categories"
             },
             {
               "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports",
@@ -11561,45 +11563,42 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 72,
+          "line": 73,
           "function": "list_files",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 72,
+              "line": 73,
               "function": "list_files"
             },
             {
               "file": "campus/reports.py",
-              "line": 54,
+              "line": 55,
               "function": "_public_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
+              "line": 40,
               "function": "favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 43,
+              "line": 44,
               "function": "_can_access"
             },
             {
               "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/my/favorites",
@@ -11607,45 +11606,42 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 85,
+          "line": 86,
           "function": "my_favorites",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 85,
+              "line": 86,
               "function": "my_favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 54,
+              "line": 55,
               "function": "_public_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
+              "line": 40,
               "function": "favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 43,
+              "line": 44,
               "function": "_can_access"
             },
             {
               "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>",
@@ -11653,51 +11649,42 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 95,
+          "line": 96,
           "function": "get_file",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 95,
+              "line": 96,
               "function": "get_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 31,
-              "function": "view_logs"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             },
             {
               "file": "campus/reports.py",
-              "line": 54,
+              "line": 55,
               "function": "_public_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
+              "line": 40,
               "function": "favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 43,
+              "line": 44,
               "function": "_can_access"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files",
-            "data/campus_store.json → report_view_logs"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports",
@@ -11705,7 +11692,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/reports.py",
-          "line": 110,
+          "line": 108,
           "function": "upload_file",
           "tables": [
             {
@@ -11750,38 +11737,38 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 110,
+              "line": 108,
               "function": "upload_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 27,
-              "function": "files"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 54,
+              "line": 55,
               "function": "_public_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
+              "line": 40,
               "function": "favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 237,
+              "line": 219,
               "function": "notify_category_watchers"
             },
             {
               "file": "attendance/notify.py",
               "line": 27,
               "function": "campus_email"
+            },
+            {
+              "file": "campus/reports.py",
+              "line": 28,
+              "function": "files"
             },
             {
               "file": "attendance/notify.py",
@@ -11800,7 +11787,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/reports.py",
-              "line": 35,
+              "line": 36,
               "function": "download_logs"
             },
             {
@@ -11829,11 +11816,7 @@ window.FEATURE_GUIDE = {
               "function": "allowed_file"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_download_logs",
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>",
@@ -11841,7 +11824,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "campus/reports.py",
-          "line": 146,
+          "line": 141,
           "function": "delete_file",
           "tables": [
             {
@@ -11886,13 +11869,8 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 146,
+              "line": 141,
               "function": "delete_file"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 27,
-              "function": "files"
             },
             {
               "file": "app.py",
@@ -11910,9 +11888,7 @@ window.FEATURE_GUIDE = {
               "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>/download",
@@ -11920,35 +11896,27 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 158,
+          "line": 150,
           "function": "download_file",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 158,
+              "line": 150,
               "function": "download_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 35,
-              "function": "download_logs"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             },
             {
               "file": "campus/reports.py",
-              "line": 43,
+              "line": 44,
               "function": "_can_access"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_download_logs",
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>/favorite",
@@ -11956,40 +11924,37 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/reports.py",
-          "line": 186,
+          "line": 174,
           "function": "add_favorite",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 186,
+              "line": 174,
               "function": "add_favorite"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
-              "function": "favorites"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 43,
+              "line": 40,
+              "function": "favorites"
+            },
+            {
+              "file": "campus/reports.py",
+              "line": 44,
               "function": "_can_access"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>/favorite",
@@ -11997,24 +11962,17 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "campus/reports.py",
-          "line": 202,
+          "line": 189,
           "function": "remove_favorite",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 202,
+              "line": 189,
               "function": "remove_favorite"
-            },
-            {
-              "file": "campus/reports.py",
-              "line": 39,
-              "function": "favorites"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_favorites"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/reports/<int:file_id>/stats",
@@ -12022,52 +11980,47 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/reports.py",
-          "line": 214,
+          "line": 196,
           "function": "file_stats",
           "tables": [],
           "files": [
             {
               "file": "campus/reports.py",
-              "line": 214,
+              "line": 196,
               "function": "file_stats"
             },
             {
               "file": "campus/reports.py",
-              "line": 39,
+              "line": 40,
               "function": "favorites"
             },
             {
               "file": "campus/reports.py",
-              "line": 54,
+              "line": 55,
               "function": "_public_file"
             },
             {
               "file": "campus/reports.py",
-              "line": 50,
+              "line": 51,
               "function": "_is_favorited"
             },
             {
               "file": "campus/reports.py",
-              "line": 27,
+              "line": 28,
               "function": "files"
             },
             {
               "file": "campus/reports.py",
-              "line": 31,
+              "line": 32,
               "function": "view_logs"
             },
             {
               "file": "campus/reports.py",
-              "line": 35,
+              "line": 36,
               "function": "download_logs"
             }
           ],
-          "storage": [
-            "data/campus_store.json → report_download_logs",
-            "data/campus_store.json → report_favorites",
-            "data/campus_store.json → report_files",
-            "data/campus_store.json → report_view_logs"
-          ]
+          "storage": []
         }
       ],
       "frontend": [
@@ -12113,13 +12066,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 182,
+          "line": 186,
           "function": "rooms_availability",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 88,
+              "line": 92,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12131,22 +12084,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 182,
+              "line": 186,
               "function": "rooms_availability"
             },
             {
               "file": "campus/facilities.py",
-              "line": 100,
+              "line": 104,
               "function": "room_code"
             },
             {
               "file": "campus/facilities.py",
-              "line": 177,
+              "line": 181,
               "function": "bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 87,
+              "line": 91,
               "function": "load_schedule"
             },
             {
@@ -12160,9 +12113,7 @@ window.FEATURE_GUIDE = {
               "function": "get_db_connection"
             }
           ],
-          "storage": [
-            "data/campus_store.json → room_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/rooms/book",
@@ -12170,13 +12121,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 211,
+          "line": 215,
           "function": "book_room",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 88,
+              "line": 92,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12188,22 +12139,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 211,
+              "line": 215,
               "function": "book_room"
             },
             {
               "file": "campus/facilities.py",
-              "line": 100,
+              "line": 104,
               "function": "room_code"
             },
             {
               "file": "campus/facilities.py",
-              "line": 177,
+              "line": 181,
               "function": "bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 87,
+              "line": 91,
               "function": "load_schedule"
             },
             {
@@ -12217,9 +12168,7 @@ window.FEATURE_GUIDE = {
               "function": "get_db_connection"
             }
           ],
-          "storage": [
-            "data/campus_store.json → room_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/rooms/bookings",
@@ -12227,24 +12176,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 257,
+          "line": 261,
           "function": "my_bookings",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 257,
+              "line": 261,
               "function": "my_bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 177,
+              "line": 181,
               "function": "bookings"
             }
           ],
-          "storage": [
-            "data/campus_store.json → room_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/rooms/bookings/<int:booking_id>",
@@ -12252,7 +12199,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 268,
+          "line": 272,
           "function": "update_booking",
           "tables": [
             {
@@ -12297,12 +12244,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 268,
+              "line": 272,
               "function": "update_booking"
             },
             {
               "file": "campus/facilities.py",
-              "line": 177,
+              "line": 181,
               "function": "bookings"
             },
             {
@@ -12321,9 +12268,7 @@ window.FEATURE_GUIDE = {
               "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → room_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/lockers",
@@ -12331,29 +12276,27 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 317,
+          "line": 312,
           "function": "list_lockers",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 317,
+              "line": 312,
               "function": "list_lockers"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 299,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 291,
+              "line": 295,
               "function": "lockers"
             }
           ],
-          "storage": [
-            "data/campus_store.json → lockers"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/lockers/<locker_id>/reserve",
@@ -12361,29 +12304,27 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 338,
+          "line": 332,
           "function": "reserve_locker",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 338,
+              "line": 332,
               "function": "reserve_locker"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 299,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 291,
+              "line": 295,
               "function": "lockers"
             }
           ],
-          "storage": [
-            "data/campus_store.json → lockers"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/lockers/<locker_id>/cancel",
@@ -12391,24 +12332,22 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 357,
+          "line": 350,
           "function": "cancel_locker",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 357,
+              "line": 350,
               "function": "cancel_locker"
             },
             {
               "file": "campus/facilities.py",
-              "line": 291,
+              "line": 295,
               "function": "lockers"
             }
           ],
-          "storage": [
-            "data/campus_store.json → lockers"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/lockers/admin",
@@ -12416,29 +12355,27 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 372,
+          "line": 364,
           "function": "lockers_admin",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 372,
+              "line": 364,
               "function": "lockers_admin"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 299,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 291,
+              "line": 295,
               "function": "lockers"
             }
           ],
-          "storage": [
-            "data/campus_store.json → lockers"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/lockers/<locker_id>/paid",
@@ -12446,7 +12383,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 392,
+          "line": 383,
           "function": "locker_paid",
           "tables": [
             {
@@ -12491,12 +12428,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 392,
+              "line": 383,
               "function": "locker_paid"
             },
             {
               "file": "campus/facilities.py",
-              "line": 291,
+              "line": 295,
               "function": "lockers"
             },
             {
@@ -12515,27 +12452,25 @@ window.FEATURE_GUIDE = {
               "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → lockers"
-          ]
+          "storage": []
         }
       ],
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 926
+          "line": 927
         },
         {
           "file": "static/admin.html",
-          "line": 943
+          "line": 944
         },
         {
           "file": "static/admin.html",
-          "line": 974
+          "line": 975
         },
         {
           "file": "static/admin.html",
-          "line": 989
+          "line": 990
         },
         {
           "file": "static/js/campus-life.js",
@@ -12579,13 +12514,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 107,
+          "line": 111,
           "function": "campus_map",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 107,
+              "line": 111,
               "function": "campus_map"
             }
           ],
@@ -12597,13 +12532,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 113,
+          "line": 117,
           "function": "find_place",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 113,
+              "line": 117,
               "function": "find_place"
             }
           ],
@@ -12615,13 +12550,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 416,
+          "line": 406,
           "function": "crowd",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 88,
+              "line": 92,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12633,12 +12568,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 416,
+              "line": 406,
               "function": "crowd"
             },
             {
               "file": "campus/facilities.py",
-              "line": 87,
+              "line": 91,
               "function": "load_schedule"
             },
             {
@@ -12653,7 +12588,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 78,
+              "line": 82,
               "function": "parse_now"
             }
           ],
@@ -12917,15 +12852,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 1795
+          "line": 1796
         },
         {
           "file": "static/admin.html",
-          "line": 1862
+          "line": 1863
         },
         {
           "file": "static/admin.html",
-          "line": 1882
+          "line": 1883
         },
         {
           "file": "static/index.html",
@@ -13817,13 +13752,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/messaging.py",
-          "line": 648,
+          "line": 681,
           "function": "reply_notice",
           "tables": [
             {
               "name": "class_notice_recipients",
               "file": "campus/messaging.py",
-              "line": 661,
+              "line": 694,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -13974,7 +13909,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/messaging.py",
-              "line": 648,
+              "line": 681,
               "function": "reply_notice"
             },
             {
@@ -14033,7 +13968,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/messaging.py",
-          "line": 674,
+          "line": 707,
           "function": "remind_notice",
           "tables": [
             {
@@ -14243,7 +14178,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/messaging.py",
-              "line": 674,
+              "line": 707,
               "function": "remind_notice"
             },
             {
@@ -14327,7 +14262,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14338,7 +14273,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             }
@@ -14400,7 +14335,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14411,7 +14346,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14460,7 +14395,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14471,7 +14406,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             }
@@ -14601,7 +14536,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14612,7 +14547,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14623,7 +14558,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             }
@@ -14705,7 +14640,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             },
@@ -14716,7 +14651,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 795
+                  "line": 815
                 }
               ]
             }
@@ -15836,19 +15771,19 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 1320
+          "line": 1321
         },
         {
           "file": "static/admin.html",
-          "line": 1377
+          "line": 1378
         },
         {
           "file": "static/admin.html",
-          "line": 1389
+          "line": 1390
         },
         {
           "file": "static/admin.html",
-          "line": 1423
+          "line": 1424
         },
         {
           "file": "static/js/anniversary.js",
@@ -15876,24 +15811,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/visits.py",
-          "line": 22,
+          "line": 26,
           "function": "slots",
           "tables": [],
           "files": [
             {
               "file": "campus/visits.py",
-              "line": 22,
+              "line": 26,
               "function": "slots"
             },
             {
               "file": "campus/visits.py",
-              "line": 17,
+              "line": 21,
               "function": "bookings"
             }
           ],
-          "storage": [
-            "data/campus_store.json → visit_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/visits",
@@ -15902,24 +15835,22 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/visits.py",
-          "line": 37,
+          "line": 41,
           "function": "visits_route",
           "tables": [],
           "files": [
             {
               "file": "campus/visits.py",
-              "line": 37,
+              "line": 41,
               "function": "visits_route"
             },
             {
               "file": "campus/visits.py",
-              "line": 17,
+              "line": 21,
               "function": "bookings"
             }
           ],
-          "storage": [
-            "data/campus_store.json → visit_bookings"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/visits/<int:visit_id>",
@@ -15927,34 +15858,32 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/visits.py",
-          "line": 87,
+          "line": 91,
           "function": "update_visit",
           "tables": [],
           "files": [
             {
               "file": "campus/visits.py",
-              "line": 87,
+              "line": 91,
               "function": "update_visit"
             },
             {
               "file": "campus/visits.py",
-              "line": 17,
+              "line": 21,
               "function": "bookings"
             }
           ],
-          "storage": [
-            "data/campus_store.json → visit_bookings"
-          ]
+          "storage": []
         }
       ],
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 950
+          "line": 951
         },
         {
           "file": "static/admin.html",
-          "line": 967
+          "line": 968
         },
         {
           "file": "static/js/campus-shell.js",
@@ -18159,19 +18088,172 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/messaging.py",
-          "line": 583,
+          "line": 625,
           "function": "advisor_messages_route",
-          "tables": [],
+          "tables": [
+            {
+              "name": "advisor_messages",
+              "file": "campus/messaging.py",
+              "line": 579,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 745
+                }
+              ]
+            },
+            {
+              "name": "class_groups",
+              "file": "campus/messaging.py",
+              "line": 79,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 455
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 693
+                }
+              ]
+            },
+            {
+              "name": "class_groups",
+              "file": "campus/messaging.py",
+              "line": 95,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 455
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 693
+                }
+              ]
+            },
+            {
+              "name": "class_notices",
+              "file": "campus/messaging.py",
+              "line": 103,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 474
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 714
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "campus/messaging.py",
+              "line": 89,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "class_group_members",
+              "file": "campus/messaging.py",
+              "line": 99,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 464
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 703
+                }
+              ]
+            },
+            {
+              "name": "class_notice_recipients",
+              "file": "campus/messaging.py",
+              "line": 111,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 494
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 734
+                }
+              ]
+            },
+            {
+              "name": "advisor_messages",
+              "file": "campus/messaging.py",
+              "line": 591,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 745
+                }
+              ]
+            }
+          ],
           "files": [
             {
               "file": "campus/messaging.py",
-              "line": 583,
+              "line": 625,
               "function": "advisor_messages_route"
             },
             {
               "file": "campus/messaging.py",
               "line": 577,
               "function": "advisor_messages"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 67,
+              "function": "_fmt_time"
+            },
+            {
+              "file": "app.py",
+              "line": 1527,
+              "function": "fetch_db_rows"
+            },
+            {
+              "file": "app.py",
+              "line": 170,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 77,
+              "function": "use_db"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 87,
+              "function": "_import_into_db"
+            },
+            {
+              "file": "app.py",
+              "line": 1543,
+              "function": "db_execute"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 59,
+              "function": "seed_classes"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 585,
+              "function": "add_advisor_message"
             }
           ],
           "storage": [
@@ -18184,19 +18266,172 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/messaging.py",
-          "line": 623,
+          "line": 660,
           "function": "reply_advisor_message",
-          "tables": [],
+          "tables": [
+            {
+              "name": "advisor_messages",
+              "file": "campus/messaging.py",
+              "line": 579,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 745
+                }
+              ]
+            },
+            {
+              "name": "class_groups",
+              "file": "campus/messaging.py",
+              "line": 79,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 455
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 693
+                }
+              ]
+            },
+            {
+              "name": "class_groups",
+              "file": "campus/messaging.py",
+              "line": 95,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 455
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 693
+                }
+              ]
+            },
+            {
+              "name": "class_notices",
+              "file": "campus/messaging.py",
+              "line": 103,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 474
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 714
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "campus/messaging.py",
+              "line": 89,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "class_group_members",
+              "file": "campus/messaging.py",
+              "line": 99,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 464
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 703
+                }
+              ]
+            },
+            {
+              "name": "class_notice_recipients",
+              "file": "campus/messaging.py",
+              "line": 111,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 494
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 734
+                }
+              ]
+            },
+            {
+              "name": "advisor_messages",
+              "file": "campus/messaging.py",
+              "line": 609,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 745
+                }
+              ]
+            }
+          ],
           "files": [
             {
               "file": "campus/messaging.py",
-              "line": 623,
+              "line": 660,
               "function": "reply_advisor_message"
             },
             {
               "file": "campus/messaging.py",
               "line": 577,
               "function": "advisor_messages"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 67,
+              "function": "_fmt_time"
+            },
+            {
+              "file": "app.py",
+              "line": 1527,
+              "function": "fetch_db_rows"
+            },
+            {
+              "file": "app.py",
+              "line": 170,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 77,
+              "function": "use_db"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 87,
+              "function": "_import_into_db"
+            },
+            {
+              "file": "app.py",
+              "line": 1543,
+              "function": "db_execute"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 59,
+              "function": "seed_classes"
+            },
+            {
+              "file": "campus/messaging.py",
+              "line": 604,
+              "function": "reply_to_advisor_message"
             }
           ],
           "storage": [
@@ -20014,87 +20249,87 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/admin.html",
-          "line": 995
+          "line": 996
         },
         {
           "file": "static/admin.html",
-          "line": 1047
+          "line": 1048
         },
         {
           "file": "static/admin.html",
-          "line": 1065
+          "line": 1066
         },
         {
           "file": "static/admin.html",
-          "line": 1223
+          "line": 1224
         },
         {
           "file": "static/admin.html",
-          "line": 1289
+          "line": 1290
         },
         {
           "file": "static/admin.html",
-          "line": 1300
+          "line": 1301
         },
         {
           "file": "static/admin.html",
-          "line": 1320
+          "line": 1321
         },
         {
           "file": "static/admin.html",
-          "line": 1377
+          "line": 1378
         },
         {
           "file": "static/admin.html",
-          "line": 1389
+          "line": 1390
         },
         {
           "file": "static/admin.html",
-          "line": 1423
+          "line": 1424
         },
         {
           "file": "static/admin.html",
-          "line": 1435
+          "line": 1436
         },
         {
           "file": "static/admin.html",
-          "line": 1467
+          "line": 1468
         },
         {
           "file": "static/admin.html",
-          "line": 1523
+          "line": 1524
         },
         {
           "file": "static/admin.html",
-          "line": 1555
+          "line": 1556
         },
         {
           "file": "static/admin.html",
-          "line": 1913
+          "line": 1914
         },
         {
           "file": "static/admin.html",
-          "line": 2023
+          "line": 2024
         },
         {
           "file": "static/admin.html",
-          "line": 2037
+          "line": 2038
         },
         {
           "file": "static/admin.html",
-          "line": 2077
+          "line": 2078
         },
         {
           "file": "static/admin.html",
-          "line": 2120
+          "line": 2121
         },
         {
           "file": "static/admin.html",
-          "line": 2146
+          "line": 2147
         },
         {
           "file": "static/admin.html",
-          "line": 2166
+          "line": 2167
         },
         {
           "file": "static/index.html",
@@ -20130,35 +20365,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 144,
+          "line": 135,
           "function": "list_events",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 144,
+              "line": 135,
               "function": "list_events"
             },
             {
               "file": "campus/events.py",
-              "line": 110,
+              "line": 101,
               "function": "event_view"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>",
@@ -20166,40 +20388,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 174,
+          "line": 165,
           "function": "get_event",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 174,
+              "line": 165,
               "function": "get_event"
             },
             {
               "file": "campus/events.py",
-              "line": 110,
+              "line": 101,
               "function": "event_view"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events",
@@ -20207,7 +20411,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 188,
+          "line": 179,
           "function": "create_event",
           "tables": [
             {
@@ -20252,13 +20456,8 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 188,
+              "line": 179,
               "function": "create_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             },
             {
               "file": "app.py",
@@ -20277,13 +20476,11 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/events.py",
-              "line": 39,
+              "line": 30,
               "function": "clean_event"
             }
           ],
-          "storage": [
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>",
@@ -20291,7 +20488,7 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "campus/events.py",
-          "line": 208,
+          "line": 194,
           "function": "update_event",
           "tables": [
             {
@@ -20336,28 +20533,13 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 208,
+              "line": 194,
               "function": "update_event"
             },
             {
               "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 39,
+              "line": 30,
               "function": "clean_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             },
             {
               "file": "app.py",
@@ -20375,10 +20557,7 @@ window.FEATURE_GUIDE = {
               "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>",
@@ -20386,7 +20565,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "campus/events.py",
-          "line": 234,
+          "line": 219,
           "function": "cancel_event",
           "tables": [
             {
@@ -20431,18 +20610,8 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 234,
+              "line": 219,
               "function": "cancel_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             },
             {
               "file": "app.py",
@@ -20460,9 +20629,7 @@ window.FEATURE_GUIDE = {
               "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>/register",
@@ -20470,18 +20637,23 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 251,
+          "line": 282,
           "function": "register_event",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 251,
+              "line": 282,
               "function": "register_event"
             },
             {
               "file": "campus/events.py",
-              "line": 132,
+              "line": 233,
+              "function": "_confirmation_email"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 123,
               "function": "send_mail_safely"
             },
             {
@@ -20501,29 +20673,69 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
+              "line": 245,
+              "function": "_add_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 86,
+              "line": 77,
               "function": "clean_registration"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
+        },
+        {
+          "url": "/api/campus/events/<int:event_id>/registrations",
+          "methods": [
+            "POST"
+          ],
+          "file": "campus/events.py",
+          "line": 297,
+          "function": "add_registration",
+          "tables": [],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 297,
+              "function": "add_registration"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 233,
+              "function": "_confirmation_email"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 123,
+              "function": "send_mail_safely"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 73,
+              "function": "get_mailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 32,
+              "function": "ConsoleMailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 46,
+              "function": "SmtpMailer"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 245,
+              "function": "_add_registration"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 77,
+              "function": "clean_registration"
+            }
+          ],
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>/registrations/<int:reg_id>/cancel",
@@ -20531,18 +20743,192 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 304,
+          "line": 329,
           "function": "cancel_registration",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 304,
+              "line": 329,
               "function": "cancel_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 132,
+              "line": 311,
+              "function": "_promote_next_waitlisted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 320,
+              "function": "_notify_promoted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 123,
+              "function": "send_mail_safely"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 73,
+              "function": "get_mailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 32,
+              "function": "ConsoleMailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 46,
+              "function": "SmtpMailer"
+            }
+          ],
+          "storage": []
+        },
+        {
+          "url": "/api/campus/events/<int:event_id>/registrations/<int:reg_id>",
+          "methods": [
+            "PUT"
+          ],
+          "file": "campus/events.py",
+          "line": 360,
+          "function": "edit_registration",
+          "tables": [
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 271,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            },
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 276,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 360,
+              "function": "edit_registration"
+            },
+            {
+              "file": "app.py",
+              "line": 253,
+              "function": "write_audit_log"
+            },
+            {
+              "file": "app.py",
+              "line": 170,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "app.py",
+              "line": 246,
+              "function": "client_ip"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 77,
+              "function": "clean_registration"
+            }
+          ],
+          "storage": []
+        },
+        {
+          "url": "/api/campus/events/<int:event_id>/registrations/<int:reg_id>",
+          "methods": [
+            "DELETE"
+          ],
+          "file": "campus/events.py",
+          "line": 384,
+          "function": "delete_registration",
+          "tables": [
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 271,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            },
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 276,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 384,
+              "function": "delete_registration"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 311,
+              "function": "_promote_next_waitlisted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 320,
+              "function": "_notify_promoted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 123,
               "function": "send_mail_safely"
             },
             {
@@ -20561,25 +20947,65 @@ window.FEATURE_GUIDE = {
               "function": "SmtpMailer"
             },
             {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
+              "file": "app.py",
+              "line": 253,
+              "function": "write_audit_log"
             },
             {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
+              "file": "app.py",
+              "line": 170,
+              "function": "get_db_connection"
             },
             {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
+              "file": "app.py",
+              "line": 246,
+              "function": "client_ip"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
+        },
+        {
+          "url": "/api/campus/events/<int:event_id>/registrations/<int:reg_id>/notify",
+          "methods": [
+            "POST"
+          ],
+          "file": "campus/events.py",
+          "line": 405,
+          "function": "notify_registration",
+          "tables": [],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 405,
+              "function": "notify_registration"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 233,
+              "function": "_confirmation_email"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 123,
+              "function": "send_mail_safely"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 73,
+              "function": "get_mailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 32,
+              "function": "ConsoleMailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 46,
+              "function": "SmtpMailer"
+            }
+          ],
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>/checkin",
@@ -20587,24 +21013,17 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 348,
+          "line": 423,
           "function": "checkin",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 348,
+              "line": 423,
               "function": "checkin"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>/registrations",
@@ -20612,40 +21031,22 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 370,
+          "line": 443,
           "function": "list_registrations",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 370,
+              "line": 443,
               "function": "list_registrations"
             },
             {
               "file": "campus/events.py",
-              "line": 110,
+              "line": 101,
               "function": "event_view"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/send-reminders",
@@ -20653,13 +21054,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 383,
+          "line": 456,
           "function": "send_reminders",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 383,
+              "line": 456,
               "function": "send_reminders"
             },
             {
@@ -20676,22 +21077,9 @@ window.FEATURE_GUIDE = {
               "file": "attendance/notify.py",
               "line": 46,
               "function": "SmtpMailer"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         },
         {
           "url": "/api/campus/events/<int:event_id>/feedback",
@@ -20699,42 +21087,24 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 411,
+          "line": 483,
           "function": "submit_feedback",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 411,
+              "line": 483,
               "function": "submit_feedback"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 31,
-              "function": "registrations"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 35,
-              "function": "find_event"
-            },
-            {
-              "file": "campus/events.py",
-              "line": 27,
-              "function": "events"
             }
           ],
-          "storage": [
-            "data/campus_store.json → event_registrations",
-            "data/campus_store.json → events"
-          ]
+          "storage": []
         }
       ],
       "frontend": []
     }
   ],
-  "routeCount": 176,
-  "schemaCount": 45,
+  "routeCount": 180,
+  "schemaCount": 46,
   "schema": {
     "departments": [
       {
@@ -20935,7 +21305,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 762
+        "line": 782
       }
     ],
     "dorm_applications": [
@@ -21076,10 +21446,16 @@ window.FEATURE_GUIDE = {
         "line": 663
       }
     ],
+    "advisor_messages": [
+      {
+        "file": "init_db.py",
+        "line": 745
+      }
+    ],
     "student_records": [
       {
         "file": "init_db.py",
-        "line": 795
+        "line": 815
       }
     ]
   }

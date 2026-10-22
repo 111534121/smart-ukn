@@ -1,13 +1,17 @@
 """校園空間：教室租借、櫃子租借、校園地圖 (新生找教室)、老師辦公室與目前是否上課、人流分析。
 
 建築物、教室、辦公室與櫃子為示範資料；請依學校實際配置修改 CAMPUS_BUILDINGS / ROOMS / TEACHER_OFFICES。
+
+教室租借與櫃子租借的預約紀錄交給 campus/facilities_store.py：有 MySQL 表時走資料庫，
+連不上或還沒建表則退回 data/campus_store.json。
 """
 import random
 from datetime import datetime, date, timedelta
 
 from flask import Blueprint, request
 
-from .common import deps, error, ok, require, store, next_id, now_str, current_user, user_key
+from . import facilities_store as db
+from .common import deps, error, ok, require, store, now_str, current_user, user_key
 
 bp = Blueprint("campus_facilities", __name__)
 
@@ -175,7 +179,7 @@ def teachers():
 # ---------- 教室租借 ----------
 
 def bookings():
-    return store.section("room_bookings", list)
+    return db.all_bookings()
 
 
 @bp.route("/api/campus/rooms", methods=["GET"])
@@ -243,12 +247,12 @@ def book_room():
             if bk["room_id"] == room["room_id"] and bk["date"] == day.isoformat() and bk["status"] in ("審核中", "已核准") \
                     and bk["period_start"] <= pe and ps <= bk["period_end"]:
                 return error("該時段已被借用或正在審核中", 409)
-        item = {"id": next_id(items), "room_id": room["room_id"], "room_name": room["name"], "date": day.isoformat(),
-                "period_start": ps, "period_end": pe, "purpose": purpose, "people": people,
-                "applicant": u["full_name"], "applicant_key": user_key(), "contact": str(data.get("contact", ""))[:60],
-                "status": "審核中", "managed_by": room["managed_by"], "review_note": "", "created_at": now_str()}
-        items.append(item)
-        store.save()
+        item = db.insert_booking({
+            "room_id": room["room_id"], "room_name": room["name"], "date": day.isoformat(),
+            "period_start": ps, "period_end": pe, "purpose": purpose, "people": people,
+            "applicant": u["full_name"], "applicant_key": user_key(), "contact": str(data.get("contact", ""))[:60],
+            "status": "審核中", "managed_by": room["managed_by"], "review_note": "", "created_at": now_str(),
+        })
     return ok(message=f"已送出借用申請，{room['managed_by']}審核後會通知你", data=item)
 
 
@@ -274,13 +278,13 @@ def update_booking(booking_id):
             return error("找不到申請", 404)
         before = {"room_name": bk.get("room_name"), "date": bk.get("date"), "applicant": bk.get("applicant"), "status": bk.get("status")}
         if action == "cancel" and bk["applicant_key"] == user_key():
-            bk["status"] = "已取消"
+            patch = {"status": "已取消"}
         elif action in ("approve", "reject") and u["role"] in ("管理員", "教職員"):
-            bk["status"] = "已核准" if action == "approve" else "未核准"
-            bk["review_note"] = str((request.get_json(silent=True) or {}).get("note", ""))[:100]
+            patch = {"status": "已核准" if action == "approve" else "未核准",
+                     "review_note": str((request.get_json(silent=True) or {}).get("note", ""))[:100]}
         else:
             return error("沒有權限", 403)
-        store.save()
+        bk = db.update_booking(booking_id, patch)
     deps.write_audit_log("room_bookings", booking_id, "修改", before=before,
                          after={**before, "status": bk["status"], "review_note": bk.get("review_note", "")})
     return ok(message=f"狀態已更新為「{bk['status']}」", data=bk)
@@ -289,25 +293,16 @@ def update_booking(booking_id):
 # ---------- 櫃子租借 ----------
 
 def lockers():
-    def seed():
-        rnd = random.Random(42)
-        items = []
-        for a in LOCKER_AREAS:
-            for r in range(a["rows"]):
-                for c in range(a["cols"]):
-                    code = f"{a['building']}{len(items) + 1:03d}"
-                    taken = rnd.random() < 0.35
-                    items.append({"locker_id": code, "area": a["area"], "row": r, "col": c, "fee": a["fee"],
-                                  "status": "已租用" if taken else "可租借", "holder_key": None, "reserved_at": None})
-        return items
-    return store.section("lockers", seed)
+    return db.all_lockers(LOCKER_AREAS)
 
 
 def expire_holds(items):
+    """過期的保留中格位釋放；items 是已經抓到的清單，過期的會立刻寫回儲存層並同步更新這份清單"""
     changed = False
     limit = (datetime.now() - timedelta(days=LOCKER_HOLD_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
     for lk in items:
         if lk["status"] == "保留中" and lk["reserved_at"] and lk["reserved_at"] < limit:
+            db.update_locker(lk["locker_id"], {"status": "可租借", "holder_key": None, "reserved_at": None})
             lk.update(status="可租借", holder_key=None, reserved_at=None)
             changed = True
     return changed
@@ -318,8 +313,7 @@ def list_lockers():
     key = user_key()
     with store.lock:
         items = lockers()
-        if expire_holds(items):
-            store.save()
+        expire_holds(items)
     areas = []
     for a in LOCKER_AREAS:
         cells = [{"locker_id": lk["locker_id"], "row": lk["row"], "col": lk["col"],
@@ -347,8 +341,7 @@ def reserve_locker(locker_id):
             return error("找不到這一格", 404)
         if lk["status"] != "可租借":
             return error("這一格已經被租走了，請選別格", 409)
-        lk.update(status="保留中", holder_key=key, reserved_at=now_str())
-        store.save()
+        db.update_locker(locker_id, {"status": "保留中", "holder_key": key, "reserved_at": now_str()})
     return ok(message=f"已幫你保留 {locker_id}，請在 {LOCKER_HOLD_DAYS} 天內到總務處出納組繳費 {lk['fee']} 元完成租借")
 
 
@@ -362,8 +355,7 @@ def cancel_locker(locker_id):
             return error("找不到你的保留", 404)
         if lk["status"] == "已租用":
             return error("已繳費的櫃子請到總務處辦理退租", 403)
-        lk.update(status="可租借", holder_key=None, reserved_at=None)
-        store.save()
+        db.update_locker(locker_id, {"status": "可租借", "holder_key": None, "reserved_at": None})
     return ok(message="已取消保留")
 
 
@@ -373,8 +365,7 @@ def lockers_admin():
     """保留中 (待繳費) 與租用中的櫃子，含保留人學號，供總務處現場收費時確認"""
     with store.lock:
         items = lockers()
-        if expire_holds(items):
-            store.save()
+        expire_holds(items)
     rows = []
     for lk in items:
         if lk["holder_key"]:
@@ -395,8 +386,7 @@ def locker_paid(locker_id):
         if not lk or lk["status"] != "保留中":
             return error("這一格不是保留中", 404)
         before = {"locker_id": locker_id, "holder": lk.get("holder_key"), "status": lk["status"]}
-        lk.update(status="已租用", reserved_at=None)
-        store.save()
+        db.update_locker(locker_id, {"status": "已租用", "reserved_at": None})
     deps.write_audit_log("lockers", locker_id, "修改", before=before, after={**before, "status": "已租用"})
     return ok(message=f"{locker_id} 已完成繳費")
 

@@ -575,7 +575,49 @@ def send_broadcast():
 # ---------- 家長留言給導師 ----------
 
 def advisor_messages():
+    if use_db():
+        rows = deps.fetch_db_rows("SELECT * FROM advisor_messages ORDER BY created_at DESC, id DESC") or []
+        return [{**r, "created_at": _fmt_time(r.get("created_at")), "replied_at": _fmt_time(r.get("replied_at")) or None}
+                for r in rows]
     return store.section("advisor_messages", list)
+
+
+def add_advisor_message(item):
+    """item 不含 id/status/reply/replied_by/replied_at/created_at；回傳完整的留言"""
+    created_at = now_str()
+    full = {**item, "status": "待回覆", "reply": None, "replied_by": None, "replied_at": None, "created_at": created_at}
+    if use_db():
+        res = deps.db_execute(
+            "INSERT INTO advisor_messages (student_id, student_name, class_name, parent_username, parent_name, "
+            "subject, content, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (item["student_id"], item["student_name"], item["class_name"], item["parent_username"],
+             item["parent_name"], item["subject"], item["content"], "待回覆", created_at))
+        return {"id": res["lastrowid"], **full}
+    with store.lock:
+        items = store.section("advisor_messages", list)
+        saved = {"id": next_id(items), **full}
+        items.append(saved)
+        store.save()
+        return saved
+
+
+def reply_to_advisor_message(msg_id, reply, replied_by):
+    """回傳更新後的留言，找不到回傳 None (呼叫時要已經持有 store.lock)"""
+    replied_at = now_str()
+    if use_db():
+        result = deps.db_execute(
+            "UPDATE advisor_messages SET reply = %s, replied_by = %s, replied_at = %s, status = %s WHERE id = %s",
+            (reply, replied_by, replied_at, "已回覆", msg_id))
+        if result is None or result["rowcount"] == 0:
+            return None
+        return next((m for m in advisor_messages() if m["id"] == msg_id), None)
+    items = store.section("advisor_messages", list)
+    m = next((m for m in items if m["id"] == msg_id), None)
+    if not m:
+        return None
+    m.update(reply=reply, replied_by=replied_by, replied_at=replied_at, status="已回覆")
+    store.save()
+    return m
 
 
 @bp.route("/api/campus/advisor-messages", methods=["GET", "POST"])
@@ -595,14 +637,9 @@ def advisor_messages_route():
         class_name = stu.get("class_name")
         if not class_name:
             return error("查無子女班級資料，請洽教務處")
-        with store.lock:
-            items = advisor_messages()
-            item = {"id": next_id(items), "student_id": u["student_id"], "student_name": stu.get("full_name", ""),
-                    "class_name": class_name, "parent_username": u["username"], "parent_name": u["full_name"],
-                    "subject": subject, "content": content, "status": "待回覆", "reply": "", "replied_by": "",
-                    "replied_at": "", "created_at": now_str()}
-            items.append(item)
-            store.save()
+        item = add_advisor_message({"student_id": u["student_id"], "student_name": stu.get("full_name", ""),
+                                     "class_name": class_name, "parent_username": u["username"],
+                                     "parent_name": u["full_name"], "subject": subject, "content": content})
         return ok(message="已送出，導師確認後會回覆", data=item)
 
     # GET：家長只看自己留言；老師只看自己導師班；教職員/管理員看全部
@@ -632,11 +669,7 @@ def reply_advisor_message(msg_id):
             return error("找不到這則留言", 404)
         if u["role"] == "老師" and m["class_name"] != u.get("advised_class"):
             return error("只能回覆自己導師班的留言", 403)
-        m["reply"] = reply
-        m["replied_by"] = u["full_name"]
-        m["replied_at"] = now_str()
-        m["status"] = "已回覆"
-        store.save()
+        m = reply_to_advisor_message(msg_id, reply, u["full_name"])
     return ok(message="已回覆", data=m)
 
 

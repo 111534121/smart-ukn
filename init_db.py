@@ -741,6 +741,26 @@ def init_database():
               CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `advisor_messages` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL COMMENT '子女學號',
+              `student_name` varchar(50) DEFAULT NULL,
+              `class_name` varchar(50) DEFAULT NULL,
+              `parent_username` varchar(50) NOT NULL,
+              `parent_name` varchar(50) DEFAULT NULL,
+              `subject` varchar(60) NOT NULL,
+              `content` varchar(1000) NOT NULL,
+              `status` varchar(10) NOT NULL DEFAULT '待回覆',
+              `reply` varchar(1000) DEFAULT NULL,
+              `replied_by` varchar(50) DEFAULT NULL,
+              `replied_at` timestamp NULL DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_am_student` (`student_id`),
+              KEY `idx_am_class` (`class_name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='家長留言給導師';
+        """)
 
         # 舊資料庫的 class_notices 補上廣播欄位 (T09 班級／課程廣播；已存在時略過)
         cursor.execute("ALTER TABLE `class_notices` MODIFY `class_name` varchar(50) DEFAULT NULL "
@@ -850,6 +870,27 @@ def init_database():
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE `academic_calendar` ADD COLUMN `{column}` {definition}")
                 print(f"✅ academic_calendar 已新增 {column} 欄位")
+
+        # 活動報名 (campus/events.py)：活動本身與報名紀錄 (含候補、簽到、提醒、滿意度評分)
+        from campus.events_store import EVENTS_TABLE_SQL, REGISTRATIONS_TABLE_SQL
+        cursor.execute(EVENTS_TABLE_SQL)
+        cursor.execute(REGISTRATIONS_TABLE_SQL)
+
+        # 預約校園參觀 (campus/visits.py)
+        from campus.visits_store import TABLE_SQL as VISITS_TABLE_SQL
+        cursor.execute(VISITS_TABLE_SQL)
+
+        # 教室租借 / 櫃子租借 (campus/facilities.py)
+        from campus.facilities_store import BOOKINGS_TABLE_SQL, LOCKERS_TABLE_SQL
+        cursor.execute(BOOKINGS_TABLE_SQL)
+        cursor.execute(LOCKERS_TABLE_SQL)
+
+        # 報表與文件庫 (campus/reports.py)
+        from campus.reports_store import FILES_TABLE_SQL, VIEW_LOGS_TABLE_SQL, DOWNLOAD_LOGS_TABLE_SQL, FAVORITES_TABLE_SQL
+        cursor.execute(FILES_TABLE_SQL)
+        cursor.execute(VIEW_LOGS_TABLE_SQL)
+        cursor.execute(DOWNLOAD_LOGS_TABLE_SQL)
+        cursor.execute(FAVORITES_TABLE_SQL)
 
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)
         for table in ("competitions", "application_progress", "friction_reports"):

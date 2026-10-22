@@ -7,13 +7,14 @@
   不論成功或被拒絕都會記一筆，方便事後稽查異常存取嘗試。
 - 使用者曾下載或收藏過的分類，若上傳新的同分類檔案，會自動寄信通知（用學號/帳號比對同分類的歷史紀錄）。
 
-資料存於 data/campus_store.json（與其他 campus 新功能一致），不需要另外建 MySQL 資料表。
+資料存取交給 campus/reports_store.py：有 MySQL 表時走資料庫，連不上或還沒建表則退回 data/campus_store.json。
 """
 import os
 
 from flask import Blueprint, request, send_from_directory
 
-from .common import deps, error, ok, require, store, next_id, now_str, current_user, user_key, STAFF_ROLES
+from . import reports_store as db
+from .common import deps, error, ok, require, store, now_str, current_user, user_key, STAFF_ROLES
 from attendance.notify import get_mailer, campus_email
 
 bp = Blueprint("campus_reports", __name__)
@@ -25,19 +26,19 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 
 def files():
-    return store.section("report_files", list)
+    return db.all_files()
 
 
 def view_logs():
-    return store.section("report_view_logs", list)
+    return db.all_view_logs()
 
 
 def download_logs():
-    return store.section("report_download_logs", list)
+    return db.all_download_logs()
 
 
 def favorites():
-    return store.section("report_favorites", list)
+    return db.all_favorites()
 
 
 def _can_access(allowed_roles, user):
@@ -98,10 +99,7 @@ def get_file(file_id):
     if not f or not _can_access(f["allowed_roles"], u):
         return error("檔案不存在或您無權查看", 404)
     # 瀏覽紀錄：只記角色與時間，不記帳號/姓名
-    with store.lock:
-        view_logs().append({"id": next_id(view_logs()), "file_id": file_id,
-                             "role": u["role"] if u else "訪客", "viewed_at": now_str()})
-        store.save()
+    db.add_view_log({"file_id": file_id, "role": u["role"] if u else "訪客", "viewed_at": now_str()})
     return ok(data=_public_file(f, u))
 
 
@@ -126,15 +124,12 @@ def upload_file():
     if not file_url:
         return error("檔案格式不支援（僅限 PDF、PNG、JPG、WEBP）")
 
-    with store.lock:
-        item = {
-            "id": next_id(files()), "title": title, "category": category, "description": description,
-            "file_url": file_url, "file_name": original_name, "file_type": file_type,
-            "allowed_roles": allowed_roles, "uploaded_by": u["full_name"] or u["username"],
-            "uploaded_by_username": u["username"], "uploaded_at": now_str(), "download_count": 0,
-        }
-        files().append(item)
-        store.save()
+    item = db.insert_file({
+        "title": title, "category": category, "description": description,
+        "file_url": file_url, "file_name": original_name, "file_type": file_type,
+        "allowed_roles": allowed_roles, "uploaded_by": u["full_name"] or u["username"],
+        "uploaded_by_username": u["username"], "uploaded_at": now_str(), "download_count": 0,
+    })
 
     deps.write_audit_log("report_files", item["id"], "新增", before=None, after=item)
     notified = notify_category_watchers(category, item, exclude_username=u["username"])
@@ -144,12 +139,9 @@ def upload_file():
 @bp.route("/api/campus/reports/<int:file_id>", methods=["DELETE"])
 @require(*MANAGE_ROLES)
 def delete_file(file_id):
-    with store.lock:
-        f = next((f for f in files() if f["id"] == file_id), None)
-        if not f:
-            return error("檔案不存在", 404)
-        files().remove(f)
-        store.save()
+    f = db.delete_file(file_id)
+    if not f:
+        return error("檔案不存在", 404)
     deps.write_audit_log("report_files", file_id, "刪除", before=f, after=None)
     return ok(message="已刪除")
 
@@ -163,16 +155,12 @@ def download_file(file_id):
 
     allowed = _can_access(f["allowed_roles"], u)
     # 不論成功或被拒絕都留下紀錄，供權限稽核；拒絕時不洩漏檔案是否存在以外的資訊
-    with store.lock:
-        download_logs().append({
-            "id": next_id(download_logs()), "file_id": file_id,
-            "username": u["username"] if u else None, "student_id": u.get("student_id") if u else None,
-            "role": u["role"] if u else "訪客", "result": "success" if allowed else "denied",
-            "downloaded_at": now_str(),
-        })
-        if allowed:
-            f["download_count"] = f.get("download_count", 0) + 1
-        store.save()
+    db.add_download_log({
+        "file_id": file_id, "username": u["username"] if u else None, "student_id": u.get("student_id") if u else None,
+        "role": u["role"] if u else "訪客", "result": "success" if allowed else "denied", "downloaded_at": now_str(),
+    })
+    if allowed:
+        db.update_file(file_id, {"download_count": f.get("download_count", 0) + 1})
 
     if not allowed:
         return error("您的身分無權下載此檔案", 403)
@@ -191,21 +179,15 @@ def add_favorite(file_id):
     uk = user_key()
     with store.lock:
         if not _is_favorited(file_id, uk):
-            favorites().append({"id": next_id(favorites()), "file_id": file_id, "user_key": uk,
-                                 "username": u["username"], "student_id": u.get("student_id"), "created_at": now_str()})
-            store.save()
+            db.add_favorite({"file_id": file_id, "user_key": uk, "username": u["username"],
+                              "student_id": u.get("student_id"), "created_at": now_str()})
     return ok(message="已加入收藏")
 
 
 @bp.route("/api/campus/reports/<int:file_id>/favorite", methods=["DELETE"])
 @require()
 def remove_favorite(file_id):
-    uk = user_key()
-    with store.lock:
-        fav = next((f for f in favorites() if f["file_id"] == file_id and f["user_key"] == uk), None)
-        if fav:
-            favorites().remove(fav)
-            store.save()
+    db.remove_favorite(file_id, user_key())
     return ok(message="已取消收藏")
 
 

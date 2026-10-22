@@ -222,3 +222,8 @@ POST,/api/campus/events/<int:event_id>/checkin,/api/campus/events/999999/checkin
 GET,/api/campus/events/<int:event_id>/registrations,/api/campus/events/999999/registrations,,查看報名名單,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可查看完整名單
 POST,/api/campus/events/send-reminders,/api/campus/events/send-reminders,,批次寄送活動提醒信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
 POST,/api/campus/events/<int:event_id>/feedback,/api/campus/events/999999/feedback,,活動滿意度評分,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/events/<int:event_id>/registrations,/api/campus/events/999999/registrations,,代為新增報名者,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可代為登記
+PUT,/api/campus/events/<int:event_id>/registrations/<int:reg_id>,/api/campus/events/999999/registrations/999999,,編輯報名者資料,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可編輯
+DELETE,/api/campus/events/<int:event_id>/registrations/<int:reg_id>,/api/campus/events/999999/registrations/999999,,刪除報名紀錄,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可刪除
+POST,/api/campus/events/<int:event_id>/registrations/<int:reg_id>/notify,/api/campus/events/999999/registrations/999999/notify,,重寄報名通知信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
+GET,/admin/events,/admin/events,,活動報名管理頁面,401,403,403,403,OK,OK,OK,頁面本身限老師/教職員/管理員，跟 admin-workbench 的防護作法一致

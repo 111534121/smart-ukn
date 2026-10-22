@@ -1,0 +1,11 @@
+.reg-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:16px;background:#fafcf9;border-radius:10px;margin-bottom:10px}
+.reg-row .info{flex:1;min-width:220px}
+.reg-row strong{display:block;color:#203b30}
+.reg-row small{color:#657a6b;line-height:1.7;display:block}
+.reg-row .actions{display:flex;flex-wrap:wrap;gap:8px}
+.reg-row .actions button{padding:7px 11px;font-size:13px}
+.badge.status-已報名{background:#e3ede4;color:#245b46}
+.badge.status-候補中{background:#fff0d7;color:#925812}
+.badge.status-已取消{background:#f1f1f1;color:#777}
+.badge.checked-in{background:#dbeefe;color:#1c5a8a;margin-left:6px}
+#eventStats .stat b{font-size:24px}

@@ -160,6 +160,109 @@ def test_feedback_only_allowed_after_event_ends(client, login):
     assert bad_rating.status_code == 400
 
 
+def test_staff_can_add_registration_bypassing_deadline(client, login):
+    """現場/電話報名：教職員代登記可以不受線上報名截止日限制"""
+    event_id = _create_event(client, login, event_date=_tomorrow())
+    login("staff1")
+    client.put(f"/api/campus/events/{event_id}", json={"registration_deadline": "2000-01-01"})
+
+    res = client.post(f"/api/campus/events/{event_id}/registrations", json={
+        "student_id": "S112001", "full_name": "王小明", "email": "test@example.com", "age": 20,
+    })
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["status"] == "已報名"
+
+
+def test_non_staff_cannot_add_registration_via_admin_endpoint(client, login):
+    event_id = _create_event(client, login)
+    login("student1")
+    res = client.post(f"/api/campus/events/{event_id}/registrations", json={
+        "student_id": "S112001", "full_name": "王小明", "email": "test@example.com", "age": 20,
+    })
+    assert res.status_code == 403
+
+
+def test_staff_can_edit_registration_and_duplicate_student_id_is_blocked(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    _register(client, login, event_id, "student2", "S112002")
+
+    login("staff1")
+    fixed = client.put(f"/api/campus/events/{event_id}/registrations/{reg1_id}", json={
+        "student_id": "S112001", "full_name": "王小明", "email": "fixed@example.com", "age": 21,
+    })
+    assert fixed.status_code == 200, fixed.get_json()
+    assert fixed.get_json()["data"]["email"] == "fixed@example.com"
+
+    clash = client.put(f"/api/campus/events/{event_id}/registrations/{reg1_id}", json={
+        "student_id": "S112002", "full_name": "王小明", "email": "fixed@example.com", "age": 21,
+    })
+    assert clash.status_code == 409
+
+
+def test_non_staff_cannot_edit_registration(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    login("student1")
+    res = client.put(f"/api/campus/events/{event_id}/registrations/{reg1_id}", json={
+        "student_id": "S112001", "full_name": "王小明", "email": "test@example.com", "age": 20,
+    })
+    assert res.status_code == 403
+
+
+def test_staff_delete_registration_promotes_waitlist(client, login):
+    event_id = _create_event(client, login, capacity=1)
+    first = _register(client, login, event_id, "student1", "S112001")
+    first_reg_id = first.get_json()["data"]["id"]
+    _register(client, login, event_id, "student2", "S112002")
+
+    login("staff1")
+    res = client.delete(f"/api/campus/events/{event_id}/registrations/{first_reg_id}")
+    assert res.status_code == 200, res.get_json()
+    assert "候補" in res.get_json()["message"]
+
+    regs = client.get(f"/api/campus/events/{event_id}/registrations").get_json()["data"]
+    assert not any(r["id"] == first_reg_id for r in regs)  # 真的從清單移除了，不是改狀態
+    assert next(r for r in regs if r["student_id"] == "S112002")["status"] == "已報名"
+
+
+def test_non_staff_cannot_delete_registration(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    login("student1")
+    res = client.delete(f"/api/campus/events/{event_id}/registrations/{reg1_id}")
+    assert res.status_code == 403
+
+
+def test_staff_can_resend_notification(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/registrations/{reg1_id}/notify")
+    assert res.status_code == 200, res.get_json()
+
+    cancel = client.post(f"/api/campus/events/{event_id}/registrations/{reg1_id}/cancel")
+    assert cancel.status_code == 200
+    after_cancel = client.post(f"/api/campus/events/{event_id}/registrations/{reg1_id}/notify")
+    assert after_cancel.status_code == 400
+
+
+def test_events_admin_page_requires_staff_login(client, login):
+    assert client.get("/admin/events").status_code == 401
+    login("student1")
+    assert client.get("/admin/events").status_code == 403
+
+    login("staff1")
+    res = client.get("/admin/events")
+    assert res.status_code == 200
+    assert b"html" in res.data.lower()
+
+
 def test_search_and_filter_events(client, login):
     event_id = _create_event(client, login, capacity=1)
     login("student1")
