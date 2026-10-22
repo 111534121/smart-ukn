@@ -222,3 +222,27 @@ POST,/api/campus/events/<int:event_id>/checkin,/api/campus/events/999999/checkin
 GET,/api/campus/events/<int:event_id>/registrations,/api/campus/events/999999/registrations,,查看報名名單,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可查看完整名單
 POST,/api/campus/events/send-reminders,/api/campus/events/send-reminders,,批次寄送活動提醒信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
 POST,/api/campus/events/<int:event_id>/feedback,/api/campus/events/999999/feedback,,活動滿意度評分,401,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/assistant/students,/api/campus/assistant/students?dept_id=CS,,科助學生名單,401,403,403,403,403,403,OK,科助身分另由處室流程測試驗證
+GET,/api/line/demo-status,/api/line/demo-status,,LINE 示範狀態,401,403,403,403,OK,403,403,
+POST,/api/line/demo-send,/api/line/demo-send,,LINE 示範通知,401,403,403,403,OK,403,403,
+GET,/api/line/settings,/api/line/settings,,LINE 通知設定,401,403,403,403,OK,403,403,
+PUT,/api/line/settings,/api/line/settings,,更新 LINE 通知設定,401,403,403,403,OK,403,403,
+GET,/api/applications/form/<int:item_id>,/api/applications/form/999999,,線上申辦表單欄位,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/applications/mine,/api/applications/mine,,我的線上申請,OK,OK,OK,OK,OK,OK,OK,未登入與非學生身分回空清單
+POST,/api/applications,/api/applications,,送出線上申請,401,403,OK,403,403,403,403,
+POST,/api/applications/<int:app_id>/withdraw,/api/applications/999999/withdraw,,撤回線上申請,401,403,OK,403,403,403,403,
+GET,/api/applications/review,/api/applications/review,,線上申請待審清單,401,403,403,403,OK,OK,OK,
+POST,/api/applications/<int:app_id>/review,/api/applications/999999/review,,審核線上申請,401,403,403,403,OK,OK,OK,
+GET,/api/conduct/me,/api/conduct/me,,我的操行,401,403,OK,OK,403,403,403,
+GET,/api/conduct/students,/api/conduct/students,,操行學生清單,401,403,403,403,OK,OK,OK,
+GET,/api/conduct/students/<student_id>,/api/conduct/students/S112001,,查詢學生操行,401,403,403,403,OK,OK,OK,導師僅限導師班
+POST,/api/conduct/records,/api/conduct/records,,登錄操行獎懲,401,403,403,403,403,OK,OK,
+DELETE,/api/conduct/records/<int:record_id>,/api/conduct/records/999999,,刪除操行獎懲,401,403,403,403,403,OK,OK,
+PUT,/api/conduct/evaluations/<student_id>/<semester>,/api/conduct/evaluations/S112001/115-1,,導師操行評分,401,403,403,403,OK,OK,OK,導師僅限導師班
+GET,/api/admin/conduct-settings,/api/admin/conduct-settings,,讀取操行計分規則,401,403,403,403,403,OK,OK,
+POST,/api/admin/conduct-settings/preview,/api/admin/conduct-settings/preview,,預覽操行規則變更,401,403,403,403,403,OK,OK,
+PUT,/api/admin/conduct-settings,/api/admin/conduct-settings,,更新操行計分規則,401,403,403,403,403,OK,OK,
+GET,/admin/feature-map,/admin/feature-map,,功能對照表,401,403,403,403,403,403,OK,
+GET,/api/public-site,/api/public-site,,公開網站資訊,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/public-site/qr.svg,/api/public-site/qr.svg,,公開網站 QR Code,OK,OK,OK,OK,OK,OK,OK,
+GET,/healthz,/healthz,,網站健康檢查,OK,OK,OK,OK,OK,OK,OK,

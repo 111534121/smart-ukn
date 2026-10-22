@@ -19,3 +19,4 @@ static/uploads/report_*
 # 使用者上傳的證照/競賽檔案 (個人文件) 不進 git，只保留示範檔
 static/uploads/*
 !static/uploads/demo_*
+tools/weekly_log_draft.json

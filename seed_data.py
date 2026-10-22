@@ -1,3 +1,4 @@
+import json
 import mysql.connector
 import os
 import sys
@@ -6,6 +7,8 @@ from dashboard import demo_data as dashboard_demo
 from scholarship_demo import DEMO_SCHOLARSHIPS, DEMO_SCHOLARSHIP_PROFILES
 from anniversary import DEMO_EVENTS as DEMO_ANNIVERSARY_EVENTS
 from faculty import DEMO_PROFILES as DEMO_FACULTY_PROFILES
+from applications import DEMO_APPLICATIONS
+from conduct import DEMO_RECORDS as DEMO_CONDUCT_RECORDS, DEMO_EVALUATIONS as DEMO_CONDUCT_EVALUATIONS
 
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     try: sys.stdout.reconfigure(encoding='utf-8')
@@ -166,23 +169,23 @@ def seed_data():
             INSERT IGNORE INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `office_location`, `contact_phone`, `form_download_url`, `system_url`, `deadline_week_info`, `related_kb_id`, `audience`) VALUES
             (1, 1, '課務組', '課程停修申請', 
              '[\"至校務資訊系統登入『停修申請表』\", \"列印紙本停修申請單\", \"親自送請任課教師簽章同意\", \"送請班級導師及科主任簽章\", \"於第12週五前送交教務處課務組核備\"]', 
-             '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form.pdf', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
+             '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
             
             (2, 2, '生輔組', '學生請假申請 (病假/事假)', 
              '[\"登入學生資訊系統填寫請假單\", \"上傳就醫證明或相關佐證文件圖檔\", \"送出後通知導師進行線上簽核\", \"請假超過3日由生輔組組長複核\", \"系統顯示審核通過即完成登錄\"]', 
-             '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form.pdf', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
+             '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
             
             (3, 3, '通識中心', '外語證照免修與學分抵免', 
              '[\"填寫通識外語抵免申請表\", \"備妥多益/英檢/雅思成績單正本及影本各一份\", \"送交通識教育中心辦公室查驗正本\", \"教務處課務組複審學分折抵\", \"次學期初於歷年成績單確認抵免註記\"]', 
-             '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form.pdf', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
+             '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
              
             (4, 1, '註冊組', '學士班畢業學分資格預審', 
              '[\"登入畢業審查系統列印學分檢核表\", \"核對科專業必修、選修與通識學分缺口\", \"確認英文畢業門檻與專題通過證明\", \"至科辦公室請科主任初審簽章\", \"送交教務處註冊組進行畢業資格決審\"]', 
-             '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form.pdf', 'http://203.71.63.13/academic/', '大四第 8-16 週 (進行中)', 4, '學生'),
+             '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form', 'http://203.71.63.13/academic/', '大四第 8-16 週 (進行中)', 4, '學生'),
              
             (5, 3, '研發處', '專業證照與競賽獲獎獎勵金申請', 
              '[\"登入研發處證照獎勵申請平台\", \"填寫證照/競賽名稱、證書字號與發證單位\", \"上傳證書正反面與郵局存摺封面圖檔\", \"列印紙本印領清冊並親筆簽名\", \"送交研發處實習就業組審核並撥款\"]', 
-             '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form.pdf', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
+             '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
         """)
 
         # 11. 寫入未命中關鍵字種子 (功能 4: 詞庫自動成長)
@@ -391,6 +394,31 @@ def seed_data():
                 cursor.execute(sql, params)
             except mysql.connector.Error as err:
                 print(f"⚠️ 班級 / 導師名稱修正略過：{err}")
+        # 22. 線上申辦示範 (與 applications 套件的 DEMO_APPLICATIONS 一致：一張跑到導師簽核、一張已完成)
+        try:
+            cursor.executemany("""
+                INSERT IGNORE INTO `online_applications` (`id`, `student_id`, `item_id`, `form_code`, `business_name`, `fields_json`,
+                    `stages_json`, `current_stage`, `status`, `history_json`, `submitted_at`)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, [(a["id"], a["student_id"], a["item_id"], a["form_code"], a["business_name"],
+                   json.dumps(a["fields"], ensure_ascii=False), json.dumps(a["stages"], ensure_ascii=False),
+                   a["current_stage"], a["status"], json.dumps(a["history"], ensure_ascii=False), a["submitted_at"])
+                  for a in DEMO_APPLICATIONS])
+        except mysql.connector.Error:
+            print("⚠️ 尚未建立 online_applications，請先執行 init_db.py")
+
+        # 23. 操行示範 (與 conduct 套件一致；114-2 分數與獎助學金示範的操行成績相同)
+        try:
+            cursor.executemany("""
+                INSERT IGNORE INTO `conduct_records` (`id`, `student_id`, `semester`, `record_date`, `type`, `count`, `reason`, `recorded_by`)
+                VALUES (%(id)s, %(student_id)s, %(semester)s, %(record_date)s, %(type)s, %(count)s, %(reason)s, %(recorded_by)s)
+            """, DEMO_CONDUCT_RECORDS)
+            cursor.executemany("""
+                INSERT IGNORE INTO `conduct_evaluations` (`student_id`, `semester`, `advisor_adjust`, `comment`, `evaluated_by`)
+                VALUES (%s, %s, %s, %s, %s)
+            """, [(sid, sem, e["advisor_adjust"], e["comment"], e["evaluated_by"]) for (sid, sem), e in DEMO_CONDUCT_EVALUATIONS.items()])
+        except mysql.connector.Error:
+            print("⚠️ 尚未建立 conduct_records / conduct_evaluations，請先執行 init_db.py")
 
         conn.commit()
         print("🎉 完整測試資料（含 7 大升級功能模組）匯入成功！")

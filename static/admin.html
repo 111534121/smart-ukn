@@ -78,6 +78,7 @@
                     <span id="dbModeText">校務資料庫連線正常</span>
                 </div>
                 <a href="/admin-workbench" class="text-xs bg-ukn-800 text-white font-bold px-3.5 py-2 rounded">行政案件工作台 →</a>
+                <a href="/admin/feature-map" target="_blank" class="text-xs border border-ukn-800 text-ukn-800 hover:bg-ukn-50 font-bold px-3.5 py-2 rounded transition whitespace-nowrap">功能對照表 ↗</a>
                 <a href="/" class="text-xs bg-ukn-800 hover:bg-ukn-700 text-white font-bold px-3.5 py-2 rounded transition whitespace-nowrap">開啟學生端前台 ↗</a>
             </div>
         </div>
@@ -167,6 +168,7 @@
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
                 <button onclick="switchTab('campus')" id="tabBtn-campus" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校園生活管理</button>
                 <button onclick="switchTab('faculty')" id="tabBtn-faculty" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">教師專長</button>
+                <button onclick="switchTab('conduct')" id="tabBtn-conduct" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">操行計分規則</button>
                 <button onclick="switchTab('anniversary')" id="tabBtn-anniversary" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校慶跑馬燈</button>
                 <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">訪客登記</button>
                 <button onclick="switchTab('audit')" id="tabBtn-audit" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">修改紀錄</button>
@@ -477,6 +479,46 @@
                         <tbody id="facultyTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- 分頁 7c: 操行計分規則 (conduct_settings) -->
+            <div id="panel-conduct" class="hidden space-y-4">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    前台「我的操行」依這裡的規則計算：<b>操行成績 = 基本分 + 導師評分 + 獎懲 + 缺曠扣分</b>（0–100 分）。
+                    成績不另外存，規則改了之後所有學生、所有學期的成績會自動依新規則重新計算。
+                    儲存前可先按「預覽影響」，系統會自動比對全校學生在新舊規則下的分數、等第與及格與否，不用逐筆人工核對。
+                    <span id="conductRuleMeta" class="block mt-1 text-slate-500"></span>
+                </div>
+                <form id="conductRuleForm" onsubmit="saveConductRules(event)" class="bg-white border border-slate-200 rounded p-4 space-y-4 text-xs sm:text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">基本分</span>
+                            <input name="base_score" type="number" step="0.5" min="0" max="100" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">導師評分可加減 ± 幾分</span>
+                            <input name="advisor_range" type="number" step="0.5" min="0" max="20" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                        <label class="space-y-1"><span class="block font-semibold text-slate-700">及格分數</span>
+                            <input name="pass_score" type="number" step="0.5" min="0" max="100" required class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                    </div>
+                    <fieldset class="space-y-1">
+                        <legend class="font-semibold text-slate-700">獎懲每次加減分（獎勵填正數、懲處填負數）</legend>
+                        <div id="conductMeritInputs" class="grid grid-cols-3 sm:grid-cols-6 gap-2"></div>
+                    </fieldset>
+                    <fieldset class="space-y-1">
+                        <legend class="font-semibold text-slate-700">缺曠每節扣分（填正數；請假核准的不扣）</legend>
+                        <div id="conductAttendanceInputs" class="grid grid-cols-2 sm:grid-cols-6 gap-2"></div>
+                    </fieldset>
+                    <fieldset class="space-y-1">
+                        <legend class="font-semibold text-slate-700">等第門檻（分數 ≥ 最低分就是該等第；最低一級須為 0 分）</legend>
+                        <div id="conductGradeRows" class="space-y-1.5"></div>
+                        <button type="button" onclick="addConductGradeRow()" class="text-ukn-700 hover:underline font-semibold">＋ 新增等第</button>
+                    </fieldset>
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <button type="button" onclick="previewConductRules()" class="border border-ukn-700 text-ukn-800 hover:bg-ukn-50 px-4 py-1.5 rounded font-semibold">預覽影響</button>
+                        <button type="submit" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-1.5 rounded font-semibold">儲存規則</button>
+                        <button type="button" onclick="resetConductRules()" class="ml-auto text-slate-500 hover:text-rose-700">還原預設</button>
+                    </div>
+                    <p id="conductRuleError" class="hidden text-rose-700"></p>
+                </form>
+                <div id="conductImpact"></div>
             </div>
 
             <!-- 分頁 8a: 校慶跑馬燈與匿名祝福 (anniversary_events / anniversary_wishes) -->
@@ -1194,8 +1236,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-conduct, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-conduct, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -1211,6 +1253,121 @@
             if (tab === 'visitors') loadVisitorLogs();
             if (tab === 'anniversary') loadAnniversary();
             if (tab === 'faculty') loadFacultyAdmin();
+            if (tab === 'conduct') loadConductRules();
+        }
+
+        // ---------- 操行計分規則 (conduct_settings) ----------
+        let conductMeta = { merit_types: [], attendance_types: [] };
+
+        async function loadConductRules() {
+            try {
+                const res = await fetch('/api/admin/conduct-settings');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                conductMeta = data;
+                fillConductForm(data.rules);
+            } catch (e) {
+                document.getElementById('conductRuleMeta').textContent = e.message;
+            }
+        }
+
+        function fillConductForm(rules) {
+            const form = document.getElementById('conductRuleForm');
+            ['base_score', 'advisor_range', 'pass_score'].forEach(k => { form.elements[k].value = rules[k]; });
+            const numberInput = (name, label, value, attrs) => `
+                <label class="space-y-0.5"><span class="block text-slate-600">${escapeHtml(label)}</span>
+                    <input name="${name}" type="number" step="0.1" value="${value}" required ${attrs} class="w-full border border-slate-300 rounded px-2 py-1.5"></label>`;
+            document.getElementById('conductMeritInputs').innerHTML = conductMeta.merit_types.map((t, i) =>
+                numberInput(`merit-${t}`, t, rules.merit_points[t], i < 3 ? 'min="0" max="30"' : 'min="-30" max="0"')).join('');
+            document.getElementById('conductAttendanceInputs').innerHTML = conductMeta.attendance_types.map(t =>
+                numberInput(`deduct-${t}`, t, rules.attendance_deduct[t], 'min="0" max="10"')).join('');
+            document.getElementById('conductGradeRows').innerHTML = '';
+            rules.grades.forEach(g => addConductGradeRow(g));
+            const u = rules.updated;
+            document.getElementById('conductRuleMeta').textContent = rules.is_default
+                ? '目前使用預設規則（範例數字），請依本校「學生操行成績評量辦法」調整。'
+                : `目前規則由 ${u?.updated_by || '—'} 於 ${u?.updated_at || '—'} 更新。`;
+            document.getElementById('conductImpact').innerHTML = '';
+        }
+
+        function addConductGradeRow(g = { label: '', min: '' }) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
+            row.dataset.gradeRow = '1';
+            row.innerHTML = `
+                <input data-grade-label maxlength="4" value="${escapeHtml(g.label)}" placeholder="等第" aria-label="等第名稱" required class="w-20 border border-slate-300 rounded px-2 py-1.5">
+                <span class="text-slate-500">≥</span>
+                <input data-grade-min type="number" step="0.5" min="0" max="100" value="${g.min}" placeholder="最低分" aria-label="最低分" required class="w-24 border border-slate-300 rounded px-2 py-1.5">
+                <span class="text-slate-500">分</span>
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-rose-700">刪除</button>`;
+            document.getElementById('conductGradeRows').appendChild(row);
+        }
+
+        function collectConductRules() {
+            const form = document.getElementById('conductRuleForm');
+            const val = name => form.elements[name].value;
+            return {
+                base_score: val('base_score'), advisor_range: val('advisor_range'), pass_score: val('pass_score'),
+                merit_points: Object.fromEntries(conductMeta.merit_types.map(t => [t, val(`merit-${t}`)])),
+                attendance_deduct: Object.fromEntries(conductMeta.attendance_types.map(t => [t, val(`deduct-${t}`)])),
+                grades: [...document.querySelectorAll('[data-grade-row]')].map(r => ({
+                    label: r.querySelector('[data-grade-label]').value, min: r.querySelector('[data-grade-min]').value
+                }))
+            };
+        }
+
+        function renderConductImpact(impact, saved) {
+            const box = document.getElementById('conductImpact');
+            const pass = p => p ? '及格' : '<span class="text-rose-700 font-semibold">不及格</span>';
+            box.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded p-4 space-y-3 text-xs sm:text-sm">
+                    <div class="font-bold text-slate-900">${saved ? '已套用，以下成績已重新計算' : '預覽（尚未儲存）'}</div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="rounded bg-slate-100 px-2 py-1">比對 ${impact.checked} 筆學期成績</span>
+                        <span class="rounded bg-ukn-50 text-ukn-800 px-2 py-1">分數有變 ${impact.changed} 筆</span>
+                        <span class="rounded bg-amber-50 text-amber-800 px-2 py-1">等第改變 ${impact.grade_changed} 筆</span>
+                        <span class="rounded bg-rose-50 text-rose-800 px-2 py-1">及格與否改變 ${impact.pass_changed} 筆</span>
+                    </div>
+                    ${impact.items.length ? `
+                    <div class="overflow-x-auto"><table class="w-full text-left border-collapse">
+                        <thead><tr class="bg-slate-50 text-slate-600 border-b border-slate-200"><th class="p-2">學生</th><th class="p-2">學期</th><th class="p-2">原本</th><th class="p-2">新規則</th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">${impact.items.map(c => `
+                            <tr><td class="p-2">${escapeHtml(c.student_id)} ${escapeHtml(c.full_name)}</td><td class="p-2">${escapeHtml(c.semester)}</td>
+                                <td class="p-2 tabular-nums">${c.before.score}（${escapeHtml(c.before.grade)}，${pass(c.before.passed)}）</td>
+                                <td class="p-2 tabular-nums font-semibold">${c.after.score}（${escapeHtml(c.after.grade)}，${pass(c.after.passed)}）</td></tr>`).join('')}
+                        </tbody></table></div>` : '<p class="text-slate-500">沒有任何學生的成績受影響。</p>'}
+                </div>`;
+        }
+
+        async function sendConductRules(url, method, body) {
+            const err = document.getElementById('conductRuleError');
+            err.classList.add('hidden');
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const data = await res.json();
+            if (!res.ok) { err.textContent = data.message; err.classList.remove('hidden'); return null; }
+            return data;
+        }
+
+        async function previewConductRules() {
+            const data = await sendConductRules('/api/admin/conduct-settings/preview', 'POST', collectConductRules());
+            if (data) renderConductImpact(data.impact, false);
+        }
+
+        async function saveConductRules(e) {
+            e.preventDefault();
+            const data = await sendConductRules('/api/admin/conduct-settings', 'PUT', collectConductRules());
+            if (!data) return;
+            fillConductForm(data.rules);
+            renderConductImpact(data.impact, true);
+            alert(data.message);
+        }
+
+        async function resetConductRules() {
+            if (!confirm('確定要還原為預設計分規則嗎？所有學生的操行成績會依預設規則重新計算。')) return;
+            const data = await sendConductRules('/api/admin/conduct-settings', 'PUT', { reset: true });
+            if (!data) return;
+            fillConductForm(data.rules);
+            renderConductImpact(data.impact, true);
         }
 
         // ---------- 教師專長 (faculty_profiles) ----------
@@ -1478,6 +1635,10 @@
             leave_requests: '請假審核',
             visitor_logs: '訪客登記',
             faculty_profiles: '教師專長',
+            conduct_settings: '操行計分規則',
+            conduct_records: '操行獎懲',
+            conduct_evaluations: '導師操行評分',
+            online_applications: '線上申辦',
             anniversary_events: '校慶設定',
             anniversary_wishes: '校慶祝福',
             student_privacy_settings: '個資授權',
