@@ -263,6 +263,15 @@ def _payload(student_id):
             "can_evaluate": can_manage(student_id), "can_record": can_manage(student_id, need_staff=True)}
 
 
+def _role_guard(roles, message="權限不足"):
+    """先檢查登入與身分，再查學生是否存在；否則未授權的人能從「查無此學生」試出學號"""
+    if "username" not in session:
+        return _error("請先登入系統", 401)
+    if session.get("role") not in roles:
+        return _error(message, 403)
+    return None
+
+
 # ---------- API ----------
 
 @bp.route("/api/conduct/me", methods=["GET"])
@@ -276,10 +285,11 @@ def my_conduct():
 @bp.route("/api/conduct/students", methods=["GET"])
 def manageable_students():
     """老師：導師班學生；教職員/管理員：全校 (給查詢下拉選單用)"""
+    denied = _role_guard(("老師", *STAFF_ROLES))
+    if denied:
+        return denied
     role = session.get("role")
-    if role not in ("老師", *STAFF_ROLES):
-        return _error("權限不足", 403)
-    ids = deps.class_student_ids(session.get("advised_class") or "") if role == "老師" else None
+    ids =deps.class_student_ids(session.get("advised_class") or "") if role == "老師" else None
     students = deps.list_students()
     if ids is not None:
         students = [s for s in students if s["student_id"] in ids]
@@ -288,6 +298,9 @@ def manageable_students():
 
 @bp.route("/api/conduct/students/<student_id>", methods=["GET"])
 def student_conduct(student_id):
+    denied = _role_guard(("老師", *STAFF_ROLES), "老師只能查看自己導師班的學生")
+    if denied:
+        return denied
     student_id = student_id.strip().upper()
     if not deps.load_student(student_id):
         return _error("查無此學生", 404)
@@ -298,6 +311,9 @@ def student_conduct(student_id):
 
 @bp.route("/api/conduct/records", methods=["POST"])
 def add_record():
+    denied = _role_guard(STAFF_ROLES, "獎懲由生輔組 (教職員、管理員) 登錄")
+    if denied:
+        return denied
     data = request.get_json(silent=True) or {}
     student_id = str(data.get("student_id") or "").strip().upper()
     if not deps.load_student(student_id):
@@ -334,8 +350,9 @@ def add_record():
 
 @bp.route("/api/conduct/records/<int:record_id>", methods=["DELETE"])
 def delete_record(record_id):
-    if session.get("role") not in STAFF_ROLES:
-        return _error("獎懲由生輔組 (教職員、管理員) 管理", 403)
+    denied = _role_guard(STAFF_ROLES, "獎懲由生輔組 (教職員、管理員) 管理")
+    if denied:
+        return denied
     rows = deps.fetch_db_rows("SELECT * FROM conduct_records WHERE id = %s", (record_id,))
     demo = rows is None
     record = (rows or [None])[0] if not demo else next((r for r in DEMO_RECORDS if r["id"] == record_id), None)
@@ -351,6 +368,9 @@ def delete_record(record_id):
 
 @bp.route("/api/conduct/evaluations/<student_id>/<semester>", methods=["PUT"])
 def save_evaluation(student_id, semester):
+    denied = _role_guard(("老師", *STAFF_ROLES), "導師評分僅限導師班老師或生輔組填寫")
+    if denied:
+        return denied
     student_id = student_id.strip().upper()
     if not deps.load_student(student_id):
         return _error("查無此學生", 404)

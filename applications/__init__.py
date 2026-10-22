@@ -261,6 +261,8 @@ def submit_application():
 
 @bp.route("/api/applications/<int:app_id>/withdraw", methods=["POST"])
 def withdraw_application(app_id):
+    if "username" not in session:
+        return _error("請先登入系統", 401)
     if session.get("role") != "學生":
         return _error("只有學生本人可以撤回", 403)
     app = get_application(app_id)

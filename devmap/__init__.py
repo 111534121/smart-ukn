@@ -306,7 +306,7 @@ def build_map():
 def feature_map():
     if session.get("role") != "管理員":
         return ("<meta charset='utf-8'><p style='font-family:sans-serif;padding:24px'>功能對照表僅限管理員查看，"
-                "請先 <a href='/login'>以管理員帳號登入</a> 後再開啟 /admin/feature-map。</p>"), 403
+                "請先 <a href='/login'>以管理員帳號登入</a> 後再開啟 /admin/feature-map。</p>"), 401 if "username" not in session else 403
     features, tables, db_online = build_map()
     groups = list(dict.fromkeys(f["group"] for f in features))
     return render_template("feature_map.html", features=features, tables=tables, db_online=db_online, groups=groups,

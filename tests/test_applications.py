@@ -95,7 +95,10 @@ def test_reject_then_withdraw_rules(client, login):
 
 
 def test_feature_map_admin_only_and_traces_tables(client, login):
+    assert client.get("/admin/feature-map").status_code == 401
+    login("student1")
     assert client.get("/admin/feature-map").status_code == 403
+    client.post("/api/auth/logout")
     login("admin", "admin123")
     html = client.get("/admin/feature-map").get_data(as_text=True)
     assert "online_applications" in html and "applications/__init__.py" in html
