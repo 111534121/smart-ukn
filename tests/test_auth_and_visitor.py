@@ -118,4 +118,7 @@ def test_visitor_logs_require_staff(client, login):
 def test_forms_block_path_traversal(client):
     assert client.get("/forms/..%2Fapp.py").status_code == 404
     assert client.get("/forms/notes.txt").status_code == 404
-    assert client.get("/forms/leave_application_form.pdf").status_code == 200
+    # 舊的 .pdf 網址轉到新的表單頁
+    old = client.get("/forms/leave_application_form.pdf")
+    assert old.status_code == 302 and old.headers["Location"].endswith("/forms/leave_application_form")
+    assert client.get("/forms/leave_application_form").status_code == 200

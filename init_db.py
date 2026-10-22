@@ -625,6 +625,75 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 線上申辦：學生送出 → 依表單簽核關卡逐關審核；stages_json 存送出當下的關卡，日後表單調整不影響舊申請
+        #   item_id 不設外鍵，因離線示範的申辦項目可能不在 checklist_items
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `online_applications` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `item_id` int(11) NOT NULL COMMENT '對應 checklist_items.item_id',
+              `form_code` varchar(60) DEFAULT NULL COMMENT '表單範本代碼，例如 course_withdraw_form',
+              `business_name` varchar(200) NOT NULL,
+              `fields_json` text NOT NULL COMMENT '學生填的欄位',
+              `stages_json` text NOT NULL COMMENT '關卡：送出 → 各簽核 → 完成',
+              `current_stage` tinyint(4) NOT NULL DEFAULT 1 COMMENT '目前停在第幾關 (0 = 送出)',
+              `status` enum('審核中','已完成','已退回','已撤回') NOT NULL DEFAULT '審核中',
+              `history_json` text NOT NULL COMMENT '每一關誰、何時、核准或退回、意見',
+              `submitted_at` datetime NOT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_app_student` (`student_id`, `submitted_at`),
+              KEY `idx_app_status` (`status`, `current_stage`),
+              CONSTRAINT `fk_app_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        # 我的操行：獎懲 (生輔組登錄) 與每學期導師評分；操行成績 = 基本分 + 導師評分 + 獎懲 + 缺曠扣分，由程式計算不另存
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `conduct_records` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `semester` varchar(10) NOT NULL COMMENT '學年-學期，依 record_date 計算',
+              `record_date` date NOT NULL,
+              `type` enum('大功','小功','嘉獎','警告','小過','大過') NOT NULL,
+              `count` tinyint(4) NOT NULL DEFAULT 1,
+              `reason` varchar(200) NOT NULL,
+              `recorded_by` varchar(100) DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_conduct_student` (`student_id`, `semester`),
+              CONSTRAINT `fk_conduct_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `conduct_evaluations` (
+              `student_id` varchar(20) NOT NULL,
+              `semester` varchar(10) NOT NULL,
+              `advisor_adjust` decimal(3,1) NOT NULL DEFAULT 0.0 COMMENT '導師加減分 (-5 ~ +5)',
+              `comment` varchar(255) DEFAULT NULL COMMENT '導師評語',
+              `evaluated_by` varchar(100) DEFAULT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`student_id`, `semester`),
+              CONSTRAINT `fk_conduct_eval_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 操行計分規則 (後台「操行計分規則」設定；只有一列 id = 1，沒有資料時程式用預設規則)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `conduct_settings` (
+              `id` tinyint(4) NOT NULL DEFAULT 1,
+              `settings_json` text NOT NULL COMMENT '基本分、獎懲配分、缺曠扣分、導師評分範圍、及格分數、等第門檻',
+              `updated_by` varchar(100) DEFAULT NULL,
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
+        # 表單下載改為 /forms/<code> 網頁 (舊的 .pdf 網址仍會轉址，這裡順便更新)
+        cursor.execute("""
+            UPDATE `checklist_items` SET `form_download_url` = REPLACE(`form_download_url`, '_form.pdf', '_form')
+            WHERE `form_download_url` LIKE '/forms/%\\_form.pdf'
+        """)
+
         # 校慶跑馬燈：校慶前 announce_days 天開始顯示，end_date 過後自動隱藏
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `anniversary_events` (
