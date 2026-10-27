@@ -88,7 +88,7 @@ def init_database():
               `is_required` tinyint(1) NOT NULL DEFAULT 1,
               `course_type` enum('專業必修','專業選修','通識教育','共同必修') NOT NULL DEFAULT '專業必修',
               `dept_id` varchar(20) NOT NULL DEFAULT 'CS',
-              `semester_suggest` varchar(20) DEFAULT '大一上',
+              `semester_suggest` varchar(20) DEFAULT '一年級上',
               `description` text DEFAULT NULL,
               PRIMARY KEY (`course_id`),
               KEY `fk_course_prereq` (`prerequisite_id`),
@@ -190,8 +190,8 @@ def init_database():
               `steps_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
               `required_docs` text DEFAULT NULL,
               `office_hours` varchar(100) DEFAULT '週一至週五 08:30 - 17:00',
-              `office_location` varchar(100) DEFAULT '康寧樓 2 樓 A201 (教務處)',
-              `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 310',
+              `office_location` varchar(100) DEFAULT '行政大樓 2 樓 教務處',
+              `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 323',
               `form_download_url` varchar(300) DEFAULT NULL,
               `system_url` varchar(300) DEFAULT NULL,
               `deadline_week_info` varchar(100) DEFAULT NULL,
@@ -661,11 +661,11 @@ def init_database():
             INSERT IGNORE INTO `academic_calendar` (`id`, `event_name`, `start_date`, `end_date`, `category`, `related_checklist_id`)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, [
-            (1, '加退選', '2026-09-14', '2026-09-25', '教務', None),
-            (2, '學雜費繳費期限', '2026-09-01', '2026-09-30', '繳費', None),
-            (3, '獎助學金申請期限', '2026-09-21', '2026-10-16', '獎助', None),
-            (4, '停修申請', '2026-10-01', '2026-10-16', '教務', withdraw_checklist_id),
-            (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None),
+            (1, '網路加退選及重補修', '2026-09-14', '2026-09-20', '教務', None),
+            (2, '就學貸款申請、學雜費減免收件', '2026-09-14', '2026-09-15', '繳費', None),
+            (3, '弱勢助學金、學產基金申請', '2026-09-16', '2026-10-01', '獎助', None),
+            (4, '受理棄選（停修）', '2026-11-16', '2026-12-04', '教務', withdraw_checklist_id),
+            (5, '網路教學評量填寫', '2026-12-14', '2026-12-20', '教務', None),
         ])
 
         # 已停用的舊資料表：程式沒有讀寫 (競賽併入 certificates、申辦進度改用 checklist_progress、斷點回報前台已移除)

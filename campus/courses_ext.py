@@ -10,27 +10,22 @@ bp = Blueprint("campus_courses", __name__)
 
 WEEKDAYS = ["", "一", "二", "三", "四", "五", "六", "日"]
 
-# 每學期修課學分上下限 (請依康寧大學學則調整)
+# 每學期修課學分上下限：資管科修業科目表「教務相關規定」五專 4-5 年級為 12-28 學分 (1-3 年級為 20-32 學分)
 SEMESTER_MIN_CREDITS = 12
 SEMESTER_MAX_CREDITS = 28
 SEMESTERS_TOTAL = 10  # 五專共 10 學期
 
-# 下學期開課時段 (示範)：同一門課可能有多個班別
+# 下學期 (115-2) 開課時段 (示範)：同一門課可能有多個班別。
+# 只列資管科修業科目表排在「下學期」的課；時段、老師、教室為示範值
 COURSE_OFFERINGS = [
-    {"offering_id": "CS101-A", "course_id": "CS101", "weekday": 1, "period_start": 1, "period_end": 3, "teacher": "林志明", "classroom": "A301"},
-    {"offering_id": "CS102-A", "course_id": "CS102", "weekday": 1, "period_start": 6, "period_end": 7, "teacher": "張文華", "classroom": "A303"},
+    {"offering_id": "CS102-A", "course_id": "CS102", "weekday": 1, "period_start": 6, "period_end": 8, "teacher": "張文華", "classroom": "A303"},
     {"offering_id": "CS102-B", "course_id": "CS102", "weekday": 4, "period_start": 6, "period_end": 8, "teacher": "張文華", "classroom": "A303"},
-    {"offering_id": "CS201-A", "course_id": "CS201", "weekday": 2, "period_start": 3, "period_end": 5, "teacher": "林志明", "classroom": "A301"},
-    {"offering_id": "CS202-A", "course_id": "CS202", "weekday": 4, "period_start": 2, "period_end": 4, "teacher": "吳建宏", "classroom": "A305 電腦教室"},
     {"offering_id": "CS301-A", "course_id": "CS301", "weekday": 3, "period_start": 6, "period_end": 8, "teacher": "林志明", "classroom": "A302"},
-    {"offering_id": "CS302-A", "course_id": "CS302", "weekday": 3, "period_start": 3, "period_end": 5, "teacher": "陳雅婷", "classroom": "A402"},
-    {"offering_id": "CS303-A", "course_id": "CS303", "weekday": 2, "period_start": 4, "period_end": 6, "teacher": "吳建宏", "classroom": "A305 電腦教室"},
+    {"offering_id": "CS302-A", "course_id": "CS302", "weekday": 3, "period_start": 3, "period_end": 4, "teacher": "陳雅婷", "classroom": "A305 電腦教室"},
     {"offering_id": "CS304-A", "course_id": "CS304", "weekday": 5, "period_start": 1, "period_end": 3, "teacher": "吳建宏", "classroom": "A305 電腦教室"},
-    {"offering_id": "CS401-A", "course_id": "CS401", "weekday": 5, "period_start": 6, "period_end": 7, "teacher": "陳雅婷", "classroom": "A301"},
+    {"offering_id": "CS402-A", "course_id": "CS402", "weekday": 5, "period_start": 6, "period_end": 6, "teacher": "陳雅婷", "classroom": "A301"},
     {"offering_id": "EN102-A", "course_id": "EN102", "weekday": 2, "period_start": 1, "period_end": 2, "teacher": "Amy Chen", "classroom": "L201"},
     {"offering_id": "EN102-B", "course_id": "EN102", "weekday": 3, "period_start": 3, "period_end": 4, "teacher": "Amy Chen", "classroom": "L202"},
-    {"offering_id": "GE102-A", "course_id": "GE102", "weekday": 5, "period_start": 3, "period_end": 4, "teacher": "李佩珊", "classroom": "G101"},
-    {"offering_id": "GE103-A", "course_id": "GE103", "weekday": 1, "period_start": 3, "period_end": 4, "teacher": "黃淑芬", "classroom": "G203"},
 ]
 
 

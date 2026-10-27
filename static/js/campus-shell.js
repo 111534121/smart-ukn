@@ -5,6 +5,7 @@
 const FEATURE_GROUPS = ['學習', '校務', '校園生活', '社群'];
 const FEATURES = [
     { key: 'course', tab: 'tab-course', name: '修業進度與擋修', icon: '📚', group: '學習', desc: '已修學分、未通過科目與擋修連帶影響' },
+    { key: 'retake', tab: 'tab-retake', name: '重補修推薦', icon: '🔁', group: '學習', desc: '沒過的科目哪班可以補、會不會衝堂' },
     { key: 'course-plan', tab: 'tab-plan', name: '選課檢查', icon: '🧮', group: '學習', desc: '220 學分夠不夠、有沒有撞修' },
     { key: 'graduation', tab: 'tab-graduation', name: '畢業門檻', icon: '🎓', group: '學習', desc: '學分與證照門檻一次看' },
     { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認' },

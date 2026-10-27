@@ -48,7 +48,13 @@ def test_student_defaults_to_official_dept(client, login):
     assert data["is_saved"] is False and data["content_scope"] == "all"
 
 
-def test_transfer_dept_and_scope_filters_deadlines(client, login):
+def test_transfer_dept_and_scope_filters_deadlines(client, login, monkeypatch):
+    # 行事曆的期限都是全校適用，另外加一筆資管科專屬的期限來測試篩選
+    import app as app_module
+    monkeypatch.setattr(app_module, "DEMO_DEADLINES", app_module.DEMO_DEADLINES + [
+        {"deadline_id": 99, "title": "資管科專屬期限", "category": "資管科辦", "semester_week": 10,
+         "start_date": "2026-11-16", "end_date": "2026-11-20", "applies_to_role": "學生", "applies_to_dept": "CS",
+         "related_system_url": "", "description": "", "status_badge": "進行中"}])
     login("student1")
     everything = client.get("/api/deadlines").get_json()["data"]
     assert any(d.get("applies_to_dept") == "CS" for d in everything)

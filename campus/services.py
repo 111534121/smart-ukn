@@ -271,7 +271,7 @@ SCHOLARSHIPS = [
      "criteria": [{"id": "income", "text": "家庭年所得 70 萬元以下"},
                   {"id": "avg", "text": "前一學期學業平均 60 分以上", "auto": "avg_60"},
                   {"id": "other", "text": "本學期未領取其他政府助學金"}]},
-    {"id": "SCH03", "name": "專業證照獎勵金", "amount": "3,000 – 10,000 元", "deadline": "2026-10-09", "office": "研發處實習就業組",
+    {"id": "SCH03", "name": "專業證照獎勵金", "amount": "3,000 – 10,000 元", "deadline": "2026-10-09", "office": "研究發展處 (先送科辦初審)",
      "criteria": [{"id": "cert", "text": "在學期間取得乙級以上技術士或國際認證", "auto": "has_cert"},
                   {"id": "first", "text": "同一張證照未曾申請過獎勵"}]},
     {"id": "SCH04", "name": "工讀助學金", "amount": "時薪 190 元", "deadline": "2026-10-02", "office": "學務處生輔組",

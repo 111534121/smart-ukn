@@ -242,7 +242,7 @@ DEMO_DEPARTMENTS = [
     {"dept_id": "NUR", "dept_name": "護理科（五專）", "college_name": "護理健康學院"},
     {"dept_id": "OPT", "dept_name": "視光科（五專）", "college_name": "護理健康學院"},
     # 商業資訊學院
-    {"dept_id": "BA", "dept_name": "企業管理學系（科）", "college_name": "商業資訊學院"},
+    {"dept_id": "BA", "dept_name": "企業管理學系（科、所）", "college_name": "商業資訊學院"},
     {"dept_id": "CS", "dept_name": "資訊管理科（五專）", "college_name": "商業資訊學院"},
     {"dept_id": "ANI", "dept_name": "數位影視動畫科（五專）", "college_name": "商業資訊學院"},
     {"dept_id": "ENG", "dept_name": "應用外語科（五專）", "college_name": "商業資訊學院"}
@@ -286,7 +286,7 @@ DEMO_KNOWLEDGE_BASE = [
         "subcategory": "停修/棄修手續",
         "keyword": "棄修",
         "official_term": "停修課程辦理規定",
-        "content": "學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。",
+        "content": "學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（115-1 為 11/16-12/4，行事曆稱「受理棄選」，五專前三年除外；每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。",
         "doc_name": "康寧大學學生學則.pdf",
         "page": 12,
         "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw"
@@ -310,7 +310,7 @@ DEMO_KNOWLEDGE_BASE = [
         "subcategory": "語言證照抵免",
         "keyword": "英文抵免",
         "official_term": "語言證照抵免辦法",
-        "content": "學生取得多益測驗 (TOEIC) 550 分以上、全民英檢 (GEPT) 中級複試通過或同等級國際外語證照者，得於每學期開學後至加退選截止前，檢附成績單正本與影本至通識教育中心申請抵免大一共同外語「基礎英文(一)」及「基礎英文(二)」共 4 學分。",
+        "content": "學生取得多益測驗 (TOEIC) 550 分以上、全民英檢 (GEPT) 中級複試通過或同等級國際外語證照者，得於每學期開學後至加退選截止前，檢附成績單正本與影本至通識教育中心申請抵免一年級「英文(一)」及「英文(二)」共 4 學分。",
         "doc_name": "康寧大學共同外語學分抵免辦法.pdf",
         "page": 3,
         "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw"
@@ -322,7 +322,7 @@ DEMO_KNOWLEDGE_BASE = [
         "subcategory": "先修與擋修規定",
         "keyword": "擋修",
         "official_term": "先修科目未通過擋修規定",
-        "content": "本校各科系必修課程若訂有先修科目限制（例如：程式設計(一) 為 資料結構 之先修科目），學生該先修科目未達及格標準（60 分）者，電腦選課系統將自動擋修，不得修習後續先修關聯課程，需待先修科目重修及格後始得修習。",
+        "content": "本校各科系必修課程若訂有先修科目限制（例如：程式設計(二) 為 資料結構 之先修科目），學生該先修科目未達及格標準（60 分）者，電腦選課系統將自動擋修，不得修習後續先修關聯課程，需待先修科目重修及格後始得修習。",
         "doc_name": "康寧大學課程選修要點.pdf",
         "page": 8,
         "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw"
@@ -334,7 +334,7 @@ DEMO_KNOWLEDGE_BASE = [
         "subcategory": "專業證照獎勵金",
         "keyword": "證照補助",
         "official_term": "學生取得專業證照獎勵辦法",
-        "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，請至研發處實習就業組辦理。",
+        "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，先送所屬科系初審，再由研究發展處審核。",
         "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
         "page": 2,
         "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw"
@@ -357,24 +357,28 @@ DEMO_SYNONYMS = [
     {"synonym_id": 13, "category_id": 1, "user_keyword": "暑修", "official_term": "暑期開班授課規定"}
 ]
 
+# 課名、學分、建議修課學期依資管科「112 學年度入學五專修業科目表」(https://im.ukn.edu.tw/p/405-1028-609,c82.php)；
+# 全學年課程 (例如程式設計 6 學分) 拆成上下學期各一門。科目表沒有先修規定，prerequisite_id 為擋修功能的示範設定。
+# course_id 為本系統內部代碼 (校務系統的正式科目代碼見資料庫 course_map 中 7 碼的課程)
 DEMO_COURSES = [
-    {"course_id": "CS101", "course_name": "計算機概論", "credits": 3, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大一上", "description": "計算機科學基礎、電腦架構、二進位運算、作業系統與網路概論。"},
-    {"course_id": "CS102", "course_name": "程式設計(一)", "credits": 3, "prerequisite_id": "CS101", "prerequisite_name": "計算機概論", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大一下", "description": "Python 與 C 語言基礎邏輯、變數、迴圈、陣列與函式設計。"},
-    {"course_id": "CS201", "course_name": "資料結構", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(一)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大二上", "description": "陣列、鏈結串列、堆疊、佇列、二元樹、圖形演算法與搜尋排序。"},
-    {"course_id": "CS202", "course_name": "物件導向程式設計", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(一)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大二下", "description": "類別、封裝、繼承、多型、Java/C++ 實作與 GUI 設計。"},
-    {"course_id": "CS301", "course_name": "演算法分析", "credits": 3, "prerequisite_id": "CS201", "prerequisite_name": "資料結構", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大三上", "description": "時間複雜度、分治演算法、貪婪演算法、動態規劃與 NP 問題。"},
-    {"course_id": "CS302", "course_name": "資料庫系統概論", "credits": 3, "prerequisite_id": "CS201", "prerequisite_name": "資料結構", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大三上", "description": "關聯式資料庫、SQL 查詢最佳化、3NF 正規化與 MySQL/PostgreSQL 實務。"},
-    {"course_id": "CS303", "course_name": "網頁前後端開發實務", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(一)", "is_required": 0, "course_type": "專業選修", "dept_id": "CS", "semester_suggest": "大三上", "description": "HTML5/Tailwind/FastAPI/Flask 全端系統整合與 REST API。"},
-    {"course_id": "CS304", "course_name": "雲端運算與虛擬化", "credits": 3, "prerequisite_id": "CS101", "prerequisite_name": "計算機概論", "is_required": 0, "course_type": "專業選修", "dept_id": "CS", "semester_suggest": "大三下", "description": "Docker 容器化、Kubernetes、AWS 與微服務架構實戰。"},
-    {"course_id": "CS401", "course_name": "畢業專題研討(一)", "credits": 3, "prerequisite_id": "CS302", "prerequisite_name": "資料庫系統概論", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大四上", "description": "綜合資訊系統開發、專題實作、系統架構設計與成果展覽。"},
-    {"course_id": "CS402", "course_name": "畢業專題研討(二)", "credits": 3, "prerequisite_id": "CS401", "prerequisite_name": "畢業專題研討(一)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "大四下", "description": "畢業專題成果報告撰寫、系統部署與校外競賽發表。"},
-    {"course_id": "EN101", "course_name": "基礎英文(一)", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "共同必修", "dept_id": "CS", "semester_suggest": "大一上", "description": "大一基礎外語聽說讀寫與實用生活英語。"},
-    {"course_id": "EN102", "course_name": "基礎英文(二)", "credits": 2, "prerequisite_id": "EN101", "prerequisite_name": "基礎英文(一)", "is_required": 1, "course_type": "共同必修", "dept_id": "CS", "semester_suggest": "大一下", "description": "進階商用英文與學術閱讀報告寫作。"},
-    {"course_id": "GE101", "course_name": "大學之道與校園倫理", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 0, "course_type": "通識教育", "dept_id": "CS", "semester_suggest": "大一上", "description": "校園生活適應、生命教育、學術誠信與職場倫理。"},
-    {"course_id": "GE102", "course_name": "跨領域思維與創新科技", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 0, "course_type": "通識教育", "dept_id": "CS", "semester_suggest": "大二上", "description": "人工智慧生活應用、設計思考與數位轉型思維。"},
-    {"course_id": "GE103", "course_name": "環境永續與社會責任", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 0, "course_type": "通識教育", "dept_id": "CS", "semester_suggest": "大二下", "description": "ESG 永續發展目標、生態保育與社會公益實踐。"}
+    {"course_id": "CS101", "course_name": "程式設計(一)", "credits": 3, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "一年級上", "description": "程式設計基礎：變數、流程控制、迴圈、陣列與函式。"},
+    {"course_id": "CS102", "course_name": "程式設計(二)", "credits": 3, "prerequisite_id": "CS101", "prerequisite_name": "程式設計(一)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "一年級下", "description": "接續程式設計(一)，練習較完整的程式題目與除錯。"},
+    {"course_id": "CS201", "course_name": "資料結構", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(二)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "三年級上", "description": "陣列、鏈結串列、堆疊、佇列、樹與排序搜尋。"},
+    {"course_id": "CS202", "course_name": "JAVA程式語言(一)", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(二)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "三年級上", "description": "Java 語法、類別與物件導向基礎。"},
+    {"course_id": "CS301", "course_name": "系統分析與設計", "credits": 3, "prerequisite_id": "CS201", "prerequisite_name": "資料結構", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "三年級下", "description": "需求分析、系統規格與 UML 設計。"},
+    {"course_id": "CS302", "course_name": "資料庫管理實務(SQL)", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "三年級下", "description": "關聯式資料庫與 SQL 查詢實作。"},
+    {"course_id": "CS303", "course_name": "動態網頁程式設計", "credits": 3, "prerequisite_id": "CS102", "prerequisite_name": "程式設計(二)", "is_required": 0, "course_type": "專業選修", "dept_id": "CS", "semester_suggest": "三年級上", "description": "資訊軟體開發模組選修：伺服器端網頁程式與資料庫串接。"},
+    {"course_id": "CS304", "course_name": "雲端應用", "credits": 3, "prerequisite_id": None, "prerequisite_name": None, "is_required": 0, "course_type": "專業選修", "dept_id": "CS", "semester_suggest": "五年級下", "description": "資訊軟體開發模組選修：雲端服務與部署應用。"},
+    {"course_id": "CS401", "course_name": "實務專題(一)", "credits": 1, "prerequisite_id": "CS301", "prerequisite_name": "系統分析與設計", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "五年級上", "description": "院定必修：分組完成資訊系統專題。"},
+    {"course_id": "CS402", "course_name": "實務專題(二)", "credits": 1, "prerequisite_id": "CS401", "prerequisite_name": "實務專題(一)", "is_required": 1, "course_type": "專業必修", "dept_id": "CS", "semester_suggest": "五年級下", "description": "院定必修：專題成果報告與發表。"},
+    {"course_id": "EN101", "course_name": "英文(一)", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "共同必修", "dept_id": "CS", "semester_suggest": "一年級上", "description": "一般科目必修：英文聽說讀寫。"},
+    {"course_id": "EN102", "course_name": "英文(二)", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "共同必修", "dept_id": "CS", "semester_suggest": "一年級下", "description": "一般科目必修：英文聽說讀寫。"},
+    {"course_id": "GE101", "course_name": "康寧全人教育", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "共同必修", "dept_id": "CS", "semester_suggest": "一年級上", "description": "校定必修。"},
+    {"course_id": "GE102", "course_name": "進階分類通識課程國文藝術類", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "通識教育", "dept_id": "CS", "semester_suggest": "四年級上", "description": "進階分類通識必修，實際科目依每學期開課。"},
+    {"course_id": "GE103", "course_name": "進階分類通識課程自然健康類", "credits": 2, "prerequisite_id": None, "prerequisite_name": None, "is_required": 1, "course_type": "通識教育", "dept_id": "CS", "semester_suggest": "四年級上", "description": "進階分類通識必修，實際科目依每學期開課。"}
 ]
 
+# 成績的學期與上方建議修課學期一致 (112 學年度入學：一年級 = 112、三年級 = 114)
 DEMO_STUDENT_CREDITS = [
     {"credit_id": 1, "student_id": "S112001", "course_id": "CS101", "semester": "112-1", "score": 85.00, "is_passed": 1},
     {"credit_id": 2, "student_id": "S112001", "course_id": "CS102", "semester": "112-2", "score": 55.00, "is_passed": 0},
@@ -382,18 +386,18 @@ DEMO_STUDENT_CREDITS = [
     {"credit_id": 4, "student_id": "S112001", "course_id": "GE101", "semester": "112-1", "score": 82.00, "is_passed": 1},
     {"credit_id": 5, "student_id": "S112002", "course_id": "CS101", "semester": "112-1", "score": 92.50, "is_passed": 1},
     {"credit_id": 6, "student_id": "S112002", "course_id": "CS102", "semester": "112-2", "score": 88.00, "is_passed": 1},
-    {"credit_id": 7, "student_id": "S112002", "course_id": "CS201", "semester": "113-1", "score": 85.00, "is_passed": 1},
+    {"credit_id": 7, "student_id": "S112002", "course_id": "CS201", "semester": "114-1", "score": 85.00, "is_passed": 1},
     {"credit_id": 8, "student_id": "S112002", "course_id": "EN101", "semester": "112-1", "score": 80.00, "is_passed": 1},
     {"credit_id": 9, "student_id": "S112002", "course_id": "GE101", "semester": "112-1", "score": 90.00, "is_passed": 1},
     {"credit_id": 10, "student_id": "S112004", "course_id": "CS101", "semester": "112-1", "score": 88.00, "is_passed": 1},
     {"credit_id": 11, "student_id": "S112004", "course_id": "CS102", "semester": "112-2", "score": 91.00, "is_passed": 1},
-    {"credit_id": 12, "student_id": "S112004", "course_id": "CS201", "semester": "113-1", "score": 84.00, "is_passed": 1},
+    {"credit_id": 12, "student_id": "S112004", "course_id": "CS201", "semester": "114-1", "score": 84.00, "is_passed": 1},
     {"credit_id": 13, "student_id": "S112004", "course_id": "EN101", "semester": "112-1", "score": 80.00, "is_passed": 1},
-    {"credit_id": 14, "student_id": "S112004", "course_id": "CS202", "semester": "113-2", "score": 79.00, "is_passed": 1},
+    {"credit_id": 14, "student_id": "S112004", "course_id": "CS202", "semester": "114-1", "score": 79.00, "is_passed": 1},
     {"credit_id": 15, "student_id": "S112004", "course_id": "GE101", "semester": "112-1", "score": 86.00, "is_passed": 1},
     {"credit_id": 16, "student_id": "S112005", "course_id": "CS101", "semester": "112-1", "score": 76.00, "is_passed": 1},
     {"credit_id": 17, "student_id": "S112005", "course_id": "CS102", "semester": "112-2", "score": 68.00, "is_passed": 1},
-    {"credit_id": 18, "student_id": "S112005", "course_id": "CS201", "semester": "113-1", "score": 48.00, "is_passed": 0},
+    {"credit_id": 18, "student_id": "S112005", "course_id": "CS201", "semester": "114-1", "score": 48.00, "is_passed": 0},
     {"credit_id": 19, "student_id": "S112005", "course_id": "EN101", "semester": "112-1", "score": 81.00, "is_passed": 1},
     {"credit_id": 20, "student_id": "S112005", "course_id": "GE101", "semester": "112-1", "score": 88.00, "is_passed": 1}
 ]
@@ -409,15 +413,15 @@ DEMO_CHECKLISTS = [
             "列印紙本停修申請單",
             "親自送請任課教師簽章同意",
             "送請班級導師及科主任簽章",
-            "於第12週五前送交教務處課務組核備"
+            "於第12週五前送交教務處課程與教學組核備"
         ],
         "required_docs": "停修申請單紙本、歷年成績單正本",
         "office_hours": "週一至週五 08:30 - 17:00",
-        "office_location": "康寧樓 2 樓 A201 (課務組)",
-        "contact_phone": "02-2632-1181 分機 310, 312",
+        "office_location": "行政大樓 2 樓 教務處 (課程與教學組)",
+        "contact_phone": "02-2632-1181 分機 323, 325",
         "form_download_url": "/forms/course_withdraw_form",
         "system_url": "http://talk.ukn.edu.tw/class_redi/class.php",
-        "deadline_week_info": "第 10-12 週 (本週受理中)",
+        "deadline_week_info": "第 10-12 週 (115-1：11/16-12/4，五專前三年除外)",
         "related_kb_id": 1,
         "audience": "學生"
     },
@@ -436,7 +440,7 @@ DEMO_CHECKLISTS = [
         "required_docs": "健保特約就醫證明、就診收據影本",
         "office_hours": "週一至週五 08:00 - 17:30",
         "office_location": "行政大樓 1 樓 學務處生輔組",
-        "contact_phone": "02-2632-1181 分機 211",
+        "contact_phone": "02-2632-1181 分機 464, 412",
         "form_download_url": "/forms/leave_application_form",
         "system_url": "https://ec.ukn.edu.tw/AskLeave/login.aspx",
         "deadline_week_info": "請假日當日起 3 日內",
@@ -452,16 +456,16 @@ DEMO_CHECKLISTS = [
             "填寫通識外語抵免申請表",
             "備妥多益/英檢/雅思成績單正本及影本各一份",
             "送交通識教育中心辦公室查驗正本",
-            "教務處課務組複審學分折抵",
+            "教務處課程與教學組複審學分折抵",
             "次學期初於歷年成績單確認抵免註記"
         ],
         "required_docs": "外語檢定成績單正本、影本、抵免申請書",
         "office_hours": "週一至週五 09:00 - 16:30",
-        "office_location": "卓越樓 3 樓 C305 (通識教育中心)",
-        "contact_phone": "02-2632-1181 分機 520, 521",
+        "office_location": "通識教育中心",
+        "contact_phone": "02-2632-1181 分機 592, 598",
         "form_download_url": "/forms/english_waiver_form",
         "system_url": "http://203.71.63.13/academic/",
-        "deadline_week_info": "開學前至加退選截止 (已截止)",
+        "deadline_week_info": "開學日截止 (115-1：9/14，已截止)",
         "related_kb_id": 3,
         "audience": "學生"
     },
@@ -479,8 +483,8 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "歷年成績單正本、畢業學分預審表、外語通過證明",
         "office_hours": "週一至週五 08:30 - 17:00",
-        "office_location": "康寧樓 2 樓 A202 (註冊組)",
-        "contact_phone": "02-2632-1181 分機 321, 322",
+        "office_location": "行政大樓 2 樓 教務處 (註冊組)",
+        "contact_phone": "02-2632-1181 分機 324, 312, 313",
         "form_download_url": "/forms/graduation_audit_form",
         "system_url": "http://203.71.63.13/academic/",
         "deadline_week_info": "大四第 8-16 週 (進行中)",
@@ -497,12 +501,12 @@ DEMO_CHECKLISTS = [
             "填寫證照/競賽名稱、證書字號與發證單位",
             "上傳證書正反面與郵局存摺封面圖檔",
             "列印紙本印領清冊並親筆簽名",
-            "送交研發處實習就業組審核並撥款"
+            "送科辦初審後，由研究發展處審核並撥款"
         ],
         "required_docs": "證照證書影本、郵局存摺封面影本、印領清冊",
         "office_hours": "週一至週五 09:00 - 17:00",
-        "office_location": "圖資大樓 2 樓 研發處實習就業組",
-        "contact_phone": "02-2632-1181 分機 612",
+        "office_location": "研究發展處 (先送所屬科辦)",
+        "contact_phone": "02-2632-1181 分機 107, 113",
         "form_download_url": "/forms/certificate_reward_form",
         "system_url": "https://oes3.ukn.edu.tw/~license/",
         "deadline_week_info": "每學期第 1-5 週",
@@ -552,117 +556,82 @@ DEMO_PRIVACY_SETTINGS = {
     "S112004": {"parent_alert_consent": 1, "advisor_alert_consent": 1}
 }
 
+# 依資管科 112 學年度入學五專修業科目表：必修 181 (專業必修 117 + 院定必修 4 + 一般科目 46 + 進階通識 10 + 校定必修 4)、選修 39
 DEMO_GRADUATION_REQUIREMENTS = {
     "CS": {
         "dept_id": "CS",
         "total_credits_req": 220,
-        "major_required_req": 60,
-        "major_elective_req": 30,
-        "general_req": 28,
+        "major_required_req": 121,
+        "major_elective_req": 39,
+        "general_req": 60,
         "english_threshold_name": "多益測驗 550 分以上 或 通過進階實用英語檢定",
         "ethics_req": 2,
-        "project_req": 6
+        "project_req": 2
     }
 }
 
+# 申辦期限：日期依教務處公告之「康寧大學 115 學年度行事曆」(https://daa.ukn.edu.tw/p/412-1021-846.php)
+# semester_week 以 115-1 開學日 9/14 為第 1 週推算
+_CLASS_SYSTEM_URL = "http://talk.ukn.edu.tw/class_redi/class.php"
+_ACADEMIC_SYSTEM_URL = "http://203.71.63.13/academic/"
 DEMO_DEADLINES = [
-    {
-        "deadline_id": 1,
-        "title": "115-1 學期課程停修申請",
-        "category": "教務處課務組",
-        "semester_week": 11,
-        "start_date": "2026-10-01",
-        "end_date": "2026-10-18",
-        "applies_to_role": "學生",
-        "applies_to_dept": "CS",
-        "related_system_url": "http://talk.ukn.edu.tw/class_redi/class.php",
-        "description": "學期第 10-12 週開放停修申請，每人以 2 科為限，須完成任課教師、導師與主任簽章。",
-        "status_badge": "進行中 (剩 3 天)",
-        "countdown_days": 3,
-        "is_urgent": True
-    },
-    {
-        "deadline_id": 2,
-        "title": "期中預警評量與導師學習輔導訪談",
-        "category": "學務處/教務處",
-        "semester_week": 11,
-        "start_date": "2026-10-05",
-        "end_date": "2026-10-20",
-        "applies_to_role": "學生,老師,家長",
-        "applies_to_dept": "CS",
-        "related_system_url": "http://203.71.63.13/academic/",
-        "description": "期中成績不及格達 1/2 者列入預警，導師將安排個別學習輔導與座談。",
-        "status_badge": "進行中 (剩 5 天)",
-        "countdown_days": 5,
-        "is_urgent": True
-    },
-    {
-        "deadline_id": 3,
-        "title": "大四應屆畢業生學分資格預審",
-        "category": "教務處註冊組",
-        "semester_week": 11,
-        "start_date": "2026-09-15",
-        "end_date": "2026-11-30",
-        "applies_to_role": "學生",
-        "applies_to_dept": "CS",
-        "related_system_url": "http://203.71.63.13/academic/",
-        "description": "大四學生請至註冊組核對必選修、通識與外語門檻缺口。",
-        "status_badge": "進行中 (剩 35 天)",
-        "countdown_days": 35,
-        "is_urgent": False
-    },
-    {
-        "deadline_id": 4,
-        "title": "共同外語與證照學分抵免申請",
-        "category": "通識教育中心",
-        "semester_week": 3,
-        "start_date": "2026-09-01",
-        "end_date": "2026-09-15",
-        "applies_to_role": "學生",
-        "applies_to_dept": "all",
-        "related_system_url": "http://203.71.63.13/academic/",
-        "description": "大一共同外語抵免申請已截止，逾期者請於下學期初辦理。",
-        "status_badge": "已截止",
-        "countdown_days": 0,
-        "is_urgent": False
-    },
-    {
-        "deadline_id": 5,
-        "title": "暑期重補修意願登記與開班調查",
-        "category": "教務處課務組",
-        "semester_week": 14,
-        "start_date": "2026-11-01",
-        "end_date": "2026-11-20",
-        "applies_to_role": "學生",
-        "applies_to_dept": "CS",
-        "related_system_url": "http://talk.ukn.edu.tw/class_redi/class.php",
-        "description": "先修科目不及格需重修者，可預先登記暑期課程開班意願。",
-        "status_badge": "尚未開放",
-        "countdown_days": 20,
-        "is_urgent": False
-    }
+    {"deadline_id": 1, "title": "115-1 受理棄選（停修）", "category": "教務處課程與教學組", "semester_week": 10,
+     "start_date": "2026-11-16", "end_date": "2026-12-04", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _CLASS_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "五專前三年除外。每學期以 2 科為限，須完成任課教師、導師與科主任簽章。"},
+    {"deadline_id": 2, "title": "115-1 期中考試", "category": "教務處", "semester_week": 8,
+     "start_date": "2026-11-07", "end_date": "2026-11-13", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _ACADEMIC_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "期中考成績於 11/9-11/23 上網登錄。"},
+    {"deadline_id": 3, "title": "申請下學期轉系(科)、輔系及雙主修", "category": "教務處註冊組", "semester_week": 9,
+     "start_date": "2026-11-09", "end_date": "2027-01-08", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _ACADEMIC_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "1/08 同時為本學期申請休學、退學截止日。"},
+    {"deadline_id": 4, "title": "網路教學評量填寫", "category": "教務處", "semester_week": 14,
+     "start_date": "2026-12-14", "end_date": "2026-12-20", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _ACADEMIC_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "請於期限內完成本學期每一門課的教學評量。"},
+    {"deadline_id": 5, "title": "115-2 課程網路初選", "category": "教務處課程與教學組", "semester_week": 15,
+     "start_date": "2026-12-21", "end_date": "2026-12-27", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _CLASS_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "下學期課程網路初選；加退選及重補修選課為 115-2 開學週 2/22-2/28。"},
+    {"deadline_id": 6, "title": "學分抵免申請", "category": "教務處註冊組", "semester_week": 1,
+     "start_date": "2026-09-14", "end_date": "2026-09-14", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": _ACADEMIC_SYSTEM_URL, "status_badge": "依 115 學年度行事曆",
+     "description": "開學日 9/14 截止；115-2 為 2/22 截止。"},
+    {"deadline_id": 7, "title": "弱勢助學金、學產基金、台北市清寒午餐補助申請", "category": "學生事務處", "semester_week": 1,
+     "start_date": "2026-09-16", "end_date": "2026-10-01", "applies_to_role": "學生", "applies_to_dept": None,
+     "related_system_url": "", "status_badge": "依 115 學年度行事曆",
+     "description": "115 學年度申請期間。"},
 ]
 
 # 學期校曆事項 (對應 academic_calendar 資料表，內容與 init_db.py 範例一致)
+# 依「康寧大學 115 學年度行事曆」(教育部 115 年 3 月 19 日臺教高(一)字第 1150029623 號核定)
 DEMO_ACADEMIC_CALENDAR = [
-    {"id": 1, "event_name": "加退選", "start_date": "2026-09-14", "end_date": "2026-09-25", "category": "教務", "related_checklist_id": None},
-    {"id": 2, "event_name": "學雜費繳費期限", "start_date": "2026-09-01", "end_date": "2026-09-30", "category": "繳費", "related_checklist_id": None},
-    {"id": 3, "event_name": "獎助學金申請期限", "start_date": "2026-09-21", "end_date": "2026-10-16", "category": "獎助", "related_checklist_id": None},
-    {"id": 4, "event_name": "停修申請", "start_date": "2026-10-01", "end_date": "2026-10-16", "category": "教務", "related_checklist_id": 1},
-    {"id": 5, "event_name": "教學意見調查開放期間", "start_date": "2026-12-14", "end_date": "2027-01-15", "category": "教務", "related_checklist_id": None}
+    {"id": 1, "event_name": "網路加退選及重補修", "start_date": "2026-09-14", "end_date": "2026-09-20", "category": "教務", "related_checklist_id": None},
+    {"id": 2, "event_name": "就學貸款申請、學雜費減免收件", "start_date": "2026-09-14", "end_date": "2026-09-15", "category": "繳費", "related_checklist_id": None},
+    {"id": 3, "event_name": "弱勢助學金、學產基金申請", "start_date": "2026-09-16", "end_date": "2026-10-01", "category": "獎助", "related_checklist_id": None},
+    {"id": 4, "event_name": "受理棄選（停修）", "start_date": "2026-11-16", "end_date": "2026-12-04", "category": "教務", "related_checklist_id": 1},
+    {"id": 5, "event_name": "網路教學評量填寫", "start_date": "2026-12-14", "end_date": "2026-12-20", "category": "教務", "related_checklist_id": None},
+    {"id": 6, "event_name": "期中考試", "start_date": "2026-11-07", "end_date": "2026-11-13", "category": "教務", "related_checklist_id": None},
+    {"id": 7, "event_name": "申請下學期轉系(科)、輔系及雙主修", "start_date": "2026-11-09", "end_date": "2027-01-08", "category": "教務", "related_checklist_id": None},
+    {"id": 8, "event_name": "58 週年校慶典禮", "start_date": "2026-12-12", "end_date": "2026-12-12", "category": "活動", "related_checklist_id": None},
+    {"id": 9, "event_name": "下學期課程網路初選", "start_date": "2026-12-21", "end_date": "2026-12-27", "category": "教務", "related_checklist_id": None},
+    {"id": 10, "event_name": "期末考試", "start_date": "2027-01-09", "end_date": "2027-01-15", "category": "教務", "related_checklist_id": None},
+    {"id": 11, "event_name": "寒假開始", "start_date": "2027-01-18", "end_date": "2027-01-18", "category": "活動", "related_checklist_id": None},
 ]
 
 # 模擬缺曠課紀錄 (對應 attendance_records 資料表，內容與 seed_data.py 一致)
 DEMO_ATTENDANCE_RECORDS = [
-    {"id": 1, "student_id": "S112001", "date": "2026-09-14", "course_name": "程式設計(一)", "type": "曠課", "notified": True},
-    {"id": 2, "student_id": "S112001", "date": "2026-09-15", "course_name": "基礎英文(二)", "type": "遲到", "notified": True},
-    {"id": 3, "student_id": "S112001", "date": "2026-09-16", "course_name": "程式設計(一)", "type": "曠課", "notified": True},
-    {"id": 4, "student_id": "S112001", "date": "2026-09-18", "course_name": "跨領域思維與創新科技", "type": "病假", "notified": True},
-    {"id": 5, "student_id": "S112001", "date": "2026-09-21", "course_name": "程式設計(一)", "type": "曠課", "notified": False},
-    {"id": 6, "student_id": "S112001", "date": "2026-09-23", "course_name": "程式設計(一)", "type": "曠課", "notified": False},
-    {"id": 7, "student_id": "S112002", "date": "2026-09-16", "course_name": "資料庫系統概論", "type": "病假", "notified": True},
-    {"id": 8, "student_id": "S112005", "date": "2026-09-15", "course_name": "資料結構", "type": "曠課", "notified": False},
-    {"id": 9, "student_id": "S112005", "date": "2026-09-17", "course_name": "物件導向程式設計", "type": "遲到", "notified": False}
+    {"id": 1, "student_id": "S112001", "date": "2026-09-14", "course_name": "程式設計(二)", "type": "曠課", "notified": True},
+    {"id": 2, "student_id": "S112001", "date": "2026-09-15", "course_name": "PYTHON程式語言", "type": "遲到", "notified": True},
+    {"id": 3, "student_id": "S112001", "date": "2026-09-16", "course_name": "程式設計(二)", "type": "曠課", "notified": True},
+    {"id": 4, "student_id": "S112001", "date": "2026-09-18", "course_name": "進階分類通識課程國文藝術類", "type": "病假", "notified": True},
+    {"id": 5, "student_id": "S112001", "date": "2026-09-21", "course_name": "程式設計(二)", "type": "曠課", "notified": False},
+    {"id": 6, "student_id": "S112001", "date": "2026-09-23", "course_name": "程式設計(二)", "type": "曠課", "notified": False},
+    {"id": 7, "student_id": "S112002", "date": "2026-09-16", "course_name": "溝通與簡報實務", "type": "病假", "notified": True},
+    {"id": 8, "student_id": "S112005", "date": "2026-09-15", "course_name": "PYTHON程式語言", "type": "曠課", "notified": False},
+    {"id": 9, "student_id": "S112005", "date": "2026-09-17", "course_name": "行動應用服務開發", "type": "遲到", "notified": False}
 ]
 
 DEMO_CERTIFICATES = [
@@ -675,12 +644,15 @@ DEMO_CERTIFICATES = [
 
 DEMO_VISITOR_LOGS = []
 
+# 分機依總務處「康寧大學(臺北校區)分機號碼表」(製表日期 1140617)；教務處、學務處位置依 114 學年度新生定向手冊
+# 其他單位的辦公室位置官網未公告，只列單位名稱
 CAMPUS_CONTACT_DIRECTORY = [
-    {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
-    {"office": "教務處註冊組", "location": "康寧樓 2 樓 A202", "phone": "02-2632-1181 分機 321, 322", "business": "學籍、成績單、畢業學分審查、休退學"},
-    {"office": "學務處生活輔導組", "location": "行政大樓 1 樓", "phone": "02-2632-1181 分機 211, 212", "business": "學生請假、獎懲、二一輔導、宿舍"},
-    {"office": "通識教育中心", "location": "卓越樓 3 樓 C305", "phone": "02-2632-1181 分機 520, 521", "business": "共同外語抵免、通識學分檢核"},
-    {"office": "研發處實習就業組", "location": "圖資大樓 2 樓", "phone": "02-2632-1181 分機 612", "business": "專業證照獎勵、校外實習、就業輔導"}
+    {"office": "教務處課程與教學組", "location": "行政大樓 2 樓 教務處", "phone": "02-2632-1181 分機 323, 325", "business": "選課、停修、先修擋修、排課"},
+    {"office": "教務處註冊組", "location": "行政大樓 2 樓 教務處", "phone": "02-2632-1181 分機 324, 312, 313", "business": "學籍、成績單、學分抵免、畢業審查、休退學"},
+    {"office": "學務處生活輔導組", "location": "行政大樓 1 樓 學務處", "phone": "02-2632-1181 分機 464, 412", "business": "學生請假、獎懲、宿舍"},
+    {"office": "學生輔導中心", "location": "行政大樓 1 樓", "phone": "02-2632-1181 分機 432, 442", "business": "心理諮商、學習與生涯輔導"},
+    {"office": "通識教育中心", "location": "通識教育中心", "phone": "02-2632-1181 分機 592, 598", "business": "通識課程、外語抵免"},
+    {"office": "研究發展處", "location": "研究發展處", "phone": "02-2632-1181 分機 107, 113", "business": "專業證照獎勵 (先送科辦初審)、產學合作"}
 ]
 
 # ==========================================
@@ -884,9 +856,24 @@ def current_academic_term(today):
 
 @app.route("/api/calendar/current-week", methods=["GET"])
 def get_current_week():
-    """回傳當前學期、當週校曆週次與重要辦理事項"""
+    """回傳當前學期、當週校曆週次與重要辦理事項 (取自校曆：進行中與 14 天內開始的事項)"""
     now = datetime.now()
-    term = current_academic_term(now.date())
+    today = now.date()
+    term = current_academic_term(today)
+    highlights = []
+    for event in fetch_calendar_events():
+        start = datetime.strptime(event["start_date"], "%Y-%m-%d").date()
+        end = datetime.strptime(event["end_date"], "%Y-%m-%d").date()
+        if start <= today <= end:
+            badge, urgent = f"進行中 (剩 {(end - today).days} 天)", (end - today).days <= 3
+        elif today < start <= today + timedelta(days=CALENDAR_UPCOMING_DAYS):
+            badge, urgent = f"{start.month}/{start.day} 開始 (還有 {(start - today).days} 天)", False
+        else:
+            continue
+        highlights.append({"title": event["event_name"], "badge": badge, "office": event.get("category") or "",
+                           "url": "/#tab-checklist" if event.get("related_checklist_id") else "/#tab-calendar",
+                           "is_urgent": urgent, "start_date": event["start_date"]})
+    highlights.sort(key=lambda h: (not h["is_urgent"], h["start_date"]))
     return jsonify({
         "status": "success",
         "academic_year": term["academic_year"],
@@ -894,11 +881,7 @@ def get_current_week():
         "semester_name": term["name"],
         "current_week": term["week"],
         "current_date": now.strftime("%Y-%m-%d"),
-        "active_highlights": [
-            {"title": "課程停修申請", "badge": "本週受理中 (剩 3 天)", "office": "課務組", "url": "/#tab-checklist", "is_urgent": True},
-            {"title": "期中預警評量", "badge": "輔導進行中 (剩 5 天)", "office": "學務處", "url": "/#tab-warning", "is_urgent": True},
-            {"title": "大四學分預審", "badge": "審查中 (剩 35 天)", "office": "註冊組", "url": "/#tab-graduation", "is_urgent": False}
-        ]
+        "active_highlights": highlights
     }), 200
 
 def normalize_deadline_row(row):
@@ -1815,7 +1798,7 @@ def what_if_course_failed():
                     "course_name": c["course_name"],
                     "credits": c["credits"],
                     "course_type": c.get("course_type", "專業必修"),
-                    "semester_suggest": c.get("semester_suggest", "大二上"),
+                    "semester_suggest": c.get("semester_suggest") or "後續學期",
                     "direct_prereq": course_dict.get(curr, {}).get("course_name", curr)
                 })
                 queue.append(c["course_id"])
@@ -1827,7 +1810,7 @@ def what_if_course_failed():
     if has_capstone or len(cascade_blocked) >= 3:
         risk_level = "極高"
         risk_color = "red"
-        impact_summary = f"⚠️ 延畢極高風險！因【{target_course['course_name']}】為核心先修樞紐，若被當將連帶骨牌擋修後續 {len(cascade_blocked)} 門必修（包含大四畢業專題研討），預估延畢 1 年！"
+        impact_summary = f"⚠️ 延畢極高風險！因【{target_course['course_name']}】為核心先修樞紐，若被當將連帶骨牌擋修後續 {len(cascade_blocked)} 門必修（包含五年級實務專題），預估延畢 1 年！"
     elif len(cascade_blocked) >= 1:
         risk_level = "中等"
         risk_color = "amber"
@@ -2408,7 +2391,7 @@ def get_student_early_warning():
         "counselling_office": {
             "office_name": "學務處生輔組",
             "location": "行政大樓 1 樓",
-            "phone": "02-2632-1181 分機 211",
+            "phone": "02-2632-1181 分機 464, 412",
             "advisor_name": advisor
         }
     }), 200
@@ -2436,7 +2419,7 @@ def manage_checklists():
         "steps_json": data.get("steps_json", []),
         "required_docs": data.get("required_docs", ""),
         "office_hours": data.get("office_hours", "週一至週五 08:30 - 17:00"),
-        "office_location": data.get("office_location", "康寧樓 2 樓"),
+        "office_location": data.get("office_location", "行政大樓 2 樓"),
         "contact_phone": data.get("contact_phone", "02-2632-1181"),
         "form_download_url": data.get("form_download_url", ""),
         "system_url": data.get("system_url", ""),
@@ -3300,6 +3283,17 @@ conduct.init_app(app, SimpleNamespace(
     class_student_ids=_get_class_student_ids,
     attendance_records=lambda student_id: get_attendance_source().list_records(student_id),
     term_of=term_of,
+    current_semester=lambda: term_of(datetime.now().date().isoformat()),
+))
+
+# 智慧重補修推薦 (retake 套件)：沒過的科目 → 當學期其他班開的同名課 → 排除衝堂
+import retake
+
+retake.init_app(app, SimpleNamespace(
+    load_course_map=load_course_map,
+    load_student_credits=load_student_credits,
+    load_schedule=lambda: fetch_db_rows("SELECT * FROM class_schedule") or dashboard_demo.DEMO_CLASS_SCHEDULE,
+    load_student=_load_student_info,
     current_semester=lambda: term_of(datetime.now().date().isoformat()),
 ))
 

@@ -17,12 +17,12 @@ PERIODS = {1: ("08:10", "09:00"), 2: ("09:10", "10:00"), 3: ("10:10", "11:00"), 
 
 # 校園地圖 (示意圖座標，畫布 100 x 70)
 CAMPUS_BUILDINGS = [
-    {"code": "A", "name": "康寧樓", "x": 8, "y": 10, "w": 26, "h": 16, "floors": 5, "desc": "資管科教室、電腦教室、教務處課務組與註冊組 (2F)"},
-    {"code": "G", "name": "卓越樓", "x": 40, "y": 8, "w": 22, "h": 14, "floors": 4, "desc": "通識課教室、通識教育中心 (3F)"},
+    {"code": "A", "name": "康寧樓", "x": 8, "y": 10, "w": 26, "h": 16, "floors": 5, "desc": "資管科教室、電腦教室"},
+    {"code": "G", "name": "卓越樓", "x": 40, "y": 8, "w": 22, "h": 14, "floors": 4, "desc": "通識課教室"},
     {"code": "L", "name": "語言大樓", "x": 68, "y": 8, "w": 22, "h": 12, "floors": 3, "desc": "外語教室、語言自學中心"},
     {"code": "N", "name": "護理大樓", "x": 8, "y": 34, "w": 24, "h": 16, "floors": 5, "desc": "護理科教室、技術教室"},
-    {"code": "B", "name": "行政大樓", "x": 40, "y": 30, "w": 20, "h": 12, "floors": 3, "desc": "學務處生輔組 (1F)、總務處、宿舍輔導"},
-    {"code": "D", "name": "圖資大樓", "x": 66, "y": 28, "w": 24, "h": 16, "floors": 4, "desc": "圖書館、研發處實習就業組 (2F)、資圖討論室"},
+    {"code": "B", "name": "行政大樓", "x": 40, "y": 30, "w": 20, "h": 12, "floors": 3, "desc": "教務處 (2F)、學務處與學生輔導中心 (1F)"},
+    {"code": "D", "name": "圖資大樓", "x": 66, "y": 28, "w": 24, "h": 16, "floors": 4, "desc": "圖書館、資圖討論室"},
     {"code": "C", "name": "學生餐廳", "x": 40, "y": 48, "w": 18, "h": 10, "floors": 1, "desc": "學餐、便利商店、影印中心"},
     {"code": "S", "name": "學生宿舍", "x": 66, "y": 50, "w": 24, "h": 12, "floors": 8, "desc": "男女宿舍、宿舍服務台"},
     {"code": "P", "name": "操場 / 體育館", "x": 8, "y": 54, "w": 26, "h": 12, "floors": 1, "desc": "體育課、社團活動"},
@@ -34,25 +34,25 @@ ROOMS = [
     {"room_id": "A302", "building": "A", "floor": 3, "name": "A302 普通教室", "capacity": 50, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
     {"room_id": "A303", "building": "A", "floor": 3, "name": "A303 普通教室", "capacity": 45, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
     {"room_id": "A305", "building": "A", "floor": 3, "name": "A305 電腦教室", "capacity": 48, "equipment": ["電腦 48 台", "廣播教學系統"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課務組", "apply_at": "康寧樓 2 樓 A201 課務組", "rentable": True},
+    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課程與教學組", "apply_at": "行政大樓 2 樓 教務處 (課程與教學組)", "rentable": True},
     {"room_id": "D201", "building": "D", "floor": 2, "name": "資圖 D201 討論室", "capacity": 8, "equipment": ["白板", "大螢幕"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
     {"room_id": "D202", "building": "D", "floor": 2, "name": "資圖 D202 討論室", "capacity": 8, "equipment": ["白板"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
     {"room_id": "D301", "building": "D", "floor": 3, "name": "資圖 D301 多媒體室", "capacity": 30, "equipment": ["投影機", "錄影設備"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
-    {"room_id": "G101", "building": "G", "floor": 1, "name": "G101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "卓越樓 3 樓 C305", "rentable": True},
-    {"room_id": "G203", "building": "G", "floor": 2, "name": "G203 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "卓越樓 3 樓 C305", "rentable": True},
+    {"room_id": "G101", "building": "G", "floor": 1, "name": "G101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "通識教育中心 (分機 592)", "rentable": True},
+    {"room_id": "G203", "building": "G", "floor": 2, "name": "G203 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "通識教育中心 (分機 592)", "rentable": True},
     {"room_id": "L201", "building": "L", "floor": 2, "name": "L201 語言教室", "capacity": 40, "equipment": ["語言教學系統"], "managed_by": "應外科", "apply_at": "語言大樓 1 樓應外科辦", "rentable": False},
     {"room_id": "N201", "building": "N", "floor": 2, "name": "N201 護理教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "護理科", "apply_at": "護理大樓 1 樓護理科辦", "rentable": False},
     {"room_id": "N105", "building": "N", "floor": 1, "name": "N105 技術教室", "capacity": 30, "equipment": ["模擬病床"], "managed_by": "護理科", "apply_at": "護理大樓 1 樓護理科辦", "rentable": False},
 ]
 
+# 處室：分機依總務處「臺北校區分機號碼表」(1140617)；位置依 114 學年度新生定向手冊 (教務處行政大樓 2 樓、學務處與學輔中心 1 樓)。
+# 官網沒有公告位置的單位不放上地圖，聯絡方式見 app.py 的 CAMPUS_CONTACT_DIRECTORY
 OFFICES = [
-    {"name": "教務處課務組", "building": "A", "location": "康寧樓 2 樓 A201", "phone": "分機 310, 312"},
-    {"name": "教務處註冊組", "building": "A", "location": "康寧樓 2 樓 A202", "phone": "分機 321, 322"},
-    {"name": "學務處生活輔導組", "building": "B", "location": "行政大樓 1 樓", "phone": "分機 211, 212"},
-    {"name": "總務處", "building": "B", "location": "行政大樓 2 樓", "phone": "分機 410"},
-    {"name": "通識教育中心", "building": "G", "location": "卓越樓 3 樓 C305", "phone": "分機 520, 521"},
-    {"name": "研發處實習就業組", "building": "D", "location": "圖資大樓 2 樓", "phone": "分機 612"},
-    {"name": "宿舍服務台", "building": "S", "location": "學生宿舍 1 樓", "phone": "分機 250"},
+    {"name": "教務處課程與教學組 (課務組)", "building": "B", "location": "行政大樓 2 樓 教務處", "phone": "分機 323, 325"},
+    {"name": "教務處註冊組", "building": "B", "location": "行政大樓 2 樓 教務處", "phone": "分機 324, 312, 313"},
+    {"name": "學務處生活輔導組", "building": "B", "location": "行政大樓 1 樓 學務處", "phone": "分機 464, 412"},
+    {"name": "學生輔導中心", "building": "B", "location": "行政大樓 1 樓", "phone": "分機 432, 442"},
+    {"name": "宿舍 (生輔組舍監)", "building": "S", "location": "學生宿舍", "phone": "分機 480, 481"},
 ]
 
 TEACHER_OFFICES = [

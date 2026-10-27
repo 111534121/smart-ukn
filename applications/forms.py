@@ -98,7 +98,7 @@ FORMS = {
     },
     "certificate_reward_form": {
         "title": "專業證照 / 競賽獲獎獎勵金申請表",
-        "office": "研發處實習就業組",
+        "office": "研究發展處",
         "intro": "每學期第 1-5 週受理；同一張證照僅能申請一次。",
         "fields": [
             {"key": "cert_name", "label": "證照 / 競賽名稱", "example": "網頁設計乙級技術士"},

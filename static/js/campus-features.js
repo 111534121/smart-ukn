@@ -368,7 +368,7 @@ function renderGuideStep() {
         bubble.innerHTML = `
             <div class="flex gap-2"><span class="text-2xl">🤖</span><div class="bg-slate-100 rounded-lg rounded-tl-sm px-3 py-2 text-sm space-y-2 max-w-[85%]">
                 <p>我暫時找不到符合的規定 😥 可以試試：</p>
-                <ul class="list-disc pl-5 text-xs space-y-0.5"><li>換個說法再描述一次</li><li>切到「看完整申辦流程」從清單找</li><li>直接詢問承辦處室（課務組分機 310、註冊組分機 321、生輔組分機 211）</li></ul>
+                <ul class="list-disc pl-5 text-xs space-y-0.5"><li>換個說法再描述一次</li><li>切到「看完整申辦流程」從清單找</li><li>直接詢問承辦處室（課程與教學組分機 323、註冊組分機 324、生輔組分機 464）</li></ul>
                 <p class="text-[11px] text-slate-500">你的問題已記錄，管理員會補充到規章資料庫。</p>
             </div></div>`;
         if (guideState.q) api('/api/search', { json: { query: guideState.q } }).catch(() => {});
