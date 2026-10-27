@@ -902,7 +902,38 @@ DEMO_COMPETITIONS = [
         "created_at": "2026-07-12 16:20:00"
     }
 ]
-DEMO_VISITOR_LOGS = []
+DEMO_VISITOR_LOGS = [
+    {
+        "log_id": 1,
+        "visitor_name": "陳美華",
+        "phone": "0912-345-678",
+        "school_from": "內湖高中",
+        "purpose": "校園參觀",
+        "target_dept": "資訊管理科",
+        "visitor_type": "未來學生家長",
+        "visited_at": (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
+    },
+    {
+        "log_id": 2,
+        "visitor_name": "林俊傑",
+        "phone": "0922-888-999",
+        "school_from": "南港高工",
+        "purpose": "升學諮詢",
+        "target_dept": "資訊管理科",
+        "visitor_type": "高中職應屆畢業生",
+        "visited_at": (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S")
+    },
+    {
+        "log_id": 3,
+        "visitor_name": "張雅婷",
+        "phone": "0933-555-666",
+        "school_from": "松山家商",
+        "purpose": "宿舍與生活環境了解",
+        "target_dept": "護理科",
+        "visitor_type": "高中職應屆畢業生",
+        "visited_at": (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%d %H:%M:%S")
+    }
+]
 
 CAMPUS_CONTACT_DIRECTORY = [
     {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
@@ -4705,6 +4736,10 @@ anniversary.init_app(app, SimpleNamespace(
 # Public sharing and deployment health
 from public_portal import bp as public_portal_bp
 app.register_blueprint(public_portal_bp)
+
+# Core administrator management and audit APIs
+from admin_core import bp as admin_core_bp
+app.register_blueprint(admin_core_bp)
 
 # ==========================================
 # 14. 伺服器主入口
