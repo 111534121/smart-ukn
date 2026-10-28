@@ -55,9 +55,10 @@
                     <strong>${esc(r.full_name)}（${esc(r.student_id)}）
                         <span class="badge status-${esc(r.status)}">${esc(r.status)}</span>
                         ${r.checked_in ? '<span class="badge checked-in">已簽到</span>' : ''}
+                        ${r.status !== '已取消' && !r.notified ? '<span class="badge notify-fail">⚠ 通知信寄送失敗</span>' : ''}
                     </strong>
                     <small>${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''} · ${esc(r.age)} 歲${r.note ? ' · ' + esc(r.note) : ''}</small>
-                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}</small>
+                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}${r.status !== '已取消' ? ' · 通知信：' + (r.notified ? '已寄出' + (r.notified_at ? `（${esc(r.notified_at.slice(0, 16))}）` : '') : '寄送失敗，可按右側「重寄通知」') : ''}</small>
                 </div>
                 ${confirmState && confirmState.regId === r.id ? confirmHtml(r, confirmState.act) : `<div class="actions">
                     ${r.status === '已報名' && !r.checked_in ? `<button type="button" data-act="checkin">簽到</button>` : ''}
