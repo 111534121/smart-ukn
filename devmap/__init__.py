@@ -34,6 +34,7 @@ FEATURES = [
     {"group": "首頁", "icon": "🗓️", "name": "本週可辦與申辦期限", "tab": "tab-home", "routes": ["/api/calendar/now", "/api/calendar/current-week", "/api/deadlines"]},
     {"group": "首頁", "icon": "🎉", "name": "校慶跑馬燈與祝福", "tab": "tab-home", "routes": ["/api/anniversary"]},
     {"group": "學習", "icon": "📚", "name": "修業進度與擋修", "tab": "tab-course", "routes": ["/api/courses", "/api/student/courses/personalized", "/api/student/graduation-audit"]},
+    {"group": "學習", "icon": "🔁", "name": "重補修推薦", "tab": "tab-retake", "routes": ["/api/student/retake-recommendations"]},
     {"group": "學習", "icon": "🧮", "name": "選課檢查", "tab": "tab-plan", "routes": ["/api/campus/course-plan"]},
     {"group": "學習", "icon": "🎓", "name": "畢業門檻", "tab": "tab-graduation", "routes": ["/api/student/graduation"]},
     {"group": "學習", "icon": "🏅", "name": "證照與競賽成果", "tab": "tab-certs", "routes": ["/api/campus/certs"]},

@@ -682,7 +682,7 @@
                                 <div class="font-bold flex items-center gap-1.5">
                                     <span id="relatedChecklistTitle">對應行政申辦流程：課程停修申請</span>
                                 </div>
-                                <p class="text-ukn-800 mt-0.5" id="relatedChecklistOffice">承辦單位：課務組 (康寧樓 2 樓 A201) · 校內分機 #310</p>
+                                <p class="text-ukn-800 mt-0.5" id="relatedChecklistOffice">承辦單位：教務處課程與教學組 (行政大樓 2 樓) · 校內分機 323</p>
                             </div>
                             <button id="jumpChecklistBtn" onclick="jumpToRelatedChecklist()" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-4 py-2 rounded text-xs transition whitespace-nowrap flex items-center gap-1">
                                 <span>前往申辦步驟與表單下載 ➔</span>
@@ -710,9 +710,9 @@
                         </p>
                         <div class="bg-white p-4 rounded border border-amber-200 text-xs text-slate-700 space-y-1.5">
                             <div class="font-bold text-slate-900">若有急切申辦需求，歡迎直接洽詢各專責處室：</div>
-                            <div>• 課務組 (選課、停修、先修課程)：康寧樓 2 樓 A201 (分機 310, 312)</div>
-                            <div>• 註冊組 (學籍、成績、學分抵免)：康寧樓 2 樓 A202 (分機 321, 322)</div>
-                            <div>• 生輔組 (請假、獎懲、學業預警)：行政大樓 1 樓 (分機 211)</div>
+                            <div>• 課程與教學組 (選課、停修、先修課程)：行政大樓 2 樓教務處 (分機 323, 325)</div>
+                            <div>• 註冊組 (學籍、成績、學分抵免)：行政大樓 2 樓教務處 (分機 324, 312, 313)</div>
+                            <div>• 生輔組 (請假、獎懲、二一預警)：行政大樓 1 樓學務處 (分機 464, 412)</div>
                         </div>
                     </div>
 
@@ -795,11 +795,11 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <select id="whatIfCourseSelect" class="min-w-0 flex-1 bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-ukn-500">
-                            <option value="CS101">計算機概論 (大一上 3學分)</option>
-                            <option value="CS102" selected>程式設計(一) (大一下 3學分 - 核心先修)</option>
-                            <option value="CS201">資料結構 (大二上 3學分)</option>
-                            <option value="CS202">物件導向程式設計 (大二下 3學分)</option>
-                            <option value="CS302">資料庫系統概論 (大三上 3學分)</option>
+                            <option value="CS101">程式設計(一) (一年級上 3學分)</option>
+                            <option value="CS102" selected>程式設計(二) (一年級下 3學分 - 核心先修)</option>
+                            <option value="CS201">資料結構 (三年級上 3學分)</option>
+                            <option value="CS202">JAVA程式語言(一) (三年級上 3學分)</option>
+                            <option value="CS301">系統分析與設計 (三年級下 3學分)</option>
                         </select>
                         <button onclick="runWhatIfSimulation()" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-4 py-2 rounded text-xs sm:text-sm transition flex items-center gap-1 whitespace-nowrap">
                             <span>執行試算 ➔</span>
@@ -811,8 +811,8 @@
                 <div id="whatIfResultContainer" class="bg-slate-50 rounded p-5 border border-slate-200 space-y-5">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded border border-slate-200">
                         <div class="space-y-1">
-                            <div class="text-xs text-slate-500">試算情境：若 <strong id="simTargetName" class="text-rose-700 font-bold">程式設計(一)</strong> 未及格</div>
-                            <div class="text-sm font-bold text-slate-900" id="simRiskSummary">⚠️ 具延畢風險！將連帶擋修後續 4 門核心必修，包含大四專題研討。</div>
+                            <div class="text-xs text-slate-500">試算情境：若 <strong id="simTargetName" class="text-rose-700 font-bold">程式設計(二)</strong> 未及格</div>
+                            <div class="text-sm font-bold text-slate-900" id="simRiskSummary">⚠️ 具延畢風險！將連帶擋修後續核心必修，包含五年級實務專題。</div>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-slate-600 font-medium">修業影響等級：</span>
@@ -835,9 +835,9 @@
                         <div class="font-bold flex items-center gap-1 text-slate-900">
                             <span>教務處與科辦公室修課指引：</span>
                         </div>
-                        <p>1. 若學期中評量落後，可於第 10-12 週申請「停修」，避免不及格成績拉低學期平均。</p>
-                        <p>2. 下學期初請留意科辦暑期重修開班調查，以利大二上學期順利銜接【資料結構】課程。</p>
-                        <p>3. 請主動找班級導師談談，安排個人修業計畫調整。</p>
+                        <p>1. 若學期中評量落後，可於第 10-12 週申請「停修」(行事曆稱受理棄選，五專前三年除外)，避免不及格成績拉低學期平均。</p>
+                        <p>2. 不及格科目可於開學週「網路加退選及重補修」或暑修 (115-2 第一階段 5/17-5/21) 重修，以利三年級上學期銜接【資料結構】課程。</p>
+                        <p>3. 請主動與班級導師晤談，安排個人修業計畫調整。</p>
                     </div>
                 </div>
             </section>
@@ -1527,6 +1527,17 @@
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">公告、表單、活動資料下載；可收藏分類，有新資料上架會寄信通知你。</p>
                 </div>
                 <div id="reportsBody"></div>
+            </section>
+        </div>
+
+        <!-- 智慧重補修推薦 (retake.js) -->
+        <div id="tab-retake" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">重補修推薦</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">從你的歷年成績找出還沒通過的科目，對照本學期其他班級的開課時間，排除跟你課表衝堂的班別。實際加選仍以學校選課系統為準。</p>
+                </div>
+                <div id="retakeBody"></div>
             </section>
         </div>
 
@@ -2315,7 +2326,7 @@
             if (rule.related_checklist_id) {
                 relatedBox.classList.remove('hidden');
                 document.getElementById('relatedChecklistTitle').textContent = `對應行政申辦流程：${rule.checklist_title || '查看申辦清單'}`;
-                document.getElementById('relatedChecklistOffice').textContent = `承辦單位：${rule.office_name || '教務處'} · 分機 ${rule.office_phone || '#310'}`;
+                document.getElementById('relatedChecklistOffice').textContent = `承辦單位：${rule.office_name || '教務處'} · 分機 ${rule.office_phone || '323'}`;
             } else {
                 relatedBox.classList.add('hidden');
             }
@@ -3218,7 +3229,7 @@
                                 <span class="font-bold text-base text-slate-900">${item.title}</span>
                                 <span class="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-semibold">${item.office_name || '主辦處室'}</span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-0.5">辦公室：${item.office_location || '行政大樓'} · 分機：${item.office_phone || '#310'} · 期限：${item.deadline_desc || '學期第 10-12 週'}</p>
+                            <p class="text-xs text-slate-500 mt-0.5">辦公室：${item.office_location || '行政大樓'} · 分機：${item.office_phone || '323'} · 期限：${item.deadline_desc || '學期第 10-12 週'}</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" onclick="openApplyModal(${Number(item.checklist_id)})" class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold px-3 py-1.5 rounded transition">📤 線上申請</button>
@@ -3844,6 +3855,7 @@
     <script src="/js/reports.js"></script>
     <script src="/js/applications.js"></script>
     <script src="/js/conduct.js"></script>
+    <script src="/js/retake.js"></script>
     <script src="/js/assistant.js"></script>
     <script src="/js/tour.js"></script>
     <script src="/js/anniversary.js"></script>

@@ -8,7 +8,7 @@ def test_student_sees_own_warning_from_credits(client, login):
     # 帶別人的學號也只會看到自己的
     data = client.get("/api/student/early-warning?student_id=S112002").get_json()
     assert data["student"]["student_id"] == "S112001"
-    # 示範資料：最近學期 112-2 只修程式設計(二) 且不及格
+    # 示範資料：最近學期 112-2 只修程式設計(二) (CS102) 且不及格
     assert data["semester"] == "112-2"
     assert data["failed_credits"] == data["current_credits"] > 0
     assert data["risk_level"] == "很嚴重"

@@ -1,4 +1,5 @@
 method,rule,url,body,說明,未登入,訪客,學生,家長,老師,教職員,管理員,備註
+GET,/api/student/retake-recommendations,/api/student/retake-recommendations,,重補修推薦,401,403,OK,OK,403,403,403,學生與綁定家長僅能查自己的資料
 GET,/uploads/<path:filename>,/uploads/not_exist.png,,上傳檔案,OK,OK,OK,OK,OK,OK,OK,⚠️ 證照、比賽照片不用登入就能讀，檔名有亂數但仍屬公開，建議討論是否加登入檢查
 GET,/forms/<path:filename>,/forms/not_exist.txt,,申辦表單下載,OK,OK,OK,OK,OK,OK,OK,
 GET,/,/,,首頁,OK,OK,OK,OK,OK,OK,OK,

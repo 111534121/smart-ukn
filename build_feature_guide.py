@@ -10,6 +10,7 @@ FEATURES = [
     ('auth', '登入與身分驗證', '系統', '/api/auth|/api/visitor/register', '驗證帳密與身分，建立登入工作階段。'),
     ('dashboard', '學生首頁與請假', '學習', '/api/student/dashboard|/api/student/announcements|/api/student/leave-requests|/api/leave-requests', '整合學習資訊，送出請假並由有權限的人員審核。'),
     ('course', '修業進度與擋修', '學習', '/api/courses|/api/student/courses', '比對已修科目與先修規則，計算修業進度與擋修影響。'),
+    ('retake', '重補修推薦', '學習', '/api/student/retake-recommendations', '比對未通過科目與開課班別，排除課表衝突並提供修課建議。'),
     ('plan', '選課檢查', '學習', '/api/campus/course-plan', '讀取開課資料，檢查所選課程的限制與衝突。'),
     ('graduation', '畢業門檻', '學習', '/api/student/graduation|/api/teacher/class-summary', '彙整學分與證照，計算畢業門檻達成情形。'),
     ('attendance', '班級與個人出缺勤', '導師班', '/api/teacher/class-attendance|/api/student/attendance|/api/admin/attendance', '讀取出缺勤紀錄，依規則計算提醒並處理通知。'),
@@ -45,7 +46,7 @@ FEATURES = [
 def build():
     modules = {}
     paths = [ROOT / 'app.py', ROOT / 'public_portal.py']
-    for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap'):
+    for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap', 'retake'):
         paths.extend((ROOT / directory).glob('*.py'))
     for path in sorted(paths):
         source = path.read_text(encoding='utf-8-sig')

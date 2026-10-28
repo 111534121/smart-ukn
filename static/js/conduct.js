@@ -153,7 +153,7 @@ function cdTips(sem) {
     if (cdStudentId) return '';
     const tips = [];
     const penalties = sem.merits.filter(m => m.points < 0);
-    if (penalties.length) tips.push('有警告或小過時，可以到學務處生輔組 (行政大樓 1 樓，分機 211) 詢問「愛校服務銷過」，銷過後不再扣分。');
+    if (penalties.length) tips.push('有警告或小過時，可以到學務處生輔組 (行政大樓 1 樓，分機 464、412) 詢問「愛校服務銷過」，銷過後不再扣分。');
     if (sem.attendance.counts['曠課'] >= 3) tips.push(`這學期已曠課 ${sem.attendance.counts['曠課']} 節，生病或有事記得在 3 日內線上請假，請過假就不會被扣操行。`);
     if (sem.is_current && sem.breakdown.find(b => b.key === 'advisor').pending) tips.push('導師評分通常在期末給，現在的分數還沒加上這一項。');
     return tips.length ? `<div class="rounded bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 space-y-1">${tips.map(t => `<div>💡 ${escapeHtml(t)}</div>`).join('')}</div>` : '';

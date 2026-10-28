@@ -562,7 +562,7 @@ async function findOnMap(text) {
     } catch (e) { toast(e.message, 'error'); }
 }
 
-// 其他頁面「在地圖上看」：傳入辦公室位置文字，例如「康寧樓 2 樓 A201 (課務組)」
+// 其他頁面「在地圖上看」：傳入辦公室位置文字，例如「行政大樓 2 樓 教務處 (課程與教學組)」
 async function showOnMap(locationText) {
     closeModal();
     switchTab('tab-map');
