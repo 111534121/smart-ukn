@@ -149,7 +149,9 @@ def update_event(event_id, patch):
 def all_registrations():
     if use_db():
         return [_decode_registration(r) for r in deps.fetch_db_rows('SELECT * FROM event_registrations ORDER BY id') or []]
-    return json.loads(json.dumps(store.section('event_registrations', list)))
+    # JSON 示範模式也要跟 MySQL 模式一樣把 checked_in/reminded/notified 解成真正的布林值，
+    # 不然 notified 之類的欄位在這裡會是存進去的 0/1，跟 MySQL tinyint 解碼後的 True/False 不一致
+    return [_decode_registration(r) for r in json.loads(json.dumps(store.section('event_registrations', list)))]
 
 
 def get_registration(reg_id):
@@ -191,7 +193,7 @@ def update_registration(reg_id, patch):
             return None
         target.update(patch)
         store.save()
-        return dict(target)
+        return get_registration(reg_id)  # 跟 MySQL 分支一樣回傳解碼過的版本，型別才會一致
 
 
 def delete_registration(reg_id):

@@ -538,6 +538,51 @@ def send_reminders():
     return ok(message=f"已寄出 {sent} 封提醒信" + (f"，{failed} 封失敗" if failed else ""), sent=sent, failed=failed)
 
 
+# ---------- 自訂通知信 (教職員/管理員自己打標題/內容，寄給單一報名者或整場活動) ----------
+
+@bp.route("/api/campus/events/<int:event_id>/notify-custom", methods=["POST"])
+@require(*STAFF_ROLES)
+def notify_custom(event_id):
+    """跟「重寄通知」「提醒信」不同，這裡內容是教職員自己打的 (例如活動異動、臨時公告)；
+    可以只寄給某一位報名者 (帶 reg_id)，或寄給整場活動目前有效的報名者 (已報名+候補中，不含已取消)。
+    寄送結果一樣記到 notified/notified_at (代表最近一次通知是否寄成功)"""
+    ev = db.get_event(event_id)
+    if not ev:
+        return error("找不到該活動", 404)
+    data = request.get_json(silent=True) or {}
+    subject = str(data.get("subject") or "").strip()[:100]
+    body = str(data.get("body") or "").strip()[:2000]
+    if not subject or not body:
+        return error("標題與內容為必填")
+    reg_id = data.get("reg_id")
+
+    items = db.all_registrations()
+    if reg_id:
+        reg = next((r for r in items if r["id"] == reg_id and r["event_id"] == event_id), None)
+        if not reg:
+            return error("找不到這筆報名紀錄", 404)
+        if reg["status"] == "已取消":
+            return error("這筆報名已取消，無法寄送")
+        targets = [reg]
+    else:
+        targets = [r for r in items if r["event_id"] == event_id and r["status"] != "已取消"]
+        if not targets:
+            return error("這場活動目前沒有有效的報名者")
+
+    sent_count, failed_count = 0, 0
+    for r in targets:
+        sent = send_mail_safely(r["email"], f"【康寧大學】{ev['title']}：{subject}",
+                                 f"{r['full_name']} 您好：\n\n{body}")
+        _record_notified(r["id"], sent)
+        sent_count += int(sent)
+        failed_count += int(not sent)
+    deps.write_audit_log("event_registrations", event_id, "自訂通知",
+                          after={"subject": subject, "target": reg_id or "all",
+                                 "sent": sent_count, "failed": failed_count})
+    return ok(message=f"已寄出 {sent_count} 封" + (f"，{failed_count} 封失敗" if failed_count else ""),
+              sent=sent_count, failed=failed_count)
+
+
 # ---------- 活動結束後的滿意度評分 ----------
 
 @bp.route("/api/campus/events/<int:event_id>/feedback", methods=["POST"])

@@ -194,7 +194,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/events-admin.js",
-          "line": 163
+          "line": 179
         }
       ]
     },
@@ -22424,18 +22424,115 @@ window.FEATURE_GUIDE = {
           "storage": []
         },
         {
-          "url": "/api/campus/events/<int:event_id>/feedback",
+          "url": "/api/campus/events/<int:event_id>/notify-custom",
           "methods": [
             "POST"
           ],
           "file": "campus/events.py",
           "line": 545,
+          "function": "notify_custom",
+          "tables": [
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 262,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            },
+            {
+              "name": "audit_logs",
+              "file": "app.py",
+              "line": 267,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 346
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 218
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 362
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 545,
+              "function": "notify_custom"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 136,
+              "function": "_record_notified"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 126,
+              "function": "send_mail_safely"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 73,
+              "function": "get_mailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 32,
+              "function": "ConsoleMailer"
+            },
+            {
+              "file": "attendance/notify.py",
+              "line": 46,
+              "function": "SmtpMailer"
+            },
+            {
+              "file": "app.py",
+              "line": 244,
+              "function": "write_audit_log"
+            },
+            {
+              "file": "app.py",
+              "line": 161,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "app.py",
+              "line": 237,
+              "function": "client_ip"
+            }
+          ],
+          "storage": []
+        },
+        {
+          "url": "/api/campus/events/<int:event_id>/feedback",
+          "methods": [
+            "POST"
+          ],
+          "file": "campus/events.py",
+          "line": 590,
           "function": "submit_feedback",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 545,
+              "line": 590,
               "function": "submit_feedback"
             }
           ],
@@ -23401,7 +23498,7 @@ window.FEATURE_GUIDE = {
       "frontend": []
     }
   ],
-  "routeCount": 204,
+  "routeCount": 205,
   "schemaCount": 50,
   "schema": {
     "departments": [

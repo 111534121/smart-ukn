@@ -27,3 +27,7 @@
 .feedback-item .stars{color:#bb8e38}
 .reg-row small.feedback{color:#245b46}
 .qr-link{font-size:12px;margin-left:8px}
+.custom-notify-form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:260px}
+.custom-notify-form input,.custom-notify-form textarea{font:inherit;width:100%;padding:8px;border:1px solid #c7d5ca;border-radius:6px}
+.custom-notify-form textarea{resize:vertical;min-height:60px}
+.custom-notify-form .actions{justify-content:flex-end}
