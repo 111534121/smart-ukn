@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS events (
  title varchar(100) NOT NULL,
  description text,
  image_url varchar(500) DEFAULT NULL,
+ benefit varchar(200) DEFAULT NULL COMMENT '活動效益/加分說明，例如等同於某證照加分',
  location varchar(100) NOT NULL,
  event_date date NOT NULL,
  event_time varchar(5) DEFAULT NULL,
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活動報名：報名紀錄'
 """
 
-EVENT_FIELDS = ('title', 'description', 'image_url', 'location', 'event_date', 'event_time',
+EVENT_FIELDS = ('title', 'description', 'image_url', 'benefit', 'location', 'event_date', 'event_time',
                  'registration_deadline', 'capacity', 'cancelled', 'created_by', 'created_at')
 REG_FIELDS = ('event_id', 'student_id', 'full_name', 'email', 'phone', 'age', 'note', 'status',
               'checkin_code', 'registered_by_key', 'registered_by_role', 'created_at', 'cancelled_at',
@@ -79,6 +80,7 @@ def _decode_event(row):
     item['event_time'] = item.get('event_time') or ''
     item['description'] = item.get('description') or ''
     item['image_url'] = item.get('image_url') or ''
+    item['benefit'] = item.get('benefit') or ''
     return item
 
 

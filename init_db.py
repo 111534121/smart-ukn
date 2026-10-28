@@ -968,6 +968,15 @@ def init_database():
                 cursor.execute(f"ALTER TABLE `event_registrations` ADD COLUMN `{column}` {definition}")
                 print(f"✅ event_registrations 已新增 {column} 欄位")
 
+        # 補上「活動效益/加分說明」欄位 (舊資料庫在這欄位加進來之前就已經建表)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'events' AND COLUMN_NAME = 'benefit'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `events` ADD COLUMN `benefit` varchar(200) DEFAULT NULL AFTER `image_url`")
+            print("✅ events 已新增 benefit 欄位")
+
         # 預約校園參觀 (campus/visits.py)
         from campus.visits_store import TABLE_SQL as VISITS_TABLE_SQL
         cursor.execute(VISITS_TABLE_SQL)

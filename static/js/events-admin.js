@@ -212,6 +212,7 @@
             event_date: form.event_date.value, event_time: form.event_time.value,
             registration_deadline: form.registration_deadline.value, capacity: form.capacity.value,
             description: form.description.value.trim(), image_url: form.image_url.value.trim(),
+            benefit: form.benefit.value.trim(),
         };
     }
 
@@ -226,6 +227,7 @@
         form.capacity.value = ev.capacity;
         form.description.value = ev.description || '';
         form.image_url.value = ev.image_url || '';
+        form.benefit.value = ev.benefit || '';
         $('eventEditPanel').hidden = false;
         $('eventEditPanel').scrollIntoView({behavior: 'smooth', block: 'start'});
     }
@@ -256,7 +258,8 @@
     $('createEventToggle').addEventListener('click', () => {
         const form = $('createEventForm');
         form.hidden = !form.hidden;
-        $('createEventToggle').textContent = form.hidden ? '顯示表單' : '隱藏表單';
+        $('createEventToggle').textContent = form.hidden ? '+ 新增活動' : '收合表單';
+        if (!form.hidden) form.scrollIntoView({behavior: 'smooth', block: 'start'});
     });
     $('createEventForm').addEventListener('submit', e => {
         e.preventDefault();
@@ -267,7 +270,7 @@
             });
             form.reset();
             form.hidden = true;
-            $('createEventToggle').textContent = '顯示表單';
+            $('createEventToggle').textContent = '+ 新增活動';
             message(result.message);
             currentEvent = result.data.id;
             await refreshAll();

@@ -17,7 +17,7 @@ def test_insert_event_uses_lastrowid(monkeypatch):
 
     monkeypatch.setattr(deps, "db_execute", execute)
     item = events_store.insert_event({
-        "title": "測試活動", "description": "", "image_url": "", "location": "測試地點",
+        "title": "測試活動", "description": "", "image_url": "", "benefit": "", "location": "測試地點",
         "event_date": "2026-11-01", "event_time": "", "registration_deadline": "2026-10-31",
         "capacity": 10, "cancelled": 0, "created_by": "staff1", "created_at": "2026-10-22 10:00:00",
     })
@@ -31,7 +31,7 @@ def test_insert_event_raises_when_db_execute_fails(monkeypatch):
     monkeypatch.setattr(deps, "db_execute", lambda sql, params: None)
     try:
         events_store.insert_event({
-            "title": "x", "description": "", "image_url": "", "location": "x",
+            "title": "x", "description": "", "image_url": "", "benefit": "", "location": "x",
             "event_date": "2026-11-01", "event_time": "", "registration_deadline": "2026-10-31",
             "capacity": 1, "cancelled": 0, "created_by": "staff1", "created_at": "2026-10-22 10:00:00",
         })

@@ -426,6 +426,29 @@ def test_create_event_success_returns_full_fields(client, login):
     assert data["title"] == "系學會迎新茶會" and data["capacity"] == 5 and not data["cancelled"]
 
 
+def test_event_benefit_note_shows_up_on_listing_and_mine(client, login):
+    """活動效益/加分說明 (例如等同於某證照加分)：建立時可填，學生瀏覽活動與「我的報名」都要看得到"""
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"benefit": "完成並簽到可登記為 CCAC 證照加分項目"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+    login("student1")
+    listed = next(e for e in client.get("/api/campus/events").get_json()["data"] if e["id"] == event_id)
+    assert listed["benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+    _register(client, login, event_id, "student1", "S112001")
+    mine = next(r for r in client.get("/api/campus/events/mine").get_json()["data"] if r["event_id"] == event_id)
+    assert mine["event_benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+
+def test_event_benefit_note_is_optional_and_defaults_empty(client, login):
+    event_id = _create_event(client, login)
+    ev = client.get(f"/api/campus/events/{event_id}").get_json()["data"]
+    assert ev["benefit"] == ""
+
+
 def test_create_event_rejects_deadline_after_event_date(client, login):
     login("staff1")
     res = client.post("/api/campus/events", json={

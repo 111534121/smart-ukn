@@ -42,6 +42,8 @@ def clean_event(data, partial=False):
         out["description"] = str(data.get("description") or "").strip()[:2000]
     if not partial or "image_url" in data:
         out["image_url"] = str(data.get("image_url") or "").strip()[:500]
+    if not partial or "benefit" in data:
+        out["benefit"] = str(data.get("benefit") or "").strip()[:200]
     if not partial or "location" in data:
         location = str(data.get("location") or "").strip()[:100]
         if not location:
@@ -183,7 +185,7 @@ def my_registrations():
             continue
         items.append({**r, "event_title": ev["title"], "event_date": ev["event_date"],
                       "event_time": ev.get("event_time", ""), "event_location": ev["location"],
-                      "event_cancelled": bool(ev.get("cancelled")),
+                      "event_cancelled": bool(ev.get("cancelled")), "event_benefit": ev.get("benefit", ""),
                       "event_over": ev["event_date"] < date.today().isoformat()})
     items.sort(key=lambda r: r["event_date"], reverse=True)
     return ok(data=items)

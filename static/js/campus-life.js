@@ -1000,6 +1000,7 @@ function eventCardHtml(e) {
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <div class="font-bold text-slate-900">${esc(e.title)}</div>
+                    ${e.benefit ? `<div class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">🏅 ${esc(e.benefit)}</div>` : ''}
                     <div class="text-xs text-slate-500 mt-0.5">📅 ${esc(e.event_date)} ${esc(e.event_time || '')} · 📍 ${esc(e.location)}</div>
                     ${e.description ? `<p class="text-sm text-slate-600 mt-2 whitespace-pre-line">${esc(e.description)}</p>` : ''}
                     <div class="text-[11px] text-slate-400 mt-1">報名截止 ${esc(e.registration_deadline)} · 名額 ${e.registered_count}/${e.capacity}${e.waitlist_count ? `（候補 ${e.waitlist_count} 人）` : ''}</div>
@@ -1074,6 +1075,7 @@ function myEventRowHtml(r) {
                 <div>
                     <span class="font-bold text-slate-900">${esc(r.event_title)}</span>
                     <span class="text-xs text-slate-500 ml-2">📅 ${esc(r.event_date)} ${esc(r.event_time || '')} · 📍 ${esc(r.event_location)}</span>
+                    ${r.event_benefit ? `<div class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">🏅 ${esc(r.event_benefit)}</div>` : ''}
                 </div>
                 <div class="flex items-center gap-1.5 flex-wrap">${statusBadge(r.event_cancelled ? '活動已取消' : r.status, r.event_cancelled ? 'red' : statusTone)}${notifyHtml}</div>
             </div>

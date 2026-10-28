@@ -17,7 +17,7 @@
     <div>
       <p class="eyebrow">CAMPUS SERVICES · 活動報名</p>
       <h1>報名者管理</h1>
-      <p class="muted">新增、修改、刪除報名者，重寄通知信，掌握候補與出席狀況。</p>
+      <p class="muted">新增/編輯/取消活動本身，新增、修改、刪除報名者，重寄通知信，掌握候補與出席狀況。</p>
     </div>
     <div class="actions">
       <button id="sendReminders" type="button">寄送明天活動提醒信</button>
@@ -27,7 +27,7 @@
   <p id="message" role="status" aria-live="polite"></p>
 
   <section class="card">
-    <div class="sectionhead"><h2>建立新活動</h2><button type="button" id="createEventToggle">顯示表單</button></div>
+    <div class="sectionhead"><h2>建立新活動</h2><button type="button" id="createEventToggle" class="primary">+ 新增活動</button></div>
     <form id="createEventForm" hidden>
       <div class="formgrid">
         <label>活動名稱<input name="title" maxlength="100" required placeholder="例如：系學會迎新茶會"></label>
@@ -38,6 +38,7 @@
         <label>名額<input name="capacity" type="number" min="1" required></label>
         <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
         <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
+        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：完成並簽到可登記為 CCAC 證照加分項目"></label>
       </div>
       <button class="primary" type="submit">建立活動</button>
     </form>
@@ -105,6 +106,7 @@
         <label>名額<input name="capacity" type="number" min="1" required></label>
         <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
         <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
+        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：完成並簽到可登記為 CCAC 證照加分項目"></label>
       </div>
       <button class="primary" type="submit">儲存修改</button>
     </form>
