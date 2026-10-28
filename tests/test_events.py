@@ -237,6 +237,37 @@ def test_non_staff_cannot_delete_registration(client, login):
     assert res.status_code == 403
 
 
+def test_registration_qr_code_visible_to_owner_and_staff_but_not_other_students(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg_id = r1.get_json()["data"]["id"]
+
+    login("student1")
+    mine = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert mine.status_code == 200
+    assert mine.mimetype == "image/svg+xml"
+
+    login("student2")
+    other = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert other.status_code == 403
+
+    login("staff1")
+    staff = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert staff.status_code == 200
+
+
+def test_registration_qr_code_blocked_after_cancel(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg_id = r1.get_json()["data"]["id"]
+    login("student1")
+    cancel = client.post(f"/api/campus/events/{event_id}/registrations/{reg_id}/cancel")
+    assert cancel.status_code == 200, cancel.get_json()
+    res = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert res.status_code == 400
+    assert "取消" in res.get_json()["message"]
+
+
 def test_staff_can_resend_notification(client, login):
     event_id = _create_event(client, login)
     r1 = _register(client, login, event_id, "student1", "S112001")

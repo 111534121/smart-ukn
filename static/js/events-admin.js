@@ -41,6 +41,24 @@
             + (ev.cancelled ? '（活動已取消）' : '');
     }
 
+    function renderFeedbackSummary() {
+        const rated = regs.filter(r => r.status !== '已取消' && r.rating);
+        if (!rated.length) { $('feedbackSummary').hidden = true; return; }
+        const avg = (rated.reduce((sum, r) => sum + r.rating, 0) / rated.length).toFixed(1);
+        const list = rated.filter(r => r.feedback_comment).map(r => `
+            <div class="feedback-item">
+                <strong>${esc(r.full_name)}</strong>
+                <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                · ${esc(r.feedback_comment)}
+                <small>（${esc((r.feedback_at || '').slice(0, 16))}）</small>
+            </div>`).join('');
+        $('feedbackSummary').innerHTML = `
+            <h3>活動回饋</h3>
+            <p class="avg">共 ${rated.length} 人評分，平均 <b>${avg}</b> / 5 分</p>
+            ${list || '<p class="muted">目前還沒有附上文字留言。</p>'}`;
+        $('feedbackSummary').hidden = false;
+    }
+
     function renderList() {
         const q = $('search').value.trim().toLowerCase();
         const filtered = regs.filter(r => !q ||
@@ -58,7 +76,9 @@
                         ${r.status !== '已取消' && !r.notified ? '<span class="badge notify-fail">⚠ 通知信寄送失敗</span>' : ''}
                     </strong>
                     <small>${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''} · ${esc(r.age)} 歲${r.note ? ' · ' + esc(r.note) : ''}</small>
-                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}${r.status !== '已取消' ? ' · 通知信：' + (r.notified ? '已寄出' + (r.notified_at ? `（${esc(r.notified_at.slice(0, 16))}）` : '') : '寄送失敗，可按右側「重寄通知」') : ''}</small>
+                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}${r.status !== '已取消' ? ' · 通知信：' + (r.notified ? '已寄出' + (r.notified_at ? `（${esc(r.notified_at.slice(0, 16))}）` : '') : '寄送失敗，可按右側「重寄通知」') : ''}
+                        ${r.status !== '已取消' ? `<a class="qr-link" href="/api/campus/events/${currentEvent}/registrations/${r.id}/qr.svg" target="_blank" rel="noopener">查看簽到 QR Code ↗</a>` : ''}</small>
+                    ${r.rating ? `<small class="feedback">活動回饋：${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}${r.feedback_comment ? ' · ' + esc(r.feedback_comment) : ''}</small>` : ''}
                 </div>
                 ${confirmState && confirmState.regId === r.id ? confirmHtml(r, confirmState.act) : `<div class="actions">
                     ${r.status === '已報名' && !r.checked_in ? `<button type="button" data-act="checkin">簽到</button>` : ''}
@@ -86,12 +106,19 @@
         currentEvent = id;
         closeEdit();
         confirmState = null;
-        if (!id) { $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true; return; }
+        if (!id) {
+            $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true;
+            $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true;
+            return;
+        }
         const result = await api(`/api/campus/events/${id}/registrations`);
         regs = result.data;
         renderStats(result.event);
         renderList();
+        renderFeedbackSummary();
         $('addSection').hidden = false;
+        $('qrCheckinForm').hidden = false;
+        $('checkinCodeInput').value = '';
     }
 
     async function refreshAll(keepSelection = true) {
@@ -100,7 +127,10 @@
         renderEventSelect();
         const target = keepSelection && currentEvent ? currentEvent : (allEvents[0] && allEvents[0].id);
         if (target) { $('eventSelect').value = String(target); await loadEvent(target); }
-        else { currentEvent = null; $('regList').innerHTML = '目前沒有任何活動。'; $('addSection').hidden = true; $('eventStats').hidden = true; }
+        else {
+            currentEvent = null; $('regList').innerHTML = '目前沒有任何活動。'; $('addSection').hidden = true; $('eventStats').hidden = true;
+            $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true;
+        }
     }
 
     function openEdit(reg) {
@@ -141,6 +171,27 @@
     $('refresh').addEventListener('click', e => busy(e.target, async () => { message(''); await refreshAll(); }));
     $('eventSelect').addEventListener('change', e => busy(null, () => loadEvent(Number(e.target.value) || null)));
     $('search').addEventListener('input', renderList);
+
+    $('sendReminders').addEventListener('click', e => busy(e.target, async () => {
+        const result = await api('/api/campus/events/send-reminders', {method: 'POST'});
+        message(result.message);
+    }));
+
+    $('qrCheckinForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const input = $('checkinCodeInput');
+        const code = input.value.trim();
+        if (!code) return;
+        busy(e.target.querySelector('button'), async () => {
+            const result = await api(`/api/campus/events/${currentEvent}/checkin`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({checkin_code: code}),
+            });
+            message(result.message);
+            input.value = '';
+            await loadEvent(currentEvent);
+            input.focus();
+        });
+    });
 
     $('addForm').addEventListener('submit', e => {
         e.preventDefault();

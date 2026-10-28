@@ -1056,6 +1056,7 @@ function myEventRowHtml(r) {
                    : statusBadge('⚠ 通知信寄送失敗，請確認信箱或聯絡承辦單位', 'red');
     const canCancel = r.status !== '已取消' && !r.event_over && !r.event_cancelled;
     const canFeedback = r.event_over && r.status !== '已取消' && !r.event_cancelled;
+    const canShowQr = r.status === '已報名' && !r.event_over && !r.event_cancelled;
     const isConfirming = eventsCancelConfirm && eventsCancelConfirm.regId === r.id;
     let actionsHtml = '';
     if (isConfirming) {
@@ -1078,6 +1079,14 @@ function myEventRowHtml(r) {
             </div>
             <div class="flex items-center justify-end gap-1 flex-wrap">${actionsHtml}</div>
             ${eventsFeedbackOpenId === r.event_id ? eventFeedbackFormHtml(r.event_id) : ''}
+            ${canShowQr ? `
+                <details class="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                    <summary class="cursor-pointer text-xs font-semibold text-ukn-700">現場簽到 QR Code</summary>
+                    <div class="mt-2 flex items-center gap-3">
+                        <img loading="lazy" src="/api/campus/events/${r.event_id}/registrations/${r.id}/qr.svg" alt="簽到 QR Code" class="w-28 h-28 bg-white border border-slate-200 rounded p-1">
+                        <p class="text-xs text-slate-500">活動現場出示這個 QR Code 給工作人員掃描即可完成簽到，不用再排隊找名字。</p>
+                    </div>
+                </details>` : ''}
         </div>`;
 }
 

@@ -19,7 +19,10 @@
       <h1>報名者管理</h1>
       <p class="muted">新增、修改、刪除報名者，重寄通知信，掌握候補與出席狀況。</p>
     </div>
-    <button id="refresh" type="button">重新整理</button>
+    <div class="actions">
+      <button id="sendReminders" type="button">寄送明天活動提醒信</button>
+      <button id="refresh" type="button">重新整理</button>
+    </div>
   </section>
   <p id="message" role="status" aria-live="polite"></p>
 
@@ -30,6 +33,11 @@
       <label>搜尋報名者<input id="search" type="search" placeholder="姓名、學號或 Email"></label>
     </div>
     <div id="eventStats" class="stats" hidden></div>
+    <form id="qrCheckinForm" class="qr-checkin" hidden>
+      <label>QR Code／簽到碼簽到<input id="checkinCodeInput" type="text" placeholder="用掃碼裝置掃學生的入場 QR Code，或貼上簽到碼" autocomplete="off"></label>
+      <button class="primary" type="submit">簽到</button>
+    </form>
+    <div id="feedbackSummary" hidden></div>
   </section>
 
   <section id="addSection" class="card" hidden>

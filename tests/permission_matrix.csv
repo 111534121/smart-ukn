@@ -221,6 +221,7 @@ DELETE,/api/campus/events/<int:event_id>,/api/campus/events/999999,,取消活動
 POST,/api/campus/events/<int:event_id>/register,/api/campus/events/999999/register,,活動報名,401,OK,OK,OK,OK,OK,OK,
 POST,/api/campus/events/<int:event_id>/registrations/<int:reg_id>/cancel,/api/campus/events/999999/registrations/999999/cancel,,取消報名,401,OK,OK,OK,OK,OK,OK,本人取消用登入身分比對；教職員可代為取消
 POST,/api/campus/events/<int:event_id>/checkin,/api/campus/events/999999/checkin,,現場簽到,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可操作簽到
+GET,/api/campus/events/<int:event_id>/registrations/<int:reg_id>/qr.svg,/api/campus/events/999999/registrations/999999/qr.svg,,報名簽到 QR Code,401,OK,OK,OK,OK,OK,OK,本人或教職員/管理員可查看；查無紀錄回 404
 GET,/api/campus/events/<int:event_id>/registrations,/api/campus/events/999999/registrations,,查看報名名單,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可查看完整名單
 POST,/api/campus/events/send-reminders,/api/campus/events/send-reminders,,批次寄送活動提醒信,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可觸發
 POST,/api/campus/events/<int:event_id>/feedback,/api/campus/events/999999/feedback,,活動滿意度評分,401,OK,OK,OK,OK,OK,OK,

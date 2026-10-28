@@ -13,8 +13,11 @@
 import re
 import uuid
 from datetime import date, timedelta
+from io import BytesIO
 
-from flask import Blueprint, current_app, request
+import qrcode
+from qrcode.image.svg import SvgPathFillImage
+from flask import Blueprint, Response, current_app, request
 
 from . import events_store as db
 from .common import deps, error, ok, require, store, now_str, current_user, user_key, STAFF_ROLES
@@ -471,6 +474,30 @@ def checkin(event_id):
             return error(f"{reg['full_name']} 已經簽到過了", 409)
         updated = db.update_registration(reg["id"], {"checked_in": 1, "checked_in_at": now_str()})
     return ok(message=f"{updated['full_name']} 簽到成功", data=updated)
+
+
+@bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>/qr.svg", methods=["GET"])
+@require()
+def registration_qr(event_id, reg_id):
+    """本人或教職員/管理員可下載這筆報名的簽到用 QR Code (內容就是 checkin_code)；
+    現場用掃碼裝置 (或掃碼手機鏡頭對準畫面) 讀出代碼即可帶出，不用再手動在名單裡找人簽到"""
+    u = current_user()
+    reg = next((r for r in db.all_registrations() if r["id"] == reg_id and r["event_id"] == event_id), None)
+    if not reg:
+        return error("找不到這筆報名紀錄", 404)
+    if reg["registered_by_key"] != user_key() and u["role"] not in STAFF_ROLES:
+        return error("沒有權限查看這筆報名的簽到碼", 403)
+    if reg["status"] == "已取消":
+        return error("這筆報名已取消，沒有簽到碼")
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)
+    qr.add_data(reg["checkin_code"])
+    qr.make(fit=True)
+    output = BytesIO()
+    qr.make_image(image_factory=SvgPathFillImage).save(output)
+    response = Response(output.getvalue(), mimetype="image/svg+xml")
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @bp.route("/api/campus/events/<int:event_id>/registrations", methods=["GET"])
