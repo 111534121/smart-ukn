@@ -944,6 +944,18 @@ def init_database():
         from campus.events_store import EVENTS_TABLE_SQL, REGISTRATIONS_TABLE_SQL
         cursor.execute(EVENTS_TABLE_SQL)
         cursor.execute(REGISTRATIONS_TABLE_SQL)
+        # 補上「是否已通知／最後通知時間」欄位 (舊資料庫在這兩欄位加進來之前就已經建表)
+        for column, definition in (
+            ("notified", "tinyint(1) NOT NULL DEFAULT 0 AFTER `reminded`"),
+            ("notified_at", "datetime DEFAULT NULL AFTER `notified`"),
+        ):
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_registrations' AND COLUMN_NAME = %s
+            """, (column,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE `event_registrations` ADD COLUMN `{column}` {definition}")
+                print(f"✅ event_registrations 已新增 {column} 欄位")
 
         # 預約校園參觀 (campus/visits.py)
         from campus.visits_store import TABLE_SQL as VISITS_TABLE_SQL

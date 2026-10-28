@@ -26,6 +26,7 @@ const FEATURES = [
     { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查', staff: { name: '宿舍申請審核', desc: '床位申請審核與進度', roles: ['教職員', '管理員'] } },
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
+    { key: 'events', tab: 'tab-events', name: '活動報名', icon: '🎉', group: '校園生活', desc: '線上報名校園活動，查看我的報名與通知狀態' },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰', staff: false },

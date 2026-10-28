@@ -237,6 +237,37 @@ def test_non_staff_cannot_delete_registration(client, login):
     assert res.status_code == 403
 
 
+def test_registration_qr_code_visible_to_owner_and_staff_but_not_other_students(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg_id = r1.get_json()["data"]["id"]
+
+    login("student1")
+    mine = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert mine.status_code == 200
+    assert mine.mimetype == "image/svg+xml"
+
+    login("student2")
+    other = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert other.status_code == 403
+
+    login("staff1")
+    staff = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert staff.status_code == 200
+
+
+def test_registration_qr_code_blocked_after_cancel(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg_id = r1.get_json()["data"]["id"]
+    login("student1")
+    cancel = client.post(f"/api/campus/events/{event_id}/registrations/{reg_id}/cancel")
+    assert cancel.status_code == 200, cancel.get_json()
+    res = client.get(f"/api/campus/events/{event_id}/registrations/{reg_id}/qr.svg")
+    assert res.status_code == 400
+    assert "取消" in res.get_json()["message"]
+
+
 def test_staff_can_resend_notification(client, login):
     event_id = _create_event(client, login)
     r1 = _register(client, login, event_id, "student1", "S112001")
@@ -252,6 +283,74 @@ def test_staff_can_resend_notification(client, login):
     assert after_cancel.status_code == 400
 
 
+def test_non_staff_cannot_send_custom_notice(client, login):
+    event_id = _create_event(client, login)
+    login("student1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom", json={"subject": "x", "body": "x"})
+    assert res.status_code == 403
+
+
+def test_custom_notice_requires_subject_and_body(client, login):
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom", json={"subject": "", "body": "x"})
+    assert res.status_code == 400
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom", json={"subject": "x", "body": ""})
+    assert res.status_code == 400
+
+
+def test_custom_notice_to_single_registrant_records_notified(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom",
+                       json={"subject": "活動異動", "body": "地點改到活動中心", "reg_id": reg1_id})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["sent"] == 1
+
+    reg = next(r for r in client.get(f"/api/campus/events/{event_id}/registrations").get_json()["data"]
+               if r["id"] == reg1_id)
+    assert reg["notified"] is True
+    assert reg["notified_at"]
+
+
+def test_custom_notice_rejects_cancelled_target(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    login("student1")
+    client.post(f"/api/campus/events/{event_id}/registrations/{reg1_id}/cancel")
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom",
+                       json={"subject": "x", "body": "x", "reg_id": reg1_id})
+    assert res.status_code == 400
+    assert "取消" in res.get_json()["message"]
+
+
+def test_custom_notice_broadcast_to_all_excludes_cancelled(client, login):
+    event_id = _create_event(client, login, capacity=5)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+    _register(client, login, event_id, "student2", "S112002")
+    login("student1")
+    client.post(f"/api/campus/events/{event_id}/registrations/{reg1_id}/cancel")
+
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom",
+                       json={"subject": "活動公告", "body": "請提早 10 分鐘到場"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["sent"] == 1  # 只剩 student2 還是有效報名
+
+
+def test_custom_notice_with_no_valid_registrants_errors(client, login):
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.post(f"/api/campus/events/{event_id}/notify-custom", json={"subject": "x", "body": "x"})
+    assert res.status_code == 400
+    assert "沒有有效的報名者" in res.get_json()["message"]
+
+
 def test_events_admin_page_requires_staff_login(client, login):
     assert client.get("/admin/events").status_code == 401
     login("student1")
@@ -261,6 +360,45 @@ def test_events_admin_page_requires_staff_login(client, login):
     res = client.get("/admin/events")
     assert res.status_code == 200
     assert b"html" in res.data.lower()
+
+
+def test_registration_tracks_whether_confirmation_email_actually_sent(client, login):
+    event_id = _create_event(client, login)
+    res = _register(client, login, event_id, "student1", "S112001")
+    assert res.status_code == 200
+    assert res.get_json()["data"]["notified"] is True  # 測試用的 FakeMailer 一定寄得出去
+
+
+def test_registration_marks_not_notified_when_mailer_fails(client, login, monkeypatch):
+    import campus.events as events_module
+
+    class FailingMailer:
+        def send(self, *a, **k):
+            raise RuntimeError("模擬寄信失敗")
+
+    monkeypatch.setattr(events_module, "get_mailer", lambda: FailingMailer())
+    event_id = _create_event(client, login)
+    res = _register(client, login, event_id, "student1", "S112001")
+    assert res.status_code == 200  # 寄信失敗不影響報名本身成功
+    assert res.get_json()["data"]["notified"] is False
+    assert "失敗" in res.get_json()["message"]
+
+
+def test_my_registrations_lists_across_events_scoped_to_login_identity(client, login):
+    event1 = _create_event(client, login, event_date=_tomorrow())
+    event2 = _create_event(client, login, event_date=(datetime.date.today() + datetime.timedelta(days=2)).isoformat())
+    _register(client, login, event1, "student1", "S112001")
+    _register(client, login, event2, "student1", "S112001")
+    _register(client, login, event1, "student2", "S112002")
+
+    login("student1")
+    mine = client.get("/api/campus/events/mine").get_json()["data"]
+    assert {m["event_id"] for m in mine} == {event1, event2}
+    assert all("event_title" in m and "event_date" in m for m in mine)
+
+    login("student2")
+    mine2 = client.get("/api/campus/events/mine").get_json()["data"]
+    assert {m["event_id"] for m in mine2} == {event1}
 
 
 def test_search_and_filter_events(client, login):

@@ -4,6 +4,7 @@
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     let user, allEvents = [], currentEvent = null, regs = [], editingId = null;
     let confirmState = null; // {regId, act: 'cancel'|'delete'}
+    let customNotifyId = null; // 目前展開「自訂通知」表單的報名者 id
 
     async function api(url, opts = {}) {
         const response = await fetch(url, opts);
@@ -41,6 +42,24 @@
             + (ev.cancelled ? '（活動已取消）' : '');
     }
 
+    function renderFeedbackSummary() {
+        const rated = regs.filter(r => r.status !== '已取消' && r.rating);
+        if (!rated.length) { $('feedbackSummary').hidden = true; return; }
+        const avg = (rated.reduce((sum, r) => sum + r.rating, 0) / rated.length).toFixed(1);
+        const list = rated.filter(r => r.feedback_comment).map(r => `
+            <div class="feedback-item">
+                <strong>${esc(r.full_name)}</strong>
+                <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                · ${esc(r.feedback_comment)}
+                <small>（${esc((r.feedback_at || '').slice(0, 16))}）</small>
+            </div>`).join('');
+        $('feedbackSummary').innerHTML = `
+            <h3>活動回饋</h3>
+            <p class="avg">共 ${rated.length} 人評分，平均 <b>${avg}</b> / 5 分</p>
+            ${list || '<p class="muted">目前還沒有附上文字留言。</p>'}`;
+        $('feedbackSummary').hidden = false;
+    }
+
     function renderList() {
         const q = $('search').value.trim().toLowerCase();
         const filtered = regs.filter(r => !q ||
@@ -55,13 +74,18 @@
                     <strong>${esc(r.full_name)}（${esc(r.student_id)}）
                         <span class="badge status-${esc(r.status)}">${esc(r.status)}</span>
                         ${r.checked_in ? '<span class="badge checked-in">已簽到</span>' : ''}
+                        ${r.status !== '已取消' && !r.notified ? '<span class="badge notify-fail">⚠ 通知信寄送失敗</span>' : ''}
                     </strong>
                     <small>${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''} · ${esc(r.age)} 歲${r.note ? ' · ' + esc(r.note) : ''}</small>
-                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}</small>
+                    <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}${r.status !== '已取消' ? ' · 通知信：' + (r.notified ? '已寄出' + (r.notified_at ? `（${esc(r.notified_at.slice(0, 16))}）` : '') : '寄送失敗，可按右側「重寄通知」') : ''}
+                        ${r.status !== '已取消' ? `<a class="qr-link" href="/api/campus/events/${currentEvent}/registrations/${r.id}/qr.svg" target="_blank" rel="noopener">查看簽到 QR Code ↗</a>` : ''}</small>
+                    ${r.rating ? `<small class="feedback">活動回饋：${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}${r.feedback_comment ? ' · ' + esc(r.feedback_comment) : ''}</small>` : ''}
                 </div>
-                ${confirmState && confirmState.regId === r.id ? confirmHtml(r, confirmState.act) : `<div class="actions">
+                ${confirmState && confirmState.regId === r.id ? confirmHtml(r, confirmState.act)
+                    : customNotifyId === r.id ? customNotifyFormHtml(r) : `<div class="actions">
                     ${r.status === '已報名' && !r.checked_in ? `<button type="button" data-act="checkin">簽到</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="notify">重寄通知</button>` : ''}
+                    ${r.status !== '已取消' ? `<button type="button" data-act="custom-notify">自訂通知</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="edit">編輯</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="cancel">取消報名</button>` : ''}
                     <button type="button" data-act="delete">刪除</button>
@@ -81,16 +105,36 @@
         </div>`;
     }
 
+    function customNotifyFormHtml(r) {
+        return `<form class="custom-notify-form" data-reg="${r.id}">
+            <input name="subject" maxlength="100" required placeholder="標題 (例如：請攜帶學生證)">
+            <textarea name="body" maxlength="2000" required placeholder="寄給 ${esc(r.full_name)} 的內容"></textarea>
+            <div class="actions">
+                <button type="button" data-act="custom-notify-cancel">取消</button>
+                <button type="submit" class="primary">寄出</button>
+            </div>
+        </form>`;
+    }
+
     async function loadEvent(id) {
         currentEvent = id;
         closeEdit();
         confirmState = null;
-        if (!id) { $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true; return; }
+        customNotifyId = null;
+        if (!id) {
+            $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true;
+            $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true; $('broadcastSection').hidden = true;
+            return;
+        }
         const result = await api(`/api/campus/events/${id}/registrations`);
         regs = result.data;
         renderStats(result.event);
         renderList();
+        renderFeedbackSummary();
         $('addSection').hidden = false;
+        $('qrCheckinForm').hidden = false;
+        $('checkinCodeInput').value = '';
+        $('broadcastSection').hidden = false;
     }
 
     async function refreshAll(keepSelection = true) {
@@ -99,7 +143,10 @@
         renderEventSelect();
         const target = keepSelection && currentEvent ? currentEvent : (allEvents[0] && allEvents[0].id);
         if (target) { $('eventSelect').value = String(target); await loadEvent(target); }
-        else { currentEvent = null; $('regList').innerHTML = '目前沒有任何活動。'; $('addSection').hidden = true; $('eventStats').hidden = true; }
+        else {
+            currentEvent = null; $('regList').innerHTML = '目前沒有任何活動。'; $('addSection').hidden = true; $('eventStats').hidden = true;
+            $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true; $('broadcastSection').hidden = true;
+        }
     }
 
     function openEdit(reg) {
@@ -141,12 +188,47 @@
     $('eventSelect').addEventListener('change', e => busy(null, () => loadEvent(Number(e.target.value) || null)));
     $('search').addEventListener('input', renderList);
 
+    $('sendReminders').addEventListener('click', e => busy(e.target, async () => {
+        const result = await api('/api/campus/events/send-reminders', {method: 'POST'});
+        message(result.message);
+    }));
+
+    $('qrCheckinForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const input = $('checkinCodeInput');
+        const code = input.value.trim();
+        if (!code) return;
+        busy(e.target.querySelector('button'), async () => {
+            const result = await api(`/api/campus/events/${currentEvent}/checkin`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({checkin_code: code}),
+            });
+            message(result.message);
+            input.value = '';
+            await loadEvent(currentEvent);
+            input.focus();
+        });
+    });
+
     $('addForm').addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
         busy(form.querySelector('button'), async () => {
             const result = await api(`/api/campus/events/${currentEvent}/registrations`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formToFields(form)),
+            });
+            form.reset();
+            message(result.message);
+            await loadEvent(currentEvent);
+        });
+    });
+
+    $('broadcastForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const form = e.target;
+        busy(form.querySelector('button'), async () => {
+            const result = await api(`/api/campus/events/${currentEvent}/notify-custom`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subject: form.subject.value.trim(), body: form.body.value.trim()}),
             });
             form.reset();
             message(result.message);
@@ -168,6 +250,22 @@
         });
     });
 
+    $('regList').addEventListener('submit', e => {
+        const form = e.target.closest('.custom-notify-form');
+        if (!form) return;
+        e.preventDefault();
+        const regId = Number(form.dataset.reg);
+        busy(form.querySelector('button[type=submit]'), async () => {
+            const result = await api(`/api/campus/events/${currentEvent}/notify-custom`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subject: form.subject.value.trim(), body: form.body.value.trim(), reg_id: regId}),
+            });
+            message(result.message);
+            customNotifyId = null;
+            await loadEvent(currentEvent);
+        });
+    });
+
     $('regList').addEventListener('click', e => {
         const button = e.target.closest('[data-act]');
         if (!button) return;
@@ -184,6 +282,16 @@
         }
         if (act === 'confirm-no') {
             confirmState = null;
+            renderList();
+            return;
+        }
+        if (act === 'custom-notify') {
+            customNotifyId = regId;
+            renderList();
+            return;
+        }
+        if (act === 'custom-notify-cancel') {
+            customNotifyId = null;
             renderList();
             return;
         }

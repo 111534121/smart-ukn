@@ -19,7 +19,10 @@
       <h1>報名者管理</h1>
       <p class="muted">新增、修改、刪除報名者，重寄通知信，掌握候補與出席狀況。</p>
     </div>
-    <button id="refresh" type="button">重新整理</button>
+    <div class="actions">
+      <button id="sendReminders" type="button">寄送明天活動提醒信</button>
+      <button id="refresh" type="button">重新整理</button>
+    </div>
   </section>
   <p id="message" role="status" aria-live="polite"></p>
 
@@ -30,6 +33,11 @@
       <label>搜尋報名者<input id="search" type="search" placeholder="姓名、學號或 Email"></label>
     </div>
     <div id="eventStats" class="stats" hidden></div>
+    <form id="qrCheckinForm" class="qr-checkin" hidden>
+      <label>QR Code／簽到碼簽到<input id="checkinCodeInput" type="text" placeholder="用掃碼裝置掃學生的入場 QR Code，或貼上簽到碼" autocomplete="off"></label>
+      <button class="primary" type="submit">簽到</button>
+    </form>
+    <div id="feedbackSummary" hidden></div>
   </section>
 
   <section id="addSection" class="card" hidden>
@@ -45,6 +53,18 @@
         <label>備註（選填）<input name="note" maxlength="200"></label>
       </div>
       <button class="primary" type="submit">新增報名者</button>
+    </form>
+  </section>
+
+  <section id="broadcastSection" class="card" hidden>
+    <h2>自訂通知信</h2>
+    <p class="muted">自己打標題跟內容，寄給這場活動目前所有有效的報名者（已報名＋候補中，不含已取消）；要只寄給某一人可以用報名名單裡的「自訂通知」。</p>
+    <form id="broadcastForm">
+      <div class="formgrid">
+        <label>標題<input name="subject" maxlength="100" required placeholder="例如：活動地點異動"></label>
+        <label>內容<textarea name="body" maxlength="2000" required rows="3" placeholder="例如：因場地關係，活動改到活動中心二樓舉行，請留意。"></textarea></label>
+      </div>
+      <button class="primary" type="submit">寄給全部有效報名者</button>
     </form>
   </section>
 

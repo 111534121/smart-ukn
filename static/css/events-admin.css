@@ -8,9 +8,26 @@
 .badge.status-候補中{background:#fff0d7;color:#925812}
 .badge.status-已取消{background:#f1f1f1;color:#777}
 .badge.checked-in{background:#dbeefe;color:#1c5a8a;margin-left:6px}
+.badge.notify-fail{background:#fff0eb;color:#b0391c;margin-left:6px}
 #eventStats .stat b{font-size:24px}
 .confirm-box{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff0eb;border:1px solid #f3c7b8;border-radius:8px;padding:10px 12px;font-size:13px;color:#8a3b1f}
 .confirm-box .actions{display:flex;gap:8px}
 .confirm-box button{padding:6px 11px;font-size:12.5px}
 .confirm-box button.danger{background:#b0391c;border-color:#b0391c;color:#fff}
 .confirm-box button.danger:hover{background:#8a2c13}
+.qr-checkin{display:flex;align-items:end;gap:10px;margin-top:16px;flex-wrap:wrap}
+.qr-checkin label{flex:1;min-width:220px}
+#feedbackSummary{margin-top:16px;padding-top:16px;border-top:1px solid #dce5dc}
+#feedbackSummary h3{margin:0 0 10px}
+#feedbackSummary .avg{font-size:13px;color:#657a6b;margin-bottom:10px}
+#feedbackSummary .avg b{color:#203b30;font-size:16px}
+.feedback-item{padding:10px 0;border-bottom:1px solid #eef2ee;font-size:13px}
+.feedback-item:last-child{border-bottom:none}
+.feedback-item strong{color:#203b30}
+.feedback-item .stars{color:#bb8e38}
+.reg-row small.feedback{color:#245b46}
+.qr-link{font-size:12px;margin-left:8px}
+.custom-notify-form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:260px}
+.custom-notify-form input,.custom-notify-form textarea{font:inherit;width:100%;padding:8px;border:1px solid #c7d5ca;border-radius:6px}
+.custom-notify-form textarea{resize:vertical;min-height:60px}
+.custom-notify-form .actions{justify-content:flex-end}
