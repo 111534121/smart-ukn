@@ -582,6 +582,7 @@ def init_database():
               `dept_id` varchar(20) DEFAULT NULL,
               `content_scope` enum('all','mine') NOT NULL DEFAULT 'all' COMMENT 'mine = 只看全校公開與本科資訊',
               `pinned_features` varchar(500) DEFAULT NULL COMMENT '首頁置頂的功能代碼，逗號分隔；NULL = 用預設',
+              `tour_seen` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已經看過/跳過網站導覽，之後不會再自動跳出',
               `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
               PRIMARY KEY (`username`),
               KEY `fk_pref_dept` (`dept_id`),
@@ -925,6 +926,16 @@ def init_database():
         if cursor.fetchone()[0] == 0:
             cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `pinned_features` varchar(500) DEFAULT NULL AFTER `content_scope`")
             print("✅ user_preferences 已新增 pinned_features 欄位")
+
+        # 網站導覽「看過/跳過後不再自動跳出」一直只存在 JSON 示範模式，MySQL 連上後這個狀態從沒真的存進去，
+        # 導致每次登入都重新跳出導覽 (/api/campus/prefs 的 PUT/GET 都沒處理這欄位)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_preferences' AND COLUMN_NAME = 'tour_seen'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `tour_seen` tinyint(1) NOT NULL DEFAULT 0 AFTER `pinned_features`")
+            print("✅ user_preferences 已新增 tour_seen 欄位")
 
         # T10：個人行程改存在 academic_calendar (原本在 campus_store.json)；owner_key 有值的是個人行程
         for column, definition in (

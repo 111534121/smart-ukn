@@ -1,5 +1,7 @@
 // 網站導覽：每個帳號第一次登入時逐步介紹主要功能，可隨時跳過；之後由上方工具列的「🧭 導覽」再看一次。
 // 看過與否存在帳號 (/api/campus/prefs 的 tour_seen)，換裝置登入也不會再跳出；未登入與訪客不自動開始。
+// 另外還有「這次登入不再顯示」勾選框 (session_tour_dismiss)：只存在登入 session、不寫進帳號資料，
+// 登出後會重設，用途是共用的示範帳號不會因為有人暫時關掉導覽，就害別的同學登入同一帳號也看不到。
 // 結束 (完成或跳過) 時發出 window 事件 'ukn-tour-finished'。依賴 index.html 的 currentUser、campus-shell.js 的 api。
 
 // target 依序找第一個「看得到」的元素；都找不到就跳過這一步 (例如手機版沒有大選單、非校慶期間沒有跑馬燈)
@@ -57,6 +59,8 @@ function buildTourElements() {
         .tour-btn { border-radius: 4px; padding: .35rem .8rem; font-size: .8rem; font-weight: 600; }
         .tour-skip { color: #64748b; } .tour-skip:hover { color: #0f172a; text-decoration: underline; }
         .tour-prev { border: 1px solid #cbd5e1; } .tour-next { background: #003c9d; color: #fff; } .tour-next:hover { background: #002a6e; }
+        .tour-nomore { display: flex; align-items: center; gap: .3rem; font-size: .75rem; color: #64748b; cursor: pointer; margin-right: auto; }
+        .tour-nomore input { margin: 0; }
         @media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
     `;
     const root = document.createElement('div');
@@ -68,6 +72,7 @@ function buildTourElements() {
             <h2 id="tourTitle"></h2>
             <p id="tourText"></p>
             <div class="tour-actions">
+                <label class="tour-nomore"><input type="checkbox" class="tour-nomore-check"> 這次登入不再顯示</label>
                 <span class="tour-count"></span>
                 <button type="button" class="tour-btn tour-skip">跳過導覽</button>
                 <button type="button" class="tour-btn tour-prev">上一步</button>
@@ -79,6 +84,10 @@ function buildTourElements() {
     root.querySelector('.tour-skip').addEventListener('click', () => endSiteTour('skipped'));
     root.querySelector('.tour-prev').addEventListener('click', () => showTourStep(tourIndex - 1, -1));
     root.querySelector('.tour-next').addEventListener('click', () => showTourStep(tourIndex + 1, 1));
+    root.querySelector('.tour-nomore-check').addEventListener('change', e => {
+        // 勾選就立刻關掉，不用等按下其他按鈕；只存在這次登入 session，登出後重設 (不是永久跳過)
+        if (e.target.checked) endSiteTour('dismissed-session');
+    });
     return { root, style, dim: root.querySelector('.tour-dim'), spot: root.querySelector('.tour-spot'), card: root.querySelector('.tour-card') };
 }
 
@@ -158,7 +167,10 @@ function endSiteTour(result) {
     if (!window.siteTourActive) return;
     window.siteTourActive = false;
     if (isTourLoggedIn()) {
-        api('/api/campus/prefs', { method: 'PUT', json: { tour_seen: true } }).catch(() => { /* 存不到就下次登入再出現一次 */ });
+        // 'dismissed-session'：只關掉這次登入 (勾了「這次登入不再顯示」)，不寫永久的 tour_seen，
+        // 這樣共用的示範帳號不會因為有人暫時關掉，就害別的同學登入同一帳號也看不到導覽
+        const json = result === 'dismissed-session' ? { session_tour_dismiss: true } : { tour_seen: true };
+        api('/api/campus/prefs', { method: 'PUT', json }).catch(() => { /* 存不到就下次登入再出現一次 */ });
     }
     document.removeEventListener('keydown', onTourKey);
     window.removeEventListener('resize', positionTour);
@@ -174,7 +186,8 @@ function endSiteTour(result) {
 async function maybeStartSiteTour() {
     if (!isTourLoggedIn()) return false;
     try {
-        if ((await api('/api/campus/prefs')).data.tour_seen) return false;
+        const prefs = (await api('/api/campus/prefs')).data;
+        if (prefs.tour_seen || prefs.session_tour_dismissed) return false;
     } catch (e) {
         return false; // 查不到是否看過時不自動跳出，避免每次都出現
     }

@@ -5002,7 +5002,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5017,7 +5017,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             }
@@ -5131,7 +5131,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5146,7 +5146,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5161,7 +5161,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             }
@@ -5296,7 +5296,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5311,7 +5311,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5326,7 +5326,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5341,7 +5341,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             }
@@ -5447,7 +5447,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -5462,7 +5462,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 851
+                  "line": 852
                 }
               ]
             },
@@ -7170,7 +7170,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 613
+                  "line": 614
                 }
               ]
             }
@@ -7237,7 +7237,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 613
+                  "line": 614
                 }
               ]
             },
@@ -7248,7 +7248,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 613
+                  "line": 614
                 }
               ]
             },
@@ -7259,7 +7259,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 613
+                  "line": 614
                 }
               ]
             }
@@ -7416,7 +7416,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7498,7 +7498,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7509,7 +7509,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7628,7 +7628,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7677,7 +7677,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             }
@@ -7753,7 +7753,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7802,7 +7802,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             },
@@ -7813,7 +7813,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 594
+                  "line": 595
                 }
               ]
             }
@@ -9534,13 +9534,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/services.py",
-          "line": 78,
+          "line": 92,
           "function": "checklist_docs",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 78,
+              "line": 92,
               "function": "checklist_docs"
             }
           ],
@@ -11004,7 +11004,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 732
+                  "line": 733
                 }
               ]
             },
@@ -11015,7 +11015,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 732
+                  "line": 733
                 }
               ]
             },
@@ -11318,23 +11318,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/services.py",
-          "line": 171,
+          "line": 185,
           "function": "dorm_beds",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 171,
+              "line": 185,
               "function": "dorm_beds"
             },
             {
               "file": "campus/services.py",
-              "line": 155,
+              "line": 169,
               "function": "dorm_bed_catalog"
             },
             {
               "file": "campus/services.py",
-              "line": 138,
+              "line": 152,
               "function": "dorm_apps"
             }
           ],
@@ -11346,18 +11346,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/services.py",
-          "line": 177,
+          "line": 191,
           "function": "dorm_mine",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 177,
+              "line": 191,
               "function": "dorm_mine"
             },
             {
               "file": "campus/services.py",
-              "line": 138,
+              "line": 152,
               "function": "dorm_apps"
             }
           ],
@@ -11369,7 +11369,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/services.py",
-          "line": 187,
+          "line": 201,
           "function": "dorm_apply",
           "tables": [
             {
@@ -11414,12 +11414,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/services.py",
-              "line": 187,
+              "line": 201,
               "function": "dorm_apply"
             },
             {
               "file": "campus/services.py",
-              "line": 138,
+              "line": 152,
               "function": "dorm_apps"
             },
             {
@@ -11446,18 +11446,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/services.py",
-          "line": 223,
+          "line": 237,
           "function": "dorm_all",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 223,
+              "line": 237,
               "function": "dorm_all"
             },
             {
               "file": "campus/services.py",
-              "line": 138,
+              "line": 152,
               "function": "dorm_apps"
             }
           ],
@@ -11469,7 +11469,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/services.py",
-          "line": 230,
+          "line": 244,
           "function": "dorm_update",
           "tables": [
             {
@@ -11514,12 +11514,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/services.py",
-              "line": 230,
+              "line": 244,
               "function": "dorm_update"
             },
             {
               "file": "campus/services.py",
-              "line": 138,
+              "line": 152,
               "function": "dorm_apps"
             },
             {
@@ -12976,7 +12976,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -12991,7 +12991,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13006,7 +13006,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13021,7 +13021,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13036,7 +13036,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13066,7 +13066,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -13081,7 +13081,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13096,7 +13096,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13111,7 +13111,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             }
@@ -13223,7 +13223,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13238,7 +13238,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13253,7 +13253,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13268,7 +13268,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13283,7 +13283,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13298,7 +13298,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13328,7 +13328,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -13343,7 +13343,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -13429,7 +13429,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13444,7 +13444,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13459,7 +13459,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13474,7 +13474,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13489,7 +13489,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13504,7 +13504,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13534,7 +13534,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -13549,7 +13549,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -13630,7 +13630,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13645,7 +13645,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13660,7 +13660,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13675,7 +13675,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13690,7 +13690,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13720,7 +13720,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -13735,7 +13735,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -13806,7 +13806,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13821,7 +13821,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13836,7 +13836,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -13851,7 +13851,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13866,7 +13866,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13881,7 +13881,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -13896,7 +13896,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -13926,7 +13926,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -13941,7 +13941,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -14022,7 +14022,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -14037,7 +14037,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -14052,7 +14052,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -14067,7 +14067,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -14082,7 +14082,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -14097,7 +14097,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -14127,7 +14127,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -14142,7 +14142,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -14195,7 +14195,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -14210,7 +14210,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -14302,7 +14302,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14313,7 +14313,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             }
@@ -14375,7 +14375,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14386,7 +14386,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14435,7 +14435,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14446,7 +14446,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             }
@@ -14576,7 +14576,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14587,7 +14587,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14598,7 +14598,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             }
@@ -14680,7 +14680,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             },
@@ -14691,7 +14691,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 884
+                  "line": 885
                 }
               ]
             }
@@ -15220,7 +15220,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15231,7 +15231,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             }
@@ -15286,7 +15286,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15297,7 +15297,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             }
@@ -15367,7 +15367,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             },
@@ -15378,7 +15378,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             }
@@ -15443,7 +15443,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15547,7 +15547,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15558,7 +15558,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15569,7 +15569,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 699
+                  "line": 700
                 }
               ]
             },
@@ -15688,7 +15688,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             },
@@ -15699,7 +15699,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             },
@@ -15748,7 +15748,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 715
+                  "line": 716
                 }
               ]
             }
@@ -15951,23 +15951,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/services.py",
-          "line": 333,
+          "line": 347,
           "function": "affairs_mine",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 333,
+              "line": 347,
               "function": "affairs_mine"
             },
             {
               "file": "campus/services.py",
-              "line": 322,
+              "line": 336,
               "function": "project_status"
             },
             {
               "file": "campus/services.py",
-              "line": 286,
+              "line": 300,
               "function": "affairs_submissions"
             }
           ],
@@ -15981,23 +15981,23 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/services.py",
-          "line": 342,
+          "line": 356,
           "function": "affairs_check",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 342,
+              "line": 356,
               "function": "affairs_check"
             },
             {
               "file": "campus/services.py",
-              "line": 290,
+              "line": 304,
               "function": "check_form"
             },
             {
               "file": "campus/services.py",
-              "line": 286,
+              "line": 300,
               "function": "affairs_submissions"
             }
           ],
@@ -16011,13 +16011,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/services.py",
-          "line": 355,
+          "line": 369,
           "function": "affairs_submit",
           "tables": [],
           "files": [
             {
               "file": "campus/services.py",
-              "line": 355,
+              "line": 369,
               "function": "affairs_submit"
             },
             {
@@ -16032,12 +16032,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/services.py",
-              "line": 286,
+              "line": 300,
               "function": "affairs_submissions"
             },
             {
               "file": "campus/services.py",
-              "line": 290,
+              "line": 304,
               "function": "check_form"
             }
           ],
@@ -16051,7 +16051,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/services.py",
-          "line": 441,
+          "line": 455,
           "function": "scholarships",
           "tables": [
             {
@@ -16073,12 +16073,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/services.py",
-              "line": 441,
+              "line": 455,
               "function": "scholarships"
             },
             {
               "file": "campus/services.py",
-              "line": 421,
+              "line": 435,
               "function": "auto_answers"
             },
             {
@@ -16417,7 +16417,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16432,7 +16432,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -16447,7 +16447,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16462,7 +16462,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16477,7 +16477,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -16507,7 +16507,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -16522,7 +16522,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -16656,7 +16656,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16671,7 +16671,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16686,7 +16686,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -16701,7 +16701,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16716,7 +16716,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16731,7 +16731,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -16761,7 +16761,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -16776,7 +16776,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -16910,7 +16910,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16925,7 +16925,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16940,7 +16940,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -16955,7 +16955,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16970,7 +16970,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -16985,7 +16985,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17015,7 +17015,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17030,7 +17030,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -17131,7 +17131,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17146,7 +17146,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17161,7 +17161,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17176,7 +17176,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17191,7 +17191,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17206,7 +17206,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17236,7 +17236,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17251,7 +17251,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -17342,7 +17342,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17357,7 +17357,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17372,7 +17372,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17387,7 +17387,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17402,7 +17402,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17417,7 +17417,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17447,7 +17447,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17462,7 +17462,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             }
@@ -17559,7 +17559,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17574,7 +17574,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17589,7 +17589,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17604,7 +17604,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17619,7 +17619,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17649,7 +17649,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17664,7 +17664,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -17838,7 +17838,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17853,7 +17853,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -17868,7 +17868,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17883,7 +17883,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17898,7 +17898,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -17928,7 +17928,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -17943,7 +17943,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -17984,7 +17984,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -17999,7 +17999,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             }
@@ -18138,7 +18138,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 814
+                  "line": 815
                 }
               ]
             },
@@ -18153,7 +18153,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -18168,7 +18168,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -18183,7 +18183,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -18213,7 +18213,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -18228,7 +18228,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -18239,7 +18239,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 814
+                  "line": 815
                 }
               ]
             }
@@ -18316,7 +18316,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 814
+                  "line": 815
                 }
               ]
             },
@@ -18331,7 +18331,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -18346,7 +18346,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 762
+                  "line": 763
                 }
               ]
             },
@@ -18361,7 +18361,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 783
+                  "line": 784
                 }
               ]
             },
@@ -18391,7 +18391,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 772
+                  "line": 773
                 }
               ]
             },
@@ -18406,7 +18406,7 @@ window.FEATURE_GUIDE = {
                 },
                 {
                   "file": "init_db.py",
-                  "line": 803
+                  "line": 804
                 }
               ]
             },
@@ -18417,7 +18417,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 814
+                  "line": 815
                 }
               ]
             }
@@ -18572,7 +18572,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "user_preferences",
               "file": "campus/services.py",
-              "line": 51,
+              "line": 67,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -18583,7 +18583,18 @@ window.FEATURE_GUIDE = {
             {
               "name": "user_preferences",
               "file": "campus/services.py",
-              "line": 54,
+              "line": 60,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 580
+                }
+              ]
+            },
+            {
+              "name": "user_preferences",
+              "file": "campus/services.py",
+              "line": 64,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -18637,8 +18648,8 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1529,
-              "function": "fetch_db_rows"
+              "line": 1545,
+              "function": "db_execute"
             },
             {
               "file": "app.py",
@@ -18647,8 +18658,8 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1545,
-              "function": "db_execute"
+              "line": 1529,
+              "function": "fetch_db_rows"
             },
             {
               "file": "campus/services.py",
@@ -18680,11 +18691,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/tour.js",
-          "line": 161
+          "line": 173
         },
         {
           "file": "static/js/tour.js",
-          "line": 177
+          "line": 189
         }
       ]
     },
@@ -20438,7 +20449,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             }
@@ -20493,7 +20504,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -20504,7 +20515,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -20515,7 +20526,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -20640,7 +20651,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -20689,7 +20700,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -20700,7 +20711,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -20711,7 +20722,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -21045,7 +21056,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             }
@@ -21105,7 +21116,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -21116,7 +21127,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -21127,7 +21138,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -21280,7 +21291,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -21329,7 +21340,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             }
@@ -21409,7 +21420,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             }
@@ -21474,7 +21485,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -21485,7 +21496,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 631
+                  "line": 632
                 }
               ]
             },
@@ -22663,7 +22674,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -22674,7 +22685,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -22685,7 +22696,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             }
@@ -22844,7 +22855,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -22855,7 +22866,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -22866,7 +22877,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             }
@@ -22966,7 +22977,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -22977,7 +22988,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -22988,7 +22999,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -22999,7 +23010,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -23152,7 +23163,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -23163,7 +23174,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -23174,7 +23185,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -23185,7 +23196,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -23196,7 +23207,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -23349,7 +23360,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -23360,7 +23371,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 668
+                  "line": 669
                 }
               ]
             },
@@ -23371,7 +23382,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 652
+                  "line": 653
                 }
               ]
             },
@@ -23382,7 +23393,7 @@ window.FEATURE_GUIDE = {
               "schema": [
                 {
                   "file": "init_db.py",
-                  "line": 682
+                  "line": 683
                 }
               ]
             },
@@ -23685,7 +23696,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 762
+        "line": 763
       }
     ],
     "class_group_members": [
@@ -23695,7 +23706,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 772
+        "line": 773
       }
     ],
     "class_notices": [
@@ -23705,7 +23716,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 783
+        "line": 784
       }
     ],
     "class_notice_recipients": [
@@ -23715,7 +23726,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 803
+        "line": 804
       }
     ],
     "counseling_records": [
@@ -23725,7 +23736,7 @@ window.FEATURE_GUIDE = {
       },
       {
         "file": "init_db.py",
-        "line": 851
+        "line": 852
       }
     ],
     "dorm_applications": [
@@ -23839,67 +23850,67 @@ window.FEATURE_GUIDE = {
     "faculty_profiles": [
       {
         "file": "init_db.py",
-        "line": 594
+        "line": 595
       }
     ],
     "self_reviews": [
       {
         "file": "init_db.py",
-        "line": 613
+        "line": 614
       }
     ],
     "online_applications": [
       {
         "file": "init_db.py",
-        "line": 631
+        "line": 632
       }
     ],
     "conduct_records": [
       {
         "file": "init_db.py",
-        "line": 652
+        "line": 653
       }
     ],
     "conduct_evaluations": [
       {
         "file": "init_db.py",
-        "line": 668
+        "line": 669
       }
     ],
     "conduct_settings": [
       {
         "file": "init_db.py",
-        "line": 682
+        "line": 683
       }
     ],
     "anniversary_events": [
       {
         "file": "init_db.py",
-        "line": 699
+        "line": 700
       }
     ],
     "anniversary_wishes": [
       {
         "file": "init_db.py",
-        "line": 715
+        "line": 716
       }
     ],
     "notification_log": [
       {
         "file": "init_db.py",
-        "line": 732
+        "line": 733
       }
     ],
     "advisor_messages": [
       {
         "file": "init_db.py",
-        "line": 814
+        "line": 815
       }
     ],
     "student_records": [
       {
         "file": "init_db.py",
-        "line": 884
+        "line": 885
       }
     ]
   }

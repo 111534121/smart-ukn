@@ -4,7 +4,7 @@
 from datetime import date, datetime
 from functools import wraps
 
-from flask import Blueprint, request
+from flask import Blueprint, request, session
 
 from . import dorm_store
 from .common import deps, error, ok, require, store, next_id, now_str, current_user, user_key, STAFF_ROLES
@@ -45,15 +45,30 @@ def _prefs_db():
 def prefs():
     u = current_user()
     default = STAFF_DEFAULT_PINNED if u["role"] in STAFF_ROLES else DEFAULT_PINNED
+    data = (request.get_json(silent=True) or {}) if request.method == "PUT" else {}
+    if "session_tour_dismiss" in data:
+        # 只存在登入 session，不寫資料庫：共用示範帳號有人暫時關掉導覽，不會害別人也再也看不到，
+        # 登出 (session.clear()) 後這個設定就會消失，跟真正「看過/跳過」(tour_seen，永久) 是分開的兩件事
+        session["tour_dismissed"] = bool(data["session_tour_dismiss"])
+    session_dismissed = bool(session.get("tour_dismissed"))
+
     if _prefs_db():
         if request.method == "PUT":
-            pinned = [str(p)[:40] for p in (request.get_json(silent=True) or {}).get("pinned", [])][:12]
-            deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
-                            "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
-                            (u["username"], ",".join(pinned)))
-        rows = deps.fetch_db_rows("SELECT pinned_features FROM user_preferences WHERE username = %s", (u["username"],)) or []
+            # 置頂與網站導覽分開存不會互相蓋掉：只更新有送來的欄位
+            if "pinned" in data:
+                pinned = [str(p)[:40] for p in data.get("pinned", [])][:12]
+                deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
+                                "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
+                                (u["username"], ",".join(pinned)))
+            if "tour_seen" in data:
+                deps.db_execute("INSERT INTO user_preferences (username, tour_seen) VALUES (%s, %s) "
+                                "ON DUPLICATE KEY UPDATE tour_seen = VALUES(tour_seen)",
+                                (u["username"], 1 if data["tour_seen"] else 0))
+        rows = deps.fetch_db_rows("SELECT pinned_features, tour_seen FROM user_preferences WHERE username = %s", (u["username"],)) or []
         saved = rows[0]["pinned_features"] if rows else None
-        return ok(data={"pinned": saved.split(",") if saved else ([] if saved == "" else list(default))})
+        tour_seen = bool(rows[0]["tour_seen"]) if rows else False
+        return ok(data={"pinned": saved.split(",") if saved else ([] if saved == "" else list(default)),
+                        "tour_seen": tour_seen, "session_tour_dismissed": session_dismissed})
     key = user_key()
     with store.lock:
         all_prefs = store.section("prefs", dict)
@@ -61,14 +76,13 @@ def prefs():
         mine = all_prefs.setdefault(key, {"pinned": list(default)})
         if request.method == "PUT":
             # 只更新有送來的欄位，置頂與網站導覽分開存不會互相蓋掉
-            data = request.get_json(silent=True) or {}
             if "pinned" in data:
                 mine["pinned"] = [str(p)[:40] for p in data["pinned"] or []][:12]
             if "tour_seen" in data:
                 mine["tour_seen"] = bool(data["tour_seen"])
             store.save()
     # tour_seen：這個帳號是否看過 (或跳過) 網站導覽；新帳號第一次登入時為 False，前端會自動開始導覽
-    return ok(data={**mine, "tour_seen": bool(mine.get("tour_seen"))})
+    return ok(data={**mine, "tour_seen": bool(mine.get("tour_seen")), "session_tour_dismissed": session_dismissed})
 
 
 # ---------- 申辦資料自評表 (準備好的文件打勾) ----------
