@@ -3,6 +3,7 @@
     const $ = id => document.getElementById(id);
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     let user, allEvents = [], currentEvent = null, regs = [], editingId = null;
+    let confirmState = null; // {regId, act: 'cancel'|'delete'}
 
     async function api(url, opts = {}) {
         const response = await fetch(url, opts);
@@ -58,19 +59,32 @@
                     <small>${esc(r.email)}${r.phone ? ' · ' + esc(r.phone) : ''} · ${esc(r.age)} 歲${r.note ? ' · ' + esc(r.note) : ''}</small>
                     <small>報名時間：${esc(r.created_at)}${r.cancelled_at ? ' · 取消時間：' + esc(r.cancelled_at) : ''}</small>
                 </div>
-                <div class="actions">
+                ${confirmState && confirmState.regId === r.id ? confirmHtml(r, confirmState.act) : `<div class="actions">
                     ${r.status === '已報名' && !r.checked_in ? `<button type="button" data-act="checkin">簽到</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="notify">重寄通知</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="edit">編輯</button>` : ''}
                     ${r.status !== '已取消' ? `<button type="button" data-act="cancel">取消報名</button>` : ''}
                     <button type="button" data-act="delete">刪除</button>
-                </div>
+                </div>`}
             </div>`).join('');
+    }
+
+    function confirmHtml(r, act) {
+        const isDelete = act === 'delete';
+        const question = isDelete ? `確定要刪除 ${esc(r.full_name)} 的報名紀錄嗎？此動作無法復原。` : `確定要取消 ${esc(r.full_name)} 的報名嗎？`;
+        return `<div class="confirm-box">
+            <span>${question}</span>
+            <div class="actions">
+                <button type="button" data-act="confirm-no">再想想</button>
+                <button type="button" data-act="confirm-yes" class="danger">${isDelete ? '確定刪除' : '確定取消'}</button>
+            </div>
+        </div>`;
     }
 
     async function loadEvent(id) {
         currentEvent = id;
         closeEdit();
+        confirmState = null;
         if (!id) { $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true; return; }
         const result = await api(`/api/campus/events/${id}/registrations`);
         regs = result.data;
@@ -161,6 +175,31 @@
         const regId = Number(row.dataset.reg);
         const reg = regs.find(r => r.id === regId);
         const act = button.dataset.act;
+
+        // 取消／刪除先在畫面內顯示確認，不跳瀏覽器原生 confirm()
+        if (act === 'cancel' || act === 'delete') {
+            confirmState = {regId, act};
+            renderList();
+            return;
+        }
+        if (act === 'confirm-no') {
+            confirmState = null;
+            renderList();
+            return;
+        }
+        if (act === 'confirm-yes') {
+            const pending = confirmState;
+            confirmState = null;
+            busy(button, async () => {
+                const result = pending.act === 'delete'
+                    ? await api(`/api/campus/events/${currentEvent}/registrations/${pending.regId}`, {method: 'DELETE'})
+                    : await api(`/api/campus/events/${currentEvent}/registrations/${pending.regId}/cancel`, {method: 'POST'});
+                message(result.message);
+                await loadEvent(currentEvent);
+            });
+            return;
+        }
+
         busy(button, async () => {
             if (act === 'checkin') {
                 const result = await api(`/api/campus/events/${currentEvent}/checkin`, {
@@ -174,14 +213,6 @@
             } else if (act === 'edit') {
                 openEdit(reg);
                 return;
-            } else if (act === 'cancel') {
-                if (!confirm(`確定要取消 ${reg.full_name} 的報名嗎？`)) return;
-                const result = await api(`/api/campus/events/${currentEvent}/registrations/${regId}/cancel`, {method: 'POST'});
-                message(result.message);
-            } else if (act === 'delete') {
-                if (!confirm(`確定要刪除 ${reg.full_name} 的報名紀錄嗎？此動作無法復原。`)) return;
-                const result = await api(`/api/campus/events/${currentEvent}/registrations/${regId}`, {method: 'DELETE'});
-                message(result.message);
             }
             await loadEvent(currentEvent);
         });

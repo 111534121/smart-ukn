@@ -9,3 +9,8 @@
 .badge.status-已取消{background:#f1f1f1;color:#777}
 .badge.checked-in{background:#dbeefe;color:#1c5a8a;margin-left:6px}
 #eventStats .stat b{font-size:24px}
+.confirm-box{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff0eb;border:1px solid #f3c7b8;border-radius:8px;padding:10px 12px;font-size:13px;color:#8a3b1f}
+.confirm-box .actions{display:flex;gap:8px}
+.confirm-box button{padding:6px 11px;font-size:12.5px}
+.confirm-box button.danger{background:#b0391c;border-color:#b0391c;color:#fff}
+.confirm-box button.danger:hover{background:#8a2c13}

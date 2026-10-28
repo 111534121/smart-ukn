@@ -156,10 +156,18 @@ async function submitDorm(event) {
     catch (e) { toast(e.message, 'error'); }
 }
 
+let dormApps = [];
+let dormStages = [];
+let dormOpenId = null;
+let dormOpenKind = null; // 'detail' | 'advance' | 'reject'
+const DORM_REJECT_REASONS = ['資格不符合申請條件', '緊急聯絡人資料不齊全', '本學期名額已滿', '文件需要補件'];
+
 async function loadDormAdmin() {
     const body = document.getElementById('dormBody');
     try {
         const r = await api('/api/campus/dorm/applications');
+        dormApps = r.data; dormStages = r.stages;
+        dormOpenId = null; dormOpenKind = null; dormSelectedBed = '';
         const canEdit = currentUser.role === '管理員' || (currentUser.role === '教職員' && currentUser.can_manage_dorm);
         body.innerHTML = r.data.length ? `<div class="overflow-x-auto"><table class="w-full text-sm text-left">
             <thead><tr class="text-xs text-slate-500 bg-slate-50"><th class="p-2">學生</th><th class="p-2">學期 / 房型</th><th class="p-2">通勤</th><th class="p-2">目前進度</th><th class="p-2"></th></tr></thead>
@@ -167,19 +175,109 @@ async function loadDormAdmin() {
                 <td class="p-2">${esc(a.student_name)}<div class="text-[11px] text-slate-500">${esc(a.student_id)}</div></td>
                 <td class="p-2">${esc(a.semester)} · ${esc(a.room_type)}</td><td class="p-2">${a.commute_minutes} 分</td>
                 <td class="p-2">${statusBadge(a.status === '進行中' ? r.stages[a.stage] : a.status, a.status === '進行中' ? 'blue' : a.status === '已完成' ? 'green' : 'red')}</td>
-                <td class="p-2 text-right whitespace-nowrap">${canEdit && a.status === '進行中' ? `<button type="button" onclick="advanceDorm(${a.id})" class="text-xs bg-ukn-800 text-white rounded px-2 py-1">推進到下一步</button>
-                    <button type="button" onclick="advanceDorm(${a.id}, true)" class="text-xs border border-rose-300 text-rose-700 rounded px-2 py-1">不通過</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+                <td class="p-2 text-right whitespace-nowrap space-x-1">
+                    <button type="button" onclick="toggleDormExtra(${a.id}, 'detail')" class="text-xs border border-slate-300 text-slate-700 rounded px-2 py-1">詳情</button>
+                    ${canEdit && a.status === '進行中' ? `<button type="button" onclick="toggleDormExtra(${a.id}, 'advance')" class="text-xs bg-ukn-800 text-white rounded px-2 py-1">推進到下一步</button>
+                    <button type="button" onclick="toggleDormExtra(${a.id}, 'reject')" class="text-xs border border-rose-300 text-rose-700 rounded px-2 py-1">不通過</button>` : ''}
+                </td></tr>
+                <tr id="dormExtra-${a.id}"></tr>`).join('')}</tbody></table></div>`
             : '<div class="text-sm text-slate-500">目前沒有宿舍申請。</div>';
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-async function advanceDorm(id, reject = false) {
-    const note = prompt(reject ? '不通過原因：' : '備註（選填，分配床位時可填床號，例如：床號 S305-2）：') ?? null;
-    if (note === null) return;
-    if (reject && !note.trim()) { toast('不通過請填寫原因', 'error'); return; }
-    const bed = /床號\s*(\S+)/.exec(note)?.[1] || '';
-    try { await api(`/api/campus/dorm/applications/${id}`, { json: { action: reject ? 'reject' : 'advance', note, bed } }); loadDormAdmin(); }
-    catch (e) { toast(e.message, 'error'); }
+let dormSelectedBed = '';
+let dormBedCatalog = null; // 第一次點「推進」才抓，之後快取
+
+// 詳情／推進／不通過 共用一個展開列，點同一顆按鈕關閉、點別顆換內容，同時間只開一個
+async function toggleDormExtra(id, kind) {
+    const wasOpenSame = dormOpenId === id && dormOpenKind === kind;
+    document.querySelectorAll('[id^="dormExtra-"]').forEach(tr => { tr.innerHTML = ''; });
+    dormOpenId = null; dormOpenKind = null;
+    if (wasOpenSame) return;
+    const a = dormApps.find(x => x.id === id);
+    const tr = document.getElementById(`dormExtra-${id}`);
+    if (!a || !tr) return;
+    dormOpenId = id; dormOpenKind = kind;
+    if (kind === 'detail') {
+        tr.innerHTML = `<td colspan="5" class="bg-slate-50 p-3 text-xs text-slate-600 space-y-1.5">
+            <div><strong>緊急聯絡電話：</strong>${esc(a.emergency_phone || '未填寫')}</div>
+            <div><strong>特殊需求：</strong>${esc(a.special_needs || '無')}</div>
+            ${a.bed ? `<div><strong>已分配床位：</strong>${esc(a.bed)}</div>` : ''}
+            <div><strong>處理紀錄：</strong>
+                <ul class="mt-1 space-y-0.5">${(a.history || []).map(h => `<li>${esc((h.at || '').slice(0, 16))} · ${esc(h.status === '未通過' ? h.status : (dormStages[h.stage] || ''))}${h.reviewed_by ? ' · ' + esc(h.reviewed_by) : ''}${h.note ? ' · ' + esc(h.note) : ''}</li>`).join('') || '<li>尚無紀錄</li>'}</ul>
+            </div></td>`;
+        return;
+    }
+    const reject = kind === 'reject';
+    if (reject) {
+        tr.innerHTML = `<td colspan="5" class="bg-rose-50 p-3">
+            <form onsubmit="submitDormAction(event, ${id}, true)" class="space-y-2 text-sm">
+                <div class="flex flex-wrap gap-1.5">${DORM_REJECT_REASONS.map(r => `<button type="button" onclick="this.closest('form').note.value='${esc(r)}'" class="text-xs border border-rose-300 bg-white text-rose-700 rounded-full px-2.5 py-1 hover:bg-rose-100">點選帶入：${esc(r)}</button>`).join('')}</div>
+                <textarea name="note" required rows="2" placeholder="不通過原因（可點上面快速帶入，或自己輸入）" class="w-full border border-rose-300 rounded px-2 py-1.5"></textarea>
+                <div class="text-right space-x-2">
+                    <button type="button" onclick="toggleDormExtra(${id}, 'reject')" class="text-xs text-slate-500">取消</button>
+                    <button class="text-xs bg-rose-700 text-white rounded px-3 py-1.5">確定不通過</button>
+                </div>
+            </form></td>`;
+        return;
+    }
+    dormSelectedBed = a.bed || '';
+    tr.innerHTML = `<td colspan="5" class="bg-ukn-50 p-3 text-sm">讀取床位總表…</td>`;
+    if (!dormBedCatalog) {
+        try { dormBedCatalog = (await api('/api/campus/dorm/beds')).data; }
+        catch (e) { tr.innerHTML = `<td colspan="5" class="bg-ukn-50 p-3 text-xs text-rose-700">${esc(e.message)}</td>`; return; }
+    }
+    if (dormOpenId !== id || dormOpenKind !== 'advance') return; // 讀取時使用者點了別的
+    renderDormAdvanceForm(id, a);
+}
+
+function renderDormAdvanceForm(id, a) {
+    const tr = document.getElementById(`dormExtra-${id}`);
+    if (!tr) return;
+    const byRoom = {};
+    dormBedCatalog.forEach(b => (byRoom[b.room] = byRoom[b.room] || []).push(b));
+    const bedGrid = Object.entries(byRoom).map(([room, beds]) => `
+        <div class="mb-2">
+            <div class="text-[11px] text-slate-500 mb-1">${esc(room)}（${esc(beds[0].room_type)}）${beds[0].room_type === a.room_type ? ' <span class="text-ukn-700 font-semibold">· 符合申請房型</span>' : ''}</div>
+            <div class="flex flex-wrap gap-1.5">${beds.map(b => {
+                const selected = b.bed === dormSelectedBed;
+                const disabled = b.occupied && !selected;
+                return `<button type="button" ${disabled ? 'disabled' : ''} onclick="selectDormBed(${id}, '${b.bed}')"
+                    title="${b.occupied ? '已住：' + esc(b.occupied_by?.student_name || '') : '可分配'}"
+                    class="text-xs rounded px-2.5 py-1.5 border ${selected ? 'bg-ukn-800 text-white border-ukn-800' : disabled ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-300 hover:border-ukn-500 hover:text-ukn-800'}">${esc(b.bed)}</button>`;
+            }).join('')}</div>
+        </div>`).join('');
+    tr.innerHTML = `<td colspan="5" class="bg-ukn-50 p-3">
+        <form onsubmit="submitDormAction(event, ${id}, false)" class="space-y-2 text-sm">
+            <div class="text-xs text-slate-600 mb-1">床位號碼（選填，分配床位時點選即可，不用自己打字）</div>
+            ${bedGrid}
+            <div class="text-xs text-slate-600">已選床位：<span class="font-semibold text-ukn-800">${dormSelectedBed ? esc(dormSelectedBed) : '尚未選擇'}</span>
+                ${dormSelectedBed ? `<button type="button" onclick="selectDormBed(${id}, '')" class="text-slate-400 hover:text-slate-600 ml-1">清除</button>` : ''}</div>
+            <label class="block"><span class="text-xs text-slate-600">備註（選填）</span>
+                <textarea name="note" rows="2" class="w-full border border-ukn-200 rounded px-2 py-1.5 mt-0.5"></textarea></label>
+            <div class="text-right space-x-2">
+                <button type="button" onclick="toggleDormExtra(${id}, 'advance')" class="text-xs text-slate-500">取消</button>
+                <button class="text-xs bg-ukn-800 text-white rounded px-3 py-1.5">確定推進</button>
+            </div>
+        </form></td>`;
+}
+
+function selectDormBed(id, bed) {
+    dormSelectedBed = bed;
+    const a = dormApps.find(x => x.id === id);
+    renderDormAdvanceForm(id, a);
+}
+
+async function submitDormAction(event, id, reject) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    const note = (f.note || '').trim();
+    if (reject && !note) { toast('不通過請填寫原因', 'error'); return; }
+    try {
+        await api(`/api/campus/dorm/applications/${id}`, { json: { action: reject ? 'reject' : 'advance', note, bed: reject ? '' : dormSelectedBed } });
+        dormBedCatalog = null; // 占用狀態變了，下次打開重新抓
+        loadDormAdmin();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 // =====================================================================
