@@ -48,6 +48,45 @@ def test_dorm_admin_only_and_student_scope(client, login):
     assert item['status'] == '未通過' and item['history'][-1]['reviewed_by'] == 'dorm_demo'
 
 
+def test_dorm_beds_catalog_marks_occupied_after_assignment(client, login):
+    """床位總表讓行政人員點選分配，不用手打床號；分配後那張床要正確標成已占用"""
+    login('student1'); aid = apply(client).get_json()['data']['id']
+
+    login('student2')
+    assert client.get('/api/campus/dorm/beds').status_code == 403  # 不是宿舍管理身分
+
+    login('dorm_demo')
+    beds = client.get('/api/campus/dorm/beds').get_json()['data']
+    assert beds and all(not b['occupied'] for b in beds)  # 一開始沒人占用
+    pick = beds[0]['bed']
+    for _ in range(2):
+        client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance'})
+    r = client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance', 'bed': pick})
+    assert r.status_code == 200 and r.get_json()['data']['bed'] == pick
+
+    beds = client.get('/api/campus/dorm/beds').get_json()['data']
+    occupied = next(b for b in beds if b['bed'] == pick)
+    assert occupied['occupied'] is True and occupied['occupied_by']['student_id'] == 'S112001'
+
+
+def test_dorm_parent_can_view_but_not_apply_or_review(client, login):
+    """家長（parent1 綁定 student1）可查看子女宿舍申請進度，但不能代送申請、不能審核，也看不到別人家的申請"""
+    login('student1'); aid = apply(client).get_json()['data']['id']
+
+    login('parent1')
+    mine = client.get('/api/campus/dorm/mine').get_json()['data']
+    assert any(a['id'] == aid for a in mine)  # 查看權限：看得到子女的申請
+
+    assert client.post('/api/campus/dorm/apply', json={
+        'semester': '115-2', 'room_type': '四人房', 'commute_minutes': 10, 'emergency_phone': '0000000000',
+    }).status_code == 403  # 不可代送申請
+    assert client.get('/api/campus/dorm/applications').status_code == 403  # 不可看全部名單
+    assert client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance'}).status_code == 403  # 不可審核
+
+    login('parent2')  # 別人家的家長
+    assert not any(a['id'] == aid for a in client.get('/api/campus/dorm/mine').get_json()['data'])
+
+
 def test_dorm_progress_complete_and_duplicate_block(client, login):
     login('student1'); aid = apply(client).get_json()['data']['id']
     assert apply(client).status_code == 409

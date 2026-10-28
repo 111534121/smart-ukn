@@ -113,14 +113,16 @@ DORM_NEXT_ACTION = {
 
 
 def can_manage_dorm(user):
+    """只有資料庫裡真的查到這個帳號、且角色不符時才否決；查無此帳號 (例如 dorm_demo 這類示範
+    帳號沒有寫進 MySQL users 表) 就相信登入當下 session 已經確認過的角色/旗標，不要連帶判定沒有權限"""
     if user.get("role") == "管理員": return True
     if user.get("role") == "住宿管理員":
         rows = deps.fetch_db_rows("SELECT role FROM users WHERE username=%s", (user.get("username"),))
-        return bool(rows and rows[0]['role'] == '住宿管理員') if rows is not None else True
+        return rows[0]["role"] == "住宿管理員" if rows else True
     if user.get("role") != "教職員": return False
     rows = deps.fetch_db_rows("SELECT role, can_manage_dorm FROM users WHERE username=%s", (user.get("username"),))
-    if rows is not None:
-        return bool(rows and rows[0].get("role") == "教職員" and rows[0].get("can_manage_dorm"))
+    if rows:
+        return bool(rows[0].get("role") == "教職員" and rows[0].get("can_manage_dorm"))
     return bool(user.get("can_manage_dorm"))
 
 
@@ -135,6 +137,39 @@ def dorm_manager_required(fn):
 
 def dorm_apps():
     return dorm_store.all_applications()
+
+
+# 宿舍床位總表 (示範資料)：分配床位時行政人員用點的，不用自己手key床號
+DORM_ROOMS = [
+    {"room": "S305", "room_type": "四人房", "beds": 4},
+    {"room": "S306", "room_type": "四人房", "beds": 4},
+    {"room": "S307", "room_type": "六人房", "beds": 6},
+    {"room": "S308", "room_type": "六人房", "beds": 6},
+    {"room": "S405", "room_type": "四人房", "beds": 4},
+    {"room": "S406", "room_type": "四人房", "beds": 4},
+    {"room": "S407", "room_type": "六人房", "beds": 6},
+    {"room": "S408", "room_type": "六人房", "beds": 6},
+]
+
+
+def dorm_bed_catalog():
+    """全部床位代碼，附上目前是不是已經被「進行中」或「已完成」的申請占用"""
+    occupied = {a["bed"]: {"student_name": a["student_name"], "student_id": a["student_id"]}
+                for a in dorm_apps() if a.get("bed") and a["status"] in ("進行中", "已完成")}
+    beds = []
+    for r in DORM_ROOMS:
+        for i in range(1, r["beds"] + 1):
+            code = f"{r['room']}-{i}"
+            beds.append({"bed": code, "room": r["room"], "room_type": r["room_type"],
+                         "occupied": code in occupied, "occupied_by": occupied.get(code)})
+    return beds
+
+
+@bp.route("/api/campus/dorm/beds", methods=["GET"])
+@require("管理員", "教職員", "住宿管理員")
+@dorm_manager_required
+def dorm_beds():
+    return ok(data=dorm_bed_catalog())
 
 
 @bp.route("/api/campus/dorm/mine", methods=["GET"])

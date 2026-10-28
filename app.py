@@ -994,7 +994,9 @@ def auth_login():
         except Exception:
             if conn: conn.close()
 
-    if not user_record and conn is None:
+    # 不管 MySQL 有沒有連上，只要上面沒找到或密碼對不起來，都回退檢查示範帳號清單
+    # (之前這裡多了 `and conn is None`，MySQL 一連上示範限定帳號如 dorm_demo 就整個登不進去)
+    if not user_record:
         for u in sorted(DEMO_USERS, key=lambda x: x["username"].lower() != username_key):
             is_login_name = u["username"].lower() == username_key or (u.get("student_id") == username.upper() and u["role"] == "學生")
             if is_login_name and check_password_hash(u["password_hash"], password):

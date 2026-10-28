@@ -131,6 +131,7 @@ GET,/api/campus/dorm/mine,/api/campus/dorm/mine,,我的宿舍申請（家長可�
 POST,/api/campus/dorm/apply,/api/campus/dorm/apply,,申請宿舍,401,403,OK,403,403,403,403,
 GET,/api/campus/dorm/applications,/api/campus/dorm/applications,,宿舍申請列表,401,403,403,403,403,403,OK,行政人員需另外授權宿舍管理
 POST,/api/campus/dorm/applications/<int:app_id>,/api/campus/dorm/applications/999999,,審核宿舍,401,403,403,403,403,403,OK,行政人員需另外授權宿舍管理
+GET,/api/campus/dorm/beds,/api/campus/dorm/beds,,宿舍床位總表,401,403,403,403,403,403,OK,行政人員需另外授權宿舍管理；分配床位時點選用
 GET,/api/campus/affairs/mine,/api/campus/affairs/mine,,我的總務申請,401,403,OK,403,403,403,403,
 POST,/api/campus/affairs/check,/api/campus/affairs/check,,報帳檢查,401,403,OK,403,403,403,403,
 POST,/api/campus/affairs/submit,/api/campus/affairs/submit,,送出總務申請,401,403,OK,403,403,403,403,
