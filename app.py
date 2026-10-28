@@ -900,6 +900,10 @@ def serve_login():
 def serve_admin():
     return app.send_static_file("admin.html")
 
+@app.route("/admin-core")
+def serve_admin_core():
+    return app.send_static_file("admin-core.html")
+
 # ==========================================
 # 4. 身分認證與 Session 管理 API (/api/auth)
 # ==========================================
@@ -4690,6 +4694,9 @@ anniversary.init_app(app, SimpleNamespace(
 # Public sharing and deployment health
 from public_portal import bp as public_portal_bp
 app.register_blueprint(public_portal_bp)
+
+from admin_core import bp as admin_core_bp
+app.register_blueprint(admin_core_bp)
 
 # ==========================================
 # 14. 伺服器主入口

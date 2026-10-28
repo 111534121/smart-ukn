@@ -40,13 +40,13 @@ def _get_current_actor():
     return full_name, role, ip
 
 def admin_required(f):
-    """管理員權限保護裝飾器；本機開發或未設定時自動允許，確保無縫使用"""
+    """所有管理資料與稽核端點只允許已登入的管理員。"""
     @wraps(f)
     def wrapper(*args, **kwargs):
-        role = session.get("role")
-        # 若已登入且角色為學生或家長，則拒絕
-        if role and role in ("學生", "家長"):
-            return jsonify({"status": "error", "message": "權限不足，僅限校務管理人員存取"}), 403
+        if not session.get("username"):
+            return jsonify({"status": "error", "message": "請先登入"}), 401
+        if session.get("role") != "管理員":
+            return jsonify({"status": "error", "message": "權限不足，僅限管理員存取"}), 403
         return f(*args, **kwargs)
     return wrapper
 
@@ -853,7 +853,7 @@ def delete_synonym(synonym_id):
 # -------------------------------------------------------------------------
 # 1. 系統安全稽核日誌 (audit_logs)
 # -------------------------------------------------------------------------
-@bp.route("/api/admin/audit-logs", methods=["GET"])
+@bp.route("/api/admin/core/audit-logs", methods=["GET"])
 @admin_required
 def list_audit_logs():
     table_filter = request.args.get("table_name")
@@ -938,7 +938,7 @@ def list_search_logs():
 # -------------------------------------------------------------------------
 # 3. 未匹配紀錄 (unmatched_queries)
 # -------------------------------------------------------------------------
-@bp.route("/api/admin/unmatched-queries", methods=["GET"])
+@bp.route("/api/admin/core/unmatched-queries", methods=["GET"])
 @admin_required
 def list_unmatched_queries():
     status = request.args.get("status")
@@ -951,7 +951,7 @@ def list_unmatched_queries():
     queries = admin_db.query_db(sql, tuple(params))
     return jsonify({"status": "success", "data": queries, "total": len(queries)}), 200
 
-@bp.route("/api/admin/unmatched-queries/convert-synonym", methods=["POST"])
+@bp.route("/api/admin/core/unmatched-queries/convert-synonym", methods=["POST"])
 @admin_required
 def convert_unmatched_to_synonym():
     data = request.get_json() or {}
@@ -1002,7 +1002,7 @@ def convert_unmatched_to_synonym():
 
     return jsonify({"status": "success", "message": f"成功將「{user_keyword}」轉換為同義詞「{official_term}」！詞庫已即時更新。"}), 200
 
-@bp.route("/api/admin/unmatched-queries/<int:query_id>/status", methods=["PUT"])
+@bp.route("/api/admin/core/unmatched-queries/<int:query_id>/status", methods=["PUT"])
 @admin_required
 def update_unmatched_status(query_id):
     data = request.get_json() or {}
@@ -1028,7 +1028,7 @@ def update_unmatched_status(query_id):
 # -------------------------------------------------------------------------
 # 4. 訪客登記日誌 (visitor_logs)
 # -------------------------------------------------------------------------
-@bp.route("/api/admin/visitor-logs", methods=["GET"])
+@bp.route("/api/admin/core/visitor-logs", methods=["GET"])
 @admin_required
 def list_visitor_logs():
     days = int(request.args.get("days", 30))
@@ -1045,7 +1045,7 @@ def list_visitor_logs():
     logs = admin_db.query_db(sql, tuple(params))
     return jsonify({"status": "success", "data": logs, "total": len(logs)}), 200
 
-@bp.route("/api/admin/visitor-logs/export.csv", methods=["GET"])
+@bp.route("/api/admin/core/visitor-logs/export.csv", methods=["GET"])
 @admin_required
 def export_visitor_logs():
     logs = admin_db.query_db("SELECT * FROM visitor_logs ORDER BY log_id DESC")

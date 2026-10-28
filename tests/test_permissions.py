@@ -84,6 +84,9 @@ def client(monkeypatch, tmp_path):
     app_module.app.config["PROPAGATE_EXCEPTIONS"] = False
     # 強制示範模式：不連 MySQL，避免測試資料寫進真正的資料庫
     monkeypatch.setattr(app_module, "get_db_connection", lambda *a, **k: None)
+    # 管理員核心模組的離線 SQLite 備援也必須寫入測試暫存目錄。
+    import admin_db
+    monkeypatch.setattr(admin_db, "SQLITE_DB_PATH", str(tmp_path / "admin_core.sqlite3"))
     # 不真的寄缺曠通知信
     monkeypatch.setattr(app_module, "send_pending_notifications",
                         lambda *a, **k: {"students_notified": 0, "records_notified": 0, "failed": [], "mode": "test"})

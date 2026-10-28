@@ -253,3 +253,39 @@ GET,/admin/feature-map,/admin/feature-map,,功能對照表,401,403,403,403,403,4
 GET,/api/public-site,/api/public-site,,公開網站資訊,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/public-site/qr.svg,/api/public-site/qr.svg,,公開網站 QR Code,OK,OK,OK,OK,OK,OK,OK,
 GET,/healthz,/healthz,,網站健康檢查,OK,OK,OK,OK,OK,OK,OK,
+GET,/admin-core,/admin-core,,核心資料管理登入頁,OK,OK,OK,OK,OK,OK,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/db-status,/api/admin/db-status,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/users,/api/admin/users,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/users,/api/admin/users,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/users/<int:user_id>,/api/admin/users/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/users/<int:user_id>,/api/admin/users/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/departments,/api/admin/departments,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/departments,/api/admin/departments,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/departments/<string:dept_id>,/api/admin/departments/CS,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/departments/<string:dept_id>,/api/admin/departments/CS,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/course-map,/api/admin/course-map,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/course-map,/api/admin/course-map,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/course-map/<string:course_id>,/api/admin/course-map/CS101,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/course-map/<string:course_id>,/api/admin/course-map/CS101,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/graduation-requirements,/api/admin/graduation-requirements,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/graduation-requirements,/api/admin/graduation-requirements,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/graduation-requirements/<int:req_id>,/api/admin/graduation-requirements/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/graduation-requirements/<int:req_id>,/api/admin/graduation-requirements/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/knowledge-categories,/api/admin/knowledge-categories,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/knowledge-categories,/api/admin/knowledge-categories,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/knowledge-categories/<int:category_id>,/api/admin/knowledge-categories/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/knowledge-categories/<int:category_id>,/api/admin/knowledge-categories/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/synonyms,/api/admin/synonyms,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/synonyms,/api/admin/synonyms,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/synonyms/<int:synonym_id>,/api/admin/synonyms/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+DELETE,/api/admin/synonyms/<int:synonym_id>,/api/admin/synonyms/999999,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/core/audit-logs,/api/admin/core/audit-logs,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/search-logs,/api/admin/search-logs,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/core/unmatched-queries,/api/admin/core/unmatched-queries,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/core/unmatched-queries/convert-synonym,/api/admin/core/unmatched-queries/convert-synonym,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+PUT,/api/admin/core/unmatched-queries/<int:query_id>/status,/api/admin/core/unmatched-queries/999999/status,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/core/visitor-logs,/api/admin/core/visitor-logs,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/core/visitor-logs/export.csv,/api/admin/core/visitor-logs/export.csv,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/student-credits,/api/admin/student-credits,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/attendance-records,/api/admin/attendance-records,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/student-records,/api/admin/student-records,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
