@@ -1358,6 +1358,30 @@
             </section>
         </div>
 
+        <!-- 活動報名 -->
+        <div id="tab-events" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">校園活動</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">瀏覽目前開放報名的活動，點「我要報名」填一次資料就好；名額滿了會自動排候補。</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="search" id="eventsSearch" placeholder="搜尋活動名稱" class="border border-slate-300 rounded px-3 py-2 text-sm w-44">
+                        <label class="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" id="eventsOpenOnly"> 只看還能報名的</label>
+                    </div>
+                </div>
+                <div id="eventsBody" class="space-y-3"></div>
+            </section>
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="ukn-title text-xl font-bold text-slate-900">我的報名</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">目前與過去報名過的活動，可以看到確認信/候補信有沒有寄成功；活動結束後可以在這裡評分。</p>
+                </div>
+                <div id="myEventsBody" class="space-y-3"></div>
+            </section>
+        </div>
+
         <!-- 校園地圖與老師辦公室 -->
         <div id="tab-map" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">

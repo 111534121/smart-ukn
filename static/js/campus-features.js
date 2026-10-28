@@ -19,6 +19,7 @@ function campusFeaturesInit() {
             if (isStaff()) document.getElementById('lockersBody').closest('section').classList.add('hidden');
             else loadLockers();
         },
+        'tab-events': () => loadEvents(),
         'tab-map': () => { loadMap(); loadTeachers(); },
         'tab-traffic': () => { loadWeatherDetail(); loadTransport(); },
         'tab-crowd': loadCrowd,
@@ -34,6 +35,8 @@ function campusFeaturesInit() {
     roomDate.value = nextWeekday();
     roomDate.addEventListener('change', loadRooms);
     document.getElementById('mapSearch').addEventListener('keydown', e => { if (e.key === 'Enter') findOnMap(); });
+    document.getElementById('eventsSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadEvents(); });
+    document.getElementById('eventsOpenOnly').addEventListener('change', loadEvents);
     loadChecklistDocState();
 }
 

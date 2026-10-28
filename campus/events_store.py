@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS event_registrations (
  checked_in tinyint(1) NOT NULL DEFAULT 0,
  checked_in_at datetime DEFAULT NULL,
  reminded tinyint(1) NOT NULL DEFAULT 0,
+ notified tinyint(1) NOT NULL DEFAULT 0,
+ notified_at datetime DEFAULT NULL,
  rating int DEFAULT NULL,
  feedback_comment varchar(500) DEFAULT NULL,
  feedback_at datetime DEFAULT NULL,
@@ -60,7 +62,8 @@ EVENT_FIELDS = ('title', 'description', 'image_url', 'location', 'event_date', '
                  'registration_deadline', 'capacity', 'cancelled', 'created_by', 'created_at')
 REG_FIELDS = ('event_id', 'student_id', 'full_name', 'email', 'phone', 'age', 'note', 'status',
               'checkin_code', 'registered_by_key', 'registered_by_role', 'created_at', 'cancelled_at',
-              'checked_in', 'checked_in_at', 'reminded', 'rating', 'feedback_comment', 'feedback_at')
+              'checked_in', 'checked_in_at', 'reminded', 'notified', 'notified_at',
+              'rating', 'feedback_comment', 'feedback_at')
 
 
 def use_db():
@@ -85,8 +88,10 @@ def _decode_registration(row):
     item['cancelled_at'] = str(item['cancelled_at'])[:19] if item.get('cancelled_at') else None
     item['checked_in_at'] = str(item['checked_in_at'])[:19] if item.get('checked_in_at') else None
     item['feedback_at'] = str(item['feedback_at'])[:19] if item.get('feedback_at') else None
+    item['notified_at'] = str(item['notified_at'])[:19] if item.get('notified_at') else None
     item['checked_in'] = bool(item['checked_in'])
     item['reminded'] = bool(item['reminded'])
+    item['notified'] = bool(item['notified'])
     item['phone'] = item.get('phone') or ''
     item['note'] = item.get('note') or ''
     return item

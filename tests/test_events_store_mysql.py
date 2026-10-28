@@ -54,7 +54,7 @@ def test_update_registration_builds_dynamic_set_clause(monkeypatch):
          "phone": "", "age": 20, "note": "", "status": "已取消", "checkin_code": "abc",
          "registered_by_key": "S112001", "registered_by_role": "學生",
          "created_at": "2026-10-22 10:00:00", "cancelled_at": "2026-10-22 11:00:00",
-         "checked_in": 0, "checked_in_at": None, "reminded": 0,
+         "checked_in": 0, "checked_in_at": None, "reminded": 0, "notified": 0, "notified_at": None,
          "rating": None, "feedback_comment": None, "feedback_at": None},
     ])
     updated = events_store.update_registration(7, {"status": "已取消", "cancelled_at": "2026-10-22 11:00:00"})

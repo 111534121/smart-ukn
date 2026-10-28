@@ -948,6 +948,189 @@ function broadcastComposeHtml() {
         </form>`;
 }
 
+// ---------- 活動報名 (學生/家長/教職員自助報名與查看；報名者管理後台在 /admin/events) ----------
+
+let eventsList = [];
+let myEventsList = [];
+let eventsOpenRegisterId = null; // 目前展開「我要報名」表單的活動 id
+let eventsFeedbackOpenId = null; // 目前展開「活動回饋」表單的活動 id
+let eventsCancelConfirm = null;  // {eventId, regId} 目前正在確認要不要取消
+
+async function loadEvents() {
+    const body = document.getElementById('eventsBody');
+    const mineBody = document.getElementById('myEventsBody');
+    if (!isLoggedIn()) {
+        body.innerHTML = loginPrompt('登入後即可報名校園活動。');
+        mineBody.innerHTML = '';
+        return;
+    }
+    const q = document.getElementById('eventsSearch').value.trim();
+    const openOnly = document.getElementById('eventsOpenOnly').checked;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (openOnly) params.set('open_only', '1');
+    try {
+        const [listRes, mineRes] = await Promise.all([
+            api(`/api/campus/events?${params.toString()}`),
+            api('/api/campus/events/mine'),
+        ]);
+        eventsList = listRes.data;
+        myEventsList = mineRes.data;
+        renderEventsList();
+        renderMyEvents();
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+function renderEventsList() {
+    const body = document.getElementById('eventsBody');
+    if (!eventsList.length) { body.innerHTML = '<div class="text-sm text-slate-500">目前沒有符合條件的活動。</div>'; return; }
+    body.innerHTML = eventsList.map(eventCardHtml).join('');
+}
+
+function eventCardHtml(e) {
+    const myReg = myEventsList.find(r => r.event_id === e.id && r.status !== '已取消');
+    let actionHtml;
+    if (e.cancelled) actionHtml = statusBadge('活動已取消', 'red');
+    else if (myReg) actionHtml = statusBadge(myReg.status === '候補中' ? '已候補' : '已報名', myReg.status === '候補中' ? 'amber' : 'green');
+    else if (!e.can_register) actionHtml = statusBadge(e.event_over ? '活動已結束' : '報名已截止', 'gray');
+    else if (eventsOpenRegisterId !== e.id) actionHtml = `<button type="button" onclick="toggleEventRegister(${e.id})" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">${e.is_full ? '我要候補' : '我要報名'}</button>`;
+    else actionHtml = '';
+    return `
+        <div class="rounded border border-slate-200 p-4 space-y-3">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                    <div class="font-bold text-slate-900">${esc(e.title)}</div>
+                    <div class="text-xs text-slate-500 mt-0.5">📅 ${esc(e.event_date)} ${esc(e.event_time || '')} · 📍 ${esc(e.location)}</div>
+                    ${e.description ? `<p class="text-sm text-slate-600 mt-2 whitespace-pre-line">${esc(e.description)}</p>` : ''}
+                    <div class="text-[11px] text-slate-400 mt-1">報名截止 ${esc(e.registration_deadline)} · 名額 ${e.registered_count}/${e.capacity}${e.waitlist_count ? `（候補 ${e.waitlist_count} 人）` : ''}</div>
+                </div>
+                <div class="shrink-0">${actionHtml}</div>
+            </div>
+            ${eventsOpenRegisterId === e.id ? eventRegisterFormHtml(e) : ''}
+        </div>`;
+}
+
+function toggleEventRegister(id) {
+    eventsOpenRegisterId = eventsOpenRegisterId === id ? null : id;
+    renderEventsList();
+}
+
+function eventRegisterFormHtml(e) {
+    const u = currentUser;
+    return `
+        <form onsubmit="submitEventRegister(event, ${e.id})" class="rounded border border-ukn-200 bg-ukn-50 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">學號 *</label><input name="student_id" required maxlength="20" value="${esc(u.student_id || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">姓名 *</label><input name="full_name" required maxlength="50" value="${esc(u.full_name || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">Email *</label><input type="email" name="email" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">聯絡電話</label><input name="phone" maxlength="30" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">年齡 *</label><input type="number" name="age" required min="1" max="120" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">備註</label><input name="note" maxlength="200" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2 flex justify-end gap-2">
+                <button type="button" onclick="toggleEventRegister(${e.id})" class="text-sm text-slate-500 px-3 py-2">再想想</button>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">送出報名</button>
+            </div>
+        </form>`;
+}
+
+async function submitEventRegister(event, id) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        const r = await api(`/api/campus/events/${id}/register`, { method: 'POST', json: f });
+        toast(r.message, r.data.notified === false ? 'error' : 'ok');
+        eventsOpenRegisterId = null;
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderMyEvents() {
+    const body = document.getElementById('myEventsBody');
+    if (!myEventsList.length) { body.innerHTML = '<div class="text-sm text-slate-500">目前沒有報名紀錄。</div>'; return; }
+    body.innerHTML = myEventsList.map(myEventRowHtml).join('');
+}
+
+function myEventRowHtml(r) {
+    const statusTone = r.status === '已取消' ? 'gray' : r.status === '候補中' ? 'amber' : 'green';
+    const notifyHtml = r.status === '已取消' ? '' :
+        r.notified ? statusBadge(`✉ 通知信已寄出${r.notified_at ? ' · ' + esc(r.notified_at.slice(0, 16)) : ''}`, 'blue')
+                   : statusBadge('⚠ 通知信寄送失敗，請確認信箱或聯絡承辦單位', 'red');
+    const canCancel = r.status !== '已取消' && !r.event_over && !r.event_cancelled;
+    const canFeedback = r.event_over && r.status !== '已取消' && !r.event_cancelled;
+    const isConfirming = eventsCancelConfirm && eventsCancelConfirm.regId === r.id;
+    let actionsHtml = '';
+    if (isConfirming) {
+        actionsHtml = `
+            <span class="text-xs text-rose-700">確定要取消這筆報名嗎？</span>
+            <button type="button" onclick="cancelCancelConfirm()" class="text-xs text-slate-500 px-2 py-1">再想想</button>
+            <button type="button" onclick="confirmCancelEventReg(${r.event_id}, ${r.id})" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded px-3 py-1">確定取消</button>`;
+    } else {
+        if (canCancel) actionsHtml += `<button type="button" onclick="startCancelEventReg(${r.event_id}, ${r.id})" class="text-xs text-rose-700 hover:underline px-2 py-1">取消報名</button>`;
+        if (canFeedback) actionsHtml += r.rating ? statusBadge(`已評分 ${r.rating} ★`, 'blue') : `<button type="button" onclick="toggleEventFeedback(${r.event_id})" class="text-xs text-ukn-700 hover:underline px-2 py-1">活動回饋</button>`;
+    }
+    return `
+        <div class="rounded border border-slate-200 p-3 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <span class="font-bold text-slate-900">${esc(r.event_title)}</span>
+                    <span class="text-xs text-slate-500 ml-2">📅 ${esc(r.event_date)} ${esc(r.event_time || '')} · 📍 ${esc(r.event_location)}</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">${statusBadge(r.event_cancelled ? '活動已取消' : r.status, r.event_cancelled ? 'red' : statusTone)}${notifyHtml}</div>
+            </div>
+            <div class="flex items-center justify-end gap-1 flex-wrap">${actionsHtml}</div>
+            ${eventsFeedbackOpenId === r.event_id ? eventFeedbackFormHtml(r.event_id) : ''}
+        </div>`;
+}
+
+function startCancelEventReg(eventId, regId) {
+    eventsCancelConfirm = { eventId, regId };
+    renderMyEvents();
+}
+
+function cancelCancelConfirm() {
+    eventsCancelConfirm = null;
+    renderMyEvents();
+}
+
+async function confirmCancelEventReg(eventId, regId) {
+    try {
+        const r = await api(`/api/campus/events/${eventId}/registrations/${regId}/cancel`, { method: 'POST' });
+        toast(r.message);
+        eventsCancelConfirm = null;
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function toggleEventFeedback(eventId) {
+    eventsFeedbackOpenId = eventsFeedbackOpenId === eventId ? null : eventId;
+    renderMyEvents();
+}
+
+function eventFeedbackFormHtml(eventId) {
+    return `
+        <form onsubmit="submitEventFeedback(event, ${eventId})" class="rounded border border-slate-200 bg-slate-50 p-3 space-y-2 text-sm">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-slate-600">評分 *</label>
+                <select name="rating" required class="border border-slate-300 rounded px-2 py-1 bg-white">
+                    <option value="">請選擇</option>
+                    ${[5, 4, 3, 2, 1].map(n => `<option value="${n}">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</option>`).join('')}
+                </select>
+            </div>
+            <textarea name="comment" rows="2" maxlength="500" placeholder="想說的話（選填）" class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+            <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold rounded px-4 py-2">送出評分</button></div>
+        </form>`;
+}
+
+async function submitEventFeedback(event, eventId) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        const r = await api(`/api/campus/events/${eventId}/feedback`, { method: 'POST', json: f });
+        toast(r.message);
+        eventsFeedbackOpenId = null;
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
 async function sendBroadcast(event) {
     event.preventDefault();
     const fd = new FormData(event.target);

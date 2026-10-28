@@ -194,7 +194,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/events-admin.js",
-          "line": 118
+          "line": 132
         }
       ]
     },
@@ -21646,13 +21646,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 135,
+          "line": 141,
           "function": "list_events",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 135,
+              "line": 141,
               "function": "list_events"
             },
             {
@@ -21664,18 +21664,36 @@ window.FEATURE_GUIDE = {
           "storage": []
         },
         {
+          "url": "/api/campus/events/mine",
+          "methods": [
+            "GET"
+          ],
+          "file": "campus/events.py",
+          "line": 171,
+          "function": "my_registrations",
+          "tables": [],
+          "files": [
+            {
+              "file": "campus/events.py",
+              "line": 171,
+              "function": "my_registrations"
+            }
+          ],
+          "storage": []
+        },
+        {
           "url": "/api/campus/events/<int:event_id>",
           "methods": [
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 165,
+          "line": 191,
           "function": "get_event",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 165,
+              "line": 191,
               "function": "get_event"
             },
             {
@@ -21692,7 +21710,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 179,
+          "line": 205,
           "function": "create_event",
           "tables": [
             {
@@ -21737,7 +21755,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 179,
+              "line": 205,
               "function": "create_event"
             },
             {
@@ -21769,7 +21787,7 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "campus/events.py",
-          "line": 194,
+          "line": 220,
           "function": "update_event",
           "tables": [
             {
@@ -21814,7 +21832,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 194,
+              "line": 220,
               "function": "update_event"
             },
             {
@@ -21846,7 +21864,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "campus/events.py",
-          "line": 219,
+          "line": 245,
           "function": "cancel_event",
           "tables": [
             {
@@ -21891,7 +21909,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 219,
+              "line": 245,
               "function": "cancel_event"
             },
             {
@@ -21918,18 +21936,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 282,
+          "line": 312,
           "function": "register_event",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 282,
+              "line": 312,
               "function": "register_event"
             },
             {
               "file": "campus/events.py",
-              "line": 233,
+              "line": 259,
               "function": "_confirmation_email"
             },
             {
@@ -21954,7 +21972,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/events.py",
-              "line": 245,
+              "line": 133,
+              "function": "_record_notified"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 274,
               "function": "_add_registration"
             },
             {
@@ -21971,18 +21994,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 297,
+          "line": 328,
           "function": "add_registration",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 297,
+              "line": 328,
               "function": "add_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 233,
+              "line": 259,
               "function": "_confirmation_email"
             },
             {
@@ -22007,7 +22030,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/events.py",
-              "line": 245,
+              "line": 133,
+              "function": "_record_notified"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 274,
               "function": "_add_registration"
             },
             {
@@ -22024,24 +22052,29 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 329,
+          "line": 362,
           "function": "cancel_registration",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 329,
+              "line": 362,
               "function": "cancel_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 311,
+              "line": 343,
               "function": "_promote_next_waitlisted"
             },
             {
               "file": "campus/events.py",
-              "line": 320,
+              "line": 352,
               "function": "_notify_promoted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 133,
+              "function": "_record_notified"
             },
             {
               "file": "campus/events.py",
@@ -22072,7 +22105,7 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "campus/events.py",
-          "line": 360,
+          "line": 393,
           "function": "edit_registration",
           "tables": [
             {
@@ -22117,7 +22150,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 360,
+              "line": 393,
               "function": "edit_registration"
             },
             {
@@ -22149,7 +22182,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "campus/events.py",
-          "line": 384,
+          "line": 417,
           "function": "delete_registration",
           "tables": [
             {
@@ -22194,18 +22227,23 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/events.py",
-              "line": 384,
+              "line": 417,
               "function": "delete_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 311,
+              "line": 343,
               "function": "_promote_next_waitlisted"
             },
             {
               "file": "campus/events.py",
-              "line": 320,
+              "line": 352,
               "function": "_notify_promoted"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 133,
+              "function": "_record_notified"
             },
             {
               "file": "campus/events.py",
@@ -22251,18 +22289,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 405,
+          "line": 438,
           "function": "notify_registration",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 405,
+              "line": 438,
               "function": "notify_registration"
             },
             {
               "file": "campus/events.py",
-              "line": 233,
+              "line": 259,
               "function": "_confirmation_email"
             },
             {
@@ -22284,6 +22322,11 @@ window.FEATURE_GUIDE = {
               "file": "attendance/notify.py",
               "line": 46,
               "function": "SmtpMailer"
+            },
+            {
+              "file": "campus/events.py",
+              "line": 133,
+              "function": "_record_notified"
             }
           ],
           "storage": []
@@ -22294,13 +22337,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 423,
+          "line": 458,
           "function": "checkin",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 423,
+              "line": 458,
               "function": "checkin"
             }
           ],
@@ -22312,13 +22355,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/events.py",
-          "line": 443,
+          "line": 478,
           "function": "list_registrations",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 443,
+              "line": 478,
               "function": "list_registrations"
             },
             {
@@ -22335,13 +22378,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 456,
+          "line": 491,
           "function": "send_reminders",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 456,
+              "line": 491,
               "function": "send_reminders"
             },
             {
@@ -22368,13 +22411,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/events.py",
-          "line": 483,
+          "line": 518,
           "function": "submit_feedback",
           "tables": [],
           "files": [
             {
               "file": "campus/events.py",
-              "line": 483,
+              "line": 518,
               "function": "submit_feedback"
             }
           ],
@@ -23340,7 +23383,7 @@ window.FEATURE_GUIDE = {
       "frontend": []
     }
   ],
-  "routeCount": 202,
+  "routeCount": 203,
   "schemaCount": 50,
   "schema": {
     "departments": [

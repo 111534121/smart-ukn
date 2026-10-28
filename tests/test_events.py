@@ -263,6 +263,45 @@ def test_events_admin_page_requires_staff_login(client, login):
     assert b"html" in res.data.lower()
 
 
+def test_registration_tracks_whether_confirmation_email_actually_sent(client, login):
+    event_id = _create_event(client, login)
+    res = _register(client, login, event_id, "student1", "S112001")
+    assert res.status_code == 200
+    assert res.get_json()["data"]["notified"] is True  # 測試用的 FakeMailer 一定寄得出去
+
+
+def test_registration_marks_not_notified_when_mailer_fails(client, login, monkeypatch):
+    import campus.events as events_module
+
+    class FailingMailer:
+        def send(self, *a, **k):
+            raise RuntimeError("模擬寄信失敗")
+
+    monkeypatch.setattr(events_module, "get_mailer", lambda: FailingMailer())
+    event_id = _create_event(client, login)
+    res = _register(client, login, event_id, "student1", "S112001")
+    assert res.status_code == 200  # 寄信失敗不影響報名本身成功
+    assert res.get_json()["data"]["notified"] is False
+    assert "失敗" in res.get_json()["message"]
+
+
+def test_my_registrations_lists_across_events_scoped_to_login_identity(client, login):
+    event1 = _create_event(client, login, event_date=_tomorrow())
+    event2 = _create_event(client, login, event_date=(datetime.date.today() + datetime.timedelta(days=2)).isoformat())
+    _register(client, login, event1, "student1", "S112001")
+    _register(client, login, event2, "student1", "S112001")
+    _register(client, login, event1, "student2", "S112002")
+
+    login("student1")
+    mine = client.get("/api/campus/events/mine").get_json()["data"]
+    assert {m["event_id"] for m in mine} == {event1, event2}
+    assert all("event_title" in m and "event_date" in m for m in mine)
+
+    login("student2")
+    mine2 = client.get("/api/campus/events/mine").get_json()["data"]
+    assert {m["event_id"] for m in mine2} == {event1}
+
+
 def test_search_and_filter_events(client, login):
     event_id = _create_event(client, login, capacity=1)
     login("student1")
