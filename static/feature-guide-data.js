@@ -7346,13 +7346,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 163,
+          "line": 172,
           "function": "teachers",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 101,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -7364,22 +7364,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 163,
+              "line": 172,
               "function": "teachers"
             },
             {
               "file": "campus/facilities.py",
-              "line": 141,
+              "line": 150,
               "function": "teacher_status"
             },
             {
               "file": "campus/facilities.py",
-              "line": 96,
+              "line": 105,
               "function": "period_at"
             },
             {
               "file": "campus/facilities.py",
-              "line": 91,
+              "line": 100,
               "function": "load_schedule"
             },
             {
@@ -7394,7 +7394,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 82,
+              "line": 91,
               "function": "parse_now"
             }
           ],
@@ -7423,7 +7423,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 101,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -7465,17 +7465,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 141,
+              "line": 150,
               "function": "teacher_status"
             },
             {
               "file": "campus/facilities.py",
-              "line": 96,
+              "line": 105,
               "function": "period_at"
             },
             {
               "file": "campus/facilities.py",
-              "line": 91,
+              "line": 100,
               "function": "load_schedule"
             }
           ],
@@ -7905,7 +7905,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 581
+          "line": 583
         },
         {
           "file": "static/js/faculty.js",
@@ -12106,13 +12106,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 186,
+          "line": 195,
           "function": "rooms_availability",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 101,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12124,22 +12124,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 186,
+              "line": 195,
               "function": "rooms_availability"
             },
             {
               "file": "campus/facilities.py",
-              "line": 104,
+              "line": 113,
               "function": "room_code"
             },
             {
               "file": "campus/facilities.py",
-              "line": 181,
+              "line": 190,
               "function": "bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 91,
+              "line": 100,
               "function": "load_schedule"
             },
             {
@@ -12161,13 +12161,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 215,
+          "line": 224,
           "function": "book_room",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 101,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12179,22 +12179,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 215,
+              "line": 224,
               "function": "book_room"
             },
             {
               "file": "campus/facilities.py",
-              "line": 104,
+              "line": 113,
               "function": "room_code"
             },
             {
               "file": "campus/facilities.py",
-              "line": 181,
+              "line": 190,
               "function": "bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 91,
+              "line": 100,
               "function": "load_schedule"
             },
             {
@@ -12216,18 +12216,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 261,
+          "line": 270,
           "function": "my_bookings",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 261,
+              "line": 270,
               "function": "my_bookings"
             },
             {
               "file": "campus/facilities.py",
-              "line": 181,
+              "line": 190,
               "function": "bookings"
             }
           ],
@@ -12239,7 +12239,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 276,
+          "line": 285,
           "function": "update_booking",
           "tables": [
             {
@@ -12284,12 +12284,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 276,
+              "line": 285,
               "function": "update_booking"
             },
             {
               "file": "campus/facilities.py",
-              "line": 181,
+              "line": 190,
               "function": "bookings"
             },
             {
@@ -12316,23 +12316,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 319,
+          "line": 328,
           "function": "list_lockers",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 319,
+              "line": 328,
               "function": "list_lockers"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 315,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 302,
+              "line": 311,
               "function": "lockers"
             }
           ],
@@ -12344,23 +12344,23 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 339,
+          "line": 348,
           "function": "reserve_locker",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 339,
+              "line": 348,
               "function": "reserve_locker"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 315,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 302,
+              "line": 311,
               "function": "lockers"
             }
           ],
@@ -12372,18 +12372,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 357,
+          "line": 366,
           "function": "cancel_locker",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 357,
+              "line": 366,
               "function": "cancel_locker"
             },
             {
               "file": "campus/facilities.py",
-              "line": 302,
+              "line": 311,
               "function": "lockers"
             }
           ],
@@ -12395,23 +12395,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 371,
+          "line": 380,
           "function": "lockers_admin",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 371,
+              "line": 380,
               "function": "lockers_admin"
             },
             {
               "file": "campus/facilities.py",
-              "line": 306,
+              "line": 315,
               "function": "expire_holds"
             },
             {
               "file": "campus/facilities.py",
-              "line": 302,
+              "line": 311,
               "function": "lockers"
             }
           ],
@@ -12423,7 +12423,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/facilities.py",
-          "line": 390,
+          "line": 399,
           "function": "locker_paid",
           "tables": [
             {
@@ -12468,12 +12468,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 390,
+              "line": 399,
               "function": "locker_paid"
             },
             {
               "file": "campus/facilities.py",
-              "line": 302,
+              "line": 311,
               "function": "lockers"
             },
             {
@@ -12554,13 +12554,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 111,
+          "line": 120,
           "function": "campus_map",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 111,
+              "line": 120,
               "function": "campus_map"
             }
           ],
@@ -12572,13 +12572,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 117,
+          "line": 126,
           "function": "find_place",
           "tables": [],
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 117,
+              "line": 126,
               "function": "find_place"
             }
           ],
@@ -12590,13 +12590,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/facilities.py",
-          "line": 413,
+          "line": 422,
           "function": "crowd",
           "tables": [
             {
               "name": "class_schedule",
               "file": "campus/facilities.py",
-              "line": 92,
+              "line": 101,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -12608,12 +12608,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/facilities.py",
-              "line": 413,
+              "line": 422,
               "function": "crowd"
             },
             {
               "file": "campus/facilities.py",
-              "line": 91,
+              "line": 100,
               "function": "load_schedule"
             },
             {
@@ -12628,7 +12628,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/facilities.py",
-              "line": 82,
+              "line": 91,
               "function": "parse_now"
             }
           ],
@@ -12680,15 +12680,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 555
+          "line": 557
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 634
+          "line": 636
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 675
+          "line": 677
         },
         {
           "file": "static/js/campus-shell.js",
@@ -14790,31 +14790,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 721
+          "line": 723
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 750
+          "line": 752
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 787
+          "line": 789
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 847
+          "line": 849
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1164
+          "line": 1166
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1212
+          "line": 1214
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1220
+          "line": 1222
         },
         {
           "file": "static/js/campus-shell.js",
@@ -18486,43 +18486,43 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-life.js",
-          "line": 721
+          "line": 723
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 750
+          "line": 752
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 776
+          "line": 778
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 792
+          "line": 794
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 798
+          "line": 800
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 847
+          "line": 849
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1152
+          "line": 1154
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1173
+          "line": 1175
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1179
+          "line": 1181
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1184
+          "line": 1186
         },
         {
           "file": "static/js/campus-shell.js",
@@ -18679,7 +18679,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-life.js",
-          "line": 659
+          "line": 661
         },
         {
           "file": "static/js/campus-shell.js",

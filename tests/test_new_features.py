@@ -157,7 +157,7 @@ def test_search_filters(client):
     data = client.get("/api/faculty?field=護理與健康照護&projects=1").get_json()
     names = {t["name"] for t in data["data"]}
     assert names == {"許美玲", "蔡宗翰"}  # 鄭如君目前不收專題生
-    assert client.get("/api/faculty?dept=護理科").get_json()["data"][0]["office"]["room"].startswith("N")
+    assert client.get("/api/faculty?dept=護理科").get_json()["data"][0]["office"]["room"].startswith("B")  # 護理科教室在第二教學大樓 (B 棟)
     assert client.get("/api/faculty?q=量子物理").get_json()["data"] == []
 
 

@@ -19,44 +19,53 @@ PERIODS = {1: ("08:10", "09:00"), 2: ("09:10", "10:00"), 3: ("10:10", "11:00"), 
            5: ("13:10", "14:00"), 6: ("14:10", "15:00"), 7: ("15:10", "16:00"), 8: ("16:10", "17:00"),
            9: ("17:10", "18:00")}
 
-# 校園地圖 (示意圖座標，畫布 100 x 70)
+# 校園地圖 (示意圖座標，畫布 100 x 72)；依「康寧大學台北校區 無障礙設施示意圖」實際配置繪製，
+# 有教室的大樓沿用單一字母代碼 (配合教室代碼猜測規則，例如 A402 = 第一教學大樓 4 樓)，
+# 廣場/戶外空間等非教學空間用較長代碼，避免跟教室代碼猜測規則混淆
 CAMPUS_BUILDINGS = [
-    {"code": "A", "name": "康寧樓", "x": 8, "y": 10, "w": 26, "h": 16, "floors": 5, "desc": "資管科教室、電腦教室、教務處課務組與註冊組 (2F)"},
-    {"code": "G", "name": "卓越樓", "x": 40, "y": 8, "w": 22, "h": 14, "floors": 4, "desc": "通識課教室、通識教育中心 (3F)"},
-    {"code": "L", "name": "語言大樓", "x": 68, "y": 8, "w": 22, "h": 12, "floors": 3, "desc": "外語教室、語言自學中心"},
-    {"code": "N", "name": "護理大樓", "x": 8, "y": 34, "w": 24, "h": 16, "floors": 5, "desc": "護理科教室、技術教室"},
-    {"code": "B", "name": "行政大樓", "x": 40, "y": 30, "w": 20, "h": 12, "floors": 3, "desc": "學務處生輔組 (1F)、總務處、宿舍輔導"},
-    {"code": "D", "name": "圖資大樓", "x": 66, "y": 28, "w": 24, "h": 16, "floors": 4, "desc": "圖書館、研發處實習就業組 (2F)、資圖討論室"},
-    {"code": "C", "name": "學生餐廳", "x": 40, "y": 48, "w": 18, "h": 10, "floors": 1, "desc": "學餐、便利商店、影印中心"},
-    {"code": "S", "name": "學生宿舍", "x": 66, "y": 50, "w": 24, "h": 12, "floors": 8, "desc": "男女宿舍、宿舍服務台"},
-    {"code": "P", "name": "操場 / 體育館", "x": 8, "y": 54, "w": 26, "h": 12, "floors": 1, "desc": "體育課、社團活動"},
+    {"code": "G", "name": "行政大樓", "x": 9, "y": 8, "w": 16, "h": 13, "floors": 3, "desc": "教務處課務組與註冊組、學務處生活輔導組、總務處"},
+    {"code": "KNP", "name": "康寧廣場", "x": 26, "y": 9, "w": 11, "h": 14, "floors": 1, "desc": "戶外廣場，升旗台所在，校慶與社團活動常用場地"},
+    {"code": "GRD", "name": "警衛室", "x": 2, "y": 20, "w": 7, "h": 7, "floors": 1, "desc": "校門口警衛室，門禁與訪客登記"},
+    {"code": "S", "name": "宿舍", "x": 39, "y": 5, "w": 12, "h": 16, "floors": 8, "desc": "男女宿舍、宿舍服務台"},
+    {"code": "C", "name": "餐廳", "x": 52, "y": 5, "w": 12, "h": 16, "floors": 1, "desc": "學生餐廳"},
+    {"code": "CIH", "name": "慈暉樓", "x": 65, "y": 4, "w": 7, "h": 20, "floors": 6, "desc": "多功能教學與活動空間"},
+    {"code": "GRN", "name": "北側2.9公頃綠地", "x": 84, "y": 4, "w": 16, "h": 56, "floors": 0, "desc": "校園北側大片戶外綠地"},
+    {"code": "AGP", "name": "天使廣場", "x": 9, "y": 29, "w": 13, "h": 13, "floors": 1, "desc": "戶外廣場，鄰近停車場與第二教學大樓入口"},
+    {"code": "B", "name": "第二教學大樓", "x": 23, "y": 30, "w": 14, "h": 16, "floors": 4, "desc": "通識教育中心、應用外語科、護理科教室"},
+    {"code": "D", "name": "圖書館", "x": 39, "y": 24, "w": 16, "h": 18, "floors": 5, "desc": "圖書館、研發處實習就業組、資圖討論室"},
+    {"code": "YSP", "name": "于斆廣場", "x": 59, "y": 26, "w": 8, "h": 8, "floors": 1, "desc": "戶外廣場，鄰近野聲館"},
+    {"code": "A", "name": "第一教學大樓", "x": 39, "y": 44, "w": 16, "h": 14, "floors": 5, "desc": "資訊管理科教室、電腦教室"},
+    {"code": "SAC", "name": "野聲館", "x": 57, "y": 36, "w": 16, "h": 20, "floors": 3, "desc": "學生活動中心，社團活動、體育課使用"},
+    {"code": "BBC", "name": "籃球場", "x": 74, "y": 44, "w": 10, "h": 16, "floors": 1, "desc": "戶外籃球場"},
+    {"code": "PTV", "name": "公共電視台", "x": 2, "y": 48, "w": 15, "h": 14, "floors": 1, "desc": "校外鄰近設施 (非校內單位)"},
+    {"code": "PRK", "name": "停車場", "x": 2, "y": 34, "w": 6, "h": 8, "floors": 1, "desc": "校門口旁停車場"},
 ]
-GATE = {"name": "校門口 (康寧路三段75巷)", "x": 50, "y": 68}
+GATE = {"name": "大門 (康寧路三段十五巷)", "x": 2, "y": 42}
 
 ROOMS = [
-    {"room_id": "A301", "building": "A", "floor": 3, "name": "A301 普通教室", "capacity": 60, "equipment": ["投影機", "麥克風"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A302", "building": "A", "floor": 3, "name": "A302 普通教室", "capacity": 50, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A303", "building": "A", "floor": 3, "name": "A303 普通教室", "capacity": 45, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A305", "building": "A", "floor": 3, "name": "A305 電腦教室", "capacity": 48, "equipment": ["電腦 48 台", "廣播教學系統"], "managed_by": "資管科辦公室", "apply_at": "康寧樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課務組", "apply_at": "康寧樓 2 樓 A201 課務組", "rentable": True},
-    {"room_id": "D201", "building": "D", "floor": 2, "name": "資圖 D201 討論室", "capacity": 8, "equipment": ["白板", "大螢幕"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
-    {"room_id": "D202", "building": "D", "floor": 2, "name": "資圖 D202 討論室", "capacity": 8, "equipment": ["白板"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
-    {"room_id": "D301", "building": "D", "floor": 3, "name": "資圖 D301 多媒體室", "capacity": 30, "equipment": ["投影機", "錄影設備"], "managed_by": "圖資中心", "apply_at": "圖資大樓 1 樓服務台", "rentable": True},
-    {"room_id": "G101", "building": "G", "floor": 1, "name": "G101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "卓越樓 3 樓 C305", "rentable": True},
-    {"room_id": "G203", "building": "G", "floor": 2, "name": "G203 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "卓越樓 3 樓 C305", "rentable": True},
-    {"room_id": "L201", "building": "L", "floor": 2, "name": "L201 語言教室", "capacity": 40, "equipment": ["語言教學系統"], "managed_by": "應外科", "apply_at": "語言大樓 1 樓應外科辦", "rentable": False},
-    {"room_id": "N201", "building": "N", "floor": 2, "name": "N201 護理教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "護理科", "apply_at": "護理大樓 1 樓護理科辦", "rentable": False},
-    {"room_id": "N105", "building": "N", "floor": 1, "name": "N105 技術教室", "capacity": 30, "equipment": ["模擬病床"], "managed_by": "護理科", "apply_at": "護理大樓 1 樓護理科辦", "rentable": False},
+    {"room_id": "A301", "building": "A", "floor": 3, "name": "A301 普通教室", "capacity": 60, "equipment": ["投影機", "麥克風"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
+    {"room_id": "A302", "building": "A", "floor": 3, "name": "A302 普通教室", "capacity": 50, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
+    {"room_id": "A303", "building": "A", "floor": 3, "name": "A303 普通教室", "capacity": 45, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
+    {"room_id": "A305", "building": "A", "floor": 3, "name": "A305 電腦教室", "capacity": 48, "equipment": ["電腦 48 台", "廣播教學系統"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
+    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課務組", "apply_at": "行政大樓 2 樓 A201 課務組", "rentable": True},
+    {"room_id": "D201", "building": "D", "floor": 2, "name": "資圖 D201 討論室", "capacity": 8, "equipment": ["白板", "大螢幕"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
+    {"room_id": "D202", "building": "D", "floor": 2, "name": "資圖 D202 討論室", "capacity": 8, "equipment": ["白板"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
+    {"room_id": "D301", "building": "D", "floor": 3, "name": "資圖 D301 多媒體室", "capacity": 30, "equipment": ["投影機", "錄影設備"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
+    {"room_id": "B101", "building": "B", "floor": 1, "name": "B101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True},
+    {"room_id": "B102", "building": "B", "floor": 1, "name": "B102 語言教室", "capacity": 40, "equipment": ["語言教學系統"], "managed_by": "應外科", "apply_at": "第二教學大樓 1 樓應外科辦", "rentable": False},
+    {"room_id": "B201", "building": "B", "floor": 2, "name": "B201 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True},
+    {"room_id": "B301", "building": "B", "floor": 3, "name": "B301 護理教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False},
+    {"room_id": "B302", "building": "B", "floor": 3, "name": "B302 技術教室", "capacity": 30, "equipment": ["模擬病床"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False},
 ]
 
 OFFICES = [
-    {"name": "教務處課務組", "building": "A", "location": "康寧樓 2 樓 A201", "phone": "分機 310, 312"},
-    {"name": "教務處註冊組", "building": "A", "location": "康寧樓 2 樓 A202", "phone": "分機 321, 322"},
-    {"name": "學務處生活輔導組", "building": "B", "location": "行政大樓 1 樓", "phone": "分機 211, 212"},
-    {"name": "總務處", "building": "B", "location": "行政大樓 2 樓", "phone": "分機 410"},
-    {"name": "通識教育中心", "building": "G", "location": "卓越樓 3 樓 C305", "phone": "分機 520, 521"},
-    {"name": "研發處實習就業組", "building": "D", "location": "圖資大樓 2 樓", "phone": "分機 612"},
-    {"name": "宿舍服務台", "building": "S", "location": "學生宿舍 1 樓", "phone": "分機 250"},
+    {"name": "教務處課務組", "building": "G", "location": "行政大樓 2 樓 A201", "phone": "分機 310, 312"},
+    {"name": "教務處註冊組", "building": "G", "location": "行政大樓 2 樓 A202", "phone": "分機 321, 322"},
+    {"name": "學務處生活輔導組", "building": "G", "location": "行政大樓 1 樓", "phone": "分機 211, 212"},
+    {"name": "總務處", "building": "G", "location": "行政大樓 2 樓", "phone": "分機 410"},
+    {"name": "通識教育中心", "building": "B", "location": "第二教學大樓 3 樓 B305", "phone": "分機 520, 521"},
+    {"name": "研發處實習就業組", "building": "D", "location": "圖書館 2 樓", "phone": "分機 612"},
+    {"name": "宿舍服務台", "building": "S", "location": "宿舍 1 樓", "phone": "分機 250"},
 ]
 
 TEACHER_OFFICES = [
@@ -64,17 +73,17 @@ TEACHER_OFFICES = [
     {"name": "林志明", "title": "助理教授", "dept": "資訊管理科", "office": "A411", "building": "A", "floor": 4, "ext": "分機 362", "email": "", "office_hours": [{"weekday": 3, "start": "13:10", "end": "15:00"}]},
     {"name": "吳建宏", "title": "講師", "dept": "資訊管理科", "office": "A412", "building": "A", "floor": 4, "ext": "分機 363", "email": "", "office_hours": [{"weekday": 1, "start": "13:10", "end": "15:00"}]},
     {"name": "張文華", "title": "講師", "dept": "資訊管理科", "office": "A413", "building": "A", "floor": 4, "ext": "分機 364", "email": "", "office_hours": [{"weekday": 5, "start": "10:10", "end": "12:00"}]},
-    {"name": "黃淑芬", "title": "副教授", "dept": "通識教育中心", "office": "G305", "building": "G", "floor": 3, "ext": "分機 522", "email": "", "office_hours": [{"weekday": 2, "start": "10:10", "end": "12:00"}]},
-    {"name": "李佩珊", "title": "助理教授", "dept": "通識教育中心", "office": "G306", "building": "G", "floor": 3, "ext": "分機 523", "email": "", "office_hours": [{"weekday": 4, "start": "13:10", "end": "15:00"}]},
-    {"name": "Amy Chen", "title": "講師", "dept": "應用外語科", "office": "L105", "building": "L", "floor": 1, "ext": "分機 541", "email": "", "office_hours": [{"weekday": 1, "start": "10:10", "end": "12:00"}]},
-    {"name": "許美玲", "title": "副教授", "dept": "護理科", "office": "N310", "building": "N", "floor": 3, "ext": "分機 461", "email": "", "office_hours": [{"weekday": 5, "start": "13:10", "end": "15:00"}]},
-    {"name": "蔡宗翰", "title": "助理教授", "dept": "護理科", "office": "N311", "building": "N", "floor": 3, "ext": "分機 462", "email": "", "office_hours": [{"weekday": 3, "start": "10:10", "end": "12:00"}]},
-    {"name": "鄭如君", "title": "講師", "dept": "護理科", "office": "N312", "building": "N", "floor": 3, "ext": "分機 463", "email": "", "office_hours": [{"weekday": 2, "start": "15:10", "end": "17:00"}]},
+    {"name": "黃淑芬", "title": "副教授", "dept": "通識教育中心", "office": "B305", "building": "B", "floor": 3, "ext": "分機 522", "email": "", "office_hours": [{"weekday": 2, "start": "10:10", "end": "12:00"}]},
+    {"name": "李佩珊", "title": "助理教授", "dept": "通識教育中心", "office": "B306", "building": "B", "floor": 3, "ext": "分機 523", "email": "", "office_hours": [{"weekday": 4, "start": "13:10", "end": "15:00"}]},
+    {"name": "Amy Chen", "title": "講師", "dept": "應用外語科", "office": "B205", "building": "B", "floor": 2, "ext": "分機 541", "email": "", "office_hours": [{"weekday": 1, "start": "10:10", "end": "12:00"}]},
+    {"name": "許美玲", "title": "副教授", "dept": "護理科", "office": "B310", "building": "B", "floor": 3, "ext": "分機 461", "email": "", "office_hours": [{"weekday": 5, "start": "13:10", "end": "15:00"}]},
+    {"name": "蔡宗翰", "title": "助理教授", "dept": "護理科", "office": "B311", "building": "B", "floor": 3, "ext": "分機 462", "email": "", "office_hours": [{"weekday": 3, "start": "10:10", "end": "12:00"}]},
+    {"name": "鄭如君", "title": "講師", "dept": "護理科", "office": "B312", "building": "B", "floor": 3, "ext": "分機 463", "email": "", "office_hours": [{"weekday": 2, "start": "15:10", "end": "17:00"}]},
 ]
 
 LOCKER_AREAS = [
-    {"area": "康寧樓 1F 走廊", "building": "A", "rows": 4, "cols": 10, "fee": 300},
-    {"area": "圖資大樓 B1", "building": "D", "rows": 3, "cols": 8, "fee": 200},
+    {"area": "第一教學大樓 1F 走廊", "building": "A", "rows": 4, "cols": 10, "fee": 300},
+    {"area": "圖書館 B1", "building": "D", "rows": 3, "cols": 8, "fee": 200},
 ]
 LOCKER_HOLD_DAYS = 3  # 線上保留後需在幾天內到現場繳費
 
