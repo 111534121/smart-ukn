@@ -253,8 +253,16 @@ def cancel_event(event_id):
         if ev.get("cancelled"):
             return error("這個活動已經取消過了")
         updated = db.update_event(event_id, {"cancelled": 1})
+        affected = [r for r in db.all_registrations() if r["event_id"] == event_id and r["status"] != "已取消"]
     deps.write_audit_log("events", event_id, "刪除", before={"cancelled": False}, after={"cancelled": True})
-    return ok(message=f"活動「{updated['title']}」已取消")
+    notified_count = 0
+    for r in affected:
+        sent = send_mail_safely(r["email"], f"【康寧大學】{updated['title']} 活動取消通知",
+                                 f"{r['full_name']} 您好：\n\n很抱歉，「{updated['title']}」"
+                                 f"（原訂 {updated['event_date']} {updated.get('event_time', '')}）已經取消，造成不便敬請見諒。")
+        _record_notified(r["id"], sent)
+        notified_count += int(sent)
+    return ok(message=f"活動「{updated['title']}」已取消" + (f"，已通知 {notified_count}/{len(affected)} 位報名者" if affected else ""))
 
 
 # ---------- 報名 / 取消報名 (候補名單自動遞補) ----------

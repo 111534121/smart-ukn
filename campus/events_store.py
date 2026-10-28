@@ -100,8 +100,8 @@ def _decode_registration(row):
 def all_events():
     if use_db():
         return [_decode_event(r) for r in deps.fetch_db_rows('SELECT * FROM events ORDER BY event_date, id') or []]
-    # 回傳複本，呼叫端改動不會直接動到 store 裡的原始資料，跟 MySQL 模式回傳新字典的行為一致
-    return json.loads(json.dumps(store.section('events', list)))
+    # JSON 示範模式也要跟 MySQL 模式一樣把 cancelled 解成真正的布林值 (理由同 all_registrations())
+    return [_decode_event(r) for r in json.loads(json.dumps(store.section('events', list)))]
 
 
 def get_event(event_id):
@@ -143,7 +143,7 @@ def update_event(event_id, patch):
             return None
         target.update(patch)
         store.save()
-        return dict(target)
+        return get_event(event_id)  # 跟 MySQL 分支一樣回傳解碼過的版本，型別才會一致
 
 
 def all_registrations():

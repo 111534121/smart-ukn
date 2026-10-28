@@ -5,6 +5,8 @@
     let user, allEvents = [], currentEvent = null, regs = [], editingId = null;
     let confirmState = null; // {regId, act: 'cancel'|'delete'}
     let customNotifyId = null; // 目前展開「自訂通知」表單的報名者 id
+    let eventEditing = false; // 目前是否正在編輯活動本身
+    let eventCancelConfirming = false; // 目前是否正在確認要不要取消整場活動
 
     async function api(url, opts = {}) {
         const response = await fetch(url, opts);
@@ -40,6 +42,30 @@
         $('listScope').textContent = `${ev.event_date} ${ev.event_time || ''} · ${ev.location}`
             + (ev.deadline_passed ? '（報名已截止）' : '') + (ev.event_over ? '（活動已結束）' : '')
             + (ev.cancelled ? '（活動已取消）' : '');
+    }
+
+    function renderEventActions() {
+        const wrap = $('eventActions');
+        const ev = allEvents.find(e => e.id === currentEvent);
+        if (!currentEvent || !ev) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        if (ev.cancelled) {
+            wrap.innerHTML = `<span class="badge status-已取消">這場活動已取消</span>`;
+            return;
+        }
+        if (eventCancelConfirming) {
+            wrap.innerHTML = `<div class="confirm-box">
+                <span>確定要取消「${esc(ev.title)}」這場活動嗎？已報名／候補中的人都會收到取消通知信。</span>
+                <div class="actions">
+                    <button type="button" data-event-act="cancel-no">再想想</button>
+                    <button type="button" data-event-act="cancel-yes" class="danger">確定取消活動</button>
+                </div>
+            </div>`;
+        } else {
+            wrap.innerHTML = `
+                <button type="button" data-event-act="edit">編輯這場活動</button>
+                <button type="button" data-event-act="cancel">取消這場活動</button>`;
+        }
     }
 
     function renderFeedbackSummary() {
@@ -119,16 +145,20 @@
     async function loadEvent(id) {
         currentEvent = id;
         closeEdit();
+        closeEventEdit();
         confirmState = null;
         customNotifyId = null;
+        eventCancelConfirming = false;
         if (!id) {
             $('eventStats').hidden = true; $('regList').innerHTML = '請先選擇活動。'; $('addSection').hidden = true;
             $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true; $('broadcastSection').hidden = true;
+            $('eventActions').hidden = true;
             return;
         }
         const result = await api(`/api/campus/events/${id}/registrations`);
         regs = result.data;
         renderStats(result.event);
+        renderEventActions();
         renderList();
         renderFeedbackSummary();
         $('addSection').hidden = false;
@@ -146,6 +176,7 @@
         else {
             currentEvent = null; $('regList').innerHTML = '目前沒有任何活動。'; $('addSection').hidden = true; $('eventStats').hidden = true;
             $('qrCheckinForm').hidden = true; $('feedbackSummary').hidden = true; $('broadcastSection').hidden = true;
+            $('eventActions').hidden = true;
         }
     }
 
@@ -175,6 +206,35 @@
         };
     }
 
+    function eventFormToFields(form) {
+        return {
+            title: form.title.value.trim(), location: form.location.value.trim(),
+            event_date: form.event_date.value, event_time: form.event_time.value,
+            registration_deadline: form.registration_deadline.value, capacity: form.capacity.value,
+            description: form.description.value.trim(), image_url: form.image_url.value.trim(),
+        };
+    }
+
+    function openEventEdit(ev) {
+        eventEditing = true;
+        const form = $('eventEditForm');
+        form.title.value = ev.title;
+        form.location.value = ev.location;
+        form.event_date.value = ev.event_date;
+        form.event_time.value = ev.event_time || '';
+        form.registration_deadline.value = ev.registration_deadline;
+        form.capacity.value = ev.capacity;
+        form.description.value = ev.description || '';
+        form.image_url.value = ev.image_url || '';
+        $('eventEditPanel').hidden = false;
+        $('eventEditPanel').scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+    function closeEventEdit() {
+        eventEditing = false;
+        $('eventEditPanel').hidden = true;
+        $('eventEditForm').reset();
+    }
+
     async function init() {
         const me = await api('/api/auth/me');
         if (!me.is_authenticated) throw new Error('請先登入系統');
@@ -192,6 +252,70 @@
         const result = await api('/api/campus/events/send-reminders', {method: 'POST'});
         message(result.message);
     }));
+
+    $('createEventToggle').addEventListener('click', () => {
+        const form = $('createEventForm');
+        form.hidden = !form.hidden;
+        $('createEventToggle').textContent = form.hidden ? '顯示表單' : '隱藏表單';
+    });
+    $('createEventForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const form = e.target;
+        busy(form.querySelector('button'), async () => {
+            const result = await api('/api/campus/events', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(eventFormToFields(form)),
+            });
+            form.reset();
+            form.hidden = true;
+            $('createEventToggle').textContent = '顯示表單';
+            message(result.message);
+            currentEvent = result.data.id;
+            await refreshAll();
+        });
+    });
+
+    $('eventEditCancel').addEventListener('click', closeEventEdit);
+    $('eventEditForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const form = e.target;
+        busy(form.querySelector('button'), async () => {
+            const result = await api(`/api/campus/events/${currentEvent}`, {
+                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(eventFormToFields(form)),
+            });
+            message(result.message);
+            closeEventEdit();
+            await refreshAll();
+        });
+    });
+
+    $('eventActions').addEventListener('click', e => {
+        const button = e.target.closest('[data-event-act]');
+        if (!button) return;
+        const act = button.dataset.eventAct;
+        if (act === 'edit') {
+            const ev = allEvents.find(x => x.id === currentEvent);
+            if (ev) openEventEdit(ev);
+            return;
+        }
+        if (act === 'cancel') {
+            eventCancelConfirming = true;
+            renderEventActions();
+            return;
+        }
+        if (act === 'cancel-no') {
+            eventCancelConfirming = false;
+            renderEventActions();
+            return;
+        }
+        if (act === 'cancel-yes') {
+            busy(button, async () => {
+                const result = await api(`/api/campus/events/${currentEvent}`, {method: 'DELETE'});
+                message(result.message);
+                eventCancelConfirming = false;
+                await refreshAll();
+            });
+        }
+    });
 
     $('qrCheckinForm').addEventListener('submit', e => {
         e.preventDefault();

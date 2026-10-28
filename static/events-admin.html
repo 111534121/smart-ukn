@@ -27,11 +27,29 @@
   <p id="message" role="status" aria-live="polite"></p>
 
   <section class="card">
+    <div class="sectionhead"><h2>建立新活動</h2><button type="button" id="createEventToggle">顯示表單</button></div>
+    <form id="createEventForm" hidden>
+      <div class="formgrid">
+        <label>活動名稱<input name="title" maxlength="100" required placeholder="例如：系學會迎新茶會"></label>
+        <label>地點<input name="location" maxlength="100" required placeholder="例如：康寧樓 1 樓中廊"></label>
+        <label>活動日期<input name="event_date" type="date" required></label>
+        <label>活動時間（選填）<input name="event_time" type="time"></label>
+        <label>報名截止日<input name="registration_deadline" type="date" required></label>
+        <label>名額<input name="capacity" type="number" min="1" required></label>
+        <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
+        <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
+      </div>
+      <button class="primary" type="submit">建立活動</button>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>選擇活動</h2>
     <div class="formgrid">
       <label>活動<select id="eventSelect"><option value="">載入中…</option></select></label>
       <label>搜尋報名者<input id="search" type="search" placeholder="姓名、學號或 Email"></label>
     </div>
+    <div id="eventActions" class="actions" hidden></div>
     <div id="eventStats" class="stats" hidden></div>
     <form id="qrCheckinForm" class="qr-checkin" hidden>
       <label>QR Code／簽到碼簽到<input id="checkinCodeInput" type="text" placeholder="用掃碼裝置掃學生的入場 QR Code，或貼上簽到碼" autocomplete="off"></label>
@@ -73,6 +91,23 @@
       <div><h2>報名名單</h2><p id="listScope" class="muted"></p></div>
     </div>
     <div id="regList" class="case-list">請先選擇活動。</div>
+  </section>
+
+  <section id="eventEditPanel" class="card" hidden aria-label="編輯活動" tabindex="-1">
+    <div class="sectionhead"><h2>編輯活動</h2><button type="button" id="eventEditCancel">關閉</button></div>
+    <form id="eventEditForm">
+      <div class="formgrid">
+        <label>活動名稱<input name="title" maxlength="100" required></label>
+        <label>地點<input name="location" maxlength="100" required></label>
+        <label>活動日期<input name="event_date" type="date" required></label>
+        <label>活動時間（選填）<input name="event_time" type="time"></label>
+        <label>報名截止日<input name="registration_deadline" type="date" required></label>
+        <label>名額<input name="capacity" type="number" min="1" required></label>
+        <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
+        <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
+      </div>
+      <button class="primary" type="submit">儲存修改</button>
+    </form>
   </section>
 
   <section id="editPanel" class="card" hidden aria-label="編輯報名者" tabindex="-1">
