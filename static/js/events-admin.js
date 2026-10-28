@@ -212,7 +212,7 @@
             event_date: form.event_date.value, event_time: form.event_time.value,
             registration_deadline: form.registration_deadline.value, capacity: form.capacity.value,
             description: form.description.value.trim(), image_url: form.image_url.value.trim(),
-            benefit: form.benefit.value.trim(),
+            benefit: form.benefit.value.trim(), eligibility: form.eligibility.value.trim(),
         };
     }
 
@@ -228,6 +228,7 @@
         form.description.value = ev.description || '';
         form.image_url.value = ev.image_url || '';
         form.benefit.value = ev.benefit || '';
+        form.eligibility.value = ev.eligibility || '';
         $('eventEditPanel').hidden = false;
         $('eventEditPanel').scrollIntoView({behavior: 'smooth', block: 'start'});
     }

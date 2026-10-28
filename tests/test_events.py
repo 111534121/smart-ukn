@@ -449,6 +449,29 @@ def test_event_benefit_note_is_optional_and_defaults_empty(client, login):
     assert ev["benefit"] == ""
 
 
+def test_event_eligibility_note_shows_up_on_listing_and_mine(client, login):
+    """資格限定/報名對象 (例如限資訊管理科學生)：留空代表不限身分皆可報名"""
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"eligibility": "限資訊管理科學生"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["eligibility"] == "限資訊管理科學生"
+
+    login("student1")
+    listed = next(e for e in client.get("/api/campus/events").get_json()["data"] if e["id"] == event_id)
+    assert listed["eligibility"] == "限資訊管理科學生"
+
+    _register(client, login, event_id, "student1", "S112001")
+    mine = next(r for r in client.get("/api/campus/events/mine").get_json()["data"] if r["event_id"] == event_id)
+    assert mine["event_eligibility"] == "限資訊管理科學生"
+
+
+def test_event_eligibility_note_is_optional_and_defaults_empty(client, login):
+    event_id = _create_event(client, login)
+    ev = client.get(f"/api/campus/events/{event_id}").get_json()["data"]
+    assert ev["eligibility"] == ""
+
+
 def test_create_event_rejects_deadline_after_event_date(client, login):
     login("staff1")
     res = client.post("/api/campus/events", json={

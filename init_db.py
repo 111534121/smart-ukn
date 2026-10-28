@@ -977,6 +977,15 @@ def init_database():
             cursor.execute("ALTER TABLE `events` ADD COLUMN `benefit` varchar(200) DEFAULT NULL AFTER `image_url`")
             print("✅ events 已新增 benefit 欄位")
 
+        # 補上「資格限定/報名對象」欄位
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'events' AND COLUMN_NAME = 'eligibility'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `events` ADD COLUMN `eligibility` varchar(200) DEFAULT NULL AFTER `benefit`")
+            print("✅ events 已新增 eligibility 欄位")
+
         # 預約校園參觀 (campus/visits.py)
         from campus.visits_store import TABLE_SQL as VISITS_TABLE_SQL
         cursor.execute(VISITS_TABLE_SQL)

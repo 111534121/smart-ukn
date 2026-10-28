@@ -516,8 +516,8 @@ function renderMap(infoHtml) {
         <div class="lg:col-span-2">
             <svg viewBox="0 0 100 72" class="w-full h-auto rounded border border-slate-200 bg-emerald-50/40" role="img" aria-label="康寧大學校園示意地圖">
                 <rect x="0" y="64" width="100" height="8" fill="#e2e8f0"/><text x="3" y="69.5" font-size="2.4" fill="#64748b">康寧路三段十五巷</text>
-                <text x="43" y="23.3" font-size="2" fill="#64748b" font-weight="700">康寧大道</text>
-                <path d="M2 44 L2 64" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="1 1"/>
+                <text x="43" y="24.5" font-size="2" fill="#64748b" font-weight="700">康寧大道</text>
+                <path d="M2 42 L2 64" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="1 1"/>
                 ${b.map(x => {
                     const on = mapHighlight === x.code;
                     const sub = x.floors >= 2 ? `${x.code} 棟 · ${x.floors}F` : '戶外空間';
@@ -1002,7 +1002,10 @@ function eventCardHtml(e) {
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <div class="font-bold text-slate-900">${esc(e.title)}</div>
-                    ${e.benefit ? `<div class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">🏅 ${esc(e.benefit)}</div>` : ''}
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        ${e.eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(e.eligibility)}</span>` : ''}
+                        ${e.benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(e.benefit)}</span>` : ''}
+                    </div>
                     <div class="text-xs text-slate-500 mt-0.5">📅 ${esc(e.event_date)} ${esc(e.event_time || '')} · 📍 ${esc(e.location)}</div>
                     ${e.description ? `<p class="text-sm text-slate-600 mt-2 whitespace-pre-line">${esc(e.description)}</p>` : ''}
                     <div class="text-[11px] text-slate-400 mt-1">報名截止 ${esc(e.registration_deadline)} · 名額 ${e.registered_count}/${e.capacity}${e.waitlist_count ? `（候補 ${e.waitlist_count} 人）` : ''}</div>
@@ -1077,7 +1080,10 @@ function myEventRowHtml(r) {
                 <div>
                     <span class="font-bold text-slate-900">${esc(r.event_title)}</span>
                     <span class="text-xs text-slate-500 ml-2">📅 ${esc(r.event_date)} ${esc(r.event_time || '')} · 📍 ${esc(r.event_location)}</span>
-                    ${r.event_benefit ? `<div class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">🏅 ${esc(r.event_benefit)}</div>` : ''}
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        ${r.event_eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(r.event_eligibility)}</span>` : ''}
+                        ${r.event_benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(r.event_benefit)}</span>` : ''}
+                    </div>
                 </div>
                 <div class="flex items-center gap-1.5 flex-wrap">${statusBadge(r.event_cancelled ? '活動已取消' : r.status, r.event_cancelled ? 'red' : statusTone)}${notifyHtml}</div>
             </div>

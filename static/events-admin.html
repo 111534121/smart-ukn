@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>活動報名｜報名者管理</title>
-<link rel="stylesheet" href="/css/admin-workbench.css?v=20261022">
-<link rel="stylesheet" href="/css/events-admin.css?v=20261022">
+<link rel="stylesheet" href="/css/admin-workbench.css?v=20261028">
+<link rel="stylesheet" href="/css/events-admin.css?v=20261028">
 </head>
 <body>
 <header>
@@ -38,7 +38,8 @@
         <label>名額<input name="capacity" type="number" min="1" required></label>
         <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
         <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
-        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：完成並簽到可登記為 CCAC 證照加分項目"></label>
+        <label>資格限定／報名對象（選填）<input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生"></label>
+        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目"></label>
       </div>
       <button class="primary" type="submit">建立活動</button>
     </form>
@@ -106,7 +107,8 @@
         <label>名額<input name="capacity" type="number" min="1" required></label>
         <label>活動說明（選填）<textarea name="description" maxlength="2000" rows="2"></textarea></label>
         <label>活動圖片網址（選填）<input name="image_url" type="url" maxlength="500"></label>
-        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：完成並簽到可登記為 CCAC 證照加分項目"></label>
+        <label>資格限定／報名對象（選填）<input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生"></label>
+        <label>活動效益／加分說明（選填）<input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目"></label>
       </div>
       <button class="primary" type="submit">儲存修改</button>
     </form>
@@ -128,6 +130,6 @@
   </section>
 </main>
 <footer>康寧大學 · 活動報名服務</footer>
-<script src="/js/events-admin.js?v=20261022"></script>
+<script src="/js/events-admin.js?v=20261028"></script>
 </body>
 </html>
