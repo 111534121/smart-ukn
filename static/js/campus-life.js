@@ -984,21 +984,40 @@ async function loadEvents() {
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
+function eventFormFieldsHtml(e) {
+    e = e || {};
+    return `
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動名稱 *</label><input name="title" required maxlength="100" value="${esc(e.title || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動日期 *</label><input type="date" name="event_date" required value="${esc(e.event_date || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動時間</label><input type="time" name="event_time" value="${esc(e.event_time || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">報名截止日 *</label><input type="date" name="registration_deadline" required value="${esc(e.registration_deadline || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">名額 *</label><input type="number" name="capacity" required min="1" value="${e.capacity || 30}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動地點 *</label><input name="location" required maxlength="100" value="${esc(e.location || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">資格限定／報名對象（選填）</label><input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生" value="${esc(e.eligibility || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動效益／加分說明（選填）</label><input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目" value="${esc(e.benefit || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動說明</label><textarea name="description" rows="3" maxlength="2000" class="w-full border border-slate-300 rounded px-3 py-2">${esc(e.description || '')}</textarea></div>`;
+}
+
 function openCreateEventModal() {
     openModal('新增活動', `
         <form onsubmit="submitCreateEvent(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動名稱 *</label><input name="title" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動日期 *</label><input type="date" name="event_date" required class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動時間</label><input type="time" name="event_time" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">報名截止日 *</label><input type="date" name="registration_deadline" required class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">名額 *</label><input type="number" name="capacity" required min="1" value="30" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動地點 *</label><input name="location" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">資格限定／報名對象（選填）</label><input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動效益／加分說明（選填）</label><input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目" class="w-full border border-slate-300 rounded px-3 py-2"></div>
-            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動說明</label><textarea name="description" rows="3" maxlength="2000" class="w-full border border-slate-300 rounded px-3 py-2"></textarea></div>
+            ${eventFormFieldsHtml()}
             <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
                 <button type="button" onclick="closeModal()" class="text-sm text-slate-500 px-3 py-2">取消</button>
                 <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">建立活動</button>
+            </div>
+        </form>`);
+}
+
+function openEditEventModal(id) {
+    const e = eventsList.find(x => x.id === id);
+    if (!e) return;
+    openModal('編輯活動', `
+        <form onsubmit="submitEditEvent(event, ${id})" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            ${eventFormFieldsHtml(e)}
+            <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeModal()" class="text-sm text-slate-500 px-3 py-2">取消</button>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">儲存修改</button>
             </div>
         </form>`);
 }
@@ -1014,6 +1033,17 @@ async function submitCreateEvent(event) {
     } catch (e) { toast(e.message, 'error'); }
 }
 
+async function submitEditEvent(event, id) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        await api(`/api/campus/events/${id}`, { method: 'PUT', json: f });
+        toast('活動已更新');
+        closeModal();
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
 function renderEventsList() {
     const body = document.getElementById('eventsBody');
     if (!eventsList.length) { body.innerHTML = '<div class="text-sm text-slate-500">目前沒有符合條件的活動。</div>'; return; }
@@ -1022,6 +1052,7 @@ function renderEventsList() {
 
 function eventCardHtml(e) {
     const myReg = myEventsList.find(r => r.event_id === e.id && r.status !== '已取消');
+    const isStaff = ['管理員', '教職員', '老師'].includes(currentUser.role);
     let actionHtml;
     if (e.cancelled) actionHtml = statusBadge('活動已取消', 'red');
     else if (myReg) actionHtml = statusBadge(myReg.status === '候補中' ? '已候補' : '已報名', myReg.status === '候補中' ? 'amber' : 'green');
@@ -1032,7 +1063,7 @@ function eventCardHtml(e) {
         <div class="rounded border border-slate-200 p-4 space-y-3">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                    <div class="font-bold text-slate-900">${esc(e.title)}</div>
+                    <div class="font-bold text-slate-900">${esc(e.title)}${isStaff ? ` <button type="button" onclick="openEditEventModal(${e.id})" class="text-xs text-ukn-700 hover:underline font-normal ml-1">編輯</button>` : ''}</div>
                     <div class="flex flex-wrap gap-1 mt-1">
                         ${e.eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(e.eligibility)}</span>` : ''}
                         ${e.benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(e.benefit)}</span>` : ''}
