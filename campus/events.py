@@ -42,6 +42,10 @@ def clean_event(data, partial=False):
         out["description"] = str(data.get("description") or "").strip()[:2000]
     if not partial or "image_url" in data:
         out["image_url"] = str(data.get("image_url") or "").strip()[:500]
+    if not partial or "benefit" in data:
+        out["benefit"] = str(data.get("benefit") or "").strip()[:200]
+    if not partial or "eligibility" in data:
+        out["eligibility"] = str(data.get("eligibility") or "").strip()[:200]
     if not partial or "location" in data:
         location = str(data.get("location") or "").strip()[:100]
         if not location:
@@ -183,7 +187,8 @@ def my_registrations():
             continue
         items.append({**r, "event_title": ev["title"], "event_date": ev["event_date"],
                       "event_time": ev.get("event_time", ""), "event_location": ev["location"],
-                      "event_cancelled": bool(ev.get("cancelled")),
+                      "event_cancelled": bool(ev.get("cancelled")), "event_benefit": ev.get("benefit", ""),
+                      "event_eligibility": ev.get("eligibility", ""),
                       "event_over": ev["event_date"] < date.today().isoformat()})
     items.sort(key=lambda r: r["event_date"], reverse=True)
     return ok(data=items)
@@ -253,8 +258,16 @@ def cancel_event(event_id):
         if ev.get("cancelled"):
             return error("這個活動已經取消過了")
         updated = db.update_event(event_id, {"cancelled": 1})
+        affected = [r for r in db.all_registrations() if r["event_id"] == event_id and r["status"] != "已取消"]
     deps.write_audit_log("events", event_id, "刪除", before={"cancelled": False}, after={"cancelled": True})
-    return ok(message=f"活動「{updated['title']}」已取消")
+    notified_count = 0
+    for r in affected:
+        sent = send_mail_safely(r["email"], f"【康寧大學】{updated['title']} 活動取消通知",
+                                 f"{r['full_name']} 您好：\n\n很抱歉，「{updated['title']}」"
+                                 f"（原訂 {updated['event_date']} {updated.get('event_time', '')}）已經取消，造成不便敬請見諒。")
+        _record_notified(r["id"], sent)
+        notified_count += int(sent)
+    return ok(message=f"活動「{updated['title']}」已取消" + (f"，已通知 {notified_count}/{len(affected)} 位報名者" if affected else ""))
 
 
 # ---------- 報名 / 取消報名 (候補名單自動遞補) ----------

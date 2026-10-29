@@ -39,6 +39,51 @@ def test_tour_seen_is_per_account_and_keeps_pinned(client, login, monkeypatch, t
     assert client.get("/api/campus/prefs").get_json()["data"]["tour_seen"] is False
 
 
+def test_tour_seen_persists_when_mysql_connected(client, login, monkeypatch):
+    """之前 MySQL 連上時 tour_seen 完全沒存進去 (user_preferences 沒這欄位、PUT/GET 都沒處理)，
+    每次登入都會重新跳出導覽；這裡模擬 MySQL 模式驗證已經修好"""
+    from campus.common import deps
+    table = {}
+
+    def fetch_db_rows(sql, params=()):
+        if "LIMIT 1" in sql:
+            return []  # _prefs_db()：回空清單 (非 None) 代表欄位存在，走 MySQL 模式
+        username = params[0]
+        return [table.get(username, {"pinned_features": None, "tour_seen": 0})]
+
+    def db_execute(sql, params):
+        username, value = params
+        row = table.setdefault(username, {"pinned_features": None, "tour_seen": 0})
+        row["pinned_features" if "pinned_features" in sql else "tour_seen"] = value
+        return {"lastrowid": None, "rowcount": 1}
+
+    monkeypatch.setattr(deps, "fetch_db_rows", fetch_db_rows)
+    monkeypatch.setattr(deps, "db_execute", db_execute)
+
+    login("student1")
+    assert client.get("/api/campus/prefs").get_json()["data"]["tour_seen"] is False
+    data = client.put("/api/campus/prefs", json={"tour_seen": True}).get_json()["data"]
+    assert data["tour_seen"] is True
+    assert client.get("/api/campus/prefs").get_json()["data"]["tour_seen"] is True  # 重新整理/再次登入都還記得
+
+
+def test_session_tour_dismiss_lasts_only_until_logout(client, login):
+    """跟 tour_seen (永久) 不同：這個只存在登入 session，不寫資料庫，是給共用示範帳號
+    暫時關掉導覽用的，不會因為一個人關掉就害別人登入同一個示範帳號也看不到導覽"""
+    login("student1")
+    first = client.get("/api/campus/prefs").get_json()["data"]
+    assert first["session_tour_dismissed"] is False
+
+    data = client.put("/api/campus/prefs", json={"session_tour_dismiss": True}).get_json()["data"]
+    assert data["session_tour_dismissed"] is True
+    assert data["tour_seen"] is False  # 跟永久的 tour_seen 互不影響
+    assert client.get("/api/campus/prefs").get_json()["data"]["session_tour_dismissed"] is True
+
+    client.post("/api/auth/logout")
+    login("student1")
+    assert client.get("/api/campus/prefs").get_json()["data"]["session_tour_dismissed"] is False  # 登出後重設
+
+
 # ---------- 我的科系與顯示範圍 ----------
 
 def test_student_defaults_to_official_dept(client, login):
@@ -118,7 +163,7 @@ def test_search_filters(client):
     data = client.get("/api/faculty?field=護理與健康照護&projects=1").get_json()
     names = {t["name"] for t in data["data"]}
     assert names == {"許美玲", "蔡宗翰"}  # 鄭如君目前不收專題生
-    assert client.get("/api/faculty?dept=護理科").get_json()["data"][0]["office"]["room"].startswith("N")
+    assert client.get("/api/faculty?dept=護理科").get_json()["data"][0]["office"]["room"].startswith("B")  # 護理科教室在第二教學大樓 (B 棟)
     assert client.get("/api/faculty?q=量子物理").get_json()["data"] == []
 
 

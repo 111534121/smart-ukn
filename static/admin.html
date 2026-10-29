@@ -284,6 +284,10 @@
 
             <!-- 分頁 4: 校曆與重要日程 -->
             <div id="panel-deadlines" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    <p>依身分/科系篩選顯示的重要期限（例如停修、預警、抵免申請）；目前沒有編輯/刪除功能，新增後如需更正請直接改資料庫或請系統人員協助。</p>
+                    <button onclick="openDeadlineModal()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap">+ 新增期限</button>
+                </div>
                 <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
@@ -859,6 +863,68 @@
         </div>
     </div>
 
+    <!-- 彈窗 Modal: 新增重要期限 (目前後端只有新增，沒有編輯/刪除 API) -->
+    <div id="deadlineModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-slate-900">新增重要期限</h3>
+            <form id="deadlineForm" onsubmit="saveDeadline(event)" class="space-y-3 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">事項標題 *</label>
+                    <input type="text" id="dlTitle" placeholder="例如：115-1 學期課程停修申請" required class="w-full border rounded p-2.5">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">主辦單位</label>
+                        <input type="text" id="dlCategory" placeholder="例如：教務處課務組" class="w-full border rounded p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">學期週次</label>
+                        <input type="number" id="dlWeek" min="1" max="20" value="11" class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">開始日期</label>
+                        <input type="date" id="dlStartDate" class="w-full border rounded p-2.5">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">截止日期 *</label>
+                        <input type="date" id="dlEndDate" required class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">適用身分</label>
+                        <input type="text" id="dlRole" list="dlRoleOptions" value="學生" placeholder="逗號分隔，例如 學生,家長；留空或填 all 代表全部身分" class="w-full border rounded p-2.5">
+                        <datalist id="dlRoleOptions">
+                            <option value="all"></option>
+                            <option value="學生"></option>
+                            <option value="學生,老師,家長"></option>
+                            <option value="老師"></option>
+                            <option value="教職員"></option>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">適用科系</label>
+                        <input type="text" id="dlDept" placeholder="例如 CS；留空代表全校" class="w-full border rounded p-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">相關系統連結（選填）</label>
+                    <input type="url" id="dlUrl" placeholder="https://..." class="w-full border rounded p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">說明（選填）</label>
+                    <textarea id="dlDescription" rows="2" class="w-full border rounded p-2.5"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeDeadlineModal()" class="px-4 py-2 border rounded">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded bg-ukn-800 text-white font-bold hover:bg-ukn-900 transition">新增期限</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 彈窗 Modal: 學生專區連結新增/編輯 -->
     <div id="linkModal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1232,6 +1298,46 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openDeadlineModal() {
+            document.getElementById('deadlineForm').reset();
+            document.getElementById('dlWeek').value = 11;
+            document.getElementById('dlRole').value = '學生';
+            document.getElementById('deadlineModal').classList.remove('hidden');
+        }
+
+        function closeDeadlineModal() {
+            document.getElementById('deadlineModal').classList.add('hidden');
+        }
+
+        async function saveDeadline(e) {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('dlTitle').value.trim(),
+                category: document.getElementById('dlCategory').value.trim() || '課務組',
+                semester_week: Number(document.getElementById('dlWeek').value) || 11,
+                start_date: document.getElementById('dlStartDate').value || undefined,
+                end_date: document.getElementById('dlEndDate').value,
+                applies_to_role: document.getElementById('dlRole').value.trim() || 'all',
+                applies_to_dept: document.getElementById('dlDept').value.trim() || 'all',
+                related_system_url: document.getElementById('dlUrl').value.trim(),
+                description: document.getElementById('dlDescription').value.trim(),
+            };
+            try {
+                const res = await fetch('/api/deadlines', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert(data.message);
+                    return;
+                }
+                closeDeadlineModal();
+                await loadDeadlines();
             } catch (e) {
                 console.error(e);
             }

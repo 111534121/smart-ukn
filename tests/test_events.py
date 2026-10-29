@@ -413,3 +413,129 @@ def test_search_and_filter_events(client, login):
     _register(client, login, event_id, "student1", "S112001")
     open_only = client.get("/api/campus/events?open_only=1").get_json()["data"]
     assert all(e["id"] != event_id for e in open_only)  # 已滿額的活動不會出現在「還有名額」篩選裡
+
+
+def test_create_event_success_returns_full_fields(client, login):
+    login("staff1")
+    res = client.post("/api/campus/events", json={
+        "title": "系學會迎新茶會", "description": "歡迎新生", "location": "康寧樓 1 樓中廊",
+        "event_date": _tomorrow(), "event_time": "14:00", "registration_deadline": _today(), "capacity": 5,
+    })
+    assert res.status_code == 200, res.get_json()
+    data = res.get_json()["data"]
+    assert data["title"] == "系學會迎新茶會" and data["capacity"] == 5 and not data["cancelled"]
+
+
+def test_event_benefit_note_shows_up_on_listing_and_mine(client, login):
+    """活動效益/加分說明 (例如等同於某證照加分)：建立時可填，學生瀏覽活動與「我的報名」都要看得到"""
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"benefit": "完成並簽到可登記為 CCAC 證照加分項目"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+    login("student1")
+    listed = next(e for e in client.get("/api/campus/events").get_json()["data"] if e["id"] == event_id)
+    assert listed["benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+    _register(client, login, event_id, "student1", "S112001")
+    mine = next(r for r in client.get("/api/campus/events/mine").get_json()["data"] if r["event_id"] == event_id)
+    assert mine["event_benefit"] == "完成並簽到可登記為 CCAC 證照加分項目"
+
+
+def test_event_benefit_note_is_optional_and_defaults_empty(client, login):
+    event_id = _create_event(client, login)
+    ev = client.get(f"/api/campus/events/{event_id}").get_json()["data"]
+    assert ev["benefit"] == ""
+
+
+def test_event_eligibility_note_shows_up_on_listing_and_mine(client, login):
+    """資格限定/報名對象 (例如限資訊管理科學生)：留空代表不限身分皆可報名"""
+    event_id = _create_event(client, login)
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"eligibility": "限資訊管理科學生"})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["eligibility"] == "限資訊管理科學生"
+
+    login("student1")
+    listed = next(e for e in client.get("/api/campus/events").get_json()["data"] if e["id"] == event_id)
+    assert listed["eligibility"] == "限資訊管理科學生"
+
+    _register(client, login, event_id, "student1", "S112001")
+    mine = next(r for r in client.get("/api/campus/events/mine").get_json()["data"] if r["event_id"] == event_id)
+    assert mine["event_eligibility"] == "限資訊管理科學生"
+
+
+def test_event_eligibility_note_is_optional_and_defaults_empty(client, login):
+    event_id = _create_event(client, login)
+    ev = client.get(f"/api/campus/events/{event_id}").get_json()["data"]
+    assert ev["eligibility"] == ""
+
+
+def test_create_event_rejects_deadline_after_event_date(client, login):
+    login("staff1")
+    res = client.post("/api/campus/events", json={
+        "title": "x", "location": "x", "event_date": _today(),
+        "registration_deadline": _tomorrow(), "capacity": 1,
+    })
+    assert res.status_code == 400
+    assert "報名截止日" in res.get_json()["message"]
+
+
+def test_staff_can_update_event(client, login):
+    event_id = _create_event(client, login, capacity=5)
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"title": "改名後的活動", "capacity": 10})
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["title"] == "改名後的活動"
+    assert res.get_json()["data"]["capacity"] == 10
+
+
+def test_update_event_rejects_capacity_below_confirmed_count(client, login):
+    event_id = _create_event(client, login, capacity=5)
+    _register(client, login, event_id, "student1", "S112001")
+    _register(client, login, event_id, "student2", "S112002")
+    login("staff1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"capacity": 1})
+    assert res.status_code == 400
+    assert "2 人確認報名" in res.get_json()["message"]
+
+
+def test_non_staff_cannot_update_event(client, login):
+    event_id = _create_event(client, login)
+    login("student1")
+    res = client.put(f"/api/campus/events/{event_id}", json={"title": "x"})
+    assert res.status_code == 403
+
+
+def test_staff_can_cancel_event_and_notifies_registrants(client, login):
+    event_id = _create_event(client, login)
+    r1 = _register(client, login, event_id, "student1", "S112001")
+    reg1_id = r1.get_json()["data"]["id"]
+
+    login("staff1")
+    res = client.delete(f"/api/campus/events/{event_id}")
+    assert res.status_code == 200, res.get_json()
+    assert "已通知 1/1 位報名者" in res.get_json()["message"]
+
+    reg = next(r for r in client.get(f"/api/campus/events/{event_id}/registrations").get_json()["data"]
+               if r["id"] == reg1_id)
+    assert reg["notified"] is True  # 測試用的 FakeMailer 一定寄得出去
+
+    ev = client.get(f"/api/campus/events/{event_id}").get_json()["data"]
+    assert ev["cancelled"] is True
+
+
+def test_cannot_cancel_already_cancelled_event(client, login):
+    event_id = _create_event(client, login)
+    login("staff1")
+    client.delete(f"/api/campus/events/{event_id}")
+    res = client.delete(f"/api/campus/events/{event_id}")
+    assert res.status_code == 400
+
+
+def test_non_staff_cannot_cancel_event(client, login):
+    event_id = _create_event(client, login)
+    login("student1")
+    res = client.delete(f"/api/campus/events/{event_id}")
+    assert res.status_code == 403
