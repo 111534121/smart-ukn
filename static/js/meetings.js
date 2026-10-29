@@ -4,7 +4,7 @@
 let meetingData = null;
 const meetingInvitees = new Map();  // 成員代碼 → 顯示名稱 (建立表單或「邀請更多」用)
 let meetingSearchTimer = null;
-const MEETING_NOTIF_POLL_MS = 120000;
+const MEETING_NOTIF_POLL_MS = 30000;  // 新邀請最慢 30 秒出現在通知中心與會議列表
 
 function meetingTimeText(m) {
     const d = new Date(m.start_at.replace(' ', 'T'));
@@ -81,13 +81,13 @@ function enterMeeting(id) {
         openModal(`🎥 ${m.title}`, `<iframe src="${esc(url)}" allow="camera; microphone; display-capture; fullscreen; autoplay" class="w-full h-[70vh] rounded border border-slate-200"></iframe>`, true);
     } else {
         window.open(url, '_blank', 'noopener');
-        toast('已在新分頁開啟會議室；第一次使用請允許瀏覽器使用攝影機和麥克風');
+        toast('已在新分頁開啟會議室，按「加入會議」就能進去；第一次使用請允許瀏覽器使用攝影機和麥克風');
     }
 }
 
 function copyMeetingInvite(id) {
     const m = meetingData.data.find(x => x.id === id);
-    const text = `邀請你參加線上會議「${m.title}」\n時間：${meetingTimeText(m)}\n到康寧學生服務系統「線上會議」輸入邀請碼：${m.invite_code}\n${location.origin}/#meetings`;
+    const text = `邀請你參加線上會議「${m.title}」\n時間：${meetingTimeText(m)}\n到康寧學生服務系統「線上會議」輸入邀請碼：${m.invite_code}\n${meetingData.share_base || location.origin}/#meetings`;
     navigator.clipboard.writeText(text).then(() => toast('已複製，可以貼到 LINE 或訊息傳給對方'), () => toast(`邀請碼：${m.invite_code}`));
 }
 
@@ -236,6 +236,9 @@ function updateMeetingNotifications(data) {
 
 async function pollMeetingNotifications() {
     if (!isLoggedIn()) return;
+    // 正在看會議分頁時連列表一起更新 (別人剛邀請你、剛取消會議，不用重新整理就看得到)
+    const onMeetingsTab = !document.getElementById('tab-meetings')?.classList.contains('hidden');
+    if (onMeetingsTab && !document.getElementById('meetingForm')?.innerHTML) return loadMeetings();
     try { updateMeetingNotifications(await api('/api/campus/meetings')); } catch (e) { /* 離線時下次再試 */ }
 }
 

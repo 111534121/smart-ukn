@@ -2079,7 +2079,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 504
+          "line": 505
         }
       ]
     },
@@ -2157,7 +2157,11 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/retake.js",
-          "line": 21
+          "line": 12
+        },
+        {
+          "file": "static/js/retake.js",
+          "line": 22
         }
       ]
     },
@@ -2288,11 +2292,11 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 504
+          "line": 505
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 554
+          "line": 555
         }
       ]
     },
@@ -4220,11 +4224,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 846
+          "line": 847
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 860
+          "line": 861
         }
       ]
     },
@@ -5054,23 +5058,23 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 1126
+          "line": 1127
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1138
+          "line": 1139
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1254
+          "line": 1255
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1265
+          "line": 1266
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1406
+          "line": 1407
         }
       ]
     },
@@ -5663,35 +5667,35 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 962
+          "line": 963
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 983
+          "line": 984
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 995
+          "line": 996
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1103
+          "line": 1104
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1105
+          "line": 1106
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1115
+          "line": 1116
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1121
+          "line": 1122
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1407
+          "line": 1408
         }
       ]
     },
@@ -7214,31 +7218,31 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 660
+          "line": 661
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 702
+          "line": 703
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 721
+          "line": 722
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 733
+          "line": 734
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 740
+          "line": 741
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 766
+          "line": 767
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 776
+          "line": 777
         },
         {
           "file": "static/js/campus-shell.js",
@@ -8433,31 +8437,35 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 799
+          "line": 800
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 805
+          "line": 806
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1404
+          "line": 1405
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 591
+          "line": 592
         },
         {
           "file": "static/js/faculty.js",
-          "line": 55
+          "line": 47
         },
         {
           "file": "static/js/faculty.js",
-          "line": 130
+          "line": 56
         },
         {
           "file": "static/js/faculty.js",
-          "line": 154
+          "line": 131
+        },
+        {
+          "file": "static/js/faculty.js",
+          "line": 155
         }
       ]
     },
@@ -9793,11 +9801,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 378
+          "line": 372
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 398
+          "line": 379
+        },
+        {
+          "file": "static/js/campus-features.js",
+          "line": 399
         },
         {
           "file": "static/js/home-portal.js",
@@ -10271,19 +10283,23 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 471
+          "line": 472
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 490
+          "line": 491
         },
         {
           "file": "static/js/forms-finder.js",
-          "line": 29
+          "line": 25
         },
         {
           "file": "static/js/forms-finder.js",
-          "line": 66
+          "line": 30
+        },
+        {
+          "file": "static/js/forms-finder.js",
+          "line": 67
         }
       ]
     },
@@ -13495,11 +13511,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 668
+          "line": 669
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 709
+          "line": 710
         },
         {
           "file": "static/js/campus-shell.js",
@@ -15573,71 +15589,71 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 669
+          "line": 670
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 673
+          "line": 674
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 846
+          "line": 847
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 952
+          "line": 953
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1190
+          "line": 1191
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1196
+          "line": 1197
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1232
+          "line": 1233
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1234
+          "line": 1235
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1241
+          "line": 1242
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1408
+          "line": 1409
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 755
+          "line": 756
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 784
+          "line": 785
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 821
+          "line": 822
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 881
+          "line": 882
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1204
+          "line": 1205
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1252
+          "line": 1253
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1260
+          "line": 1261
         },
         {
           "file": "static/js/campus-shell.js",
@@ -17254,34 +17270,44 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/meetings.py",
-          "line": 142,
+          "line": 165,
           "function": "my_meetings",
           "tables": [],
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 142,
+              "line": 165,
               "function": "my_meetings"
             },
             {
               "file": "campus/meetings.py",
-              "line": 115,
+              "line": 138,
               "function": "_describe"
             },
             {
               "file": "campus/meetings.py",
-              "line": 29,
+              "line": 34,
               "function": "jitsi_config"
             },
             {
               "file": "campus/meetings.py",
-              "line": 69,
+              "line": 92,
               "function": "_parse_time"
             },
             {
               "file": "campus/meetings.py",
-              "line": 44,
+              "line": 67,
               "function": "invitable_classes"
+            },
+            {
+              "file": "campus/meetings.py",
+              "line": 38,
+              "function": "share_base"
+            },
+            {
+              "file": "public_portal.py",
+              "line": 14,
+              "function": "public_site_url"
             }
           ],
           "storage": []
@@ -17292,13 +17318,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/meetings.py",
-          "line": 158,
+          "line": 181,
           "function": "search_people",
           "tables": [
             {
               "name": "users",
               "file": "campus/meetings.py",
-              "line": 37,
+              "line": 60,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -17314,12 +17340,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 158,
+              "line": 181,
               "function": "search_people"
             },
             {
               "file": "campus/meetings.py",
-              "line": 33,
+              "line": 56,
               "function": "_people"
             },
             {
@@ -17341,7 +17367,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/meetings.py",
-          "line": 170,
+          "line": 193,
           "function": "create_meeting",
           "tables": [
             {
@@ -17385,7 +17411,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "users",
               "file": "campus/meetings.py",
-              "line": 37,
+              "line": 60,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -17401,12 +17427,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 170,
+              "line": 193,
               "function": "create_meeting"
             },
             {
               "file": "campus/meetings.py",
-              "line": 62,
+              "line": 85,
               "function": "_new_code"
             },
             {
@@ -17426,17 +17452,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/meetings.py",
-              "line": 93,
+              "line": 116,
               "function": "_invite"
             },
             {
               "file": "campus/meetings.py",
-              "line": 57,
+              "line": 80,
               "function": "class_member_keys"
             },
             {
               "file": "campus/meetings.py",
-              "line": 33,
+              "line": 56,
               "function": "_people"
             },
             {
@@ -17446,17 +17472,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/meetings.py",
-              "line": 80,
+              "line": 103,
               "function": "_check_invitees"
             },
             {
               "file": "campus/meetings.py",
-              "line": 44,
+              "line": 67,
               "function": "invitable_classes"
             },
             {
               "file": "campus/meetings.py",
-              "line": 69,
+              "line": 92,
               "function": "_parse_time"
             }
           ],
@@ -17468,13 +17494,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/meetings.py",
-          "line": 207,
+          "line": 230,
           "function": "invite_more",
           "tables": [
             {
               "name": "users",
               "file": "campus/meetings.py",
-              "line": 37,
+              "line": 60,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -17490,22 +17516,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 207,
+              "line": 230,
               "function": "invite_more"
             },
             {
               "file": "campus/meetings.py",
-              "line": 93,
+              "line": 116,
               "function": "_invite"
             },
             {
               "file": "campus/meetings.py",
-              "line": 57,
+              "line": 80,
               "function": "class_member_keys"
             },
             {
               "file": "campus/meetings.py",
-              "line": 33,
+              "line": 56,
               "function": "_people"
             },
             {
@@ -17520,17 +17546,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/meetings.py",
-              "line": 80,
+              "line": 103,
               "function": "_check_invitees"
             },
             {
               "file": "campus/meetings.py",
-              "line": 44,
+              "line": 67,
               "function": "invitable_classes"
             },
             {
               "file": "campus/meetings.py",
-              "line": 76,
+              "line": 99,
               "function": "_find"
             }
           ],
@@ -17542,18 +17568,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/meetings.py",
-          "line": 226,
+          "line": 249,
           "function": "join_by_code",
           "tables": [],
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 226,
+              "line": 249,
               "function": "join_by_code"
             },
             {
               "file": "campus/meetings.py",
-              "line": 69,
+              "line": 92,
               "function": "_parse_time"
             }
           ],
@@ -17565,7 +17591,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/meetings.py",
-          "line": 246,
+          "line": 269,
           "function": "cancel_meeting",
           "tables": [
             {
@@ -17610,7 +17636,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 246,
+              "line": 269,
               "function": "cancel_meeting"
             },
             {
@@ -17630,7 +17656,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/meetings.py",
-              "line": 76,
+              "line": 99,
               "function": "_find"
             }
           ],
@@ -17642,18 +17668,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/meetings.py",
-          "line": 259,
+          "line": 282,
           "function": "leave_meeting",
           "tables": [],
           "files": [
             {
               "file": "campus/meetings.py",
-              "line": 259,
+              "line": 282,
               "function": "leave_meeting"
             },
             {
               "file": "campus/meetings.py",
-              "line": 76,
+              "line": 99,
               "function": "_find"
             }
           ],
@@ -19744,43 +19770,43 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-life.js",
-          "line": 755
+          "line": 756
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 784
+          "line": 785
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 810
+          "line": 811
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 826
+          "line": 827
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 832
+          "line": 833
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 881
+          "line": 882
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1192
+          "line": 1193
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1213
+          "line": 1214
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1219
+          "line": 1220
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1224
+          "line": 1225
         },
         {
           "file": "static/js/campus-shell.js",
@@ -19792,35 +19818,35 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/meetings.js",
-          "line": 23
+          "line": 24
         },
         {
           "file": "static/js/meetings.js",
-          "line": 148
+          "line": 149
         },
         {
           "file": "static/js/meetings.js",
-          "line": 177
+          "line": 178
         },
         {
           "file": "static/js/meetings.js",
-          "line": 198
+          "line": 199
         },
         {
           "file": "static/js/meetings.js",
-          "line": 210
+          "line": 211
         },
         {
           "file": "static/js/meetings.js",
-          "line": 219
+          "line": 220
         },
         {
           "file": "static/js/meetings.js",
-          "line": 224
+          "line": 225
         },
         {
           "file": "static/js/meetings.js",
-          "line": 237
+          "line": 242
         }
       ]
     },
@@ -19969,7 +19995,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-life.js",
-          "line": 693
+          "line": 694
         },
         {
           "file": "static/js/campus-shell.js",
@@ -24277,7 +24303,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1405
+          "line": 1406
         },
         {
           "file": "static/js/campus-shell.js",
