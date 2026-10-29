@@ -35,6 +35,7 @@ def record_semester(record):
         return None
 
 
+# 【功能：缺曠扣考提醒】每科缺曠時數 ÷ 全學期時數：達 1/3 扣考 (公假、重大傷病 1/2)，達門檻的 2/3 先提醒
 def summarize_attendance(records, weekly_hours_by_course, semester_hours_by_course=None, semester=None):
     semester_hours_by_course = semester_hours_by_course or {}
     courses = OrderedDict()

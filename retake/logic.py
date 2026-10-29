@@ -40,6 +40,7 @@ def slot_text(weekday, start, end):
     return f"週{WEEKDAYS[weekday]} 第 {periods} 節"
 
 
+# 【功能：重補修推薦】步驟 1：從歷年成績找出沒過、之後也沒補過的科目
 def needs_retake(credit_records, courses):
     """歷年成績 → 需要重補修的科目清單。
 
@@ -70,12 +71,22 @@ def needs_retake(credit_records, courses):
     return result
 
 
+# 課表上「自習/班週會」是空堂，可以拿來重補修；校部週會、社團活動 (週三下午) 不行
+FREE_TIME_KEYWORDS = ("自習",)
+
+
+# 【功能：重補修推薦】課表上的「自習/班週會」算空堂，可以拿來重補修 (週三下午的校部週會、社團不算)
+def is_free_time(row):
+    return any(k in str(row.get("course_name") or "") for k in FREE_TIME_KEYWORDS)
+
+
 def my_schedule(schedule_rows, class_name, student_id):
     """學生既有課表 = 本班的課 + 個人加選 (重補修) 的課"""
     return [r for r in schedule_rows
             if (class_name and r.get("class_name") == class_name) or (student_id and r.get("student_id") == student_id)]
 
 
+# 【功能：重補修推薦】步驟 2：本學期還有哪些班開同一門課 (課名統一全形半形後比對)
 def sections_of(schedule_rows, course_name):
     """當學期所有開這門課的班別：{班級: [時段, ...]}；個人加選的列不算開課班別"""
     key = normalize_name(course_name)
@@ -86,11 +97,13 @@ def sections_of(schedule_rows, course_name):
     return sections
 
 
+# 【功能：重補修推薦】兩個時段同一天且節次有交集 = 衝堂
 def overlaps(a, b):
     """同一天、節次範圍有交集 (例如 第 3-5 節 與 第 5-6 節 撞在第 5 節)"""
     return a["weekday"] == b["weekday"] and a["period_start"] <= b["period_end"] and b["period_start"] <= a["period_end"]
 
 
+# 【功能：重補修推薦】步驟 3：班別每個時段和學生自己的課表逐一比對，列出撞到哪門課
 def find_conflicts(meetings, schedule):
     """班別的每個時段跟既有課表比對，回傳撞到的課 (同一門課只列一次)"""
     hits = []
@@ -107,8 +120,10 @@ def find_conflicts(meetings, schedule):
 
 
 def describe_section(class_name, meetings, schedule):
+    """schedule 含自習時段：自習不算衝堂，但那天本來就要到校"""
     meetings = sorted(meetings, key=lambda m: (m["weekday"], m["period_start"]))
-    conflicts = find_conflicts(meetings, schedule)
+    conflicts = find_conflicts(meetings, [s for s in schedule if not is_free_time(s)])
+    free = [s for s in schedule if is_free_time(s)]
     my_days = {s["weekday"] for s in schedule}
     return {
         "class_name": class_name,
@@ -118,12 +133,16 @@ def describe_section(class_name, meetings, schedule):
                       "slot": slot_text(m["weekday"], m["period_start"], m["period_end"])} for m in meetings],
         "conflicts": conflicts,
         "ok": not conflicts,
+        # 用到自己班自習時段的節次 (不算衝堂，提醒學生那節去修課)
+        "uses_free_time": [slot_text(m["weekday"], max(m["period_start"], s["period_start"]), min(m["period_end"], s["period_end"]))
+                           for m in meetings for s in free if overlaps(m, s)],
         # 要多到校幾天 (那天原本沒課)：越少越好，用來在不衝堂的班別中排推薦順序
         "extra_days": len({m["weekday"] for m in meetings} - my_days),
         "recommended": False,
     }
 
 
+# 【功能：重補修推薦】步驟 4：決定狀態 (已在課表 / 有班可選 / 全部衝堂 / 未開課)，不衝堂、不用多到校的班排前面
 def recommend(failed, schedule_rows, class_name, student_id):
     """每一科重補修的推薦結果。
 

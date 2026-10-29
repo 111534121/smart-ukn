@@ -85,6 +85,104 @@ def prefs():
     return ok(data={**mine, "tour_seen": bool(mine.get("tour_seen")), "session_tour_dismissed": session_dismissed})
 
 
+# ---------- 表單下載：隨時查詢 + 常用表單 ----------
+
+MAX_FAVORITE_FORMS = 20
+# 學生找表單常用的說法 (表單名稱裡沒有這些字)
+FORM_KEYWORDS = {
+    "course_withdraw_form": "棄選 退選 不想修 停修",
+    "leave_application_form": "病假 事假 喪假 公假 心理假 生理假 缺課 曠課",
+    "english_waiver_form": "英文 多益 托福 全民英檢 英檢 外語 免修 抵免",
+    "graduation_audit_form": "畢業 學分 預審 審查 畢業門檻",
+    "certificate_reward_form": "證照 比賽 競賽 獎金 獎勵 補助 乙級",
+}
+
+
+def _all_forms():
+    """申辦流程有附表單的都列出來 (本站範本可線上填寫、下載 Word、看填寫範例)"""
+    from applications.forms import FORMS, form_code_from_url
+    from .calendar_ext import load_checklists
+    forms = []
+    for c in load_checklists():
+        url = c.get("form_download_url") or ""
+        if not url:
+            continue
+        code = form_code_from_url(url) or url
+        tpl = FORMS.get(code)
+        forms.append({
+            "code": code,
+            "title": tpl["title"] if tpl else c["business_name"],
+            "business_name": c["business_name"],
+            "office": c.get("category_name") or "",
+            "office_location": c.get("office_location") or "",
+            "deadline": c.get("deadline_week_info") or "",
+            "checklist_id": c["item_id"],
+            "keywords": FORM_KEYWORDS.get(code, ""),
+            "url": url,
+            "word_url": f"{url}?download=doc" if tpl else "",
+            "example_url": f"{url}?example=1" if tpl else "",
+        })
+    return forms
+
+
+# 【功能：表單下載】表單名稱、業務、處室、口語關鍵字裡找查詢字；三個字以上可錯一個字
+def _form_matches(form, q):
+    text = " ".join(str(form[k]) for k in ("title", "business_name", "office", "keywords")).lower()
+    q = q.lower()
+    # 三個字以上打錯一個字也找得到 (例如「畢業審查」找到畢業學分資格預審)；兩個字以內要完全符合
+    chars = set(q)
+    return q in text or (len(chars) >= 3 and sum(ch in text for ch in chars) >= len(chars) - 1)
+
+
+def _favorite_forms(u):
+    if not u:
+        return []
+    rows = deps.fetch_db_rows("SELECT favorite_forms FROM user_preferences WHERE username = %s", (u["username"],))
+    if rows is not None:
+        return [c for c in (rows[0]["favorite_forms"] or "").split(",") if c] if rows else []
+    return list((store.data.get("favorite_forms") or {}).get(user_key(), []))
+
+
+# 【功能：表單下載】列出全部表單，登入者的常用表單排最前面
+@bp.route("/api/campus/forms", methods=["GET"])
+def forms_list():
+    """?q=關鍵字；登入後回傳自己的常用表單 (常用的排前面)"""
+    q = request.args.get("q", "").strip()[:30]
+    u = current_user()
+    favorites = _favorite_forms(u)
+    items = [{**f, "is_favorite": f["code"] in favorites} for f in _all_forms() if not q or _form_matches(f, q)]
+    items.sort(key=lambda f: (not f["is_favorite"], favorites.index(f["code"]) if f["is_favorite"] else 0, f["title"]))
+    return ok(data=items, favorites=favorites, logged_in=bool(u))
+
+
+@bp.route("/api/campus/forms/favorites", methods=["PUT"])
+@require()
+def forms_favorites():
+    """body：{"code": 表單代碼, "favorite": true/false}"""
+    data = request.get_json(silent=True) or {}
+    code = str(data.get("code") or "")
+    if code not in {f["code"] for f in _all_forms()}:
+        return error("找不到這張表單")
+    u = current_user()
+    favorites = [c for c in _favorite_forms(u) if c != code]
+    if data.get("favorite"):
+        if len(favorites) >= MAX_FAVORITE_FORMS:
+            return error(f"常用表單最多 {MAX_FAVORITE_FORMS} 張，請先移除幾張")
+        favorites.append(code)
+    saved = None
+    try:
+        saved = deps.db_execute("INSERT INTO user_preferences (username, favorite_forms) VALUES (%s, %s) "
+                                "ON DUPLICATE KEY UPDATE favorite_forms = VALUES(favorite_forms)",
+                                (u["username"], ",".join(favorites)))
+    except Exception:
+        saved = None  # 舊資料庫沒有 favorite_forms 欄位 (未重跑 init_db.py)：改存 JSON
+    if saved is None:
+        with store.lock:
+            store.section("favorite_forms", dict)[user_key()] = favorites
+            store.save()
+    return ok(message="已加入常用表單" if data.get("favorite") else "已從常用表單移除", favorites=favorites)
+
+
 # ---------- 申辦資料自評表 (準備好的文件打勾) ----------
 
 @bp.route("/api/campus/checklist-docs", methods=["GET", "POST"])

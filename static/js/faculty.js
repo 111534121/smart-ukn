@@ -44,6 +44,7 @@ async function loadFaculty() {
     await searchFaculty();
 }
 
+// 【功能：教師專長查詢】畫面：關鍵字、領域、科別篩選後呼叫 /api/faculty
 async function searchFaculty() {
     const params = new URLSearchParams();
     if (facultyState.q) params.set('q', facultyState.q);
@@ -100,15 +101,17 @@ function renderFacultyResults(data) {
         return `
             <article class="rounded border border-slate-200 p-4 space-y-2.5 ${t.name === data.my_name ? 'ring-2 ring-ukn-200' : ''}">
                 <div class="flex items-start justify-between gap-2">
-                    <div>
+                    ${t.photo_url ? `<img src="${escapeHtml(t.photo_url)}" alt="${escapeHtml(t.name)} 老師的照片" loading="lazy" class="w-12 h-12 rounded-full object-cover border border-slate-200 shrink-0">` : ''}
+                    <div class="flex-1">
                         <h3 class="font-bold text-slate-900">${escapeHtml(t.name)} <span class="text-xs font-normal text-slate-500">${escapeHtml(t.title || '')}</span></h3>
                         <div class="text-xs text-slate-500">${escapeHtml(t.dept_name)}</div>
                     </div>
                     <div class="flex flex-col items-end gap-1">
                         ${status}
-                        ${t.accepts_projects ? '<span class="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">✓ 可指導專題</span>' : '<span class="text-[11px] text-slate-400 whitespace-nowrap">目前不收專題生</span>'}
+                        ${t.profile_missing ? '' : t.accepts_projects ? '<span class="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">✓ 可指導專題</span>' : '<span class="text-[11px] text-slate-400 whitespace-nowrap">目前不收專題生</span>'}
                     </div>
                 </div>
+                ${t.profile_missing ? '<p class="text-[11px] text-slate-400">老師的專長資料尚未建立，可以先看授課課程或直接聯絡老師。</p>' : ''}
                 <div class="flex flex-wrap gap-1">${t.expertise.map(x => `<span class="text-[11px] rounded px-1.5 py-0.5 ${matched.has(x) ? 'bg-accent-500 text-white font-semibold' : 'bg-ukn-50 text-ukn-800'}">${escapeHtml(x)}</span>`).join('')}</div>
                 ${t.research_summary ? `<p class="text-xs text-slate-700 leading-relaxed">${escapeHtml(t.research_summary)}</p>` : ''}
                 ${t.courses.length ? `<p class="text-[11px] text-slate-500">授課：${t.courses.map(escapeHtml).join('、')}</p>` : ''}

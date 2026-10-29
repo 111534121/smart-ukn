@@ -46,6 +46,7 @@ def split_tags(value):
     return tags[:MAX_TAGS]
 
 
+# 【功能：教師專長查詢】把學生的說法擴充成專長標籤的寫法 (例如 AI → 人工智慧、機器學習)
 def expand_terms(query):
     """查詢字串 → [(詞, 是否為同義詞擴充)]"""
     terms = []
@@ -65,6 +66,7 @@ def expand_terms(query):
     return result
 
 
+# 【功能：教師專長查詢】姓名 100、專長完全相同 60、部分相同 40、領域 30、授課 20、簡介 15 分，擴充詞打 6 折
 def score_profile(profile, terms):
     """回傳 (分數, 命中的專長標籤)；分數 0 代表不相關"""
     if not terms:

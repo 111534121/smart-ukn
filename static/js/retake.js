@@ -9,6 +9,7 @@ const RT_TONE = {
     arranged: { badge: 'bg-slate-100 text-slate-700 border-slate-200', card: 'border-slate-200' },
 };
 
+// 【功能：重補修推薦】畫面：呼叫 /api/student/retake-recommendations，依狀態顯示可選班別與衝堂原因
 async function loadRetake() {
     const body = document.getElementById('retakeBody');
     if (!['學生', '家長'].includes(currentUser.role)) {
@@ -63,7 +64,7 @@ function rtCourseCard(c) {
 
 function rtSectionRow(sec) {
     const result = sec.ok
-        ? `<span class="text-emerald-700 font-semibold">不衝堂</span>${sec.extra_days ? `<span class="block text-[11px] text-slate-500">要多到校 ${sec.extra_days} 天</span>` : '<span class="block text-[11px] text-slate-500">那天本來就有課</span>'}`
+        ? `<span class="text-emerald-700 font-semibold">不衝堂</span>${sec.extra_days ? `<span class="block text-[11px] text-slate-500">要多到校 ${sec.extra_days} 天</span>` : '<span class="block text-[11px] text-slate-500">那天本來就有課</span>'}${(sec.uses_free_time || []).length ? `<span class="block text-[11px] text-sky-700">用自習時段上課：${sec.uses_free_time.map(escapeHtml).join('、')}</span>` : ''}`
         : `<span class="text-rose-700 font-semibold">衝堂</span>${sec.conflicts.map(x => `<span class="block text-[11px] text-rose-700">${escapeHtml(x.at)} 撞到「${escapeHtml(x.course_name)}」</span>`).join('')}`;
     return `
         <tr class="border-b border-slate-50 align-top ${sec.recommended ? 'bg-emerald-50/60' : ''}">

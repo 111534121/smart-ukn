@@ -146,6 +146,21 @@ GET,/api/admin/faculty,/api/admin/faculty,,後台教師專長,401,403,403,403,40
 POST,/api/admin/faculty,/api/admin/faculty,,新增教師專長,401,403,403,403,403,OK,OK,
 PUT,/api/admin/faculty/<int:profile_id>,/api/admin/faculty/999999,,修改教師專長,401,403,403,403,403,OK,OK,
 DELETE,/api/admin/faculty/<int:profile_id>,/api/admin/faculty/999999,,刪除教師專長,401,403,403,403,403,OK,OK,
+GET,/api/admin/teachers,/api/admin/teachers,,後台老師辦公室名錄,401,403,403,403,403,OK,OK,
+GET,/api/campus/meetings,/api/campus/meetings,,我的線上會議,401,OK,OK,OK,OK,OK,OK,只列出自己主持或受邀的會議
+GET,/api/campus/meetings/people,/api/campus/meetings/people?q=王,,會議邀請找人,401,403,OK,403,OK,OK,OK,
+POST,/api/campus/meetings,/api/campus/meetings,,建立線上會議,401,403,OK,403,OK,OK,OK,學生只能邀請個人；老師限自己任教與導師班
+POST,/api/campus/meetings/<int:meeting_id>/invite,/api/campus/meetings/999999/invite,,會議邀請更多人,401,403,OK,403,OK,OK,OK,實際只有主持人能邀請
+POST,/api/campus/meetings/join,/api/campus/meetings/join,,邀請碼加入會議,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/meetings/<int:meeting_id>/cancel,/api/campus/meetings/999999/cancel,,取消會議,401,OK,OK,OK,OK,OK,OK,實際只有主持人能取消
+POST,/api/campus/meetings/<int:meeting_id>/leave,/api/campus/meetings/999999/leave,,退出會議,401,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/forms,/api/campus/forms,,表單下載查詢,OK,OK,OK,OK,OK,OK,OK,公開表單清單；登入後多回傳自己的常用表單
+PUT,/api/campus/forms/favorites,/api/campus/forms/favorites,,常用表單,401,OK,OK,OK,OK,OK,OK,存在自己的帳號 (user_preferences.favorite_forms)
+POST,/api/admin/teachers,/api/admin/teachers,,新增老師辦公室資料,401,403,403,403,403,OK,OK,教職員新增為待審核；管理員直接上線
+PUT,/api/admin/teachers/<int:teacher_id>,/api/admin/teachers/999999,,修改老師辦公室資料,401,403,403,403,403,OK,OK,
+DELETE,/api/admin/teachers/<int:teacher_id>,/api/admin/teachers/999999,,刪除老師辦公室資料,401,403,403,403,403,OK,OK,教職員為申請刪除，待管理員核准
+POST,/api/admin/teachers/<int:teacher_id>/review,/api/admin/teachers/999999/review,,審核老師辦公室異動,401,403,403,403,403,403,OK,只有管理員能核准或退回
+POST,/api/admin/teachers/photo,/api/admin/teachers/photo,,上傳老師照片,401,403,403,403,403,OK,OK,只收 JPG/PNG/WebP 且檢查檔頭
 GET,/api/self-review,/api/self-review,,自評表列表,401,403,OK,403,403,403,403,
 GET,/api/self-review/<semester>,/api/self-review/114-1,,查看自評表,401,403,OK,403,403,403,403,
 PUT,/api/self-review/<semester>,/api/self-review/114-1,,儲存自評表,401,403,OK,403,403,403,403,

@@ -2,7 +2,7 @@
 教師專長查詢 (領域專長查詢系統)
 
 - 依專長關鍵字 (含同義詞，例如 AI → 人工智慧、機器學習)、領域、科別、是否可指導專題找老師
-- 辦公室、分機、目前是否上課沿用校園地圖的 campus.facilities.TEACHER_OFFICES 與課表
+- 辦公室、分機、目前是否上課沿用校園地圖的老師辦公室名錄 (campus.facilities.published_teachers) 與課表
 - 老師可以修改自己的專長與簡介；管理員、教職員可新增 / 修改 / 刪除所有老師的資料
 - is_public = 0 的資料不會出現在前台查詢
 
@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 from flask import Blueprint, jsonify, request, session
 
-from campus.facilities import CAMPUS_BUILDINGS, TEACHER_OFFICES, load_schedule, teacher_status
+from campus.facilities import CAMPUS_BUILDINGS, load_schedule, published_teachers, teacher_status
 from .logic import FIELDS, expand_terms, score_profile, split_tags
 
 bp = Blueprint("faculty", __name__)
@@ -76,12 +76,14 @@ def load_profiles():
     return rows
 
 
-def _decorate(profile, schedule, now):
+def _decorate(profile, schedule, now, offices):
     """加上專長 list、辦公室與目前狀態、授課課程"""
     p = {**profile, "expertise": split_tags(profile.get("expertise")), "fields": split_tags(profile.get("fields")),
          "accepts_projects": bool(profile.get("accepts_projects")), "is_public": bool(profile.get("is_public"))}
-    office = next((t for t in TEACHER_OFFICES if t["name"] == profile["name"]), None)
+    listed = next((t for t in offices if t["name"] == profile["name"]), None)
+    office = listed if listed and listed["office"] else None
     p["courses"] = sorted({s["course_name"] for s in schedule if s.get("teacher") == profile["name"]})
+    p["photo_url"] = listed["photo_url"] if listed else ""
     if office:
         buildings = {b["code"]: b["name"] for b in CAMPUS_BUILDINGS}
         p["office"] = {"room": office["office"], "building": buildings.get(office["building"], ""), "ext": office["ext"],
@@ -97,6 +99,7 @@ def _teacher_name():
     return str(session.get("full_name") or "").replace("老師", "").strip()
 
 
+# 【功能：教師專長查詢】專長資料 + 老師名錄 + 課表合在一起，依分數排序；沒有專長資料的老師也列出
 @bp.route("/api/faculty", methods=["GET"])
 def search_faculty():
     """?q=關鍵字&field=領域&dept=科別&projects=1 (只看可指導專題)"""
@@ -108,7 +111,15 @@ def search_faculty():
     schedule = load_schedule()
     now = datetime.now()
 
-    profiles = [_decorate(p, schedule, now) for p in load_profiles() if p.get("is_public")]
+    offices = published_teachers(schedule)
+    all_profiles = load_profiles()
+    # 老師辦公室名錄或課表上有、但還沒建立專長資料的老師也要列出 (專長留白，可依姓名、授課課程找到)
+    known = {p["name"] for p in all_profiles}
+    stubs = [{"id": None, "name": t["name"], "title": (t["title"] or "").split("/")[0].strip(),
+              "dept_name": t["dept"] or t["unit"] or "科別尚未登錄", "email": t["email"], "fields": "", "expertise": "",
+              "research_summary": "", "accepts_projects": 0, "is_public": 1, "profile_missing": True}
+             for t in offices if t["name"] not in known]
+    profiles = [_decorate(p, schedule, now, offices) for p in all_profiles + stubs if p.get("is_public")]
     results = []
     for p in profiles:
         if field and field not in p["fields"]:
@@ -216,7 +227,7 @@ def admin_faculty():
     profiles = load_profiles()
     if request.method == "GET":
         return jsonify({"status": "success", "fields_available": list(FIELDS),
-                        "office_names": [t["name"] for t in TEACHER_OFFICES], "data": profiles}), 200
+                        "office_names": [t["name"] for t in published_teachers()], "data": profiles}), 200
 
     fields, problem = _parse_profile(request.get_json(silent=True) or {})
     if problem:

@@ -6,12 +6,14 @@ from . import calendar_ext, certificates, counseling, courses_ext, events, facil
 from .common import deps as _deps
 from . import admin_cases
 from . import line_notifications
+from . import teacher_admin
+from . import meetings
 
 
 def init_app(app, deps):
     _deps.__dict__.update(deps.__dict__)
     for module in (calendar_ext, courses_ext, rules_ext, certificates, messaging, counseling,
-                   facilities, info, services, reports, records, visits, admin_cases, events, line_notifications):
+                   facilities, info, services, reports, records, visits, admin_cases, events, line_notifications, teacher_admin, meetings):
         app.register_blueprint(module.bp)
     with app.app_context():
         certificates.init_sync()
