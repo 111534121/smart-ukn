@@ -971,6 +971,7 @@ async function loadEvents() {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (openOnly) params.set('open_only', '1');
+    document.getElementById('eventsCreateBtn').classList.toggle('hidden', !['管理員', '教職員', '老師'].includes(currentUser.role));
     try {
         const [listRes, mineRes] = await Promise.all([
             api(`/api/campus/events?${params.toString()}`),
@@ -981,6 +982,36 @@ async function loadEvents() {
         renderEventsList();
         renderMyEvents();
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+function openCreateEventModal() {
+    openModal('新增活動', `
+        <form onsubmit="submitCreateEvent(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動名稱 *</label><input name="title" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動日期 *</label><input type="date" name="event_date" required class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動時間</label><input type="time" name="event_time" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">報名截止日 *</label><input type="date" name="registration_deadline" required class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">名額 *</label><input type="number" name="capacity" required min="1" value="30" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動地點 *</label><input name="location" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">資格限定／報名對象（選填）</label><input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動效益／加分說明（選填）</label><input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動說明</label><textarea name="description" rows="3" maxlength="2000" class="w-full border border-slate-300 rounded px-3 py-2"></textarea></div>
+            <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeModal()" class="text-sm text-slate-500 px-3 py-2">取消</button>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">建立活動</button>
+            </div>
+        </form>`);
+}
+
+async function submitCreateEvent(event) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        await api('/api/campus/events', { method: 'POST', json: f });
+        toast('活動已建立');
+        closeModal();
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 function renderEventsList() {
