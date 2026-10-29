@@ -85,6 +85,24 @@ def test_section_conflicts_if_any_meeting_conflicts():
     assert not sec["ok"] and len(sec["meetings"]) == 2 and sec["meetings"][0]["slot"] == "週二 第 4 節"
 
 
+def test_self_study_time_is_free_but_school_assembly_is_not():
+    """自習/班週會是空堂可以拿來重補修；週三下午校部週會、社團活動照樣算衝堂"""
+    schedule = [
+        row("資管五忠", 1, 3, 8, "自習/班週會"),
+        row("資管五忠", 3, 5, 6, "校部週會"),
+        row("資管五忠", 3, 7, 8, "社團活動"),
+        row("資管五孝", 1, 5, 6, "程式設計(一)"),   # 在週一自習時段 → 可以修
+        row("資管四忠", 3, 6, 7, "程式設計(一)"),   # 撞週三下午 → 衝堂
+    ]
+    r = logic.recommend(logic.needs_retake(failed("CS102"), COURSES), schedule, "資管五忠", "S1")[0]
+    sections = {s["class_name"]: s for s in r["sections"]}
+    assert r["status"] == logic.AVAILABLE and sections["資管五孝"]["recommended"]
+    assert sections["資管五孝"]["ok"] and sections["資管五孝"]["extra_days"] == 0
+    assert sections["資管五孝"]["uses_free_time"] == ["週一 第 5-6 節"]
+    assert not sections["資管四忠"]["ok"]
+    assert {c["course_name"] for c in sections["資管四忠"]["conflicts"]} == {"校部週會", "社團活動"}
+
+
 def test_not_offered():
     """無課可選：這學期沒有任何班級開微積分"""
     r = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1")[0]

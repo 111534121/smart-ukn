@@ -369,6 +369,7 @@ function showRuleCard(rule, query) {
 }
 
 let guideState = null;
+// 【功能：AI 智慧校規】畫面：「我不確定，幫我問」呼叫 /api/campus/rules/candidates，一題一題問「是不是想問…」
 async function startGuide() {
     const q = document.getElementById('guideInput').value.trim();
     const category = document.getElementById('guideCategory').value;

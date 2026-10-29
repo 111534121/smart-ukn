@@ -23,14 +23,19 @@ PERIOD_TIMES = {
 
 # weekday：1 = 週一 … 7 = 週日
 DEMO_CLASS_SCHEDULE = [
-    # 資管五忠
-    {"id": 1, "class_name": "資管五忠", "student_id": None, "weekday": 1, "period_start": 3, "period_end": 4, "course_name": "環境永續與社會責任", "classroom": "G203", "teacher": "黃淑芬"},
-    {"id": 2, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 1, "period_end": 2, "course_name": "基礎英文(二)", "classroom": "L201", "teacher": "Amy Chen"},
-    {"id": 3, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 5, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
-    {"id": 4, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "彭賓鈺"},
-    {"id": 5, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
-    {"id": 6, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "跨領域思維與創新科技", "classroom": "G101", "teacher": "李佩珊"},
-    {"id": 7, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A301", "teacher": "彭賓鈺"},
+    # 資管五忠：115-1 實際課表 (與團隊匯入資料庫的 class_schedule 80-91 號相同)
+    {"id": 80, "class_name": "資管五忠", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 2, "course_name": "自習/班週會", "classroom": "C4060", "teacher": "彭賓鈺"},
+    {"id": 81, "class_name": "資管五忠", "student_id": None, "weekday": 1, "period_start": 3, "period_end": 8, "course_name": "自習/班週會", "classroom": "C4110", "teacher": "彭賓鈺"},
+    {"id": 82, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 4, "course_name": "統計學", "classroom": "C4070", "teacher": "彭賓鈺"},
+    {"id": 83, "class_name": "資管五忠", "student_id": None, "weekday": 2, "period_start": 6, "period_end": 8, "course_name": "AI應用精準管理", "classroom": "C3060", "teacher": "謝樹明"},
+    {"id": 84, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 1, "period_end": 2, "course_name": "進階分類通識外語類(英文)", "classroom": "A201", "teacher": "蔡維岳"},
+    {"id": 85, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 5, "period_end": 6, "course_name": "校部週會", "classroom": "C4110", "teacher": "彭賓鈺"},
+    {"id": 86, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 7, "period_end": 8, "course_name": "社團活動", "classroom": "C4110", "teacher": "彭賓鈺"},
+    {"id": 87, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 5, "period_end": 6, "course_name": "資訊安全與智慧財產保護", "classroom": "C4110", "teacher": "張丕白"},
+    {"id": 88, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 8, "period_end": 8, "course_name": "統計學", "classroom": "C4070", "teacher": "彭賓鈺"},
+    {"id": 89, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 2, "period_end": 4, "course_name": "投資管理", "classroom": "C4110", "teacher": "益西曲珍"},
+    {"id": 90, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 5, "period_end": 7, "course_name": "商務智慧數據分析", "classroom": "C3050", "teacher": "彭賓鈺"},
+    {"id": 91, "class_name": "資管五忠", "student_id": None, "weekday": 6, "period_start": 1, "period_end": 1, "course_name": "實務專題", "classroom": "C2060", "teacher": "周建羽"},
     # 王小明重修
     {"id": 8, "class_name": None, "student_id": "S112001", "weekday": 1, "period_start": 6, "period_end": 7, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "張文華"},
     {"id": 9, "class_name": None, "student_id": "S112001", "weekday": 3, "period_start": 6, "period_end": 6, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "張文華"},

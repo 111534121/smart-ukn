@@ -90,6 +90,10 @@ UPDATE `announcements` SET `title` = '10/2 班會地點改至 A402', `publish_da
 
 COMMIT;
 
--- 11. (選擇性，請與組員確認後再執行) class_schedule 1-7、10-14 號是舊版示範課表 (環境永續與社會責任、基礎英文(二)、
---     資料庫系統概論…)，課名不在資管科修業科目表上，而且和 80-91 號真實的資管五忠課表重疊。確認沒有人在用後可刪除：
--- DELETE FROM `class_schedule` WHERE `id` IN (1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14) AND `class_name` IN ('資管五忠', '資管五孝');
+-- 11. class_schedule 1-7 號是舊版資管五忠示範課表 (環境永續與社會責任、資料庫系統概論…)，
+--     和 80-91 號真實的資管五忠課表重疊，造成首頁課表、老師目前狀態顯示錯誤的課，刪除：
+DELETE FROM `class_schedule` WHERE `id` IN (1, 2, 3, 4, 5, 6, 7) AND `class_name` = '資管五忠';
+
+-- 12. (選擇性，請與組員確認後再執行) 10-14 號是資管五孝的舊版示範課表，課名不在修業科目表上；
+--     資管五孝目前沒有其他課表，刪除後該班學生會看到空白課表：
+-- DELETE FROM `class_schedule` WHERE `id` IN (10, 11, 12, 13, 14) AND `class_name` = '資管五孝';

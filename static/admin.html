@@ -170,6 +170,7 @@
                 <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校曆管理（本週可辦）</button>
                 <button onclick="switchTab('campus')" id="tabBtn-campus" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校園生活管理</button>
                 <button onclick="switchTab('faculty')" id="tabBtn-faculty" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">教師專長</button>
+                <button onclick="switchTab('teachers')" id="tabBtn-teachers" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">老師辦公室與審核</button>
                 <button onclick="switchTab('conduct')" id="tabBtn-conduct" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">操行計分規則</button>
                 <button onclick="switchTab('anniversary')" id="tabBtn-anniversary" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">校慶跑馬燈</button>
                 <button onclick="switchTab('visitors')" id="tabBtn-visitors" class="px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap">訪客登記</button>
@@ -483,6 +484,73 @@
                         <thead><tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
                             <th class="p-3">姓名</th><th class="p-3">科別</th><th class="p-3">專長</th><th class="p-3">專題</th><th class="p-3">公開</th><th class="p-3 text-right">操作</th></tr></thead>
                         <tbody id="facultyTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分頁 7b-2: 老師辦公室與審核 (teacher_directory) -->
+            <div id="panel-teachers" class="hidden space-y-4">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                    前台「老師辦公室與目前狀態」與校園地圖的老師資料。<b>教職員</b>新增、修改、刪除會先變成「待審核」，<b>管理員</b>核准後學生才看得到；管理員自己的異動直接生效。
+                    修改審核期間，學生仍看到原本的資料。
+                    <span id="teacherUnlisted" class="block mt-1 text-amber-800"></span>
+                </div>
+                <div id="teacherPending" class="space-y-2"></div>
+                <form id="teacherForm" onsubmit="saveTeacher(event)" class="bg-white border border-slate-200 rounded p-4 space-y-3 text-xs sm:text-sm">
+                    <div class="flex items-center justify-between">
+                        <h3 id="teacherFormTitle" class="font-bold text-slate-900">新增老師</h3>
+                        <button type="button" onclick="resetTeacherForm()" class="text-ukn-700 hover:underline font-semibold">＋ 改為新增</button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex flex-col items-center gap-2 sm:w-32 shrink-0">
+                            <div id="tdPhotoPreview" class="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden">無照片</div>
+                            <label class="text-ukn-700 font-semibold hover:underline cursor-pointer">上傳照片<input id="tdPhotoFile" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" onchange="uploadTeacherPhoto(this)"></label>
+                            <button type="button" onclick="setTeacherPhoto('')" class="text-[11px] text-slate-500 hover:underline">移除照片</button>
+                            <input id="tdPhoto" type="hidden">
+                            <span class="text-[10px] text-slate-400 text-center">JPG／PNG／WebP，3 MB 以內</span>
+                        </div>
+                        <div class="flex-1 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">姓名 *</span>
+                                    <input id="tdName" required maxlength="50" list="tdUnlistedNames" class="w-full border border-slate-300 rounded px-2 py-1.5"><datalist id="tdUnlistedNames"></datalist></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">職稱</span>
+                                    <input id="tdTitle" maxlength="50" placeholder="副教授 / 資管五忠導師" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">所屬科系</span>
+                                    <input id="tdDept" maxlength="100" list="tdDeptList" placeholder="資訊管理科" class="w-full border border-slate-300 rounded px-2 py-1.5"><datalist id="tdDeptList"></datalist></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">服務單位</span>
+                                    <input id="tdUnit" maxlength="100" list="tdUnitList" placeholder="通識教育中心、教務處…" class="w-full border border-slate-300 rounded px-2 py-1.5"><datalist id="tdUnitList"></datalist></label>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">大樓</span>
+                                    <select id="tdBuilding" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"></select></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">辦公室</span>
+                                    <input id="tdOffice" maxlength="20" placeholder="A410" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">樓層</span>
+                                    <input id="tdFloor" type="number" min="-3" max="20" placeholder="依代碼推算" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1"><span class="block font-semibold text-slate-700">分機</span>
+                                    <input id="tdExt" maxlength="30" placeholder="分機 361" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                                <label class="space-y-1 col-span-2 sm:col-span-1"><span class="block font-semibold text-slate-700">Email</span>
+                                    <input id="tdEmail" type="email" maxlength="100" class="w-full border border-slate-300 rounded px-2 py-1.5"></label>
+                            </div>
+                            <fieldset class="space-y-1.5"><legend class="font-semibold text-slate-700">可以找老師的時間</legend>
+                                <div id="tdHours" class="space-y-1.5"></div>
+                                <button type="button" onclick="addTeacherHourRow()" class="text-ukn-700 hover:underline font-semibold">＋ 新增時段</button>
+                            </fieldset>
+                            <p class="text-[11px] text-slate-500">所屬科系與服務單位至少填一項；學生端可依這兩項篩選。</p>
+                            <div class="flex justify-end"><button type="submit" id="teacherSubmitBtn" class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-1.5 rounded font-semibold">儲存</button></div>
+                        </div>
+                    </div>
+                </form>
+                <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                    <input id="teacherAdminSearch" type="search" placeholder="搜尋姓名" oninput="renderTeacherAdminTable()" class="border border-slate-300 rounded px-2 py-1.5">
+                    <select id="teacherAdminStatus" onchange="renderTeacherAdminTable()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
+                        <option value="">全部狀態</option><option>已核准</option><option>待審核</option><option>退回</option></select>
+                </div>
+                <div class="overflow-x-auto rounded border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead><tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <th class="p-3">老師</th><th class="p-3">科系／服務單位</th><th class="p-3">辦公室</th><th class="p-3">狀態</th><th class="p-3 text-right">操作</th></tr></thead>
+                        <tbody id="teacherTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
             </div>
@@ -1344,8 +1412,8 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-conduct, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-conduct, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
+            document.querySelectorAll('#panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-teachers, #panel-conduct, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-teachers, #tabBtn-conduct, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
                 b.className = 'px-4 py-2.5 text-slate-600 hover:text-ukn-800 border-b-2 border-transparent whitespace-nowrap' + (b.id === 'tabBtn-unmatched' ? ' flex items-center gap-1.5' : '');
             });
 
@@ -1361,6 +1429,7 @@
             if (tab === 'visitors') loadVisitorLogs();
             if (tab === 'anniversary') loadAnniversary();
             if (tab === 'faculty') loadFacultyAdmin();
+            if (tab === 'teachers') loadTeacherAdmin();
             if (tab === 'conduct') loadConductRules();
         }
 
@@ -1566,6 +1635,217 @@
             const data = await res.json().catch(() => ({}));
             if (!res.ok) alert(data.message || '刪除失敗');
             loadFacultyAdmin();
+        }
+
+        // ---------- 老師辦公室與審核 (teacher_directory) ----------
+        let teacherAdmin = { data: [], buildings: [], my_role: '' };
+        let teacherEditingId = null;
+        const TD_WEEKDAYS = ['', '週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+        const TD_LABELS = { name: '姓名', title: '職稱', dept: '所屬科系', unit: '服務單位', office: '辦公室', building: '大樓', floor: '樓層', ext: '分機', email: 'Email', office_hours: '可以找老師的時間', photo_url: '照片' };
+        const TD_STATUS_TONE = { '已核准': 'bg-emerald-50 text-emerald-800 border-emerald-200', '待審核': 'bg-amber-50 text-amber-900 border-amber-200', '退回': 'bg-rose-50 text-rose-800 border-rose-200' };
+
+        async function teacherApi(url, method = 'GET', body) {
+            const res = await fetch(url, body === undefined ? { method } : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.status === 'error') throw new Error(data.message || `連線失敗 (${res.status})`);
+            return data;
+        }
+
+        function tdHoursText(hours) {
+            return (hours || []).map(o => `${TD_WEEKDAYS[o.weekday]} ${o.start}–${o.end}`).join('、') || '—';
+        }
+
+        function tdValueText(key, value) {
+            if (key === 'office_hours') return tdHoursText(value);
+            if (key === 'photo_url') return value ? '有照片' : '無';
+            if (key === 'building') return (teacherAdmin.buildings.find(b => b.code === value) || {}).name || value || '—';
+            return value === null || value === undefined || value === '' ? '—' : String(value);
+        }
+
+        function tdAvatar(t, size = 'w-10 h-10') {
+            return t.photo_url
+                ? `<img src="${escapeHtml(t.photo_url)}" alt="" class="${size} rounded-full object-cover border border-slate-200 shrink-0">`
+                : `<div class="${size} rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center shrink-0">${escapeHtml(t.name.slice(0, 1))}</div>`;
+        }
+
+        async function loadTeacherAdmin() {
+            const tbody = document.getElementById('teacherTableBody');
+            try {
+                teacherAdmin = await teacherApi('/api/admin/teachers');
+                document.getElementById('tdBuilding').innerHTML = '<option value="">（未填）</option>' +
+                    teacherAdmin.buildings.map(b => `<option value="${escapeHtml(b.code)}">${escapeHtml(b.name)}</option>`).join('');
+                document.getElementById('tdDeptList').innerHTML = teacherAdmin.depts.map(d => `<option value="${escapeHtml(d)}">`).join('');
+                document.getElementById('tdUnitList').innerHTML = teacherAdmin.units.map(d => `<option value="${escapeHtml(d)}">`).join('');
+                document.getElementById('tdUnlistedNames').innerHTML = teacherAdmin.unlisted_teachers.map(n => `<option value="${escapeHtml(n)}">`).join('');
+                document.getElementById('teacherUnlisted').textContent = teacherAdmin.unlisted_teachers.length
+                    ? `課表上有、但還沒登錄辦公室的老師：${teacherAdmin.unlisted_teachers.join('、')}（學生端會顯示「辦公室資料尚未登錄」）` : '';
+                document.getElementById('teacherSubmitBtn').textContent = teacherAdmin.my_role === '管理員' ? '儲存（直接上線）' : '送出審核';
+                if (!teacherEditingId) resetTeacherForm();
+                renderTeacherPending();
+                renderTeacherAdminTable();
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-600">${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderTeacherPending() {
+            const box = document.getElementById('teacherPending');
+            const pending = teacherAdmin.data.filter(t => t.status === '待審核' && t.pending_action);
+            if (!pending.length) { box.innerHTML = ''; return; }
+            const isAdmin = teacherAdmin.my_role === '管理員';
+            box.innerHTML = `<h3 class="font-bold text-slate-900 text-sm">待審核（${pending.length}）${isAdmin ? '' : '<span class="text-xs font-normal text-slate-500">— 等管理員審核</span>'}</h3>` + pending.map(t => {
+                let detail = '';
+                if (t.pending_action === '修改') {
+                    const changed = Object.keys(TD_LABELS).filter(k => JSON.stringify(t.pending_data[k] ?? '') !== JSON.stringify(t[k] ?? ''));
+                    detail = changed.length ? `<ul class="text-xs space-y-0.5">${changed.map(k => `<li><span class="text-slate-500">${TD_LABELS[k]}：</span><span class="line-through text-slate-400">${escapeHtml(tdValueText(k, t[k]))}</span> → <b class="text-slate-900">${escapeHtml(tdValueText(k, t.pending_data[k]))}</b></li>`).join('')}</ul>`
+                        : '<div class="text-xs text-slate-500">內容沒有變動</div>';
+                    if (changed.includes('photo_url') && t.pending_data.photo_url) detail += `<img src="${escapeHtml(t.pending_data.photo_url)}" alt="新照片" class="w-16 h-16 rounded-full object-cover border border-slate-200 mt-1">`;
+                } else if (t.pending_action === '新增') {
+                    detail = `<div class="text-xs text-slate-600">${['dept', 'unit', 'office', 'ext', 'office_hours'].map(k => `${TD_LABELS[k]}：${escapeHtml(tdValueText(k, t[k]))}`).join(' · ')}</div>`;
+                } else {
+                    detail = '<div class="text-xs text-rose-700">申請從學生端移除這位老師的資料</div>';
+                }
+                return `
+                    <div class="rounded border border-amber-200 bg-amber-50/50 p-3 flex flex-col sm:flex-row sm:items-start gap-3 text-sm">
+                        ${tdAvatar(t.pending_action === '修改' && t.pending_data ? { ...t, ...t.pending_data } : t)}
+                        <div class="flex-1 space-y-1">
+                            <div><b>${escapeHtml(t.name)}</b> <span class="text-[11px] border border-amber-300 rounded px-1">${escapeHtml(t.pending_action)}</span>
+                                <span class="text-xs text-slate-500">· ${escapeHtml(t.submitted_by || '')} 於 ${escapeHtml(t.updated_at || '')} 送出</span></div>
+                            ${detail}
+                        </div>
+                        ${isAdmin ? `<div class="flex gap-2 shrink-0">
+                            <button onclick="reviewTeacher(${Number(t.id)}, '核准')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded px-3 py-1.5">核准</button>
+                            <button onclick="reviewTeacher(${Number(t.id)}, '退回')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold rounded px-3 py-1.5">退回</button>
+                        </div>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        function renderTeacherAdminTable() {
+            const q = document.getElementById('teacherAdminSearch').value.trim();
+            const status = document.getElementById('teacherAdminStatus').value;
+            const rows = teacherAdmin.data.filter(t => (!q || t.name.includes(q)) && (!status || t.status === status));
+            document.getElementById('teacherTableBody').innerHTML = rows.map(t => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3"><div class="flex items-center gap-2">${tdAvatar(t)}<div><div class="font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(t.name)}</div><div class="text-xs text-slate-500">${escapeHtml(t.title || '')}</div></div></div></td>
+                    <td class="p-3 text-xs">${escapeHtml(t.dept || '—')}<div class="text-slate-500">${escapeHtml(t.unit || '')}</div></td>
+                    <td class="p-3 text-xs whitespace-nowrap">${escapeHtml(t.office || '—')} ${escapeHtml(t.ext || '')}<div class="text-slate-500">${escapeHtml(tdHoursText(t.office_hours))}</div></td>
+                    <td class="p-3 text-xs"><span class="border rounded px-1.5 py-0.5 whitespace-nowrap ${TD_STATUS_TONE[t.status] || ''}">${escapeHtml(t.status)}${t.pending_action ? `：${escapeHtml(t.pending_action)}` : ''}</span>
+                        ${t.is_published ? '' : '<div class="text-[11px] text-slate-500 mt-1">學生端尚未顯示</div>'}
+                        ${t.review_note ? `<div class="text-[11px] text-slate-500 mt-1">${escapeHtml(t.review_note)}</div>` : ''}</td>
+                    <td class="p-3 text-right whitespace-nowrap">
+                        <button onclick="editTeacher(${Number(t.id)})" class="text-ukn-700 hover:underline font-semibold">編輯</button>
+                        <button onclick="deleteTeacher(${Number(t.id)})" class="text-rose-700 hover:underline font-semibold ml-2">刪除</button>
+                    </td>
+                </tr>`).join('') || '<tr><td colspan="5" class="p-4 text-center text-slate-400">沒有符合的資料</td></tr>';
+        }
+
+        function setTeacherPhoto(url) {
+            document.getElementById('tdPhoto').value = url;
+            document.getElementById('tdPhotoPreview').innerHTML = url ? `<img src="${escapeHtml(url)}" alt="照片預覽" class="w-full h-full object-cover">` : '無照片';
+        }
+
+        async function uploadTeacherPhoto(input) {
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            const form = new FormData();
+            form.append('photo', file);
+            try {
+                const res = await fetch('/api/admin/teachers/photo', { method: 'POST', body: form });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status === 'error') throw new Error(data.message || '照片上傳失敗');
+                setTeacherPhoto(data.url);
+            } catch (e) { alert(e.message); }
+        }
+
+        function addTeacherHourRow(o = { weekday: 1, start: '10:10', end: '12:00' }) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
+            row.innerHTML = `
+                <select class="td-wd border border-slate-300 rounded px-2 py-1 bg-white">${[1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${d === o.weekday ? 'selected' : ''}>${TD_WEEKDAYS[d]}</option>`).join('')}</select>
+                <input type="time" class="td-start border border-slate-300 rounded px-2 py-1" value="${escapeHtml(o.start)}" aria-label="開始時間">
+                <span>–</span>
+                <input type="time" class="td-end border border-slate-300 rounded px-2 py-1" value="${escapeHtml(o.end)}" aria-label="結束時間">
+                <button type="button" class="text-rose-700 hover:underline" onclick="this.parentElement.remove()">移除</button>`;
+            document.getElementById('tdHours').appendChild(row);
+        }
+
+        function resetTeacherForm() {
+            teacherEditingId = null;
+            document.getElementById('teacherForm').reset();
+            document.getElementById('teacherFormTitle').textContent = '新增老師';
+            document.getElementById('tdHours').innerHTML = '';
+            setTeacherPhoto('');
+        }
+
+        function editTeacher(id) {
+            const row = teacherAdmin.data.find(x => x.id === id);
+            if (!row) return;
+            // 有待審核的修改時，表單帶出送審中的版本，避免覆蓋別人剛送出的內容
+            const t = row.pending_action === '修改' && row.pending_data ? { ...row, ...row.pending_data } : row;
+            teacherEditingId = id;
+            document.getElementById('teacherFormTitle').textContent = `編輯：${row.name}`;
+            document.getElementById('tdName').value = t.name;
+            document.getElementById('tdTitle').value = t.title || '';
+            document.getElementById('tdDept').value = t.dept || '';
+            document.getElementById('tdUnit').value = t.unit || '';
+            document.getElementById('tdBuilding').value = t.building || '';
+            document.getElementById('tdOffice').value = t.office || '';
+            document.getElementById('tdFloor').value = t.floor ?? '';
+            document.getElementById('tdExt').value = t.ext || '';
+            document.getElementById('tdEmail').value = t.email || '';
+            document.getElementById('tdHours').innerHTML = '';
+            (t.office_hours || []).forEach(o => addTeacherHourRow(o));
+            setTeacherPhoto(t.photo_url || '');
+            document.getElementById('teacherForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveTeacher(e) {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('tdName').value, title: document.getElementById('tdTitle').value,
+                dept: document.getElementById('tdDept').value, unit: document.getElementById('tdUnit').value,
+                building: document.getElementById('tdBuilding').value, office: document.getElementById('tdOffice').value,
+                floor: document.getElementById('tdFloor').value, ext: document.getElementById('tdExt').value,
+                email: document.getElementById('tdEmail').value, photo_url: document.getElementById('tdPhoto').value,
+                office_hours: [...document.querySelectorAll('#tdHours > div')].map(r => ({
+                    weekday: Number(r.querySelector('.td-wd').value), start: r.querySelector('.td-start').value, end: r.querySelector('.td-end').value }))
+            };
+            const id = teacherEditingId;
+            try {
+                const data = await teacherApi(id ? `/api/admin/teachers/${id}` : '/api/admin/teachers', id ? 'PUT' : 'POST', body);
+                alert(data.message);
+                resetTeacherForm();
+                loadTeacherAdmin();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function deleteTeacher(id) {
+            const t = teacherAdmin.data.find(x => x.id === id);
+            if (!t) return;
+            const hint = teacherAdmin.my_role === '管理員' || !t.is_published ? '刪除後無法復原。' : '會送出刪除申請，管理員核准後才會移除。';
+            if (!confirm(`確定刪除「${t.name}」的老師資料？${hint}`)) return;
+            try {
+                const data = await teacherApi(`/api/admin/teachers/${id}`, 'DELETE');
+                alert(data.message);
+                if (teacherEditingId === id) resetTeacherForm();
+                loadTeacherAdmin();
+            } catch (err) { alert(err.message); }
+        }
+
+        async function reviewTeacher(id, decision) {
+            let note = '';
+            if (decision === '退回') {
+                note = prompt('退回原因（會顯示給送出的人）：');
+                if (note === null) return;
+                if (!note.trim()) { alert('請填寫退回原因'); return; }
+            }
+            try {
+                const data = await teacherApi(`/api/admin/teachers/${id}/review`, 'POST', { decision, note });
+                alert(data.message);
+                loadTeacherAdmin();
+            } catch (err) { alert(err.message); }
         }
 
         // ---------- 校慶跑馬燈與匿名祝福 ----------
