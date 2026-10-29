@@ -1044,6 +1044,41 @@ async function submitEditEvent(event, id) {
     } catch (e) { toast(e.message, 'error'); }
 }
 
+async function openEventRegistrationsModal(id, title) {
+    const statusTone = { '已報名': 'green', '候補中': 'amber', '已取消': 'gray' };
+    openModal(`${title}－報名名單`, '<div class="text-sm text-slate-500">載入中…</div>', true);
+    try {
+        const r = await api(`/api/campus/events/${id}/registrations`);
+        const items = r.data;
+        if (!items.length) {
+            openModal(`${title}－報名名單`, '<div class="text-sm text-slate-500">目前還沒有人報名。</div>', true);
+            return;
+        }
+        const rowsHtml = items.map(x => `
+            <tr class="border-b border-slate-100">
+                <td class="py-1.5 pr-3">${esc(x.student_id)}</td>
+                <td class="py-1.5 pr-3">${esc(x.full_name)}</td>
+                <td class="py-1.5 pr-3">${esc(x.email)}</td>
+                <td class="py-1.5 pr-3">${esc(x.phone || '-')}</td>
+                <td class="py-1.5 pr-3">${statusBadge(x.status, statusTone[x.status] || 'gray')}</td>
+                <td class="py-1.5">${x.status === '已取消' ? '-' : (x.checked_in ? statusBadge('已簽到', 'green') : statusBadge('未簽到', 'gray'))}</td>
+            </tr>`).join('');
+        openModal(`${title}－報名名單（共 ${items.length} 筆）`, `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead><tr class="border-b border-slate-200 text-xs text-slate-500">
+                        <th class="py-1.5 pr-3 font-semibold">學號</th><th class="py-1.5 pr-3 font-semibold">姓名</th>
+                        <th class="py-1.5 pr-3 font-semibold">Email</th><th class="py-1.5 pr-3 font-semibold">電話</th>
+                        <th class="py-1.5 pr-3 font-semibold">狀態</th><th class="py-1.5 font-semibold">簽到</th>
+                    </tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>`, true);
+    } catch (e) {
+        openModal(`${title}－報名名單`, `<div class="text-sm text-rose-700">${esc(e.message)}</div>`, true);
+    }
+}
+
 function renderEventsList() {
     const body = document.getElementById('eventsBody');
     if (!eventsList.length) { body.innerHTML = '<div class="text-sm text-slate-500">目前沒有符合條件的活動。</div>'; return; }
@@ -1063,7 +1098,7 @@ function eventCardHtml(e) {
         <div class="rounded border border-slate-200 p-4 space-y-3">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                    <div class="font-bold text-slate-900">${esc(e.title)}${isStaff ? ` <button type="button" onclick="openEditEventModal(${e.id})" class="text-xs text-ukn-700 hover:underline font-normal ml-1">編輯</button>` : ''}</div>
+                    <div class="font-bold text-slate-900">${esc(e.title)}${isStaff ? ` <button type="button" onclick="openEditEventModal(${e.id})" class="text-xs text-ukn-700 hover:underline font-normal ml-1">編輯</button> <button type="button" onclick="openEventRegistrationsModal(${e.id}, '${esc(e.title)}')" class="text-xs text-ukn-700 hover:underline font-normal ml-1">報名名單 (${e.registered_count}${e.waitlist_count ? `+${e.waitlist_count}候補` : ''})</button>` : ''}</div>
                     <div class="flex flex-wrap gap-1 mt-1">
                         ${e.eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(e.eligibility)}</span>` : ''}
                         ${e.benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(e.benefit)}</span>` : ''}
