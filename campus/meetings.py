@@ -3,16 +3,21 @@
 - 學生、老師、教職員、管理員都可以開會議；學生只能邀請個人，老師可以邀請自己任教或導師班的班級，教職員 / 管理員可以邀請任何班級
 - 每場會議有一組邀請碼，傳給別人輸入就能加入 (主持人可關閉)
 - 受邀的人在通知中心會看到邀請 (前端讀 GET /api/campus/meetings 的 invited 項目)
-- 視訊：預設在新分頁開 meet.jit.si 的會議室 (公開伺服器嵌在其他網站只能用 5 分鐘，主持人也要登入)；
+- 視訊：預設在新分頁開 meet.ffmuc.net (Freifunk München 的公開 Jitsi 伺服器，不用登入就能開始)；
+  meet.jit.si 要有人先用 Google / GitHub 帳號登入當主持人，其他人才進得去，所以不當預設。
   學校架了自己的 Jitsi 伺服器時設定 JITSI_DOMAIN=網域、JITSI_EMBED=1，就會直接嵌在網站裡
+- 邀請訊息裡的網址：有設定 PUBLIC_SITE_URL 就用它；主持人用 127.0.0.1 開網站時改用這台電腦的區網 IP，別人才連得到
 - 會議室名稱是隨機字串，只有會議成員從這裡拿得到連結
 """
 import os
 import re
 import secrets
+import socket
 from datetime import datetime, timedelta
 
 from flask import Blueprint, request
+
+from public_portal import public_site_url
 
 from . import meetings_store as db
 from .common import deps, error, ok, require, current_user, user_key, now_str, all_students, STAFF_ROLES
@@ -27,7 +32,25 @@ EARLY_JOIN_MINUTES = 15  # 開始前幾分鐘可以進會議室
 
 
 def jitsi_config():
-    return {"domain": os.getenv("JITSI_DOMAIN", "meet.jit.si"), "embed": os.getenv("JITSI_EMBED") == "1"}
+    return {"domain": os.getenv("JITSI_DOMAIN", "meet.ffmuc.net"), "embed": os.getenv("JITSI_EMBED") == "1"}
+
+
+def share_base():
+    """邀請訊息裡給別人點的網址：用 localhost 開網站時換成區網 IP (同一個 Wi-Fi 的人才連得到)"""
+    configured = public_site_url()
+    if configured:
+        return configured.rstrip("/")
+    host, _, port = request.host.partition(":")
+    if host in ("127.0.0.1", "localhost", "::1"):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("8.8.8.8", 80))  # UDP 不會真的送封包，只是讓系統選出對外的網卡
+                host = s.getsockname()[0]
+        except OSError:
+            pass
+    # 經過 Cloudflare 等反向代理時，對外其實是 https：以代理送來的 X-Forwarded-Proto 為準
+    scheme = request.headers.get("X-Forwarded-Proto", request.scheme).split(",")[0].strip()
+    return f"{scheme}://{host}{':' + port if port else ''}"
 
 
 def _people():
@@ -149,7 +172,7 @@ def my_meetings():
             result.append(_describe(m, me, mine, now))
     upcoming = sorted([x for x in result if not x["is_past"]], key=lambda x: x["start_at"])
     past = sorted([x for x in result if x["is_past"]], key=lambda x: x["start_at"], reverse=True)[:20]
-    return ok(data=upcoming + past, now=now.strftime("%Y-%m-%d %H:%M"), jitsi=jitsi_config(),
+    return ok(data=upcoming + past, now=now.strftime("%Y-%m-%d %H:%M"), jitsi=jitsi_config(), share_base=share_base(),
               can_create=u["role"] in CREATOR_ROLES, invitable_classes=invitable_classes(u))
 
 
