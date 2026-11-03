@@ -58,6 +58,7 @@ def _phrases():
     return items
 
 
+# 【功能：AI 智慧校規】打第一個字就跳選項：開頭相同 3 分 > 包含 2 分 > 大部分字都有 1 分
 @bp.route("/api/campus/rules/suggest", methods=["GET"])
 def suggest():
     """輸入一個字就回傳候選：開頭相同的排前面，其次是包含該字的"""
@@ -83,11 +84,13 @@ def suggest():
     return ok(data=[p for _, _, p in scored[:10]])
 
 
+# 【功能：AI 智慧校規】把句子拆成「每兩個字」的片段，用來比對學生的描述和規章有多少片段重疊
 def _bigrams(text):
     text = "".join(ch for ch in text.lower() if not ch.isspace())
     return {text[i:i + 2] for i in range(len(text) - 1)} | set(text)
 
 
+# 【功能：AI 智慧校規】②「我不確定，幫我問」：口語詞直接命中 +20 分，再加上兩字片段重疊數，由最像到最不像逐一問「你是不是想問…」
 @bp.route("/api/campus/rules/candidates", methods=["GET"])
 def candidates():
     """輸入大概的描述，回傳可能的規章 (由最像到最不像)，前端逐一詢問『你是不是想問…？』"""

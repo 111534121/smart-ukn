@@ -577,36 +577,69 @@ async function showOnMap(locationText) {
 
 const TEACHER_TONE = { '上課中': 'red', '可以找老師': 'green', '沒有課': 'blue', '非上班時間': 'gray' };
 
+const teacherFilter = { q: '', dept: '', unit: '' };
+
+function teacherAvatar(t) {
+    return t.photo_url
+        ? `<img src="${esc(t.photo_url)}" alt="${esc(t.name)} 老師的照片" loading="lazy" class="w-14 h-14 rounded-full object-cover border border-slate-200 shrink-0">`
+        : `<div class="w-14 h-14 rounded-full bg-ukn-50 border border-ukn-100 text-ukn-800 font-bold text-lg flex items-center justify-center shrink-0" aria-hidden="true">${esc(t.name.slice(0, 1))}</div>`;
+}
+
+// 【功能：老師辦公室與目前狀態】畫面：照片、目前狀態，科系 / 服務單位 / 姓名篩選在瀏覽器端完成
 async function loadTeachers() {
     const body = document.getElementById('teachersBody');
     try {
         const r = await api('/api/campus/teachers');
+        const options = (list, all) => `<option value="">${all}</option>` + list.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
         body.innerHTML = `
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <input type="search" placeholder="搜尋老師或科系" oninput="filterTeachers(this.value)" class="border border-slate-300 rounded px-3 py-2 text-sm w-full sm:w-64">
-                <span class="text-xs text-slate-500">狀態依課表推算 · ${esc(r.now.slice(5).replace('-', '/'))} 更新 <button type="button" onclick="loadTeachers()" class="text-ukn-700 hover:underline ml-1">重新整理</button></span>
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <input type="search" placeholder="搜尋老師姓名" oninput="teacherFilter.q = this.value.trim(); filterTeachers()" value="${esc(teacherFilter.q)}" class="border border-slate-300 rounded px-3 py-2 text-sm w-full sm:w-52">
+                <select id="teacherDeptFilter" aria-label="依科系篩選" onchange="teacherFilter.dept = this.value; filterTeachers()" class="border border-slate-300 rounded px-2 py-2 text-sm bg-white flex-1 sm:flex-none">${options(r.depts, '全部科系')}</select>
+                <select id="teacherUnitFilter" aria-label="依服務單位篩選" onchange="teacherFilter.unit = this.value; filterTeachers()" class="border border-slate-300 rounded px-2 py-2 text-sm bg-white flex-1 sm:flex-none">${options(r.units, '全部服務單位')}</select>
+                <span class="text-xs text-slate-500 sm:ml-auto">狀態依課表推算 · ${esc(r.now.slice(5).replace('-', '/'))} 更新 <button type="button" onclick="loadTeachers()" class="text-ukn-700 hover:underline ml-1">重新整理</button></span>
             </div>
+            <p id="teacherCount" class="text-xs text-slate-500 mb-2" role="status"></p>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${r.data.map(t => `
-                <div class="rounded border border-slate-200 p-4 space-y-2" data-teacher="${esc(t.name + t.dept)}">
-                    <div class="flex items-start justify-between gap-2">
-                        <div><div class="font-bold text-slate-900">${esc(t.name)} 老師</div><div class="text-xs text-slate-500">${esc(t.dept)} · ${esc(t.title)}</div></div>
-                        ${statusBadge(t.status.state, TEACHER_TONE[t.status.state])}
+                <div class="rounded border border-slate-200 p-4 space-y-2" data-teacher-name="${esc(t.name)}" data-dept="${esc(t.dept)}" data-unit="${esc(t.unit)}">
+                    <div class="flex items-start gap-3">
+                        ${teacherAvatar(t)}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="font-bold text-slate-900">${esc(t.name)} 老師</div>
+                                ${statusBadge(t.status.state, TEACHER_TONE[t.status.state])}
+                            </div>
+                            <div class="text-xs text-slate-500">${[t.dept, t.unit !== t.dept ? t.unit : '', t.title].filter(Boolean).map(esc).join(' · ') || '科系與服務單位尚未登錄'}</div>
+                        </div>
                     </div>
                     <div class="text-xs text-slate-700">${esc(t.status.detail)}</div>
-                    <div class="text-xs text-slate-600">🚪 ${esc(t.building_name)} ${esc(t.office)} · ${esc(t.ext)}</div>
-                    <div class="text-xs text-slate-600">🕒 可以找老師的時間：${t.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')}</div>
+                    ${t.office ? `<div class="text-xs text-slate-600">🚪 ${esc(t.building_name)} ${esc(t.office)}${t.ext ? ` · ${esc(t.ext)}` : ''}</div>` : '<div class="text-xs text-slate-400">🚪 辦公室資料尚未登錄，可以先在課堂上或寄信找老師</div>'}
+                    ${t.office_hours.length ? `<div class="text-xs text-slate-600">🕒 可以找老師的時間：${t.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')}</div>` : ''}
+                    ${t.email ? `<a href="mailto:${esc(t.email)}" class="block text-xs text-ukn-700 hover:underline">✉️ ${esc(t.email)}</a>` : ''}
                     <div class="flex gap-2 pt-1">
                         <button type="button" onclick="showTeacherTimetable('${esc(t.name)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">看課表</button>
-                        <button type="button" onclick="showOnMap('${esc(t.building_name)} ${esc(t.office)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">在地圖上看 🗺️</button>
+                        ${t.building ? `<button type="button" onclick="showOnMap('${esc(t.building_name)} ${esc(t.office)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">在地圖上看 🗺️</button>` : ''}
                     </div>
                 </div>`).join('')}</div>
-            <p class="text-[11px] text-slate-400 mt-3">老師辦公室、分機與可以找老師的時間為示範資料，請依各科公告更新。</p>`;
+            <p class="text-[11px] text-slate-400 mt-3">老師辦公室、分機與可以找老師的時間由學校後台維護，以各科公告為準。</p>`;
         window._teachers = r;
+        document.getElementById('teacherDeptFilter').value = r.depts.includes(teacherFilter.dept) ? teacherFilter.dept : '';
+        document.getElementById('teacherUnitFilter').value = r.units.includes(teacherFilter.unit) ? teacherFilter.unit : '';
+        filterTeachers();
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-function filterTeachers(q) {
-    document.querySelectorAll('[data-teacher]').forEach(el => el.classList.toggle('hidden', !!q && !el.dataset.teacher.includes(q.trim())));
+function filterTeachers() {
+    const dept = document.getElementById('teacherDeptFilter')?.value || '';
+    const unit = document.getElementById('teacherUnitFilter')?.value || '';
+    let shown = 0;
+    document.querySelectorAll('[data-teacher-name]').forEach(el => {
+        const hit = (!teacherFilter.q || el.dataset.teacherName.includes(teacherFilter.q))
+            && (!dept || el.dataset.dept === dept) && (!unit || el.dataset.unit === unit);
+        el.classList.toggle('hidden', !hit);
+        if (hit) shown++;
+    });
+    const count = document.getElementById('teacherCount');
+    if (count) count.textContent = shown ? `共 ${shown} 位老師` : '找不到符合的老師，請換個條件。';
 }
 
 function showTeacherTimetable(name) {
@@ -623,7 +656,7 @@ function showTeacherTimetable(name) {
             <thead><tr class="text-slate-500"><th></th>${[1, 2, 3, 4, 5].map(d => `<th class="py-1">週${WEEKDAY_TEXT[d]}</th>`).join('')}</tr></thead>
             <tbody>${Object.keys(periods).map(p => `<tr><td class="text-[10px] text-slate-400 w-12">${p}<div>${periods[p][0]}</div></td>${[1, 2, 3, 4, 5].map(d => cell(d, Number(p))).join('')}</tr>`).join('')}</tbody>
         </table></div>
-        <p class="text-xs text-slate-500">藍色是上課時段，綠色是可以找老師的時間，空白代表沒有排課（可能在辦公室 ${esc(t.office)}）。</p>`);
+        <p class="text-xs text-slate-500">藍色是上課時段，綠色是可以找老師的時間，空白代表沒有排課（可能在${t.office ? `辦公室 ${esc(t.office)}` : '辦公室'}）。</p>`);
 }
 
 // =====================================================================
@@ -971,6 +1004,7 @@ async function loadEvents() {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (openOnly) params.set('open_only', '1');
+    document.getElementById('eventsCreateBtn').classList.toggle('hidden', !['管理員', '教職員', '老師'].includes(currentUser.role));
     try {
         const [listRes, mineRes] = await Promise.all([
             api(`/api/campus/events?${params.toString()}`),
@@ -983,6 +1017,101 @@ async function loadEvents() {
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
+function eventFormFieldsHtml(e) {
+    e = e || {};
+    return `
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動名稱 *</label><input name="title" required maxlength="100" value="${esc(e.title || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動日期 *</label><input type="date" name="event_date" required value="${esc(e.event_date || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">活動時間</label><input type="time" name="event_time" value="${esc(e.event_time || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">報名截止日 *</label><input type="date" name="registration_deadline" required value="${esc(e.registration_deadline || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">名額 *</label><input type="number" name="capacity" required min="1" value="${e.capacity || 30}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動地點 *</label><input name="location" required maxlength="100" value="${esc(e.location || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">資格限定／報名對象（選填）</label><input name="eligibility" maxlength="200" placeholder="留空＝不限身分皆可報名；例如：限資訊管理科學生" value="${esc(e.eligibility || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動效益／加分說明（選填）</label><input name="benefit" maxlength="200" placeholder="例如：筆試 70 分以上可登記為 CCAC 證照加分項目" value="${esc(e.benefit || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+        <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">活動說明</label><textarea name="description" rows="3" maxlength="2000" class="w-full border border-slate-300 rounded px-3 py-2">${esc(e.description || '')}</textarea></div>`;
+}
+
+function openCreateEventModal() {
+    openModal('新增活動', `
+        <form onsubmit="submitCreateEvent(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            ${eventFormFieldsHtml()}
+            <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeModal()" class="text-sm text-slate-500 px-3 py-2">取消</button>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">建立活動</button>
+            </div>
+        </form>`);
+}
+
+function openEditEventModal(id) {
+    const e = eventsList.find(x => x.id === id);
+    if (!e) return;
+    openModal('編輯活動', `
+        <form onsubmit="submitEditEvent(event, ${id})" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            ${eventFormFieldsHtml(e)}
+            <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeModal()" class="text-sm text-slate-500 px-3 py-2">取消</button>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">儲存修改</button>
+            </div>
+        </form>`);
+}
+
+async function submitCreateEvent(event) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        await api('/api/campus/events', { method: 'POST', json: f });
+        toast('活動已建立');
+        closeModal();
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function submitEditEvent(event, id) {
+    event.preventDefault();
+    const f = Object.fromEntries(new FormData(event.target));
+    try {
+        await api(`/api/campus/events/${id}`, { method: 'PUT', json: f });
+        toast('活動已更新');
+        closeModal();
+        loadEvents();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function openEventRegistrationsModal(id, title) {
+    const statusTone = { '已報名': 'green', '候補中': 'amber', '已取消': 'gray' };
+    openModal(`${title}－報名名單`, '<div class="text-sm text-slate-500">載入中…</div>', true);
+    try {
+        const r = await api(`/api/campus/events/${id}/registrations`);
+        const items = r.data;
+        if (!items.length) {
+            openModal(`${title}－報名名單`, '<div class="text-sm text-slate-500">目前還沒有人報名。</div>', true);
+            return;
+        }
+        const rowsHtml = items.map(x => `
+            <tr class="border-b border-slate-100">
+                <td class="py-1.5 pr-3">${esc(x.student_id)}</td>
+                <td class="py-1.5 pr-3">${esc(x.full_name)}</td>
+                <td class="py-1.5 pr-3">${esc(x.email)}</td>
+                <td class="py-1.5 pr-3">${esc(x.phone || '-')}</td>
+                <td class="py-1.5 pr-3">${statusBadge(x.status, statusTone[x.status] || 'gray')}</td>
+                <td class="py-1.5">${x.status === '已取消' ? '-' : (x.checked_in ? statusBadge('已簽到', 'green') : statusBadge('未簽到', 'gray'))}</td>
+            </tr>`).join('');
+        openModal(`${title}－報名名單（共 ${items.length} 筆）`, `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead><tr class="border-b border-slate-200 text-xs text-slate-500">
+                        <th class="py-1.5 pr-3 font-semibold">學號</th><th class="py-1.5 pr-3 font-semibold">姓名</th>
+                        <th class="py-1.5 pr-3 font-semibold">Email</th><th class="py-1.5 pr-3 font-semibold">電話</th>
+                        <th class="py-1.5 pr-3 font-semibold">狀態</th><th class="py-1.5 font-semibold">簽到</th>
+                    </tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>`, true);
+    } catch (e) {
+        openModal(`${title}－報名名單`, `<div class="text-sm text-rose-700">${esc(e.message)}</div>`, true);
+    }
+}
+
 function renderEventsList() {
     const body = document.getElementById('eventsBody');
     if (!eventsList.length) { body.innerHTML = '<div class="text-sm text-slate-500">目前沒有符合條件的活動。</div>'; return; }
@@ -991,6 +1120,7 @@ function renderEventsList() {
 
 function eventCardHtml(e) {
     const myReg = myEventsList.find(r => r.event_id === e.id && r.status !== '已取消');
+    const isStaff = ['管理員', '教職員', '老師'].includes(currentUser.role);
     let actionHtml;
     if (e.cancelled) actionHtml = statusBadge('活動已取消', 'red');
     else if (myReg) actionHtml = statusBadge(myReg.status === '候補中' ? '已候補' : '已報名', myReg.status === '候補中' ? 'amber' : 'green');
@@ -1001,7 +1131,7 @@ function eventCardHtml(e) {
         <div class="rounded border border-slate-200 p-4 space-y-3">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                    <div class="font-bold text-slate-900">${esc(e.title)}</div>
+                    <div class="font-bold text-slate-900">${esc(e.title)}${isStaff ? ` <button type="button" onclick="openEditEventModal(${e.id})" class="text-xs text-ukn-700 hover:underline font-normal ml-1">編輯</button> <button type="button" onclick="openEventRegistrationsModal(${e.id}, '${esc(e.title)}')" class="text-xs text-ukn-700 hover:underline font-normal ml-1">報名名單 (${e.registered_count}${e.waitlist_count ? `+${e.waitlist_count}候補` : ''})</button>` : ''}</div>
                     <div class="flex flex-wrap gap-1 mt-1">
                         ${e.eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(e.eligibility)}</span>` : ''}
                         ${e.benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(e.benefit)}</span>` : ''}

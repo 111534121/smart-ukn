@@ -396,89 +396,16 @@ DEMO_CATEGORIES = [
     {"category_id": 4, "category_name": "總務校園與設施", "icon": "🏢", "sort_order": 4, "subcategories": ["學生證補發", "停車證申請"]}
 ]
 
-DEMO_KNOWLEDGE_BASE = [
-    {
-        "id": 1,
-        "category_id": 1,
-        "category_name": "教務學則與選課",
-        "subcategory": "停修/棄修手續",
-        "keyword": "棄修",
-        "official_term": "停修課程辦理規定",
-        "content": "學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（115-1 為 11/16-12/4，行事曆稱「受理棄選」，五專前三年除外；每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。",
-        "doc_name": "康寧大學學生學則.pdf",
-        "page": 12,
-        "url": "https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw",
-        "updated_at": "2026-08-20"
-    },
-    {
-        "id": 2,
-        "category_id": 2,
-        "category_name": "學務生輔與請假",
-        "subcategory": "學生請假辦法",
-        "keyword": "病假",
-        "official_term": "學生請假規則",
-        "content": "學生因病無法到校上課，應於請假日當日起 3 日內（含例假日）登入校務系統提出線上請假申請，並檢附健保特約醫療院所開立之就醫證明或診斷書，經導師核准後始完成請假手續。",
-        "doc_name": "康寧大學學生請假規則.pdf",
-        "page": 5,
-        "url": "https://www.ukn.edu.tw/p/412-1000-382.php?Lang=zh-tw",
-        "updated_at": "2026-08-20"
-    },
-    {
-        "id": 3,
-        "category_id": 3,
-        "category_name": "證照抵免與獎助",
-        "subcategory": "語言證照抵免",
-        "keyword": "英文抵免",
-        "official_term": "語言證照抵免辦法",
-        "content": "學生取得多益測驗 (TOEIC) 550 分以上、全民英檢 (GEPT) 中級複試通過或同等級國際外語證照者，得於每學期開學後至加退選截止前，檢附成績單正本與影本至通識教育中心申請抵免一年級「英文(一)」及「英文(二)」共 4 學分。",
-        "doc_name": "康寧大學共同外語學分抵免辦法.pdf",
-        "page": 3,
-        "url": "https://www.ukn.edu.tw/p/412-1000-383.php?Lang=zh-tw",
-        "updated_at": "2026-09-01"
-    },
-    {
-        "id": 4,
-        "category_id": 1,
-        "category_name": "教務學則與選課",
-        "subcategory": "先修與擋修規定",
-        "keyword": "擋修",
-        "official_term": "先修科目未通過擋修規定",
-        "content": "本校各科系必修課程若訂有先修科目限制（例如：程式設計(二) 為 資料結構 之先修科目），學生該先修科目未達及格標準（60 分）者，電腦選課系統將自動擋修，不得修習後續先修關聯課程，需待先修科目重修及格後始得修習。",
-        "doc_name": "康寧大學課程選修要點.pdf",
-        "page": 8,
-        "url": "https://www.ukn.edu.tw/p/412-1000-384.php?Lang=zh-tw",
-        "updated_at": "2026-09-01"
-    },
-    {
-        "id": 5,
-        "category_id": 3,
-        "category_name": "證照抵免與獎助",
-        "subcategory": "專業證照獎勵金",
-        "keyword": "證照補助",
-        "official_term": "學生取得專業證照獎勵辦法",
-        "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，先送所屬科系初審，再由研究發展處審核。",
-        "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
-        "page": 2,
-        "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw",
-        "updated_at": "2026-09-10"
-    }
-]
+# 規章知識庫與口語同義詞：整理自官網正式法規 PDF，見 campus/official_rules.py
+from campus.official_rules import OFFICIAL_RULES, OFFICIAL_SYNONYMS
 
-DEMO_SYNONYMS = [
-    {"synonym_id": 1, "category_id": 1, "user_keyword": "棄修", "official_term": "停修課程辦理規定"},
-    {"synonym_id": 2, "category_id": 1, "user_keyword": "退選", "official_term": "停修課程辦理規定"},
-    {"synonym_id": 3, "category_id": 1, "user_keyword": "不要修了", "official_term": "停修課程辦理規定"},
-    {"synonym_id": 4, "category_id": 1, "user_keyword": "擋修", "official_term": "先修科目未通過擋修規定"},
-    {"synonym_id": 5, "category_id": 1, "user_keyword": "先修沒過", "official_term": "先修科目未通過擋修規定"},
-    {"synonym_id": 6, "category_id": 3, "user_keyword": "英文抵免", "official_term": "語言證照抵免辦法"},
-    {"synonym_id": 7, "category_id": 3, "user_keyword": "英檢抵免", "official_term": "語言證照抵免辦法"},
-    {"synonym_id": 8, "category_id": 3, "user_keyword": "多益抵免", "official_term": "語言證照抵免辦法"},
-    {"synonym_id": 9, "category_id": 2, "user_keyword": "病假", "official_term": "學生請假規則"},
-    {"synonym_id": 10, "category_id": 2, "user_keyword": "事假", "official_term": "學生請假規則"},
-    {"synonym_id": 11, "category_id": 3, "user_keyword": "證照錢", "official_term": "學生取得專業證照獎勵辦法"},
-    {"synonym_id": 12, "category_id": 1, "user_keyword": "二一", "official_term": "學業退學規定"},
-    {"synonym_id": 13, "category_id": 1, "user_keyword": "暑修", "official_term": "暑期開班授課規定"}
-]
+DEMO_KNOWLEDGE_BASE = [dict(r) for r in OFFICIAL_RULES]
+for _category in DEMO_CATEGORIES:
+    _category["subcategories"] = list(dict.fromkeys(
+        r["subcategory"] for r in DEMO_KNOWLEDGE_BASE if r["category_id"] == _category["category_id"]))
+
+DEMO_SYNONYMS = [{"synonym_id": i, "category_id": cat, "user_keyword": word, "official_term": term}
+                 for i, (cat, word, term) in enumerate(OFFICIAL_SYNONYMS, start=1)]
 
 # 課名、學分、建議修課學期依資管科「112 學年度入學五專修業科目表」(https://im.ukn.edu.tw/p/405-1028-609,c82.php)；
 # 全學年課程 (例如程式設計 6 學分) 拆成上下學期各一門。科目表沒有先修規定，prerequisite_id 為擋修功能的示範設定。
@@ -611,7 +538,7 @@ DEMO_CHECKLISTS = [
         "form_download_url": "/forms/graduation_audit_form",
         "system_url": "http://203.71.63.13/academic/",
         "deadline_week_info": "大四第 8-16 週 (進行中)",
-        "related_kb_id": 4,
+        "related_kb_id": 18,
         "audience": "學生"
     },
     {
@@ -1571,6 +1498,7 @@ def load_unmatched_queries():
                 r[key] = r[key].strftime("%Y-%m-%d %H:%M:%S")
     return rows
 
+# 【功能：AI 智慧校規】①「我知道要查什麼」：先把口語換成正式名稱 (同義詞)，再依關鍵字/名稱/分類/內文命中給分，取最高分的規章
 @app.route("/api/search", methods=["POST"])
 def search_knowledge():
     data = request.get_json(silent=True) or {}
@@ -1952,6 +1880,7 @@ def load_course_map():
     rows = fetch_db_rows(COURSE_MAP_SQL)
     return rows if rows else DEMO_COURSES
 
+# 【功能：修業進度與擋修】讀取學生歷年成績 (student_credits)，後面的擋修、畢業、重補修都用這份資料比對
 def load_student_credits(student_id):
     """學生成績：有連 MySQL 時讀 student_credits，離線時回退 DEMO_STUDENT_CREDITS"""
     rows = fetch_db_rows(
@@ -1978,6 +1907,7 @@ def hide_untaken_demo_courses(courses, taken_ids):
         return courses
     return [c for c in courses if c["course_id"] not in DEMO_COURSE_IDS or c["course_id"] in taken_ids]
 
+# 【功能：修業進度與擋修】同一科修多次時：有一次及格就算通過；整理出已通過 / 未通過的課程
 def summarize_credits(credit_records):
     """整理成績：同一科重修時以最近一次成績為準，任何一次及格即視為通過"""
     passed, latest = set(), {}
@@ -1996,6 +1926,7 @@ def get_all_courses():
         lambda c: [c["dept_id"]] if c.get("dept_id") and c.get("course_type") not in PUBLIC_COURSE_TYPES else [])
     return jsonify({"status": "success", "data": courses}), 200
 
+# 【功能：修業進度與擋修】逐科比對：先修科目 (prerequisite_id) 不在已通過清單 → 標成擋修；同時累加已修學分
 @app.route("/api/courses/check", methods=["POST", "GET"])
 def check_courses_prerequisites():
     """先修擋修檢核：
@@ -2299,6 +2230,7 @@ def _load_dept_requirements(dept_id):
         return rows[0]
     return DEMO_GRADUATION_REQUIREMENTS.get(dept_id, DEMO_GRADUATION_REQUIREMENTS["CS"])
 
+# 【功能：畢業進度】已通過學分、證照張數與畢業門檻 (220 學分、2 張證照) 相比，算出還差多少
 def _compute_graduation_dashboard(student_id):
     """單一學生的畢業學分/證照達成度、各類學分細拆，並與同屆比較證照；查無學生回傳 None"""
     student = _load_student_info(student_id)
@@ -3421,6 +3353,7 @@ def list_visitor_faq():
 def _fmt(value):
     return int(value) if float(value).is_integer() else value
 
+# 【功能：獎助學金資格比對】每個條件 (年級、科系、身分、GPA、操行、前學期不及格) 逐項比對；硬性條件不符 = 不符合，只差成績 = 部分符合
 def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_personal):
     """逐項比對條件；redact_personal=True (家長) 時個人條件不回傳具體數值"""
     checks = []
@@ -3489,6 +3422,7 @@ def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_pers
         "missing": [c["reason"] or f"{c['item']}：不符合" for c in failed]
     }
 
+# 【功能：獎助學金資格比對】讀取學生資料後，對每一項獎學金呼叫 evaluate_scholarship，依符合程度與截止日排序
 @app.route("/api/scholarships/match", methods=["GET"])
 def match_scholarships():
     """依登入學生 (家長為其子女) 的資料逐筆比對獎助學金資格；可用 ?date=YYYY-MM-DD 模擬日期"""

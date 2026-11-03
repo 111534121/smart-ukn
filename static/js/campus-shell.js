@@ -32,6 +32,7 @@ const FEATURES = [
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰', staff: false },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
     { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { group: '學習', desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
+    { key: 'meetings', tab: 'tab-meetings', name: '線上會議', icon: '🎥', group: '社群', desc: '開視訊會議、邀請同學老師、用邀請碼加入' },
 ];
 // staff：老師、教職員、管理員登入時的顯示方式
 //   false              → 學生專用，不顯示

@@ -100,7 +100,7 @@ def test_students_and_parents_cannot_send(client, login):
 
 
 # ---------------- T09 班級／課程廣播 ----------------
-# 課表 (dashboard/demo_data.py)：彭賓鈺教「資料庫系統概論」給資管五忠、資管四孝；「藥理學」是護理四忠蔡宗翰的課
+# 課表 (dashboard/demo_data.py)：彭賓鈺教資管五忠「統計學」「商務智慧數據分析」、資管四孝「資料庫系統概論」；「藥理學」是護理四忠蔡宗翰的課
 
 def broadcast(client, target_type, target="", **extra):
     body = {"target_type": target_type, "target": target, "title": "期中考教室異動", "content": "改到 E301", **extra}
@@ -115,7 +115,8 @@ def test_teacher_course_broadcast_reaches_all_classes_of_the_course(client, logi
     login("teacher1")
     targets = client.get("/api/campus/broadcast/targets").get_json()["data"]
     courses = {c["course_name"]: c for c in targets["courses"]}
-    assert set(courses) == {"資料庫系統概論"}  # 只有自己任教的課，班會 / 導師時間不算
+    # 只有自己任教的課，自習/班週會、校部週會、社團活動、班會 / 導師時間不算
+    assert set(courses) == {"統計學", "商務智慧數據分析", "資料庫系統概論"}
     assert targets["school"] is None and targets["departments"] == [] and targets["grades"] == []
 
     res = broadcast(client, "課程", "資料庫系統概論")
@@ -123,9 +124,10 @@ def test_teacher_course_broadcast_reaches_all_classes_of_the_course(client, logi
     notice = res.get_json()["data"]
     assert notice["target_type"] == "課程" and "資管四孝" in notice["target_label"]
 
-    for user in ("student1", "S112004"):  # 資管五忠、資管四孝的學生都收到
-        login(user)
-        assert notice["id"] in inbox_ids(client)
+    login("S112004")  # 資管四孝的學生收到
+    assert notice["id"] in inbox_ids(client)
+    login("student1")  # 資管五忠沒有上這門課，收不到
+    assert notice["id"] not in inbox_ids(client)
 
     login("teacher1")
     sent = next(n for n in client.get("/api/campus/notices/sent").get_json()["data"] if n["id"] == notice["id"])

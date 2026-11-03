@@ -10,14 +10,15 @@ from datetime import datetime, date, timedelta
 
 from flask import Blueprint, request
 
+from dashboard.demo_data import PERIOD_TIMES
 from . import facilities_store as db
+from . import teachers_store
 from .common import deps, error, ok, require, store, now_str, current_user, user_key
 
 bp = Blueprint("campus_facilities", __name__)
 
-PERIODS = {1: ("08:10", "09:00"), 2: ("09:10", "10:00"), 3: ("10:10", "11:00"), 4: ("11:10", "12:00"),
-           5: ("13:10", "14:00"), 6: ("14:10", "15:00"), 7: ("15:10", "16:00"), 8: ("16:10", "17:00"),
-           9: ("17:10", "18:00")}
+# 節次時間與首頁課表共用 (康寧作息：08:30 第一節，每節 50 分鐘)
+PERIODS = PERIOD_TIMES
 
 # 校園地圖 (示意圖座標，畫布 100 x 72)；依「康寧大學台北校區 無障礙設施示意圖」實際配置繪製，
 # 有教室的大樓沿用單一字母代碼 (配合教室代碼猜測規則，例如 A402 = 第一教學大樓 4 樓)，
@@ -72,6 +73,7 @@ OFFICES = [
 
 ]
 
+# 老師辦公室的示範資料：teacher_directory 表 (或 JSON 示範模式) 第一次是空的時候灌入，之後由後台「老師辦公室」維護
 TEACHER_OFFICES = [
     {"name": "彭賓鈺", "title": "副教授 / 資管五忠導師", "dept": "資訊管理科", "office": "A410", "building": "A", "floor": 4, "ext": "分機 361", "email": "", "office_hours": [{"weekday": 2, "start": "13:10", "end": "15:00"}, {"weekday": 4, "start": "10:10", "end": "12:00"}]},
     {"name": "林志明", "title": "助理教授", "dept": "資訊管理科", "office": "A411", "building": "A", "floor": 4, "ext": "分機 362", "email": "", "office_hours": [{"weekday": 3, "start": "13:10", "end": "15:00"}]},
@@ -118,12 +120,25 @@ def room_code(classroom):
     return str(classroom).split(" ")[0]
 
 
+# 【功能：老師辦公室與目前狀態】已核准的老師名錄 + 課表上有課但還沒登錄的老師，學生才看得到全部老師
+def published_teachers(schedule=None):
+    """學生看得到的老師：已核准的名錄資料，加上課表有排課、但名錄還沒登錄的老師 (registered = False)"""
+    listed = [{**t, "registered": True} for t in teachers_store.all_teachers(TEACHER_OFFICES) if t["is_published"]]
+    names = {t["name"] for t in listed}
+    for name in sorted({s["teacher"] for s in (schedule if schedule is not None else load_schedule()) if s.get("teacher")}):
+        if name not in names:
+            listed.append({"id": None, "name": name, "title": "", "dept": "", "unit": "", "office": "", "building": "",
+                           "floor": None, "ext": "", "email": "", "office_hours": [], "photo_url": "", "registered": False})
+    return listed
+
+
 # ---------- 校園地圖 ----------
 
 @bp.route("/api/campus/map", methods=["GET"])
 def campus_map():
     return ok(buildings=CAMPUS_BUILDINGS, gate=GATE, rooms=ROOMS, offices=OFFICES,
-              teachers=[{k: t[k] for k in ("name", "office", "building", "floor", "dept")} for t in TEACHER_OFFICES])
+              teachers=[{k: t[k] for k in ("name", "office", "building", "floor", "dept", "unit")}
+                        for t in published_teachers() if t["building"]])
 
 
 @bp.route("/api/campus/map/find", methods=["GET"])
@@ -140,8 +155,8 @@ def find_place():
     for o in OFFICES:
         if q in o["name"].upper():
             results.append({"type": "處室", "name": o["name"], "where": o["location"], "building": o["building"]})
-    for t in TEACHER_OFFICES:
-        if q in t["name"].upper():
+    for t in published_teachers():
+        if q in t["name"].upper() and t["building"] in b:
             results.append({"type": "老師", "name": f"{t['name']} 老師", "where": f"{b[t['building']]['name']} {t['office']}", "building": t["building"]})
     if not results and len(q) >= 2 and q[0] in b and q[1:].isdigit():
         # 沒登錄的教室代碼，以『A402 = A 棟 4 樓』規則推算
@@ -151,6 +166,7 @@ def find_place():
 
 # ---------- 老師辦公室與目前狀態 ----------
 
+# 【功能：老師辦公室與目前狀態】用現在時間比對老師課表與可以找老師的時間：上課中 / 可以找老師 / 沒有課 / 非上班時間
 def teacher_status(t, schedule, now):
     wd = now.isoweekday()
     p = period_at(now)
@@ -163,7 +179,7 @@ def teacher_status(t, schedule, now):
             return {"state": "上課中", "detail": f"{cur['course_name']} @ {cur['classroom']}，{PERIODS[cur['period_end']][1]} 下課"}
     for oh in t["office_hours"]:
         if oh["weekday"] == wd and oh["start"] <= hm <= oh["end"]:
-            return {"state": "可以找老師", "detail": f"在 {t['office']} 辦公室，到 {oh['end']}"}
+            return {"state": "可以找老師", "detail": f"在 {t['office'] or '辦公室'}，到 {oh['end']}"}
     nxt = next((s for s in classes if PERIODS[s["period_start"]][0] > hm), None)
     if wd > 5 or hm > "18:00" or hm < "08:00":
         return {"state": "非上班時間", "detail": "可以先寄信預約"}
@@ -178,7 +194,7 @@ def teachers():
     schedule = load_schedule()
     b = {x["code"]: x["name"] for x in CAMPUS_BUILDINGS}
     result = []
-    for t in TEACHER_OFFICES:
+    for t in published_teachers(schedule):
         timetable = sorted(({"weekday": s["weekday"], "period_start": s["period_start"], "period_end": s["period_end"],
                              "course_name": s["course_name"], "classroom": s["classroom"],
                              "class_name": s.get("class_name") or "重補修"}
@@ -186,7 +202,9 @@ def teachers():
                            key=lambda s: (s["weekday"], s["period_start"]))
         result.append({**t, "building_name": b.get(t["building"], ""), "status": teacher_status(t, schedule, now),
                        "timetable": timetable})
-    return ok(now=now.strftime("%Y-%m-%d %H:%M"), data=result, periods=PERIODS)
+    result.sort(key=lambda t: (not t["registered"], t["unit"] or t["dept"], t["name"]))
+    return ok(now=now.strftime("%Y-%m-%d %H:%M"), data=result, periods=PERIODS,
+              units=sorted({t["unit"] for t in result if t["unit"]}), depts=sorted({t["dept"] for t in result if t["dept"]}))
 
 
 # ---------- 教室租借 ----------

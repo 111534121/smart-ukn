@@ -937,6 +937,15 @@ def init_database():
             cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `tour_seen` tinyint(1) NOT NULL DEFAULT 0 AFTER `pinned_features`")
             print("✅ user_preferences 已新增 tour_seen 欄位")
 
+        # 表單下載：每個帳號的常用表單 (表單代碼，逗號分隔)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_preferences' AND COLUMN_NAME = 'favorite_forms'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `user_preferences` ADD COLUMN `favorite_forms` varchar(500) DEFAULT NULL COMMENT '常用表單代碼，逗號分隔' AFTER `tour_seen`")
+            print("✅ user_preferences 已新增 favorite_forms 欄位")
+
         # T10：個人行程改存在 academic_calendar (原本在 campus_store.json)；owner_key 有值的是個人行程
         for column, definition in (
             ("owner_key", "varchar(50) DEFAULT NULL AFTER `related_checklist_id`"),
@@ -994,6 +1003,15 @@ def init_database():
         from campus.facilities_store import BOOKINGS_TABLE_SQL, LOCKERS_TABLE_SQL
         cursor.execute(BOOKINGS_TABLE_SQL)
         cursor.execute(LOCKERS_TABLE_SQL)
+
+        # 老師辦公室名錄與審核 (campus/teacher_admin.py)；第一次讀取時自動灌示範資料
+        from campus.teachers_store import TABLE_SQL as TEACHERS_TABLE_SQL
+        cursor.execute(TEACHERS_TABLE_SQL)
+
+        # 線上會議與成員 (campus/meetings.py)
+        from campus.meetings_store import MEETINGS_TABLE_SQL, MEMBERS_TABLE_SQL
+        cursor.execute(MEETINGS_TABLE_SQL)
+        cursor.execute(MEMBERS_TABLE_SQL)
 
         # 報表與文件庫 (campus/reports.py)
         from campus.reports_store import FILES_TABLE_SQL, VIEW_LOGS_TABLE_SQL, DOWNLOAD_LOGS_TABLE_SQL, FAVORITES_TABLE_SQL
