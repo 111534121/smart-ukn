@@ -11,7 +11,8 @@ def test_self_check_suite():
     report = self_check.run_all()
     failed = [r for r in report["results"] if r["status"] != "pass"]
     if failed:
+        first = f"[{failed[0]['feature']}] {failed[0]['name']}: {failed[0]['detail'].splitlines()[0]}"
         detail = "\n".join(f"- [{r['feature']}] {r['name']}: {r['detail'].splitlines()[0]}" for r in failed)
         raise AssertionError(
-            f"自動檢測發現 {len(failed)}/{report['total']} 項未通過（完成度 {report['completion_percent']}%）：\n{detail}"
+            f"自動檢測發現 {len(failed)}/{report['total']} 項未通過（{first}）：\n{detail}"
         )

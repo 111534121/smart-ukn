@@ -297,8 +297,9 @@ def create_user():
     # 同步至 app.DEMO_USERS
     try:
         from app import DEMO_USERS
+        demo_id = max([u.get("user_id", 0) for u in DEMO_USERS], default=100) + 1
         DEMO_USERS.append({
-            "user_id": new_id, "username": username, "password_hash": pw_hash,
+            "user_id": demo_id, "username": username, "password_hash": pw_hash,
             "role": role, "student_id": student_id, "full_name": full_name,
             "office": office, "permissions": permissions, "is_active": is_active,
             "can_manage_dorm": bool(can_manage_dorm)
@@ -405,7 +406,7 @@ def update_user(user_id):
     try:
         from app import DEMO_USERS
         for u in DEMO_USERS:
-            if u.get("user_id") == user_id or u.get("username") == before["username"]:
+            if u.get("username") == before["username"]:
                 u.update({
                     "role": role, "full_name": full_name, "student_id": student_id,
                     "office": office, "permissions": permissions, "is_active": is_active,
@@ -444,7 +445,7 @@ def delete_user(user_id):
 
     try:
         from app import DEMO_USERS
-        DEMO_USERS[:] = [u for u in DEMO_USERS if u.get("user_id") != user_id]
+        DEMO_USERS[:] = [u for u in DEMO_USERS if u.get("username") != before["username"]]
     except Exception:
         pass
 
