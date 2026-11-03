@@ -29,6 +29,7 @@ def _class_item(row, day, now):
         "end_time": end,
         "status": status,
         "is_personal": bool(row.get("student_id")),
+        "conflicts": [],
     }
 
 
@@ -40,6 +41,11 @@ def summarize_schedule(schedule_rows, now):
         if not rows:
             continue
         classes = [_class_item(r, day.strftime("%Y-%m-%d"), now) for r in rows]
+        for i, left in enumerate(classes):
+            for right in classes[i + 1:]:
+                if left["period_start"] <= right["period_end"] and right["period_start"] <= left["period_end"]:
+                    left["conflicts"].append(right["course_name"])
+                    right["conflicts"].append(left["course_name"])
         if offset == 0 and all(c["status"] == "done" for c in classes):
             continue
         weekday = WEEKDAY_LABELS[day.isoweekday()]

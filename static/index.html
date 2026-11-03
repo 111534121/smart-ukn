@@ -2612,6 +2612,7 @@
             document.getElementById('dashScheduleList').innerHTML = s.classes.length
                 ? s.classes.map(c => {
                     const style = c.status === 'ongoing' ? 'border-ukn-500 bg-ukn-50' : c.status === 'done' ? 'border-slate-100 opacity-50' : 'border-slate-200';
+                    const conflict = c.conflicts?.length ? `<span class="text-[10px] font-bold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded" title="與 ${escapeHtml(c.conflicts.join('、'))} 時段重疊">時段重疊，請核對課表</span>` : '';
                     const tag = c.status === 'ongoing' ? '<span class="text-[10px] font-bold bg-accent-500 text-white px-1.5 py-0.5 rounded">上課中</span>'
                         : c.status === 'done' ? '<span class="text-[10px] text-slate-500">已下課</span>' : '';
                     return `
@@ -2622,7 +2623,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="text-sm font-semibold text-slate-900 flex items-center gap-2 flex-wrap">
-                                    ${escapeHtml(c.course_name)}${c.is_personal ? '<span class="text-[10px] font-medium border border-slate-300 text-slate-600 px-1 rounded">重補修</span>' : ''} ${tag}
+                                    ${escapeHtml(c.course_name)}${c.is_personal ? '<span class="text-[10px] font-medium border border-slate-300 text-slate-600 px-1 rounded">重補修</span>' : ''} ${tag} ${conflict}
                                 </div>
                                 <div class="text-xs text-slate-500">第 ${c.period_start}${c.period_end !== c.period_start ? `-${c.period_end}` : ''} 節 · ${escapeHtml(c.classroom)} · ${escapeHtml(c.teacher)}</div>
                             </div>
