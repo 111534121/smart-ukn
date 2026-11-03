@@ -111,8 +111,9 @@ def admin_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         role = _get_effective_role()
-        # 若已登入且角色為學生、家長、訪客或一般老師，則拒絕
-        if role and role in ("學生", "家長", "訪客", "老師"):
+        if not role:
+            return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
+        if role not in ALL_ADMIN_ROLES:
             return jsonify({"status": "error", "message": "權限不足，僅限系統管理員或內容管理人員存取"}), 403
         req_perm = "查看"
         if request.method == "POST":
@@ -131,7 +132,9 @@ def sys_admin_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         role = _get_effective_role()
-        if role and role not in SYS_ADMIN_ROLES:
+        if not role:
+            return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
+        if role not in SYS_ADMIN_ROLES:
             return jsonify({
                 "status": "error",
                 "message": "權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作"

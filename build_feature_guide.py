@@ -44,7 +44,7 @@ FEATURES = [
 
 def build():
     modules = {}
-    paths = [ROOT / 'app.py', ROOT / 'public_portal.py']
+    paths = [ROOT / 'app.py', ROOT / 'public_portal.py', ROOT / 'admin_core.py']
     for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap'):
         paths.extend((ROOT / directory).glob('*.py'))
     for path in sorted(paths):
