@@ -144,7 +144,7 @@ def test_teacher_meeting_invites_class_and_students_see_it(client, login):
     login("student1")  # 資管五忠
     mine = client.get("/api/campus/meetings").get_json()["data"]
     m = next(x for x in mine if x["id"] == meeting_id)
-    assert m["joined_by"] == "班級" and m["is_open"] and m["join_url"].startswith("https://meet.jit.si/UKN-")
+    assert m["joined_by"] == "班級" and m["is_open"] and m["join_url"].startswith("https://meet.ffmuc.net/UKN-")
     assert "invite_code" not in m and "members" not in m  # 只有主持人看得到邀請碼與成員名單
     assert client.post(f"/api/campus/meetings/{meeting_id}/cancel").status_code == 403
 

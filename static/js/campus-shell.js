@@ -199,7 +199,7 @@ function switchTab(tabId, { updateHash = true } = {}) {
         history.replaceState(null, '', f ? `#${f.key}` : location.pathname);
     }
     document.title = `校園智慧官網｜${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
-    if (tabLoaders[tabId] && (!loadedTabs.has(tabId) || ['tab-home', 'tab-counseling', 'tab-notices', 'tab-classattend'].includes(tabId))) {
+    if (tabLoaders[tabId] && (!loadedTabs.has(tabId) || ['tab-home', 'tab-counseling', 'tab-notices', 'tab-classattend', 'tab-meetings'].includes(tabId))) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
     }
