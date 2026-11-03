@@ -13,6 +13,7 @@ const ctx = vm.createContext({
     console, Date, Intl,
     escapeHtml: s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])),
     currentUser: {role: '老師', full_name: '測試老師', advised_class: '資管五忠'},
+    isDormStaff: () => false,
     document: {getElementById: element},
     switchTab: tab => openedTabs.push(tab),
     counselState: {},

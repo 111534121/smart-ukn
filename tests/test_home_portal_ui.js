@@ -11,7 +11,10 @@ const ctx = vm.createContext({console, URL, location:{origin:'http://localhost'}
 });
 vm.runInContext(fs.readFileSync('static/js/home-portal.js','utf8'),ctx);
 (async()=>{
+ ctx.initHomePortal(); assert.equal(audienceSection.hidden,true);
+ ctx.currentUser.role='訪客';ctx.isLoggedIn=()=>false;
  ctx.initHomePortal(); assert.equal(audienceSection.hidden,false);
+ ctx.isLoggedIn=()=>true;
  ctx.currentUser.role='老師'; ctx.isStaff=()=>true;
  ctx.initHomePortal(); assert.equal(audienceSection.hidden,true);
  assert.equal(el('tab-home').classList['teacher-home'],true);

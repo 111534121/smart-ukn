@@ -2415,30 +2415,26 @@
             const star = `
                 <button type="button" onclick="toggleFavLink(${Number(link.id)})" title="${isFav ? '從我的常用移除' : '加入我的常用'}" aria-label="${isFav ? '從我的常用移除' : '加入我的常用'}：${title}"
                     class="shrink-0 w-8 rounded border border-slate-200 bg-white text-base ${isFav ? 'text-accent-500' : 'text-slate-300 hover:text-accent-500'} transition">${isFav ? '★' : '☆'}</button>`;
-            let body;
-            if (!link.url || link.url === '#') {
-                body = `
-                    <div class="flex-1 min-w-0 block px-3 py-2 rounded border border-dashed border-slate-200 bg-slate-50 cursor-not-allowed">
-                        <div class="text-sm font-semibold text-slate-400 flex items-center justify-between gap-2">
-                            <span>${title}</span>
-                            <span class="text-[10px] font-medium bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded whitespace-nowrap">網址建置中</span>
-                        </div>
-                        ${desc}
-                    </div>`;
-            } else {
-                const insecure = link.url.toLowerCase().startsWith('http://')
+            const safeUrl = studentLinkUrl(link);
+            const insecure = safeUrl.startsWith('http://')
                     ? `<div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">⚠️ 此系統尚未加密連線，請勿在公共網路登入</div>`
                     : '';
-                body = `
-                    <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="flex-1 min-w-0 block px-3 py-2 rounded border border-slate-200 bg-white hover:border-ukn-400 hover:bg-ukn-50 transition">
+            const body = `
+                    <a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 min-w-0 block px-3 py-2 rounded border border-slate-200 bg-white hover:border-ukn-400 hover:bg-ukn-50 transition">
                         <div class="text-sm font-semibold text-slate-800 flex items-center justify-between gap-2">
                             <span>${title}</span><span class="text-ukn-600 text-xs">↗</span>
                         </div>
                         ${desc}
                         ${insecure}
                     </a>`;
-            }
             return `<div class="flex items-stretch gap-1.5">${body}${star}</div>`;
+        }
+
+        function studentLinkUrl(link) {
+            try {
+                const url = new URL(link.url);
+                return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+            } catch (e) { return ''; }
         }
 
         function linkMatches(link, catName, q) {
@@ -2451,6 +2447,7 @@
             try {
                 const res = await fetch('/api/links');
                 const data = await res.json();
+                if (!res.ok || data.status === 'error') throw new Error(data.message || '連結讀取失敗');
                 studentLinksCache = data.data || [];
                 studentLinkCategories = data.categories || [];
                 renderStudentLinks();
@@ -2472,8 +2469,9 @@
             const catNameOf = key => (studentLinkCategories.find(c => c.key === key) || {}).name || '';
 
             // 我的常用：依加入順序排列；搜尋時一併篩選
+            const usableLinks = studentLinksCache.filter(l => studentLinkUrl(l));
             const favLinks = favIds
-                .map(id => studentLinksCache.find(l => l.id === id))
+                .map(id => usableLinks.find(l => l.id === id))
                 .filter(l => l && linkMatches(l, catNameOf(l.category), q));
             document.getElementById('favLinksList').innerHTML = favLinks.length
                 ? favLinks.map(l => renderStudentLinkItem(l, true)).join('')
@@ -2481,8 +2479,8 @@
 
             const favSet = new Set(favIds);
             const sections = studentLinkCategories.map(cat => {
-                const items = studentLinksCache.filter(l => l.category === cat.key && linkMatches(l, cat.name, q));
-                if (q && !items.length) return '';
+                const items = usableLinks.filter(l => l.category === cat.key && linkMatches(l, cat.name, q));
+                if (!items.length) return '';
                 // 同一 group 的連結 (例如獎助學金公告 + 線上申請) 包在同一個區塊，方便看完公告直接申請
                 let body = '';
                 for (let i = 0; i < items.length; i++) {
