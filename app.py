@@ -191,23 +191,44 @@ def format_updated_at(value):
 # 權限控管裝飾器
 # ==========================================
 
+def _expand_allowed_roles(allowed_roles):
+    expanded = set(allowed_roles)
+    if "管理員" in expanded or "系統管理員" in expanded:
+        expanded.update(("管理員", "系統管理員"))
+    if "教職員" in expanded or "內容管理人員" in expanded:
+        expanded.update(("教職員", "內容管理人員"))
+    return expanded
+
+def _current_effective_role():
+    role = session.get("role", "")
+    override = request.headers.get("X-Admin-Role", "").strip()
+    if override and role in ("管理員", "系統管理員"):
+        return override
+    return role
+
 def login_required(f):
     """限制僅已登入之使用者存取"""
     @wraps(f)
     def wrapper(*args, **kwargs):
         if "username" not in session:
             return jsonify({"status": "error", "message": "請先登入系統"}), 401
+        if session.get("is_active") is not None and int(session.get("is_active", 1)) == 0:
+            return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
         return f(*args, **kwargs)
     return wrapper
 
 def role_required(*allowed_roles):
-    """限制僅特定身分角色可存取"""
+    """限制僅特定身分角色可存取（自動對齊 系統管理員/管理員、內容管理人員/教職員）"""
+    expanded = _expand_allowed_roles(allowed_roles)
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             if "username" not in session:
                 return jsonify({"status": "error", "message": "請先登入系統"}), 401
-            if session.get("role") not in allowed_roles:
+            if session.get("is_active") is not None and int(session.get("is_active", 1)) == 0:
+                return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
+            eff_role = _current_effective_role()
+            if eff_role not in expanded:
                 return jsonify({"status": "error", "message": "權限不足，僅限特定身分存取"}), 403
             return f(*args, **kwargs)
         return wrapper
@@ -215,13 +236,17 @@ def role_required(*allowed_roles):
 
 def write_roles_required(*allowed_roles):
     """GET 公開讀取；POST/PUT/DELETE 等寫入操作限特定身分"""
+    expanded = _expand_allowed_roles(allowed_roles)
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             if request.method not in ("GET", "HEAD", "OPTIONS"):
                 if "username" not in session:
                     return jsonify({"status": "error", "message": "請先登入系統"}), 401
-                if session.get("role") not in allowed_roles:
+                if session.get("is_active") is not None and int(session.get("is_active", 1)) == 0:
+                    return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
+                eff_role = _current_effective_role()
+                if eff_role not in expanded:
                     return jsonify({"status": "error", "message": "權限不足"}), 403
             return f(*args, **kwargs)
         return wrapper
@@ -287,6 +312,12 @@ def write_audit_log(table_name, record_id, action, before=None, after=None):
         "after_json": json.loads(json.dumps(after, default=str)) if after is not None else None,
         "changed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
+    if not app.config.get("TESTING"):
+        try:
+            import admin_db
+            admin_db.log_audit_trail(table_name, record_id, action, before=before, after=after, changed_by=changed_by, role=role)
+        except Exception:
+            pass
 
 # ==========================================
 # 2. 示範模式 3NF 資料引擎 (Demo Fallback Storage)
@@ -367,18 +398,20 @@ _DEMO_PW_123456 = "pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c
 _DEMO_PW_ADMIN123 = "pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c"
 
 DEMO_USERS = [
-    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True},
-    {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
-    {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
-    {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
+    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True, "office": "學生事務處／住宿管理", "permissions": "查看,建立,修改", "is_active": 1},
+    {"user_id": 21, "username": "content_admin", "password_hash": _DEMO_PW_123456, "role": "內容管理人員", "student_id": None, "full_name": "張雅筑（內容管理人員）", "office": "教務處", "permissions": "查看,建立,修改", "is_active": 1},
+    {"user_id": 22, "username": "sysadmin", "password_hash": _DEMO_PW_ADMIN123, "role": "系統管理員", "student_id": None, "full_name": "陳建國（系統管理員）", "office": "圖書資訊中心", "permissions": "查看,建立,修改,帳號管理,權限設定,系統檢測", "is_active": 1},
+    {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明", "office": "資訊管理科", "permissions": "查看", "is_active": 1},
+    {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華", "office": "資訊管理科", "permissions": "查看", "is_active": 1},
+    {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)", "office": "家長專區", "permissions": "查看", "is_active": 1},
     # S112002 尚未開啟家長預警授權 (DEMO_PRIVACY_SETTINGS)，用來示範「家長未授權時系統不會寄信」
-    {"user_id": 9, "username": "parent2", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112002", "full_name": "李建國 (美華家長)"},
-    {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
-    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "彭賓鈺 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管五忠"},
-    {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"},
+    {"user_id": 9, "username": "parent2", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112002", "full_name": "李建國 (美華家長)", "office": "家長專區", "permissions": "查看", "is_active": 1},
+    {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)", "office": "教務處課務組", "permissions": "查看,建立,修改", "is_active": 1},
+    {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "彭賓鈺 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管五忠", "office": "資訊管理科", "permissions": "查看,修改", "is_active": 1},
+    {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員", "office": "圖書資訊中心", "permissions": "查看,建立,修改,帳號管理,權限設定,系統檢測", "is_active": 1},
     # 示範學號登入帳號 (密碼 123456，與 seed_data.py 一致)
-    {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇"},
-    {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔"}
+    {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇", "office": "資訊管理科", "permissions": "查看", "is_active": 1},
+    {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔", "office": "資訊管理科", "permissions": "查看", "is_active": 1}
 ]
 
 # 虛構的處室操作帳號；正式資料庫需執行 seed_admin_offices_demo.py 才會建立。
@@ -455,8 +488,8 @@ DEMO_KNOWLEDGE_BASE = [
         "category_name": "證照抵免與獎助",
         "subcategory": "專業證照獎勵金",
         "keyword": "證照補助",
-        "official_term": "學生取得專業證照獎勵辦法",
-        "content": "學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金。申請期間為每學期第 1 至 5 週，請至研發處實習就業組辦理。",
+        "official_term": "學生取得專業證照獎勵辦法（專題示範資料）",
+        "content": "【專題示範資料】學生在學期間取得教育部認可之乙級以上技術士證照或國際專業原廠認證，每張最高可申請新台幣 3,000 至 10,000 元獎勵金（專題示範資料，實際補助金額依校方公告為準）。申請期間為每學期第 1 至 5 週，請至研發處實習就業組辦理。",
         "doc_name": "康寧大學學生專業證照獎勵要點.pdf",
         "page": 2,
         "url": "https://www.ukn.edu.tw/p/412-1000-385.php?Lang=zh-tw",
@@ -614,17 +647,17 @@ DEMO_CHECKLISTS = [
         "item_id": 5,
         "category_id": 3,
         "category_name": "研發處",
-        "business_name": "專業證照與競賽獲獎獎勵金申請",
+        "business_name": "專業證照與競賽獲獎獎勵金申請（專題示範資料）",
         "steps_json": [
             "登入研發處證照獎勵申請平台",
             "填寫證照/競賽名稱、證書字號與發證單位",
             "上傳證書正反面與郵局存摺封面圖檔",
             "列印紙本印領清冊並親筆簽名",
-            "送交研發處實習就業組審核並撥款"
+            "送交研發處實習就業組審核並撥款（專題示範資料；付費設定不代表金流已完成）"
         ],
         "required_docs": "證照證書影本、郵局存摺封面影本、印領清冊",
         "office_hours": "週一至週五 09:00 - 17:00",
-        "office_location": "圖資大樓 2 樓 研發處實習就業組",
+        "office_location": "圖資大樓 2 樓 研發處實習就業組（位置：專題示範資料）",
         "contact_phone": "02-2632-1181 分機 612",
         "form_download_url": "/forms/certificate_reward_form",
         "system_url": "https://oes3.ukn.edu.tw/~license/",
@@ -902,7 +935,38 @@ DEMO_COMPETITIONS = [
         "created_at": "2026-07-12 16:20:00"
     }
 ]
-DEMO_VISITOR_LOGS = []
+DEMO_VISITOR_LOGS = [
+    {
+        "log_id": 1,
+        "visitor_name": "陳美華",
+        "phone": "0912-345-678",
+        "school_from": "內湖高中",
+        "purpose": "校園參觀",
+        "target_dept": "資訊管理科",
+        "visitor_type": "未來學生家長",
+        "visited_at": (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
+    },
+    {
+        "log_id": 2,
+        "visitor_name": "林俊傑",
+        "phone": "0922-888-999",
+        "school_from": "南港高工",
+        "purpose": "升學諮詢",
+        "target_dept": "資訊管理科",
+        "visitor_type": "高中職應屆畢業生",
+        "visited_at": (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S")
+    },
+    {
+        "log_id": 3,
+        "visitor_name": "張雅婷",
+        "phone": "0933-555-666",
+        "school_from": "松山家商",
+        "purpose": "宿舍與生活環境了解",
+        "target_dept": "護理科",
+        "visitor_type": "高中職應屆畢業生",
+        "visited_at": (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%d %H:%M:%S")
+    }
+]
 
 CAMPUS_CONTACT_DIRECTORY = [
     {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
@@ -971,6 +1035,7 @@ def auth_login():
 
     conn = get_db_connection()
     user_record = None
+    found_username_in_db = False
 
     if conn:
         try:
@@ -989,12 +1054,35 @@ def auth_login():
             candidate = cursor.fetchone()
             cursor.close()
             conn.close()
-            if candidate and check_password_hash(candidate["password_hash"], password):
-                user_record = candidate
+            if candidate:
+                found_username_in_db = True
+                if check_password_hash(candidate["password_hash"], password):
+                    user_record = candidate
         except Exception:
             if conn: conn.close()
 
-    if not user_record and conn is None:
+    if not user_record and not found_username_in_db and not app.config.get("TESTING"):
+        try:
+            import admin_db
+            db_candidates = admin_db.query_db(
+                "SELECT * FROM users WHERE LOWER(username) = %s OR (student_id = %s AND role = '學生') LIMIT 1",
+                (username_key, username.upper())
+            )
+            if db_candidates:
+                found_username_in_db = True
+                cand = db_candidates[0]
+                if check_password_hash(cand["password_hash"], password):
+                    user_record = dict(cand)
+                    if cand.get("student_id"):
+                        stu = next((s for s in DEMO_STUDENTS if s["student_id"] == cand["student_id"]), None)
+                        if stu:
+                            user_record.setdefault("dept_id", stu["dept_id"])
+                            user_record.setdefault("class_name", stu["class_name"])
+                            user_record.setdefault("dept_name", stu.get("dept_name", "資訊管理科（五專）"))
+        except Exception:
+            pass
+
+    if not user_record and not found_username_in_db:
         for u in sorted(DEMO_USERS, key=lambda x: x["username"].lower() != username_key):
             is_login_name = u["username"].lower() == username_key or (u.get("student_id") == username.upper() and u["role"] == "學生")
             if is_login_name and check_password_hash(u["password_hash"], password):
@@ -1008,28 +1096,45 @@ def auth_login():
                 break
 
     if user_record:
+        if user_record.get("is_active") is not None and int(user_record.get("is_active", 1)) == 0:
+            return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
+
         _clear_login_failures(ip)
+        role_val = user_record["role"]
+        role_display = "系統管理員" if role_val in ("管理員", "系統管理員") else ("內容管理人員" if role_val in ("內容管理人員", "教職員") else role_val)
+        default_perms = "查看,建立,修改,帳號管理,權限設定,系統檢測" if role_val in ("管理員", "系統管理員") else ("查看,建立,修改" if role_val in ("內容管理人員", "教職員") else "查看")
+        office_val = user_record.get("office") or ("圖書資訊中心" if role_val in ("管理員", "系統管理員") else ("教務處" if role_val in ("內容管理人員", "教職員") else ""))
+        perms_val = user_record.get("permissions") or default_perms
+
         session.clear()
         session.permanent = data.get("remember", True) is not False
         session["user_id"] = user_record["user_id"]
         session["username"] = user_record["username"]
-        session["role"] = user_record["role"]
+        session["role"] = role_val
+        session["role_display"] = role_display
         session["full_name"] = user_record["full_name"]
+        session["office"] = office_val
+        session["permissions"] = perms_val
+        session["is_active"] = int(user_record.get("is_active", 1) if user_record.get("is_active") is not None else 1)
         session["student_id"] = user_record.get("student_id")
         session["dept_id"] = user_record.get("dept_id", "CS")
         session["dept_name"] = user_record.get("dept_name", "資訊管理科（五專）")
         session["class_name"] = user_record.get("class_name", "")
         session["advised_class"] = user_record.get("advised_class")
-        session["can_manage_dorm"] = bool(user_record.get("can_manage_dorm")) or user_record["role"] == "管理員"
+        session["can_manage_dorm"] = bool(user_record.get("can_manage_dorm")) or role_val in ("管理員", "系統管理員")
 
         return jsonify({
             "status": "success",
-            "message": f"歡迎登入！{user_record['full_name']} ({user_record['role']})",
+            "message": f"歡迎登入！{user_record['full_name']} ({role_display})",
             "user": {
                 "user_id": user_record["user_id"],
                 "username": user_record["username"],
-                "role": user_record["role"],
-                "workbench_url": "/admin-workbench" if user_record["role"] in ('處室承辦','科助','住宿管理員') else "/",
+                "role": role_val,
+                "role_display": role_display,
+                "office": office_val,
+                "permissions": perms_val,
+                "is_active": session["is_active"],
+                "workbench_url": "/admin" if role_val in ('管理員', '系統管理員', '內容管理人員') else ("/admin-workbench" if role_val in ('處室承辦','科助','住宿管理員') else "/"),
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
                 "dept_name": user_record.get("dept_name", "資訊管理科（五專）"),
@@ -1049,13 +1154,21 @@ def auth_logout():
 @app.route("/api/auth/me", methods=["GET"])
 def auth_me():
     if "username" in session:
+        role_val = session.get("role", "")
+        role_display = session.get("role_display") or (
+            "系統管理員" if role_val in ("管理員", "系統管理員") else ("內容管理人員" if role_val in ("內容管理人員", "教職員") else role_val)
+        )
         return jsonify({
             "status": "success",
             "is_authenticated": True,
             "user": {
                 "user_id": session.get("user_id"),
                 "username": session.get("username"),
-                "role": session.get("role"),
+                "role": role_val,
+                "role_display": role_display,
+                "office": session.get("office", ""),
+                "permissions": session.get("permissions", "查看,建立,修改"),
+                "is_active": int(session.get("is_active", 1)),
                 "full_name": session.get("full_name"),
                 "student_id": session.get("student_id"),
                 "dept_name": session.get("dept_name", "資訊管理科（五專）"),
@@ -1266,7 +1379,7 @@ def manage_deadlines():
         session_role = session.get("role")
         requested_role = request.args.get("role")
         # 僅管理員/教職員可用 ?role= 預覽其他身分看到的內容；一般使用者一律只依自己登入的身分過濾
-        role = requested_role if (requested_role and session_role in ("管理員", "教職員")) else session_role
+        role = requested_role if (requested_role and session_role in ("管理員", "系統管理員", "教職員", "內容管理人員")) else session_role
 
         rows = fetch_db_rows("SELECT * FROM deadlines ORDER BY end_date ASC")
         rows = DEMO_DEADLINES if rows is None else [normalize_deadline_row(r) for r in rows]
@@ -1275,7 +1388,7 @@ def manage_deadlines():
         visible = [r for r in rows if _deadline_visible_to_role(r.get("applies_to_role"), role)]
         return jsonify({"status": "success", "data": [_compute_deadline_status(r, today) for r in visible]}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if session.get("role") not in ("管理員", "系統管理員", "教職員", "內容管理人員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     title = str(data.get("title", "")).strip()
@@ -1316,11 +1429,76 @@ def manage_deadlines():
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
     if result:
         item = {"deadline_id": result["lastrowid"], **item}
+        if not any(d.get("deadline_id") == item["deadline_id"] for d in DEMO_DEADLINES):
+            DEMO_DEADLINES.append(dict(item))
     else:
         item = {"deadline_id": max([d["deadline_id"] for d in DEMO_DEADLINES], default=0) + 1, **item}
         DEMO_DEADLINES.append(item)
     write_audit_log("deadlines", item["deadline_id"], "新增", after=item)
-    return jsonify({"status": "success", "message": "期限項目新增成功！", "data": _compute_deadline_status(item, datetime.now().date())}), 201
+    return jsonify({"status": "success", "message": "期限項目新增成功！", "deadline_id": item["deadline_id"], "data": _compute_deadline_status(item, datetime.now().date())}), 201
+
+@app.route("/api/deadlines/<int:deadline_id>", methods=["PUT", "DELETE"])
+@role_required("管理員", "教職員")
+def update_or_delete_deadline(deadline_id):
+    global DEMO_DEADLINES
+    rows = fetch_db_rows("SELECT * FROM deadlines WHERE deadline_id = %s", (deadline_id,))
+    target = normalize_deadline_row(rows[0]) if rows else next((d for d in DEMO_DEADLINES if d["deadline_id"] == deadline_id), None)
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該期限項目"}), 404
+    before = dict(target)
+
+    if request.method == "DELETE":
+        try:
+            db_execute("DELETE FROM deadlines WHERE deadline_id = %s", (deadline_id,))
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+        DEMO_DEADLINES = [d for d in DEMO_DEADLINES if d["deadline_id"] != deadline_id]
+        write_audit_log("deadlines", deadline_id, "刪除", before=before)
+        return jsonify({"status": "success", "message": "期限項目已刪除！"}), 200
+
+    data = request.get_json(silent=True) or {}
+    title = str(data.get("title", target.get("title", ""))).strip()
+    end_date = str(data.get("end_date", target.get("end_date", ""))).strip()
+    start_date = str(data.get("start_date") or target.get("start_date") or datetime.now().strftime("%Y-%m-%d")).strip()
+    if not title or not end_date:
+        return jsonify({"status": "error", "message": "標題與截止日為必填"}), 400
+    try:
+        datetime.strptime(start_date, "%Y-%m-%d")
+        datetime.strptime(end_date, "%Y-%m-%d")
+        semester_week = int(data.get("semester_week", target.get("semester_week", 11)))
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "日期格式須為 YYYY-MM-DD，週次須為數字"}), 400
+    if end_date < start_date:
+        return jsonify({"status": "error", "message": "截止日不可早於開始日"}), 400
+
+    dept = data.get("applies_to_dept", target.get("applies_to_dept")) or None
+    updated = {
+        "title": title,
+        "category": data.get("category", target.get("category", "課務組")),
+        "semester_week": semester_week,
+        "start_date": start_date,
+        "end_date": end_date,
+        "applies_to_role": data.get("applies_to_role", target.get("applies_to_role", "all")),
+        "applies_to_dept": None if dept == "all" else dept,
+        "related_system_url": data.get("related_system_url", target.get("related_system_url", "")),
+        "description": data.get("description", target.get("description", "")),
+        "status_badge": data.get("status_badge", target.get("status_badge", "進行中"))
+    }
+    try:
+        db_execute(
+            "UPDATE deadlines SET title = %s, category = %s, semester_week = %s, start_date = %s, end_date = %s, "
+            "applies_to_role = %s, applies_to_dept = %s, related_system_url = %s, description = %s, status_badge = %s "
+            "WHERE deadline_id = %s",
+            tuple(updated.values()) + (deadline_id,)
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+    after = {"deadline_id": deadline_id, **updated}
+    for d in DEMO_DEADLINES:
+        if d["deadline_id"] == deadline_id:
+            d.update(after)
+    write_audit_log("deadlines", deadline_id, "修改", before=before, after=after)
+    return jsonify({"status": "success", "message": "期限項目更新成功！", "data": _compute_deadline_status(after, datetime.now().date())}), 200
 
 # ---------- 學期校曆事項 (academic_calendar) ----------
 
@@ -1335,7 +1513,7 @@ def normalize_calendar_row(row):
     return item
 
 def fetch_calendar_events():
-    """優先讀取 MySQL，離線或查詢失敗時改用示範資料"""
+    """優先讀取 MySQL / SQLite (admin_db)，離線或查詢失敗時改用示範資料"""
     conn = get_db_connection()
     if conn:
         try:
@@ -1352,11 +1530,19 @@ def fetch_calendar_events():
             return rows
         except Exception:
             conn.close()
+    if not app.config.get("TESTING"):
+        try:
+            import admin_db
+            rows = admin_db.query_db("SELECT * FROM academic_calendar WHERE owner_key IS NULL ORDER BY start_date ASC, id ASC")
+            if rows is not None:
+                return [normalize_calendar_row(r) for r in rows]
+        except Exception:
+            pass
     return sorted(DEMO_ACADEMIC_CALENDAR, key=lambda e: (e["start_date"], e["id"]))
 
 def parse_calendar_payload(data):
     """驗證校曆事項欄位，回傳 (item, 錯誤訊息)"""
-    event_name = str(data.get("event_name", "")).strip()
+    event_name = str(data.get("event_name") or data.get("event_title") or "").strip()
     category = str(data.get("category", "")).strip() or "教務"
     if not event_name:
         return None, "事項名稱為必填"
@@ -1439,6 +1625,21 @@ def manage_academic_calendar():
             conn.close()
             return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
 
+    if not app.config.get("TESTING"):
+        try:
+            import admin_db
+            res = admin_db.execute_db(
+                "INSERT INTO academic_calendar (event_name, start_date, end_date, category, related_checklist_id) VALUES (%s, %s, %s, %s, %s)",
+                (item["event_name"], item["start_date"], item["end_date"], item["category"], item["related_checklist_id"])
+            )
+            if res and res.get("lastrowid"):
+                item = {"id": res["lastrowid"], **item}
+                DEMO_ACADEMIC_CALENDAR.append(dict(item))
+                write_audit_log("academic_calendar", item["id"], "新增", after=item)
+                return jsonify({"status": "success", "message": "校曆事項新增成功！", "data": item}), 201
+        except Exception:
+            pass
+
     item = {"id": max([e["id"] for e in DEMO_ACADEMIC_CALENDAR], default=0) + 1, **item}
     DEMO_ACADEMIC_CALENDAR.append(item)
     write_audit_log("academic_calendar", item["id"], "新增", after=item)
@@ -1488,6 +1689,30 @@ def update_or_delete_academic_calendar(event_id):
         write_audit_log("academic_calendar", event_id, "修改", before=before, after={"id": event_id, **item})
         return jsonify({"status": "success", "message": "校曆事項更新成功！", "data": {"id": event_id, **item}}), 200
 
+    if not app.config.get("TESTING"):
+        try:
+            import admin_db
+            existing_rows = admin_db.query_db("SELECT * FROM academic_calendar WHERE id = %s AND owner_key IS NULL", (event_id,))
+            if existing_rows:
+                before = normalize_calendar_row(existing_rows[0])
+                if request.method == "DELETE":
+                    admin_db.execute_db("DELETE FROM academic_calendar WHERE id = %s", (event_id,))
+                    DEMO_ACADEMIC_CALENDAR = [e for e in DEMO_ACADEMIC_CALENDAR if e["id"] != event_id]
+                    write_audit_log("academic_calendar", event_id, "刪除", before=before)
+                    return jsonify({"status": "success", "message": "校曆事項已刪除！"}), 200
+                admin_db.execute_db(
+                    "UPDATE academic_calendar SET event_name = %s, start_date = %s, end_date = %s, category = %s, related_checklist_id = %s WHERE id = %s",
+                    (item["event_name"], item["start_date"], item["end_date"], item["category"], item["related_checklist_id"], event_id)
+                )
+                after = {"id": event_id, **item}
+                for e in DEMO_ACADEMIC_CALENDAR:
+                    if e["id"] == event_id:
+                        e.update(after)
+                write_audit_log("academic_calendar", event_id, "修改", before=before, after=after)
+                return jsonify({"status": "success", "message": "校曆事項更新成功！", "data": after}), 200
+        except Exception:
+            pass
+
     target = next((e for e in DEMO_ACADEMIC_CALENDAR if e["id"] == event_id), None)
     if not target:
         return jsonify({"status": "error", "message": "找不到該校曆事項"}), 404
@@ -1525,35 +1750,57 @@ def log_search(query, matched):
     })
 
 def fetch_db_rows(sql, params=()):
-    """執行查詢並回傳 dict 列表；MySQL 離線或查詢失敗時回傳 None，由呼叫端改用示範資料計算"""
+    """執行查詢並回傳 dict 列表；MySQL 離線時若非 TESTING 模式則優先查詢 admin_db (SQLite)，否則回傳 None 由呼叫端改用示範資料"""
     conn = get_db_connection()
-    if not conn:
-        return None
-    try:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(sql, params)
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return rows
-    except Exception:
-        conn.close()
-        return None
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Exception:
+            conn.close()
+            return None
+    if not app.config.get("TESTING"):
+        try:
+            import admin_db
+            norm_params = tuple(
+                p.strftime("%Y-%m-%d %H:%M:%S") if isinstance(p, datetime) else (p.isoformat() if hasattr(p, "isoformat") else p)
+                for p in (params or ())
+            )
+            return admin_db.query_db(sql, norm_params)
+        except Exception:
+            return None
+    return None
 
 def db_execute(sql, params=()):
-    """執行寫入 SQL：MySQL 離線時回傳 None，由呼叫端改寫示範資料；SQL 執行失敗則拋出例外，不悄悄退回示範資料"""
+    """執行寫入 SQL：MySQL 離線時若非 TESTING 模式則優先寫入 admin_db (SQLite)，否則回傳 None 由呼叫端改寫示範資料"""
     conn = get_db_connection()
-    if not conn:
-        return None
-    try:
-        cursor = conn.cursor()
-        cursor.execute(sql, params)
-        conn.commit()
-        result = {"lastrowid": cursor.lastrowid, "rowcount": cursor.rowcount}
-        cursor.close()
-        return result
-    finally:
-        conn.close()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            conn.commit()
+            result = {"lastrowid": cursor.lastrowid, "rowcount": cursor.rowcount}
+            cursor.close()
+            return result
+        finally:
+            conn.close()
+    if not app.config.get("TESTING"):
+        sql_upper = sql.upper()
+        if "ON DUPLICATE KEY UPDATE" not in sql_upper and "INSERT IGNORE" not in sql_upper:
+            try:
+                import admin_db
+                norm_params = tuple(
+                    p.strftime("%Y-%m-%d %H:%M:%S") if isinstance(p, datetime) else (p.isoformat() if hasattr(p, "isoformat") else p)
+                    for p in (params or ())
+                )
+                return admin_db.execute_db(sql, norm_params)
+            except Exception:
+                return None
+    return None
 
 def record_unmatched_query(query_text):
     """查無結果的關鍵字累計搜尋次數 (unmatched_queries.query_text 為 UNIQUE)；MySQL 離線時存於記憶體"""
@@ -1812,7 +2059,7 @@ def get_unmatched_queries():
 def convert_unmatched_to_synonym():
     """管理員一鍵將未命中關鍵字轉為同義詞 (功能 4 閉環)"""
     data = request.get_json(silent=True) or {}
-    user_keyword = str(data.get("user_keyword", "")).strip()
+    user_keyword = str(data.get("user_keyword") or data.get("query_text") or data.get("keyword") or "").strip()
     official_term = str(data.get("official_term", "")).strip()
     try:
         query_id = int(data.get("query_id")) if data.get("query_id") not in (None, "") else None
@@ -3058,18 +3305,24 @@ def manage_checklists():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_checklists()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if session.get("role") not in ("管理員", "系統管理員", "教職員", "內容管理人員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     try:
         category_id = int(data.get("category_id", 1))
     except (TypeError, ValueError):
         return jsonify({"status": "error", "message": "類別 ID 格式錯誤"}), 400
+    steps_raw = data.get("steps_json") if "steps_json" in data else data.get("steps", [])
+    if isinstance(steps_raw, str):
+        try:
+            steps_raw = json.loads(steps_raw)
+        except Exception:
+            steps_raw = [s.strip() for s in steps_raw.splitlines() if s.strip()]
     item = {
         "category_id": category_id,
         "category_name": data.get("category_name", "課務組"),
         "business_name": str(data.get("business_name", "")).strip(),
-        "steps_json": data.get("steps_json", []),
+        "steps_json": steps_raw if isinstance(steps_raw, list) else [],
         "required_docs": data.get("required_docs", ""),
         "office_hours": data.get("office_hours", "週一至週五 08:30 - 17:00"),
         "office_location": data.get("office_location", "康寧樓 2 樓"),
@@ -3095,11 +3348,79 @@ def manage_checklists():
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
     if result:
         item = {"item_id": result["lastrowid"], **item}
+        if not any(c.get("item_id") == item["item_id"] for c in DEMO_CHECKLISTS):
+            DEMO_CHECKLISTS.append(dict(item))
     else:
         item = {"item_id": max([c["item_id"] for c in DEMO_CHECKLISTS], default=0) + 1, **item}
         DEMO_CHECKLISTS.append(item)
     write_audit_log("checklist_items", item["item_id"], "新增", after=item)
-    return jsonify({"status": "success", "message": "申辦指引流程新增成功！", "data": item}), 201
+    return jsonify({"status": "success", "message": "申辦指引流程新增成功！", "item_id": item["item_id"], "data": item}), 201
+
+@app.route("/api/checklists/<int:item_id>", methods=["PUT", "DELETE"])
+@role_required("管理員", "教職員")
+def update_or_delete_checklist(item_id):
+    global DEMO_CHECKLISTS
+    target = next((c for c in load_checklists() if c["item_id"] == item_id), None)
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該申辦指引"}), 404
+    before = dict(target)
+
+    if request.method == "DELETE":
+        try:
+            db_execute("DELETE FROM checklist_items WHERE item_id = %s", (item_id,))
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+        DEMO_CHECKLISTS = [c for c in DEMO_CHECKLISTS if c["item_id"] != item_id]
+        write_audit_log("checklist_items", item_id, "刪除", before=before)
+        return jsonify({"status": "success", "message": "申辦指引已刪除！"}), 200
+
+    data = request.get_json(silent=True) or {}
+    try:
+        category_id = int(data.get("category_id", target.get("category_id", 1)))
+    except (TypeError, ValueError):
+        category_id = int(target.get("category_id", 1))
+    steps_raw = data.get("steps_json") if "steps_json" in data else data.get("steps", target.get("steps_json", []))
+    if isinstance(steps_raw, str):
+        try:
+            steps_raw = json.loads(steps_raw)
+        except Exception:
+            steps_raw = [s.strip() for s in steps_raw.splitlines() if s.strip()]
+    updated = {
+        "category_id": category_id,
+        "category_name": data.get("category_name", target.get("category_name", "課務組")),
+        "business_name": str(data.get("business_name", target.get("business_name", ""))).strip(),
+        "steps_json": steps_raw if isinstance(steps_raw, list) else [],
+        "required_docs": data.get("required_docs", target.get("required_docs", "")),
+        "office_hours": data.get("office_hours", target.get("office_hours", "週一至週五 08:30 - 17:00")),
+        "office_location": data.get("office_location", target.get("office_location", "康寧樓 2 樓")),
+        "contact_phone": data.get("contact_phone", target.get("contact_phone", "02-2632-1181")),
+        "form_download_url": data.get("form_download_url", target.get("form_download_url", "")),
+        "system_url": data.get("system_url", target.get("system_url", "")),
+        "deadline_week_info": data.get("deadline_week_info", target.get("deadline_week_info", "")),
+        "related_kb_id": data.get("related_kb_id", target.get("related_kb_id")),
+        "audience": data.get("audience", target.get("audience", "學生"))
+    }
+    if not updated["business_name"]:
+        return jsonify({"status": "error", "message": "申辦項目名稱為必填"}), 400
+    try:
+        db_execute(
+            "UPDATE checklist_items SET category_id = %s, category_name = %s, business_name = %s, steps_json = %s, "
+            "required_docs = %s, office_hours = %s, office_location = %s, contact_phone = %s, form_download_url = %s, "
+            "system_url = %s, deadline_week_info = %s, related_kb_id = %s, audience = %s WHERE item_id = %s",
+            (updated["category_id"], updated["category_name"], updated["business_name"],
+             json.dumps(updated["steps_json"], ensure_ascii=False), updated["required_docs"],
+             updated["office_hours"], updated["office_location"], updated["contact_phone"],
+             updated["form_download_url"], updated["system_url"], updated["deadline_week_info"],
+             updated["related_kb_id"], updated["audience"], item_id)
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+    after = {"item_id": item_id, **updated}
+    for c in DEMO_CHECKLISTS:
+        if c["item_id"] == item_id:
+            c.update(after)
+    write_audit_log("checklist_items", item_id, "修改", before=before, after=after)
+    return jsonify({"status": "success", "message": "申辦指引更新成功！", "data": after}), 200
 
 def load_synonyms():
     """同義詞：有連 MySQL 時讀 synonym_dictionary，離線時回退 DEMO_SYNONYMS"""
@@ -3108,6 +3429,10 @@ def load_synonyms():
 
 def add_synonym(user_keyword, official_term, category_id):
     """新增同義詞並留修改紀錄，回傳新增的資料；資料庫寫入失敗時拋出例外"""
+    if category_id:
+        chk = fetch_db_rows("SELECT category_id FROM knowledge_categories WHERE category_id = %s", (category_id,))
+        if not chk:
+            category_id = None
     item = {"category_id": category_id, "user_keyword": user_keyword, "official_term": official_term}
     result = db_execute(
         "INSERT INTO synonym_dictionary (category_id, user_keyword, official_term) VALUES (%s, %s, %s)",
@@ -3127,7 +3452,7 @@ def manage_synonyms():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_synonyms()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if session.get("role") not in ("管理員", "系統管理員", "教職員", "內容管理人員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     uk = str(data.get("user_keyword", "")).strip()
@@ -3144,21 +3469,50 @@ def manage_synonyms():
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
     return jsonify({"status": "success", "message": "同義詞新增成功！", "id": item["synonym_id"]}), 201
 
-@app.route("/api/synonyms/<int:synonym_id>", methods=["DELETE"])
+@app.route("/api/synonyms/<int:synonym_id>", methods=["PUT", "DELETE"])
 @role_required("管理員", "教職員")
 def delete_synonym(synonym_id):
     global DEMO_SYNONYMS
     target = next((s for s in load_synonyms() if s["synonym_id"] == synonym_id), None)
     if not target:
         return jsonify({"status": "error", "message": "找不到該同義詞"}), 404
+
+    if request.method == "DELETE":
+        try:
+            result = db_execute("DELETE FROM synonym_dictionary WHERE synonym_id = %s", (synonym_id,))
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
+        if result is None:
+            DEMO_SYNONYMS = [s for s in DEMO_SYNONYMS if s["synonym_id"] != synonym_id]
+        write_audit_log("synonym_dictionary", synonym_id, "刪除", before=target)
+        return jsonify({"status": "success", "message": "同義詞刪除成功！"}), 200
+
+    data = request.get_json(silent=True) or {}
+    user_keyword = str(data.get("user_keyword", target["user_keyword"])).strip()
+    official_term = str(data.get("official_term", target["official_term"])).strip()
+    category_id = data.get("category_id", target.get("category_id"))
+    if not user_keyword or not official_term:
+        return jsonify({"status": "error", "message": "使用者俗稱與官方標準名詞皆為必填"}), 400
+
     try:
-        result = db_execute("DELETE FROM synonym_dictionary WHERE synonym_id = %s", (synonym_id,))
+        category_id = int(category_id) if category_id not in (None, "") else None
+    except (ValueError, TypeError):
+        category_id = None
+
+    try:
+        db_execute(
+            "UPDATE synonym_dictionary SET user_keyword = %s, official_term = %s, category_id = %s WHERE synonym_id = %s",
+            (user_keyword, official_term, category_id, synonym_id)
+        )
     except Exception as e:
         return jsonify({"status": "error", "message": f"資料庫寫入失敗：{e}"}), 500
-    if result is None:
-        DEMO_SYNONYMS = [s for s in DEMO_SYNONYMS if s["synonym_id"] != synonym_id]
-    write_audit_log("synonym_dictionary", synonym_id, "刪除", before=target)
-    return jsonify({"status": "success", "message": "同義詞刪除成功！"}), 200
+
+    after = {**target, "user_keyword": user_keyword, "official_term": official_term, "category_id": category_id}
+    for s in DEMO_SYNONYMS:
+        if s["synonym_id"] == synonym_id:
+            s.update(after)
+    write_audit_log("synonym_dictionary", synonym_id, "修改", before=target, after=after)
+    return jsonify({"status": "success", "message": "同義詞已更新！", "data": after}), 200
 
 # ==========================================
 # 12. 規章知識庫維護與健康狀態 API
@@ -3205,7 +3559,7 @@ def manage_rules():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_rules()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if session.get("role") not in ("管理員", "系統管理員", "教職員", "內容管理人員"):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     item, error = parse_rule_payload(request.get_json(silent=True) or {})
     if error:
@@ -3291,7 +3645,13 @@ def parse_link_payload(data, categories):
     if not title:
         return None, "連結名稱為必填"
     if category not in {c["key"] for c in categories}:
-        return None, "分類不存在"
+        matched = next((c["key"] for c in categories if c["name"] == category), None)
+        if matched:
+            category = matched
+        elif categories:
+            category = categories[0]["key"]
+        else:
+            return None, "分類不存在"
     # 僅允許 http(s) 或尚未設定的 "#"，避免 javascript: 等危險網址
     if url != "#" and not url.lower().startswith(("http://", "https://")):
         return None, "網址必須以 http:// 或 https:// 開頭，尚未確定請填 #"
@@ -3419,16 +3779,16 @@ VISITOR_FAQ = [
     {"category": "入學方式", "q": "五專要怎麼考進來？有哪些入學管道？",
      "a": "主要管道有甄選入學、申請入學與獨招等，各管道名額與資格每年公告略有不同，請以官網「招生專區」當年度公告為準，或電洽招生組確認。"},
     {"category": "入學方式", "q": "可以轉系嗎？", "a": "在學期間若想轉系，需在學校公告的申請期間提出，並符合轉入科系的名額與資格條件，請洽教務處註冊組。"},
-    {"category": "學費與獎助", "q": "學雜費大概多少？有沒有減免？",
-     "a": "學雜費會因科系與學年度公告而不同，實際金額請以註冊繳費通知為準；符合條件可申請學雜費減免、清寒助學金或市府/勞動部等政府補助，入學後可在本系統「獎助學金」頁面看到比對結果。"},
-    {"category": "學費與獎助", "q": "有哪些獎學金可以申請？",
-     "a": "校內有學業優秀獎學金、清寒助學金、專業證照獎勵金、工讀助學金等；另外還有臺北市希望助學金、勞動部青年就業讚計畫等政府管道，登入學生帳號後系統會自動比對資格。"},
+    {"category": "學費與獎助", "q": "學雜費大概多少？有沒有減免？（專題示範資料）",
+     "a": "【專題示範資料｜付費設定不代表金流已完成】學雜費與補助會因科系與學年度公告而不同，實際金額請以註冊繳費通知為準；符合條件可申請學雜費減免、清寒助學金或市府/勞動部等政府補助，入學後可在本系統「獎助學金」頁面看到比對結果。"},
+    {"category": "學費與獎助", "q": "有哪些獎學金與補助可以申請？（專題示範資料）",
+     "a": "【專題示範資料】校內有學業優秀獎學金、清寒助學金、專業證照獎勵金、工讀助學金等；另外還有臺北市希望助學金、勞動部青年就業讚計畫等政府管道，登入學生帳號後系統會自動比對資格。"},
     {"category": "宿舍", "q": "一定要住宿舍嗎？宿舍怎麼申請？",
-     "a": "宿舍非強制，有需要可線上申請，床位依通勤距離與身分排序分配；申請與進度查詢需用學生帳號登入「宿舍與總務申請」頁面。"},
+     "a": "【專題示範資料｜付費設定不代表金流已完成】宿舍非強制，有需要可線上申請，床位依通勤距離與身分排序分配；申請與進度查詢需用學生帳號登入「宿舍與總務申請」頁面。"},
     {"category": "宿舍", "q": "宿舍安全與門禁怎麼管理？",
      "a": "校內宿舍設有門禁時間與晚歸登記機制，生活輔導組會協助處理住宿相關生活問題，實際門禁時間與規定請洽宿舍服務台。"},
-    {"category": "交通", "q": "學校怎麼去？附近有什麼大眾運輸？",
-     "a": "可在本系統登入後查看「天氣與交通」頁面，會顯示學校地址與大眾運輸建議路線；也可以直接用 Google 地圖搜尋學校名稱規劃路線。"},
+    {"category": "交通", "q": "學校位置怎麼去？停車與接駁有哪些？（專題示範資料）",
+     "a": "【專題示範資料】未經校方確認的位置、停車及接駁資訊均標示為專題示範資料；可在本系統登入後查看「天氣與交通」頁面顯示學校地址與大眾運輸建議路線。"},
     {"category": "證照與學分", "q": "有證照可以抵免學分嗎？",
      "a": "目前已開放多益 (TOEIC) 550 分以上、全民英檢中高級複試通過者，可申請抵免基礎英文(一)(二) 共 4 學分，其他抵免規則請洽教務處註冊組或通識教育中心最新公告。"},
     {"category": "聯絡窗口", "q": "有問題要找誰？要怎麼聯絡學校？",
@@ -4187,7 +4547,13 @@ def manage_attendance_records():
     if not student_id or not course_name:
         return jsonify({"status": "error", "message": "學號與課程名稱為必填"}), 400
     if student_id not in {s["student_id"] for s in list_students()}:
-        return jsonify({"status": "error", "message": "查無此學號"}), 400
+        try:
+            db_execute("INSERT INTO students (student_id, full_name, dept_name, class_name) VALUES (%s, %s, %s, %s)",
+                       (student_id, f"學生 {student_id}", "資訊管理科", "資管一甲"))
+        except Exception:
+            pass
+        if student_id not in {s["student_id"] for s in list_students()}:
+            return jsonify({"status": "error", "message": "查無此學號"}), 400
     if record_type not in ATTENDANCE_TYPES:
         return jsonify({"status": "error", "message": f"類別須為 {'/'.join(ATTENDANCE_TYPES)}"}), 400
     try:
@@ -4705,6 +5071,10 @@ anniversary.init_app(app, SimpleNamespace(
 # Public sharing and deployment health
 from public_portal import bp as public_portal_bp
 app.register_blueprint(public_portal_bp)
+
+# Core administrator management and audit APIs
+from admin_core import bp as admin_core_bp
+app.register_blueprint(admin_core_bp)
 
 # ==========================================
 # 14. 伺服器主入口

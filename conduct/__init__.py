@@ -118,27 +118,31 @@ def _number(value, label, low, high):
 
 def validate_rules(data):
     """檢查後台送來的規則，回傳整理好的 dict；有錯時丟 ValueError (訊息給使用者看)"""
+    cur = copy.deepcopy(DEFAULT_RULES)
     rules = {
-        "base_score": _number(data.get("base_score"), "基本分", 0, 100),
-        "advisor_range": _number(data.get("advisor_range"), "導師評分範圍", 0, 20),
-        "pass_score": _number(data.get("pass_score"), "及格分數", 0, 100),
+        "base_score": _number(data.get("base_score") if data.get("base_score") is not None else cur["base_score"], "基本分", 0, 100),
+        "advisor_range": _number(data.get("advisor_range") if data.get("advisor_range") is not None else cur["advisor_range"], "導師評分範圍", 0, 20),
+        "pass_score": _number(data.get("pass_score") if data.get("pass_score") is not None else cur["pass_score"], "及格分數", 0, 100),
         "merit_points": {}, "attendance_deduct": {},
     }
-    merits = data.get("merit_points") or {}
+    merits = data.get("merit_points") or cur["merit_points"]
     for t in MERIT_TYPES:
-        rules["merit_points"][t] = _number(merits.get(t), f"{t}每次分數", -30, 30)
+        val = merits.get(t) if merits.get(t) is not None else cur["merit_points"].get(t, 0)
+        rules["merit_points"][t] = _number(val, f"{t}每次分數", -30, 30)
     for t in MERIT_TYPES[:3]:
         if rules["merit_points"][t] < 0:
             raise ValueError(f"「{t}」是獎勵，分數不能是負的")
     for t in MERIT_TYPES[3:]:
         if rules["merit_points"][t] > 0:
             raise ValueError(f"「{t}」是懲處，分數不能是正的 (請填 0 或負數)")
-    deduct = data.get("attendance_deduct") or {}
+    deduct = data.get("attendance_deduct") or cur["attendance_deduct"]
     for t in ATTENDANCE_TYPES:
-        rules["attendance_deduct"][t] = _number(deduct.get(t), f"{t}每節扣分", 0, 10)
+        val = deduct.get(t) if deduct.get(t) is not None else cur["attendance_deduct"].get(t, 0)
+        rules["attendance_deduct"][t] = _number(val, f"{t}每節扣分", 0, 10)
 
+    raw_grades = data.get("grades") or cur["grades"]
     grades = []
-    for g in data.get("grades") or []:
+    for g in raw_grades:
         label = str(g.get("label") or "").strip()[:4]
         if not label:
             raise ValueError("等第名稱不能空白")

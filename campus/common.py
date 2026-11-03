@@ -108,21 +108,27 @@ def user_key():
 
 
 def require(*roles):
-    """需登入；有指定 roles 時只限這些身分"""
+    """需登入；有指定 roles 時只限這些身分（自動對齊 系統管理員/管理員、內容管理人員/教職員）"""
+    expanded_roles = set(roles)
+    if "管理員" in expanded_roles or "系統管理員" in expanded_roles:
+        expanded_roles.update(("管理員", "系統管理員"))
+    if "教職員" in expanded_roles or "內容管理人員" in expanded_roles:
+        expanded_roles.update(("教職員", "內容管理人員"))
+
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             u = current_user()
             if not u:
                 return error("請先登入系統", 401)
-            if roles and u["role"] not in roles:
+            if expanded_roles and u["role"] not in expanded_roles:
                 return error("權限不足，僅限特定身分使用", 403)
             return f(*args, **kwargs)
         return wrapper
     return decorator
 
 
-STAFF_ROLES = ("老師", "教職員", "管理員")
+STAFF_ROLES = ("老師", "教職員", "管理員", "系統管理員", "內容管理人員")
 
 
 def find_student(student_id):

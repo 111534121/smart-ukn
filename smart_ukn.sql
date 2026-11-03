@@ -1,479 +1,858 @@
--- ========================================================
--- Smart UKN 康寧大學智慧校園服務平台 - 資料庫 3NF 正規化 Schema
--- 版本: v3.0 旗艦正規化版 (符合 1NF, 2NF, 3NF 及完整外鍵約束)
--- ========================================================
-
+-- smart_ukn only. Import into a newly created, empty smart_ukn database.
+-- De-identified demo data; no original names, account credentials, or free text.
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+08:00";
-
+SET time_zone = "+00:00";
+SET FOREIGN_KEY_CHECKS = 0;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- 資料庫: `smart_ukn`
+-- 資料庫： `smart_ukn`
 --
-CREATE DATABASE IF NOT EXISTS `smart_ukn` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `smart_ukn`;
 
 -- --------------------------------------------------------
--- 移除廢棄系統資料表 (論壇、告白牆、遊戲積點) 與現有表重建準備
--- --------------------------------------------------------
-DROP TABLE IF EXISTS `forum_posts`;
-DROP TABLE IF EXISTS `confession_wall`;
-DROP TABLE IF EXISTS `game_points`;
 
-DROP TABLE IF EXISTS `scholarship_conditions`;
-DROP TABLE IF EXISTS `counseling_records`;
-DROP TABLE IF EXISTS `class_notice_recipients`;
-DROP TABLE IF EXISTS `class_notices`;
-DROP TABLE IF EXISTS `class_group_members`;
-DROP TABLE IF EXISTS `class_groups`;
-DROP TABLE IF EXISTS `deadlines`;
-DROP TABLE IF EXISTS `friction_reports`;
-DROP TABLE IF EXISTS `visitor_logs`;
-DROP TABLE IF EXISTS `audit_logs`;
-DROP TABLE IF EXISTS `checklist_items`;
-DROP TABLE IF EXISTS `synonym_dictionary`;
-DROP TABLE IF EXISTS `knowledge_base`;
-DROP TABLE IF EXISTS `knowledge_categories`;
-DROP TABLE IF EXISTS `competitions`;
-DROP TABLE IF EXISTS `certificates`;
-DROP TABLE IF EXISTS `student_credits`;
-DROP TABLE IF EXISTS `course_map`;
-DROP TABLE IF EXISTS `users`;
-DROP TABLE IF EXISTS `students`;
-DROP TABLE IF EXISTS `departments`;
+--
+-- 資料表結構 `academic_calendar`
+--
 
--- --------------------------------------------------------
--- 1. 系所單位資料表 `departments`
--- --------------------------------------------------------
-CREATE TABLE `departments` (
-  `dept_id` varchar(20) NOT NULL COMMENT '系所代碼 (PK)',
-  `dept_name` varchar(100) NOT NULL COMMENT '系所全名',
-  `college_name` varchar(100) NOT NULL COMMENT '所屬學院',
-  PRIMARY KEY (`dept_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系所與學院主檔';
+CREATE TABLE `academic_calendar` (
+  `id` int(11) NOT NULL,
+  `event_name` varchar(100) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `category` varchar(50) NOT NULL DEFAULT '教務',
+  `related_checklist_id` int(11) DEFAULT NULL,
+  `owner_key` varchar(50) DEFAULT NULL,
+  `note` varchar(300) DEFAULT NULL,
+  `source` varchar(60) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `departments` (`dept_id`, `dept_name`, `college_name`) VALUES
-('LTC', '長期照護學系', '護理健康學院'),
-('ECE', '嬰幼兒保育學系', '護理健康學院'),
-('NUR', '護理科（五專）', '護理健康學院'),
-('OPT', '視光科（五專）', '護理健康學院'),
-('BA', '企業管理學系（科）', '商業資訊學院'),
-('CS', '資訊管理科（五專）', '商業資訊學院'),
-('ANI', '數位影視動畫科（五專）', '商業資訊學院'),
-('ENG', '應用外語科（五專）', '商業資訊學院');
+--
+-- 傾印資料表的資料 `academic_calendar`
+--
+
+INSERT INTO `academic_calendar` (`id`, `event_name`, `start_date`, `end_date`, `category`, `related_checklist_id`, `owner_key`, `note`, `source`) VALUES
+(1, '示範資料0001', '2026-09-14', '2026-09-20', '教務', NULL, NULL, NULL, NULL),
+(2, '示範資料0002', '2026-09-14', '2026-09-15', '繳費', NULL, NULL, NULL, NULL),
+(3, '示範資料0003', '2026-09-16', '2026-10-01', '獎助', NULL, NULL, NULL, NULL),
+(4, '示範資料0004', '2026-11-16', '2026-12-04', '教務', 1, NULL, NULL, NULL),
+(5, '示範資料0005', '2026-12-14', '2026-12-20', '教務', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
--- 2. 學生基本資料表 `students` (符合 3NF: 不存可推導的年齡，僅存學籍核心欄位)
--- --------------------------------------------------------
-CREATE TABLE `students` (
-  `student_id` varchar(20) NOT NULL COMMENT '學號 (PK)',
-  `full_name` varchar(50) NOT NULL COMMENT '學生姓名',
-  `dept_id` varchar(20) NOT NULL COMMENT '所屬系所 (FK)',
-  `admission_year` int(11) NOT NULL COMMENT '入學學年度',
-  `class_name` varchar(50) NOT NULL COMMENT '班級名稱',
-  `parent_phone` varchar(30) DEFAULT NULL COMMENT '家長聯絡電話',
-  PRIMARY KEY (`student_id`),
-  KEY `fk_students_dept` (`dept_id`),
-  CONSTRAINT `fk_students_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生學籍基本資料檔';
 
-INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`) VALUES
-('S112001', '王小明', 'CS', 112, '資管五忠', '0912-345-678'),
-('S112002', '李美華', 'CS', 112, '資管五忠', '0922-333-444'),
-('S112003', '張建華', 'NUR', 112, '護理四忠', '0933-555-666'),
-('S112004', '陳冠宇', 'CS', 112, '資管四孝', '0955-222-111'),
-('S112005', '林雨潔', 'CS', 112, '資管五忠', '0966-777-888');
+--
+-- 資料表結構 `anniversary_events`
+--
 
--- --------------------------------------------------------
--- 3. 系統使用者與登入帳號資料表 `users`
--- --------------------------------------------------------
-CREATE TABLE `users` (
-  `can_manage_dorm` tinyint(1) NOT NULL DEFAULT 0,
-  `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '使用者唯一識別碼 (PK)',
-  `username` varchar(50) NOT NULL COMMENT '登入帳號',
-  `password_hash` varchar(255) NOT NULL COMMENT '密碼雜湊或測試明碼',
-  `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL COMMENT '系統角色',
-  `student_id` varchar(20) DEFAULT NULL COMMENT '綁定學號 (FK, 學生或家長關聯用)',
-  `full_name` varchar(50) NOT NULL COMMENT '使用者真實姓名/稱謂',
-  `advised_class` varchar(50) DEFAULT NULL COMMENT '導師制：該教師擔任導師的班級名稱 (僅老師角色適用)',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '註冊/建立時間',
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `uk_username` (`username`),
-  KEY `fk_users_student` (`student_id`),
-  CONSTRAINT `fk_users_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系統使用者身分與權限表';
+CREATE TABLE `anniversary_events` (
+  `id` int(11) NOT NULL,
+  `name_zh` varchar(100) NOT NULL,
+  `name_en` varchar(150) DEFAULT NULL,
+  `name_ja` varchar(100) DEFAULT NULL,
+  `start_date` date NOT NULL COMMENT '校慶當天 (多天活動為第一天)',
+  `end_date` date NOT NULL COMMENT '最後一天，隔天起不再顯示',
+  `announce_days` int(11) NOT NULL DEFAULT 30 COMMENT '提前幾天開始顯示',
+  `require_approval` tinyint(1) NOT NULL DEFAULT 1 COMMENT '匿名祝福是否需審核後才顯示',
+  `is_enabled` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id`, `full_name`, `advised_class`) VALUES
-(1, 'student1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112001', '王小明', NULL),
-(2, 'student2', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '學生', 'S112002', '李美華', NULL),
-(3, 'parent1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '家長', 'S112001', '王大明 (小明家長)', NULL),
-(4, 'staff1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '教職員', NULL, '周立威 (教務處職員)', NULL),
-(5, 'admin', 'pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c', '管理員', NULL, '系統超級管理員', NULL),
-(6, 'teacher1', 'pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c', '老師', NULL, '彭賓鈺 老師', '資管五忠');
+--
+-- 傾印資料表的資料 `anniversary_events`
+--
+
+INSERT INTO `anniversary_events` (`id`, `name_zh`, `name_en`, `name_ja`, `start_date`, `end_date`, `announce_days`, `require_approval`, `is_enabled`) VALUES
+(1, '示範資料0001', '示範資料0001', '示範資料0001', '2026-11-01', '2026-11-01', 30, 1, 1);
 
 -- --------------------------------------------------------
--- 4. 課程地圖與先修關係表 `course_map`
--- --------------------------------------------------------
-CREATE TABLE `course_map` (
-  `semester_hours` decimal(8,2) DEFAULT NULL,
-  `course_id` varchar(20) NOT NULL COMMENT '課程代碼 (PK)',
-  `course_name` varchar(100) NOT NULL COMMENT '課程名稱',
-  `credits` int(11) NOT NULL COMMENT '學分數',
-  `prerequisite_id` varchar(20) DEFAULT NULL COMMENT '先修科目代碼 (FK 自關聯)',
-  `is_required` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否為必修 (1=必修, 0=選修)',
-  `dept_id` varchar(20) NOT NULL DEFAULT 'CS' COMMENT '開課系所 (FK)',
-  `semester_suggest` varchar(20) DEFAULT '大一上' COMMENT '建議修習學期',
-  `description` text DEFAULT NULL COMMENT '課程大綱簡介',
-  PRIMARY KEY (`course_id`),
-  KEY `fk_course_prereq` (`prerequisite_id`),
-  KEY `fk_course_dept` (`dept_id`),
-  CONSTRAINT `fk_course_prereq` FOREIGN KEY (`prerequisite_id`) REFERENCES `course_map` (`course_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_course_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='課程地圖與先修關係表';
 
-INSERT INTO `course_map` (`course_id`, `course_name`, `credits`, `prerequisite_id`, `is_required`, `dept_id`, `semester_suggest`, `description`) VALUES
-('CS101', '計算機概論', 3, NULL, 1, 'CS', '大一上', '計算機科學基礎、電腦架構、作業系統與網路概論。'),
-('CS102', '程式設計(一)', 3, 'CS101', 1, 'CS', '大一下', 'Python 與 C 語言基礎邏輯、變數、迴圈與函式設計。'),
-('CS201', '資料結構', 3, 'CS102', 1, 'CS', '大二上', '陣列、鏈結串列、堆疊、佇列、樹狀與圖形演算法。'),
-('CS202', '物件導向程式設計', 3, 'CS102', 1, 'CS', '大二下', '類別、物件、繼承、多型與 Java/C++ 設計模式。'),
-('CS301', '演算法分析', 3, 'CS201', 1, 'CS', '大三上', '時間複雜度、分治法、貪婪演算法、動態規劃。'),
-('CS302', '資料庫系統概論', 3, 'CS201', 1, 'CS', '大三上', '關聯式資料庫、SQL 語法、正規化與 MySQL 實作。'),
-('CS401', '畢業專題研討', 3, 'CS302', 1, 'CS', '大四上', '綜合資訊系統開發、AI 應用整合與專題展示。'),
-('EN101', '基礎英文', 2, NULL, 1, 'CS', '大一上', '大一基礎外語聽說讀寫與學術閱讀。'),
-('GE101', '大學之道與倫理', 2, NULL, 0, 'CS', '大一上', '校園生活適應、生命教育與職場倫理。');
+--
+-- 資料表結構 `anniversary_wishes`
+--
+
+CREATE TABLE `anniversary_wishes` (
+  `id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `message` varchar(100) NOT NULL,
+  `lang` varchar(5) NOT NULL DEFAULT 'zh',
+  `status` enum('待審核','顯示中','已隱藏') NOT NULL DEFAULT '待審核',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- 5. 學生成績與學分紀錄表 `student_credits`
--- --------------------------------------------------------
-CREATE TABLE `student_credits` (
-  `credit_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '成績紀錄唯一碼 (PK)',
-  `student_id` varchar(20) NOT NULL COMMENT '學號 (FK)',
-  `course_id` varchar(20) NOT NULL COMMENT '課程代碼 (FK)',
-  `semester` varchar(20) NOT NULL COMMENT '修課學期 (如 112-1)',
-  `score` decimal(5,2) DEFAULT NULL COMMENT '成績分數',
-  `is_passed` tinyint(1) NOT NULL COMMENT '是否通過 (1=通過, 0=未通過)',
-  PRIMARY KEY (`credit_id`),
-  KEY `fk_credits_student` (`student_id`),
-  KEY `fk_credits_course` (`course_id`),
-  CONSTRAINT `fk_credits_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_credits_course` FOREIGN KEY (`course_id`) REFERENCES `course_map` (`course_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生成績與學分紀錄表';
 
-INSERT INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester`, `score`, `is_passed`) VALUES
-(1, 'S112001', 'CS101', '112-1', 85.00, 1),
-(2, 'S112001', 'CS102', '112-2', 55.00, 0),
-(3, 'S112001', 'EN101', '112-1', 78.00, 1),
-(4, 'S112002', 'CS101', '112-1', 92.50, 1),
-(5, 'S112002', 'CS102', '112-2', 88.00, 1),
-(6, 'S112002', 'GE101', '112-1', 90.00, 1),
-(7, 'S112004', 'CS101', '112-1', 88.00, 1),
-(8, 'S112004', 'CS102', '112-2', 91.00, 1),
-(9, 'S112004', 'CS201', '113-1', 84.00, 1),
-(10, 'S112004', 'EN101', '112-1', 80.00, 1),
-(11, 'S112005', 'CS101', '112-1', 76.00, 1);
+--
+-- 資料表結構 `announcements`
+--
 
--- --------------------------------------------------------
--- 5b. 學生證照與檢定成績表 `certificates`
--- --------------------------------------------------------
-CREATE TABLE `certificates` (
-  `cert_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '證照紀錄唯一碼 (PK)',
-  `student_id` varchar(20) NOT NULL COMMENT '學號 (FK)',
-  `cert_name` varchar(100) NOT NULL COMMENT '證照名稱',
-  `issuing_org` varchar(100) NOT NULL DEFAULT '勞動部勞動力發展署技能檢定中心' COMMENT '發證單位',
-  `cert_number` varchar(50) DEFAULT NULL COMMENT '證照字號 (選填)',
-  `theory_score` decimal(5,2) DEFAULT NULL COMMENT '學科成績 (選填)',
-  `practical_score` decimal(5,2) DEFAULT NULL COMMENT '術科成績 (選填)',
-  `cert_status` varchar(50) DEFAULT '及格發證' COMMENT '檢定狀態',
-  `verify_url` varchar(255) DEFAULT NULL COMMENT '官方查驗連結 (如勞動部)',
-  `file_path` varchar(255) DEFAULT NULL COMMENT '證照/成績單檔案路徑 (PDF或圖片)',
-  `file_name` varchar(255) DEFAULT NULL COMMENT '原始上傳檔名',
-  `file_type` varchar(20) DEFAULT NULL COMMENT '檔案類型 (pdf 或 image)',
-  `issue_date` date DEFAULT NULL COMMENT '取得日期',
-  `kind` enum('證照','競賽','作品') NOT NULL DEFAULT '證照' COMMENT '學生上傳的類別',
-  `review_status` enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' COMMENT '班導審核；只有已通過的證照算進畢業門檻',
-  `reviewer` varchar(50) DEFAULT NULL COMMENT '審核人',
-  `review_note` varchar(200) DEFAULT NULL COMMENT '退回原因',
-  `reviewed_at` timestamp NULL DEFAULT NULL COMMENT '審核時間',
-  `award` varchar(60) DEFAULT NULL COMMENT '競賽名次',
-  `description` varchar(500) DEFAULT NULL COMMENT '說明',
-  `attachments` text DEFAULT NULL COMMENT '上傳的證書 / 獎狀檔案 (JSON 陣列)',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '建立時間',
-  PRIMARY KEY (`cert_id`),
-  KEY `fk_cert_student` (`student_id`),
-  CONSTRAINT `fk_cert_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生證照與檢定成績表';
+CREATE TABLE `announcements` (
+  `id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `content` text DEFAULT NULL,
+  `office` varchar(50) NOT NULL,
+  `publish_date` date NOT NULL,
+  `target_class` varchar(50) DEFAULT NULL COMMENT 'NULL = 全校公告',
+  `url` varchar(500) NOT NULL DEFAULT '#'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `certificates` (`cert_id`, `student_id`, `cert_name`, `issuing_org`, `cert_number`, `theory_score`, `practical_score`, `cert_status`, `verify_url`, `file_path`, `file_name`, `file_type`, `issue_date`, `created_at`) VALUES
-(1, 'S112001', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署技能檢定中心', '113-CS-004521', 82.00, 88.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', '/uploads/demo_mol_transcript.pdf', '勞動部技術士技能檢定成績單.pdf', 'pdf', '2026-06-20', '2026-06-25 10:00:00'),
-(2, 'S112001', '乙級電腦軟體應用技術士', '勞動部勞動力發展署技能檢定中心', '114-CS-008912', 86.50, 92.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', '/uploads/demo_mol_cert.svg', '乙級技術士證書正本.svg', 'image', '2026-08-15', '2026-08-20 14:30:00'),
-(3, 'S112002', 'TQC+ 網頁設計工程師', '財團法人中華民國電腦技能基金會', 'TQC-WD-22310', 78.00, 85.00, '及格發證', 'https://www.tqc.org.tw/', NULL, NULL, NULL, '2026-07-05', '2026-07-10 09:00:00'),
-(4, 'S112004', '丙級電腦硬體裝修技術士', '勞動部勞動力發展署技能檢定中心', '113-CS-004588', 90.00, 86.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', NULL, NULL, NULL, '2026-06-20', '2026-06-25 10:00:00'),
-(5, 'S112004', '乙級電腦軟體應用技術士', '勞動部勞動力發展署技能檢定中心', '114-CS-009010', 88.00, 90.00, '及格發證', 'https://eservice.wdasec.gov.tw/WWW/C101Q', NULL, NULL, NULL, '2026-08-15', '2026-08-20 14:30:00');
+--
+-- 傾印資料表的資料 `announcements`
+--
+
+INSERT INTO `announcements` (`id`, `title`, `content`, `office`, `publish_date`, `target_class`, `url`) VALUES
+(1, '示範資料0001', '示範資料0001', '示範資料0001', '2026-09-22', NULL, '#'),
+(2, '示範資料0002', '示範資料0002', '示範資料0002', '2026-09-21', NULL, '#'),
+(3, '示範資料0003', '示範資料0003', '示範資料0003', '2026-09-23', '示範班級001', '#'),
+(4, '示範資料0004', '示範資料0004', '示範資料0004', '2026-09-15', NULL, '#'),
+(5, '示範資料0005', '示範資料0005', '示範資料0005', '2026-09-23', NULL, '#'),
+(6, '示範資料0006', '示範資料0006', '示範資料0006', '2026-09-10', NULL, '#'),
+(7, '示範資料0007', '示範資料0007', '示範資料0007', '2026-09-20', '示範班級002', '#');
 
 -- --------------------------------------------------------
--- 5c. 學生競賽得獎與榮譽獎狀表 `competitions`
--- --------------------------------------------------------
-CREATE TABLE `competitions` (
-  `comp_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '競賽紀錄唯一碼 (PK)',
-  `student_id` varchar(20) NOT NULL COMMENT '學號 (FK)',
-  `competition_name` varchar(150) NOT NULL COMMENT '比賽名稱',
-  `award_title` varchar(100) NOT NULL COMMENT '獲獎獎項/名次',
-  `organizer` varchar(100) DEFAULT '主辦單位' COMMENT '主辦單位',
-  `project_name` varchar(150) DEFAULT NULL COMMENT '參賽作品/隊伍',
-  `award_date` date NOT NULL COMMENT '得獎日期',
-  `file_path` varchar(255) DEFAULT NULL COMMENT '獎狀/得獎照片檔案路徑',
-  `file_name` varchar(255) DEFAULT NULL COMMENT '原始上傳檔名',
-  `file_type` varchar(20) DEFAULT NULL COMMENT '檔案類型 (pdf 或 image)',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '建立時間',
-  PRIMARY KEY (`comp_id`),
-  KEY `fk_comp_student` (`student_id`),
-  CONSTRAINT `fk_comp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生競賽獲獎表';
 
-INSERT INTO `competitions` (`comp_id`, `student_id`, `competition_name`, `award_title`, `organizer`, `project_name`, `award_date`, `file_path`, `file_name`, `file_type`, `created_at`) VALUES
-(1, 'S112001', '2026 全國大專校院智慧校園物聯網創新應用競賽', '第一名 (金獎)', '教育部資訊及科技教育司', 'Smart UKN 智慧校園導引與擋修診斷系統', '2026-05-18', '/uploads/demo_award_cert.pdf', '全國第一名獲獎獎狀.pdf', 'pdf', '2026-05-20 11:00:00');
+--
+-- 資料表結構 `announcement_reads`
+--
 
--- --------------------------------------------------------
--- 6. 規章大分類資料表 `knowledge_categories`
--- --------------------------------------------------------
-CREATE TABLE `knowledge_categories` (
-  `category_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分類代碼 (PK)',
-  `category_name` varchar(50) NOT NULL COMMENT '大分類名稱',
-  `icon` varchar(20) DEFAULT '📚' COMMENT '顯示圖示',
-  `sort_order` int(11) DEFAULT 1 COMMENT '排序權重',
-  PRIMARY KEY (`category_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='規章與行政大分類表';
+CREATE TABLE `announcement_reads` (
+  `student_id` varchar(20) NOT NULL,
+  `announcement_id` int(11) NOT NULL,
+  `read_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `knowledge_categories` (`category_id`, `category_name`, `icon`, `sort_order`) VALUES
-(1, '選課與學分業務', '📚', 1),
-(2, '請假與出勤規定', '📝', 2),
-(3, '學籍異動與退學', '🎓', 3),
-(4, '校園生活與證件', '💳', 4),
-(5, '招生科系與入學', '🏫', 5);
+--
+-- 傾印資料表的資料 `announcement_reads`
+--
+
+INSERT INTO `announcement_reads` (`student_id`, `announcement_id`, `read_at`) VALUES
+('DEMO00001', 6, '2026-10-08 04:17:18'),
+('DEMO00002', 4, '2026-09-24 04:10:29'),
+('DEMO00002', 6, '2026-09-24 04:10:29'),
+('DEMO00003', 1, '2026-09-24 04:10:29'),
+('DEMO00003', 2, '2026-09-24 04:10:29'),
+('DEMO00003', 4, '2026-09-24 04:10:29');
 
 -- --------------------------------------------------------
--- 7. 校規法規知識庫 `knowledge_base`
--- --------------------------------------------------------
-CREATE TABLE `knowledge_base` (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '條文唯一碼 (PK)',
-  `category_id` int(11) NOT NULL COMMENT '所屬大分類 (FK)',
-  `subcategory` varchar(50) NOT NULL COMMENT '子項目類別',
-  `keyword` varchar(255) NOT NULL COMMENT '檢索關鍵字',
-  `official_term` varchar(255) DEFAULT '' COMMENT '官方標準規章名稱',
-  `content` text NOT NULL COMMENT '條文內容詳解與解答',
-  `doc_name` varchar(255) NOT NULL COMMENT '出處法規檔名',
-  `page` int(11) DEFAULT 1 COMMENT '官方規章頁碼',
-  `url` varchar(500) NOT NULL COMMENT '規章下載或公告連結',
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '最後更新日期',
-  PRIMARY KEY (`id`),
-  KEY `fk_kb_category` (`category_id`),
-  CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校規與行政問答知識庫';
 
-INSERT INTO `knowledge_base` (`id`, `category_id`, `subcategory`, `keyword`, `official_term`, `content`, `doc_name`, `page`, `url`) VALUES
-(1, 1, '停修/棄修手續', '棄修', '停修課程辦理規定', '學生於加退選截止後，因特殊原因無法繼續修習某門課程，得於學期第 10-12 週申請停修（每學期以 2 科為限）。停修課程仍須登記於歷年成績單，但成績欄註記「停修」，不計入該學期學分數計算，且停修後修習學分數不得低於該學期最低應修學分。', '康寧大學學生學則.pdf', 12, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(2, 1, '外語能力抵免', '英文抵免', '語言證照抵免辦法', '凡通過全民英檢中高級、多益 (TOEIC) 550 分以上或同等國際英語檢定標準者，得於入學第一學期規定期限內，檢附成績單與證書正本向教務處註冊組申請抵免大一英文或通識外語學分。', '康寧大學抵免學分辦法.pdf', 5, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(3, 2, '學生請假流程', '請假規定', '學生請假辦法', '學生因故不能出席課業活動，須於事前（事假）或事後 3 日內（病假）辦理請假。假別包含公假、事假、病假、喪假及生理假。病假須檢附三日內就醫證明，三天以上須經科主任簽核，均需透過學生教務系統線上完成申請。', '學生請假辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(4, 2, '缺課與扣考規定', '曠課扣考', '學生出勤與扣考規定', '學生未經請假或請假未准而缺席者視為曠課。某一科目缺課（含請假及曠課）時數達該科目全學期授課總時數三分之一以上者，該科目不得參加期末考試（即扣考），學期成績以零分計算。', '康寧大學學生學則.pdf', 18, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(5, 3, '學業二一退學', '二一退學', '學業退學規定', '學士班學生單一學期學業成績不及格科目之學分數，達該學期修習學分總數二分之一者，予以學業警示輔導；若累計達校規規定之學業成績二分之一不及格達兩次者，應予退學處分。', '康寧大學學生學則.pdf', 24, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(6, 3, '獎懲與申訴', '獎懲辦法', '學生獎懲辦法', '學生之獎勵分為嘉獎、小功、大功；懲處分為申誡、小過、大過、留校察看及退學。學生對於學校所為之懲處認有違法或不當致損害其權益者，得於收到處分通知書之次日起十日內向學生申訴評議委員會提出申訴。', '學生獎懲辦法.pdf', 3, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(7, 4, '學生證掛失補發', '補發學生證', '學生證遺失補發流程', '學生證遺失時，應即登入學生教務資訊系統辦理線上掛失，並至行政大樓自動繳費機繳納工本費（新台幣 150 元），攜帶繳費收據與身分證明文件至教務處註冊組辦理補發，約 3 個工作天即可領取新卡。', '學生證管理要點.pdf', 2, 'https://www.ukn.edu.tw/p/412-1000-381.php?Lang=zh-tw'),
-(8, 5, '新生入學與科系', '招生科系', '康寧大學招生科系導覽', '本校設有護理健康學院（長期照護學系、嬰幼兒保育學系、護理科（五專）、視光科（五專））與商業資訊學院（企業管理學系（科）、資訊管理科（五專）、數位影視動畫科（五專）、應用外語科（五專））。提供五專、四技、學士班及碩士班完整升學路徑，提供豐富企業實習與證照輔導資源。', '康寧大學招生簡章.pdf', 1, 'https://www.ukn.edu.tw');
+--
+-- 資料表結構 `assignments`
+--
 
--- --------------------------------------------------------
--- 8. 智慧同義詞字典 `synonym_dictionary`
--- --------------------------------------------------------
-CREATE TABLE `synonym_dictionary` (
-  `synonym_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '字典唯一碼 (PK)',
-  `category_id` int(11) DEFAULT NULL COMMENT '對應分類 (FK)',
-  `user_keyword` varchar(50) NOT NULL COMMENT '使用者俗稱/口語',
-  `official_term` varchar(50) NOT NULL COMMENT '官方標準用語',
-  PRIMARY KEY (`synonym_id`),
-  KEY `fk_synonym_cat` (`category_id`),
-  CONSTRAINT `fk_synonym_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='智慧同義詞字典';
+CREATE TABLE `assignments` (
+  `id` int(11) NOT NULL,
+  `class_name` varchar(50) DEFAULT NULL,
+  `student_id` varchar(20) DEFAULT NULL,
+  `course_name` varchar(100) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `due_at` datetime NOT NULL,
+  `url` varchar(500) NOT NULL DEFAULT '#'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `synonym_dictionary` (`synonym_id`, `category_id`, `user_keyword`, `official_term`) VALUES
-(1, 1, '棄修', '停修課程辦理規定'),
-(2, 1, '退選', '停修課程辦理規定'),
-(3, 1, '英文免修', '語言證照抵免辦法'),
-(4, 1, '英檢抵免', '語言證照抵免辦法'),
-(5, 1, '擋修', '先修科目規定'),
-(6, 2, '請假', '學生請假辦法'),
-(7, 2, '病假怎麼請', '學生請假辦法'),
-(8, 2, '缺課', '學生出勤與扣考規定'),
-(9, 3, '二一', '學業退學規定'),
-(10, 3, '被當掉', '學業退學規定'),
-(11, 4, '補辦學生證', '學生證遺失補發流程'),
-(12, 4, '卡片遺失', '學生證遺失補發流程');
+--
+-- 傾印資料表的資料 `assignments`
+--
+
+INSERT INTO `assignments` (`id`, `class_name`, `student_id`, `course_name`, `title`, `due_at`, `url`) VALUES
+(1, '示範班級001', NULL, '示範課程001', '示範資料0008', '2026-09-25 23:59:00', '#'),
+(2, '示範班級001', NULL, '示範課程002', '示範資料0009', '2026-09-30 23:59:00', '#'),
+(3, '示範班級001', NULL, '示範課程003', '示範資料0010', '2026-09-24 12:00:00', '#'),
+(4, '示範班級001', NULL, '示範課程004', '示範資料0011', '2026-09-22 23:59:00', '#'),
+(5, NULL, 'DEMO00002', '示範課程005', '示範資料0012', '2026-09-28 23:59:00', '#'),
+(6, '示範班級003', NULL, '示範課程001', '示範資料0008', '2026-09-26 23:59:00', '#'),
+(7, '示範班級002', NULL, '示範課程006', '示範資料0013', '2026-09-29 23:59:00', '#');
 
 -- --------------------------------------------------------
--- 9. 行政流程指引清單 `checklist_items`
--- --------------------------------------------------------
-CREATE TABLE `checklist_items` (
-  `item_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '清單唯一碼 (PK)',
-  `category_id` int(11) DEFAULT NULL COMMENT '所屬分類 (FK)',
-  `category_name` varchar(50) NOT NULL DEFAULT '課務組' COMMENT '辦理單位',
-  `business_name` varchar(100) NOT NULL COMMENT '行政業務名稱',
-  `steps_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '辦理步驟 (JSON 陣列格式)' CHECK (json_valid(`steps_json`)),
-  `required_docs` text DEFAULT NULL COMMENT '應備文件說明',
-  `office_hours` varchar(100) DEFAULT NULL COMMENT '辦公服務時間',
-  `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 310' COMMENT '處室聯絡分機',
-  `audience` varchar(20) NOT NULL DEFAULT '學生' COMMENT '適用對象 (學生/老師)',
-  PRIMARY KEY (`item_id`),
-  KEY `fk_chk_cat` (`category_id`),
-  CONSTRAINT `fk_chk_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行政流程指引清單';
 
-INSERT INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `contact_phone`, `audience`) VALUES
-(1, 1, '課務組', '學生課程停修（棄修）申請', '[\"1. 登入學生教務系統填寫停修申請表\", \"2. 列印紙本申請單經授課教師簽名同意\", \"3. 送班級導師及科主任核章\", \"4. 於學期第12週截止日前送教務處課務組審查\"]', '停修申請表（須授課教師簽章）、學生證正本', '週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)', '學生'),
-(2, 4, '註冊組', '學生證遺失補發申請', '[\"1. 登入教務系統辦理線上卡片掛失\", \"2. 至行政大樓自動繳費機繳交補發工本費 150 元\", \"3. 持繳費收據及身分證明文件至註冊組辦理\", \"4. 3 個工作天後憑收據至註冊組領取新學生證\"]', '身分證或健保卡正本、工本費收據、2吋大頭照電子檔', '週一至週五 09:00 - 16:30', '02-2632-1181 分機 310 (註冊組)', '學生'),
-(3, 1, '註冊組', '外語證照 / 學分抵免申請', '[\"1. 確認自身符合抵免資格（多益550分以上或全民英檢中高級）\", \"2. 備妥成績單或證書正本與影本\", \"3. 填寫學分抵免申請表並由所屬科辦初審\", \"4. 開學兩週內送交教務處註冊組複審核定\"]', '語言檢定證書正影本、歷年成績單、抵免申請表', '開學前兩週內 08:30 - 17:00', '02-2632-1181 分機 310 (註冊組)', '學生'),
-(4, 2, '學務處', '學生病假與公假線上請假流程', '[\"1. 事假須事前於線上請假系統提出申請\", \"2. 病假須於返校 3 日內登入系統補辦並上傳就醫證明\", \"3. 公假須檢附公函或主辦單位指派公文證明\", \"4. 經導師及系輔導人員線上審核通過即生效\"]', '三日內診斷證明或收據電子檔（病假）、派遣公文（公假）', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)', '學生'),
-(5, 1, '課務組', '不及格科目重補修申請', '[\"1. 查詢下學期開課時間表，確認該科目是否開班\", \"2. 於加退選期間至教務系統重新選修該科目（重補修）\", \"3. 若該科目已停開，須洽科辦辦理替代科目認定\", \"4. 選修科目亦可改選其他同學分選修科目以取代學分\"]', '無需另外書面文件；逾加退選期限則需填寫替代科目認定表', '加退選期間依教務處公告時間；平時洽詢 週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)', '學生'),
-(6, 1, '課務組', '教師調（代）課申請', '[\"1. 登入教師端系統線上填寫調（代）課申請表\", \"2. 敘明異動原因、代課教師與異動堂數\", \"3. 經科主任核章後送教務處課務組備查\", \"4. 至遲於異動日前 3 天完成申請，調代課完成後於系統登錄異動紀錄\"]', '調（代）課申請表（科主任簽核）', '週一至週五 08:30 - 17:00', '02-2632-1181 分機 312 (課務組)', '老師'),
-(7, 1, '註冊組', '學生成績登錄與更正申請', '[\"1. 學期成績需於規定期限內至教師成績登錄系統輸入\", \"2. 如需更正已送出之成績，填寫成績更正申請單並經科主任核章\", \"3. 送註冊組於次學期開始前完成更正\", \"4. 更正後成績將重新產出正式成績單\"]', '成績更正申請單（科主任簽章）', '週一至週五 09:00 - 16:30', '02-2632-1181 分機 310 (註冊組)', '老師'),
-(8, 2, '學務處', '導師班務通報與期中期末座談', '[\"1. 每學期至少安排一次班會或個別晤談\", \"2. 將學生出缺勤、獎懲及輔導紀錄填寫於導師手冊系統\", \"3. 期中預警名單公告後，需於輔導期內完成受輔導學生之面談紀錄\", \"4. 學期末提交班級輔導總結報告\"]', '導師輔導紀錄表', '線上系統 24 小時開放受理', '02-2632-1181 分機 410 (生輔組)', '老師');
+--
+-- 資料表結構 `assignment_submissions`
+--
+
+CREATE TABLE `assignment_submissions` (
+  `student_id` varchar(20) NOT NULL,
+  `assignment_id` int(11) NOT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `assignment_submissions`
+--
+
+INSERT INTO `assignment_submissions` (`student_id`, `assignment_id`, `submitted_at`) VALUES
+('DEMO00002', 3, '2026-09-24 04:10:29'),
+('DEMO00003', 1, '2026-09-24 04:10:29'),
+('DEMO00003', 3, '2026-09-24 04:10:29'),
+('DEMO00003', 4, '2026-09-24 04:10:29'),
+('DEMO00004', 4, '2026-09-24 04:10:29');
 
 -- --------------------------------------------------------
--- 9b. 修改紀錄表 `audit_logs`
+
+--
+-- 資料表結構 `attendance_records`
+--
+
+CREATE TABLE `attendance_records` (
+  `id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `date` date NOT NULL,
+  `course_name` varchar(100) NOT NULL,
+  `type` enum('曠課','遲到','病假','事假','公假','重大傷病假','產假') NOT NULL,
+  `notified` tinyint(1) NOT NULL DEFAULT 0,
+  `hours` decimal(7,2) DEFAULT NULL,
+  `exam_policy` varchar(20) NOT NULL DEFAULT 'ordinary'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `attendance_records`
+--
+
+INSERT INTO `attendance_records` (`id`, `student_id`, `date`, `course_name`, `type`, `notified`, `hours`, `exam_policy`) VALUES
+(1, 'DEMO00002', '2026-09-14', '示範課程005', '曠課', 1, NULL, 'ordinary'),
+(2, 'DEMO00002', '2026-09-15', '示範課程004', '遲到', 1, NULL, 'ordinary'),
+(3, 'DEMO00002', '2026-09-16', '示範課程005', '曠課', 1, NULL, 'ordinary'),
+(4, 'DEMO00002', '2026-09-18', '示範課程007', '病假', 1, NULL, 'ordinary'),
+(5, 'DEMO00002', '2026-09-21', '示範課程005', '曠課', 0, NULL, 'ordinary'),
+(6, 'DEMO00002', '2026-09-23', '示範課程005', '曠課', 0, NULL, 'ordinary'),
+(7, 'DEMO00003', '2026-09-16', '示範課程002', '病假', 1, NULL, 'ordinary'),
+(8, 'DEMO00004', '2026-09-15', '示範課程001', '曠課', 0, NULL, 'ordinary'),
+(9, 'DEMO00004', '2026-09-17', '示範課程003', '遲到', 0, NULL, 'ordinary'),
+(157, 'DEMO00005', '2026-09-30', '示範課程008', '遲到', 1, NULL, 'ordinary'),
+(158, 'DEMO00005', '2026-10-05', '示範課程008', '遲到', 1, NULL, 'ordinary'),
+(159, 'DEMO00006', '2026-09-22', '示範課程009', '曠課', 1, NULL, 'ordinary'),
+(160, 'DEMO00006', '2026-09-23', '示範課程009', '曠課', 1, NULL, 'ordinary'),
+(161, 'DEMO00006', '2026-10-01', '示範課程009', '曠課', 1, NULL, 'ordinary'),
+(162, 'DEMO00006', '2026-10-02', '示範課程009', '曠課', 1, NULL, 'ordinary'),
+(163, 'DEMO00006', '2026-09-24', '示範課程010', '遲到', 1, NULL, 'ordinary'),
+(164, 'DEMO00006', '2026-10-09', '示範課程010', '遲到', 1, NULL, 'ordinary'),
+(165, 'DEMO00007', '2026-09-17', '示範課程009', '遲到', 1, NULL, 'ordinary'),
+(166, 'DEMO00007', '2026-09-21', '示範課程010', '遲到', 1, NULL, 'ordinary'),
+(167, 'DEMO00007', '2026-10-08', '示範課程010', '遲到', 1, NULL, 'ordinary'),
+(168, 'DEMO00008', '2026-09-23', '示範課程008', '曠課', 1, NULL, 'ordinary'),
+(169, 'DEMO00008', '2026-10-06', '示範課程008', '遲到', 1, NULL, 'ordinary'),
+(170, 'DEMO00009', '2026-09-17', '示範課程001', '遲到', 1, NULL, 'ordinary'),
+(171, 'DEMO00009', '2026-09-21', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(172, 'DEMO00009', '2026-09-25', '示範課程007', '病假', 1, NULL, 'ordinary'),
+(173, 'DEMO00010', '2026-09-15', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(174, 'DEMO00010', '2026-09-24', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(175, 'DEMO00010', '2026-09-28', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(176, 'DEMO00010', '2026-09-30', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(177, 'DEMO00010', '2026-10-02', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(178, 'DEMO00010', '2026-10-09', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(179, 'DEMO00011', '2026-09-22', '示範課程001', '遲到', 1, NULL, 'ordinary'),
+(180, 'DEMO00011', '2026-09-23', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(181, 'DEMO00011', '2026-09-30', '示範課程007', '病假', 1, NULL, 'ordinary'),
+(182, 'DEMO00012', '2026-09-15', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(183, 'DEMO00012', '2026-09-29', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(184, 'DEMO00012', '2026-10-07', '示範課程001', '病假', 1, NULL, 'ordinary'),
+(185, 'DEMO00013', '2026-09-15', '示範課程007', '病假', 1, NULL, 'ordinary'),
+(186, 'DEMO00013', '2026-09-28', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(187, 'DEMO00014', '2026-09-30', '示範課程001', '曠課', 1, NULL, 'ordinary'),
+(188, 'DEMO00015', '2026-09-23', '示範課程001', '病假', 1, NULL, 'ordinary'),
+(189, 'DEMO00015', '2026-09-25', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(190, 'DEMO00015', '2026-09-29', '示範課程001', '病假', 1, NULL, 'ordinary'),
+(191, 'DEMO00016', '2026-09-30', '示範課程011', '遲到', 1, NULL, 'ordinary'),
+(192, 'DEMO00016', '2026-10-05', '示範課程012', '病假', 1, NULL, 'ordinary'),
+(193, 'DEMO00016', '2026-10-06', '示範課程012', '病假', 1, NULL, 'ordinary'),
+(194, 'DEMO00017', '2026-09-16', '示範課程011', '曠課', 1, NULL, 'ordinary'),
+(195, 'DEMO00017', '2026-10-02', '示範課程011', '曠課', 1, NULL, 'ordinary'),
+(196, 'DEMO00017', '2026-10-08', '示範課程011', '曠課', 1, NULL, 'ordinary'),
+(197, 'DEMO00017', '2026-10-09', '示範課程011', '曠課', 1, NULL, 'ordinary'),
+(198, 'DEMO00017', '2026-10-05', '示範課程012', '遲到', 1, NULL, 'ordinary'),
+(199, 'DEMO00017', '2026-10-09', '示範課程012', '遲到', 1, NULL, 'ordinary'),
+(200, 'DEMO00018', '2026-10-06', '示範課程012', '曠課', 1, NULL, 'ordinary'),
+(201, 'DEMO00019', '2026-09-14', '示範課程012', '曠課', 1, NULL, 'ordinary'),
+(202, 'DEMO00019', '2026-10-06', '示範課程011', '遲到', 1, NULL, 'ordinary'),
+(203, 'DEMO00020', '2026-10-02', '示範課程011', '病假', 1, NULL, 'ordinary'),
+(204, 'DEMO00021', '2026-09-25', '示範課程012', '曠課', 1, NULL, 'ordinary'),
+(205, 'DEMO00021', '2026-10-09', '示範課程012', '病假', 1, NULL, 'ordinary'),
+(206, 'DEMO00022', '2026-10-01', '示範課程002', '病假', 1, NULL, 'ordinary'),
+(207, 'DEMO00023', '2026-09-17', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(208, 'DEMO00023', '2026-09-23', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(209, 'DEMO00023', '2026-10-01', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(210, 'DEMO00023', '2026-10-09', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(211, 'DEMO00023', '2026-09-23', '示範課程013', '遲到', 1, NULL, 'ordinary'),
+(212, 'DEMO00023', '2026-10-02', '示範課程013', '遲到', 1, NULL, 'ordinary'),
+(213, 'DEMO00024', '2026-09-22', '示範課程013', '曠課', 1, NULL, 'ordinary'),
+(214, 'DEMO00025', '2026-09-17', '示範課程013', '病假', 1, NULL, 'ordinary'),
+(215, 'DEMO00025', '2026-09-18', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(216, 'DEMO00025', '2026-09-28', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(217, 'DEMO00026', '2026-09-15', '示範課程002', '病假', 1, NULL, 'ordinary'),
+(218, 'DEMO00026', '2026-09-22', '示範課程002', '病假', 1, NULL, 'ordinary'),
+(219, 'DEMO00026', '2026-09-30', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(220, 'DEMO00027', '2026-09-29', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(221, 'DEMO00027', '2026-10-01', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(222, 'DEMO00027', '2026-10-09', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(223, 'DEMO00028', '2026-10-05', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(224, 'DEMO00028', '2026-10-06', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(225, 'DEMO00029', '2026-09-16', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(226, 'DEMO00029', '2026-10-05', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(227, 'DEMO00029', '2026-10-06', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(228, 'DEMO00029', '2026-10-07', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(229, 'DEMO00029', '2026-09-17', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(230, 'DEMO00029', '2026-09-28', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(231, 'DEMO00030', '2026-09-29', '示範課程003', '遲到', 1, NULL, 'ordinary'),
+(232, 'DEMO00030', '2026-10-06', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(233, 'DEMO00031', '2026-09-16', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(234, 'DEMO00031', '2026-09-21', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(235, 'DEMO00031', '2026-10-02', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(236, 'DEMO00031', '2026-10-05', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(237, 'DEMO00031', '2026-10-07', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(238, 'DEMO00031', '2026-10-09', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(239, 'DEMO00031', '2026-09-18', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(240, 'DEMO00031', '2026-10-07', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(241, 'DEMO00032', '2026-09-14', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(242, 'DEMO00032', '2026-09-17', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(243, 'DEMO00032', '2026-09-22', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(244, 'DEMO00032', '2026-09-23', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(245, 'DEMO00032', '2026-09-17', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(246, 'DEMO00032', '2026-09-18', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(247, 'DEMO00033', '2026-09-15', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(248, 'DEMO00033', '2026-09-24', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(249, 'DEMO00033', '2026-09-25', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(250, 'DEMO00033', '2026-09-29', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(251, 'DEMO00033', '2026-10-01', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(252, 'DEMO00033', '2026-10-06', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(253, 'DEMO00033', '2026-10-09', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(254, 'DEMO00033', '2026-09-14', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(255, 'DEMO00033', '2026-09-15', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(256, 'DEMO00033', '2026-09-22', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(257, 'DEMO00033', '2026-09-23', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(258, 'DEMO00033', '2026-09-25', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(259, 'DEMO00033', '2026-10-06', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(260, 'DEMO00033', '2026-10-07', '示範課程003', '曠課', 1, NULL, 'ordinary'),
+(261, 'DEMO00033', '2026-09-14', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(262, 'DEMO00033', '2026-09-16', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(263, 'DEMO00033', '2026-09-22', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(264, 'DEMO00033', '2026-09-24', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(265, 'DEMO00033', '2026-10-05', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(266, 'DEMO00033', '2026-10-06', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(267, 'DEMO00033', '2026-10-08', '示範課程004', '曠課', 1, NULL, 'ordinary'),
+(268, 'DEMO00033', '2026-09-21', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(269, 'DEMO00033', '2026-09-28', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(270, 'DEMO00033', '2026-09-29', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(271, 'DEMO00033', '2026-10-05', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(272, 'DEMO00033', '2026-10-06', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(273, 'DEMO00033', '2026-10-08', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(274, 'DEMO00033', '2026-10-09', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(275, 'DEMO00034', '2026-09-18', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(276, 'DEMO00034', '2026-09-21', '示範課程003', '病假', 1, NULL, 'ordinary'),
+(277, 'DEMO00034', '2026-10-02', '示範課程003', '遲到', 1, NULL, 'ordinary'),
+(278, 'DEMO00035', '2026-09-17', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(279, 'DEMO00035', '2026-09-29', '示範課程007', '病假', 1, NULL, 'ordinary'),
+(280, 'DEMO00035', '2026-10-07', '示範課程004', '病假', 1, NULL, 'ordinary'),
+(281, 'DEMO00036', '2026-09-21', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(282, 'DEMO00036', '2026-10-01', '示範課程002', '病假', 1, NULL, 'ordinary'),
+(283, 'DEMO00037', '2026-09-16', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(284, 'DEMO00037', '2026-10-08', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(285, 'DEMO00038', '2026-09-14', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(286, 'DEMO00038', '2026-09-17', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(287, 'DEMO00038', '2026-10-06', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(288, 'DEMO00039', '2026-09-15', '示範課程004', '病假', 1, NULL, 'ordinary'),
+(289, 'DEMO00040', '2026-09-17', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(290, 'DEMO00040', '2026-09-23', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(291, 'DEMO00040', '2026-10-01', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(292, 'DEMO00040', '2026-10-09', '示範課程002', '曠課', 1, NULL, 'ordinary'),
+(293, 'DEMO00040', '2026-09-22', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(294, 'DEMO00040', '2026-10-08', '示範課程007', '遲到', 1, NULL, 'ordinary'),
+(295, 'DEMO00041', '2026-09-17', '示範課程004', '病假', 1, NULL, 'ordinary'),
+(296, 'DEMO00041', '2026-09-21', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(297, 'DEMO00041', '2026-09-25', '示範課程003', '病假', 1, NULL, 'ordinary'),
+(298, 'DEMO00042', '2026-09-17', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(299, 'DEMO00042', '2026-09-28', '示範課程007', '曠課', 1, NULL, 'ordinary'),
+(300, 'DEMO00043', '2026-09-17', '示範課程004', '遲到', 1, NULL, 'ordinary'),
+(301, 'DEMO00043', '2026-09-18', '示範課程003', '病假', 1, NULL, 'ordinary'),
+(302, 'DEMO00044', '2026-09-30', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(303, 'DEMO00045', '2026-10-07', '示範課程002', '遲到', 1, NULL, 'ordinary'),
+(304, 'DEMO00002', '2026-10-20', '示範課程014', '曠課', 0, 17.00, 'ordinary'),
+(305, 'DEMO00002', '2026-10-20', '示範課程015', '曠課', 0, 18.00, 'ordinary'),
+(306, 'DEMO00002', '2026-10-20', '示範課程016', '曠課', 0, 19.00, 'ordinary'),
+(307, 'DEMO00002', '2026-10-20', '示範課程017', '病假', 0, 18.00, 'ordinary');
+
 -- --------------------------------------------------------
+
+--
+-- 資料表結構 `audit_logs`
+--
+
 CREATE TABLE `audit_logs` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '紀錄唯一碼 (PK)',
-  `table_name` varchar(50) NOT NULL COMMENT '被異動的資料表名稱',
-  `record_id` varchar(50) NOT NULL COMMENT '被異動的資料主鍵',
-  `action` varchar(20) NOT NULL COMMENT '新增/修改/刪除',
-  `changed_by` varchar(50) NOT NULL COMMENT '操作者姓名/帳號',
-  `changed_by_role` varchar(20) DEFAULT NULL COMMENT '操作者身分',
-  `ip_address` varchar(45) DEFAULT NULL COMMENT '操作者電腦 IP',
-  `before_json` longtext DEFAULT NULL COMMENT '修改前內容 (JSON)',
-  `after_json` longtext DEFAULT NULL COMMENT '修改後內容 (JSON)',
-  `changed_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '異動時間',
-  PRIMARY KEY (`log_id`),
-  KEY `idx_audit_table_record` (`table_name`, `record_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 修改紀錄表';
+  `log_id` int(11) NOT NULL,
+  `table_name` varchar(50) NOT NULL,
+  `record_id` varchar(50) NOT NULL,
+  `action` varchar(20) NOT NULL,
+  `changed_by` varchar(50) NOT NULL,
+  `changed_by_role` varchar(20) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `before_json` longtext DEFAULT NULL,
+  `after_json` longtext DEFAULT NULL,
+  `changed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `audit_logs`
+--
+
+INSERT INTO `audit_logs` (`log_id`, `table_name`, `record_id`, `action`, `changed_by`, `changed_by_role`, `ip_address`, `before_json`, `after_json`, `changed_at`) VALUES
+(1, '示範資料0001', '示範資料0001', '新增', 'demo_user_0001', '示範資料0001', NULL, NULL, '{}', '2026-10-09 17:04:08'),
+(2, '示範資料0002', '示範資料0001', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(3, '示範資料0002', '示範資料0002', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(4, '示範資料0002', '示範資料0003', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(5, '示範資料0002', '示範資料0004', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(6, '示範資料0001', '示範資料0003', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(7, '示範資料0001', '示範資料0004', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(8, '示範資料0001', '示範資料0005', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:46:16'),
+(9, '示範資料0002', '示範資料0002', '修改', 'demo_user_0001', '示範資料0001', '192.0.2.1', '{}', '{}', '2026-10-20 01:47:48'),
+(10, '示範資料0001', '示範資料0006', '提醒', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-20 01:48:12'),
+(11, '示範資料0003', '示範資料0007', '新增', 'demo_user_0002', '示範資料0002', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:56'),
+(12, '示範資料0003', '示範資料0008', '新增', 'demo_user_0002', '示範資料0002', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:56'),
+(13, '示範資料0003', '示範資料0009', '新增', 'demo_user_0002', '示範資料0002', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:56'),
+(14, '示範資料0003', '示範資料0010', '新增', 'demo_user_0002', '示範資料0002', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:56'),
+(15, '示範資料0004', '示範資料0006', '修改', 'demo_user_0001', '示範資料0001', '192.0.2.1', '{}', '{}', '2026-10-20 02:08:56'),
+(16, '示範資料0005', '示範資料0001', '新增', 'demo_user_0003', '示範資料0003', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:56'),
+(17, '示範資料0005', '示範資料0001', '修改', 'demo_user_0004', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-20 02:08:57'),
+(18, '示範資料0005', '示範資料0001', '修改', 'demo_user_0004', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-20 02:08:57'),
+(19, '示範資料0005', '示範資料0001', '修改', 'demo_user_0004', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-20 02:08:57'),
+(20, '示範資料0005', '示範資料0002', '新增', 'demo_user_0005', '示範資料0003', '192.0.2.1', NULL, '{}', '2026-10-20 02:08:57'),
+(21, '示範資料0005', '示範資料0002', '修改', 'demo_user_0004', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-20 02:08:58'),
+(22, '示範資料0001', '示範資料0011', '新增', 'demo_user_0001', '示範資料0001', '192.0.2.1', NULL, '{}', '2026-10-21 01:29:25'),
+(23, '示範資料0005', '示範資料0001', '修改', 'demo_user_0004', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:30:43'),
+(24, '示範資料0006', '示範資料0012', '修改', 'demo_user_0002', '示範資料0002', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:14'),
+(25, '示範資料0007', '示範資料0002', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(26, '示範資料0007', '示範資料0003', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(27, '示範資料0007', '示範資料0003', '要求補件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(28, '示範資料0007', '示範資料0005', '受理案件', 'demo_user_0007', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(29, '示範資料0007', '示範資料0006', '受理案件', 'demo_user_0007', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(30, '示範資料0007', '示範資料0006', '要求補件', 'demo_user_0007', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:15'),
+(31, '示範資料0007', '示範資料0013', '受理案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(32, '示範資料0007', '示範資料0014', '受理案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(33, '示範資料0007', '示範資料0014', '要求補件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(34, '示範資料0007', '示範資料0015', '受理案件', 'demo_user_0009', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(35, '示範資料0007', '示範資料0016', '受理案件', 'demo_user_0009', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(36, '示範資料0007', '示範資料0016', '要求補件', 'demo_user_0009', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:16'),
+(37, '示範資料0007', '示範資料0017', '受理案件', 'demo_user_0010', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17'),
+(38, '示範資料0007', '示範資料0018', '受理案件', 'demo_user_0010', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17'),
+(39, '示範資料0007', '示範資料0018', '要求補件', 'demo_user_0010', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17');
+INSERT INTO `audit_logs` (`log_id`, `table_name`, `record_id`, `action`, `changed_by`, `changed_by_role`, `ip_address`, `before_json`, `after_json`, `changed_at`) VALUES
+(40, '示範資料0007', '示範資料0019', '受理案件', 'demo_user_0011', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17'),
+(41, '示範資料0007', '示範資料0020', '受理案件', 'demo_user_0011', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17'),
+(42, '示範資料0007', '示範資料0020', '要求補件', 'demo_user_0011', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:17'),
+(43, '示範資料0007', '示範資料0021', '受理案件', 'demo_user_0012', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:18'),
+(44, '示範資料0007', '示範資料0022', '受理案件', 'demo_user_0012', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:18'),
+(45, '示範資料0007', '示範資料0022', '要求補件', 'demo_user_0012', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:18'),
+(46, '示範資料0007', '示範資料0023', '受理案件', 'demo_user_0013', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:19'),
+(47, '示範資料0007', '示範資料0024', '受理案件', 'demo_user_0013', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:19'),
+(48, '示範資料0007', '示範資料0024', '要求補件', 'demo_user_0013', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:19'),
+(49, '示範資料0007', '示範資料0025', '受理案件', 'demo_user_0014', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:20'),
+(50, '示範資料0007', '示範資料0026', '受理案件', 'demo_user_0014', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:20'),
+(51, '示範資料0007', '示範資料0026', '要求補件', 'demo_user_0014', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:20'),
+(52, '示範資料0007', '示範資料0027', '受理案件', 'demo_user_0015', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21'),
+(53, '示範資料0007', '示範資料0028', '受理案件', 'demo_user_0015', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21'),
+(54, '示範資料0007', '示範資料0028', '要求補件', 'demo_user_0015', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21'),
+(55, '示範資料0007', '示範資料0029', '受理案件', 'demo_user_0016', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21'),
+(56, '示範資料0007', '示範資料0030', '受理案件', 'demo_user_0016', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21'),
+(57, '示範資料0007', '示範資料0030', '要求補件', 'demo_user_0016', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:21');
+INSERT INTO `audit_logs` (`log_id`, `table_name`, `record_id`, `action`, `changed_by`, `changed_by_role`, `ip_address`, `before_json`, `after_json`, `changed_at`) VALUES
+(58, '示範資料0007', '示範資料0031', '受理案件', 'demo_user_0017', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(59, '示範資料0007', '示範資料0032', '受理案件', 'demo_user_0017', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(60, '示範資料0007', '示範資料0032', '要求補件', 'demo_user_0017', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(61, '示範資料0007', '示範資料0033', '受理案件', 'demo_user_0018', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(62, '示範資料0007', '示範資料0034', '受理案件', 'demo_user_0018', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(63, '示範資料0007', '示範資料0034', '要求補件', 'demo_user_0018', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:22'),
+(64, '示範資料0007', '示範資料0035', '受理案件', 'demo_user_0019', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(65, '示範資料0007', '示範資料0036', '受理案件', 'demo_user_0019', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(66, '示範資料0007', '示範資料0036', '要求補件', 'demo_user_0019', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(67, '示範資料0007', '示範資料0037', '受理案件', 'demo_user_0020', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(68, '示範資料0007', '示範資料0038', '受理案件', 'demo_user_0020', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(69, '示範資料0007', '示範資料0038', '要求補件', 'demo_user_0020', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(70, '示範資料0007', '示範資料0039', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(71, '示範資料0007', '示範資料0039', '要求補件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(72, '示範資料0007', '示範資料0039', '補件重新送審', 'demo_user_0003', '示範資料0003', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:23'),
+(73, '示範資料0007', '示範資料0040', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24'),
+(74, '示範資料0007', '示範資料0040', '完成步驟：學籍資料核對', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24');
+INSERT INTO `audit_logs` (`log_id`, `table_name`, `record_id`, `action`, `changed_by`, `changed_by_role`, `ip_address`, `before_json`, `after_json`, `changed_at`) VALUES
+(75, '示範資料0007', '示範資料0040', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24'),
+(76, '示範資料0007', '示範資料0040', '完成案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24'),
+(77, '示範資料0007', '示範資料0041', '受理案件', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24'),
+(78, '示範資料0007', '示範資料0041', '退件結案', 'demo_user_0006', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:36:24'),
+(79, '示範資料0007', '示範資料0042', '受理案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:37:45'),
+(80, '示範資料0007', '示範資料0042', '要求補件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:37:46'),
+(81, '示範資料0007', '示範資料0042', '補件重新送審', 'demo_user_0003', '示範資料0003', '192.0.2.1', '{}', '{}', '2026-10-21 01:37:59'),
+(82, '示範資料0007', '示範資料0042', '受理案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:38:01'),
+(83, '示範資料0007', '示範資料0042', '完成步驟：報修受理與派工', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:38:09'),
+(84, '示範資料0007', '示範資料0042', '受理案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:38:10'),
+(85, '示範資料0007', '示範資料0042', '完成案件', 'demo_user_0008', '示範資料0004', '192.0.2.1', '{}', '{}', '2026-10-21 01:38:11'),
+(86, '示範資料0006', '示範資料0012', '修改', 'demo_user_0002', '示範資料0002', '192.0.2.1', '{}', '{}', '2026-10-21 01:39:37');
 
 -- --------------------------------------------------------
--- 10. 訪客/未來學生登記入校留痕表 `visitor_logs`
--- --------------------------------------------------------
-CREATE TABLE `visitor_logs` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '留痕紀錄唯一碼 (PK)',
-  `visitor_name` varchar(50) NOT NULL COMMENT '訪客姓名/稱謂',
-  `phone` varchar(30) NOT NULL COMMENT '訪客聯絡手機',
-  `school_from` varchar(100) NOT NULL COMMENT '畢業國中/高中職學校',
-  `purpose` varchar(100) NOT NULL COMMENT '來訪目的 (升學諮詢/校園參觀/洽公等)',
-  `target_dept` varchar(100) DEFAULT '資訊管理科（五專）' COMMENT '有興趣了解之科系',
-  `visited_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '登記來訪時間',
-  `ip_address` varchar(50) DEFAULT '127.0.0.1' COMMENT '來源 IP 位址',
-  PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='訪客與未來學生入校留痕紀錄表';
 
-INSERT INTO `visitor_logs` (`log_id`, `visitor_name`, `phone`, `school_from`, `purpose`, `target_dept`, `visited_at`, `ip_address`) VALUES
-(1, '陳同學', '0912-888-999', '台北市立南港高中', '升學諮詢與科系探索', '資訊管理科（五專）', '2026-09-08 09:30:00', '127.0.0.1'),
-(2, '林家長', '0922-111-222', '新北市立汐止國中', '五專免試入學諮詢', '護理科（五專）', '2026-09-08 10:15:00', '127.0.0.1'),
-(3, '黃同學', '0933-777-666', '基隆市立安樂高中', '校園環境參觀', '資訊管理科（五專）', '2026-09-08 11:00:00', '127.0.0.1');
+--
+-- 資料表結構 `certificates`
+--
+
+CREATE TABLE `certificates` (
+  `cert_id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `cert_name` varchar(100) NOT NULL,
+  `issuing_org` varchar(100) NOT NULL DEFAULT '勞動部勞動力發展署技能檢定中心',
+  `cert_number` varchar(50) DEFAULT NULL,
+  `theory_score` decimal(5,2) DEFAULT NULL,
+  `practical_score` decimal(5,2) DEFAULT NULL,
+  `cert_status` varchar(50) DEFAULT '及格發證',
+  `verify_url` varchar(255) DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `file_name` varchar(255) DEFAULT NULL,
+  `file_type` varchar(20) DEFAULT NULL,
+  `issue_date` date DEFAULT NULL,
+  `kind` enum('證照','競賽','作品') NOT NULL DEFAULT '證照',
+  `review_status` enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過',
+  `reviewer` varchar(50) DEFAULT NULL,
+  `review_note` varchar(200) DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `award` varchar(60) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `attachments` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `certificates`
+--
+
+INSERT INTO `certificates` (`cert_id`, `student_id`, `cert_name`, `issuing_org`, `cert_number`, `theory_score`, `practical_score`, `cert_status`, `verify_url`, `file_path`, `file_name`, `file_type`, `issue_date`, `kind`, `review_status`, `reviewer`, `review_note`, `reviewed_at`, `award`, `description`, `attachments`, `created_at`) VALUES
+(1, 'DEMO00002', '示範資料0001', '示範資料0001', 'DEMO-00001', 82.00, 88.00, '及格發證', NULL, NULL, NULL, NULL, '2026-06-20', '證照', '已通過', NULL, NULL, NULL, NULL, NULL, NULL, '2026-09-24 04:10:29'),
+(2, 'DEMO00002', '示範資料0002', '示範資料0001', 'DEMO-00002', 86.50, 92.00, '及格發證', NULL, NULL, NULL, NULL, '2026-08-15', '證照', '已通過', NULL, NULL, NULL, NULL, NULL, NULL, '2026-09-24 04:10:29'),
+(3, 'DEMO00003', '示範資料0003', '示範資料0002', 'DEMO-00003', 78.00, 85.00, '及格發證', NULL, NULL, NULL, NULL, '2026-07-05', '證照', '已通過', NULL, NULL, NULL, NULL, NULL, NULL, '2026-09-24 04:10:29'),
+(4, 'DEMO00046', '示範資料0001', '示範資料0001', 'DEMO-00004', 90.00, 86.00, '及格發證', NULL, NULL, NULL, NULL, '2026-06-20', '證照', '已通過', NULL, NULL, NULL, NULL, NULL, NULL, '2026-09-24 04:10:29'),
+(5, 'DEMO00046', '示範資料0002', '示範資料0001', 'DEMO-00005', 88.00, 90.00, '及格發證', NULL, NULL, NULL, NULL, '2026-08-15', '證照', '已通過', NULL, NULL, NULL, NULL, NULL, NULL, '2026-09-24 04:10:29'),
+(6, 'DEMO00006', '示範資料0004', '示範資料0002', 'DEMO-00006', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-15', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-14 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(7, 'DEMO00006', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-15', '競賽', '已通過', 'demo_user_0021', NULL, '2026-09-14 16:00:00', '示範資料0001', NULL, '[]', '2026-10-14 06:27:40'),
+(8, 'DEMO00047', '示範資料0006', '示範資料0004', 'DEMO-00007', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-17', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-16 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(9, 'DEMO00047', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-19', '競賽', '已通過', 'demo_user_0021', NULL, '2026-09-18 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(10, 'DEMO00048', '示範資料0006', '示範資料0004', 'DEMO-00008', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-17', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-16 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(11, 'DEMO00048', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-24', '競賽', '已通過', 'demo_user_0021', NULL, '2026-09-23 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(12, 'DEMO00048', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-05', '競賽', '已通過', 'demo_user_0021', NULL, '2026-10-04 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(13, 'DEMO00049', '示範資料0006', '示範資料0004', 'DEMO-00009', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-28', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(14, 'DEMO00007', '示範資料0008', '示範資料0002', 'DEMO-00010', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-19', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(15, 'DEMO00007', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-26', '競賽', '已通過', 'demo_user_0021', NULL, '2026-09-25 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(16, 'DEMO00050', '示範資料0006', '示範資料0004', 'DEMO-00011', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-09-25', '證照', '已通過', 'demo_user_0021', NULL, '2026-09-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(17, 'DEMO00050', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-04', '競賽', '已通過', 'demo_user_0021', NULL, '2026-10-03 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(18, 'DEMO00009', '示範資料0009', '示範資料0006', 'DEMO-00012', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-19', '證照', '已通過', 'demo_user_0021', NULL, '2025-10-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(19, 'DEMO00009', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-12', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-11 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(20, 'DEMO00010', '示範資料0004', '示範資料0002', 'DEMO-00013', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-06', '證照', '已通過', 'demo_user_0021', NULL, '2026-04-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(21, 'DEMO00051', '示範資料0008', '示範資料0002', 'DEMO-00014', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-23', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(22, 'DEMO00051', '示範資料0004', '示範資料0002', 'DEMO-00015', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-11', '證照', '已通過', 'demo_user_0021', NULL, '2026-04-10 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(23, 'DEMO00051', '示範資料0009', '示範資料0006', 'DEMO-00016', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-28', '證照', '已通過', 'demo_user_0021', NULL, '2025-10-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(24, 'DEMO00052', '示範資料0004', '示範資料0002', 'DEMO-00017', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-18', '證照', '已通過', 'demo_user_0021', NULL, '2025-10-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(25, 'DEMO00052', '示範資料0001', '示範資料0004', 'DEMO-00018', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-12', '證照', '已通過', 'demo_user_0021', NULL, '2025-12-11 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(26, 'DEMO00052', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-08', '競賽', '已通過', 'demo_user_0021', NULL, '2025-12-07 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(27, 'DEMO00011', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-04', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-03 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(28, 'DEMO00011', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-04', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-03 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(29, 'DEMO00012', '示範資料0011', '示範資料0004', 'DEMO-00019', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-07', '證照', '已通過', 'demo_user_0021', NULL, '2025-11-06 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(30, 'DEMO00012', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-30', '競賽', '已通過', 'demo_user_0021', NULL, '2025-10-29 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(31, 'DEMO00013', '示範資料0001', '示範資料0004', 'DEMO-00020', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-03', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-02 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(32, 'DEMO00013', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-06-09', '競賽', '已通過', 'demo_user_0021', NULL, '2026-06-08 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(33, 'DEMO00013', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-10', '競賽', '已通過', 'demo_user_0021', NULL, '2025-10-09 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(34, 'DEMO00013', '示範資料0006', '示範資料0004', 'DEMO-00021', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(35, 'DEMO00014', '示範資料0008', '示範資料0002', 'DEMO-00022', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-18', '證照', '已通過', 'demo_user_0021', NULL, '2025-11-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(36, 'DEMO00015', '示範資料0008', '示範資料0002', 'DEMO-00023', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-13', '證照', '已通過', 'demo_user_0021', NULL, '2026-04-12 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(37, 'DEMO00015', '示範資料0004', '示範資料0002', 'DEMO-00024', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(38, 'DEMO00016', '示範資料0001', '示範資料0004', 'DEMO-00025', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-22', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-21 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(39, 'DEMO00016', '示範資料0004', '示範資料0002', 'DEMO-00026', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(40, 'DEMO00017', '示範資料0008', '示範資料0002', 'DEMO-00027', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-27', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(41, 'DEMO00017', '示範資料0011', '示範資料0004', 'DEMO-00028', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-02-28', '證照', '已通過', 'demo_user_0021', NULL, '2026-02-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(42, 'DEMO00017', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-11', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-10 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(43, 'DEMO00017', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-08', '競賽', '已通過', 'demo_user_0021', NULL, '2024-10-07 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(44, 'DEMO00017', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-16', '作品', '已通過', 'demo_user_0021', NULL, '2026-04-15 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(45, 'DEMO00053', '示範資料0011', '示範資料0004', 'DEMO-00029', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-09-15', '證照', '已通過', 'demo_user_0021', NULL, '2025-09-14 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(46, 'DEMO00053', '示範資料0001', '示範資料0004', 'DEMO-00030', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-02-24', '證照', '已通過', 'demo_user_0021', NULL, '2025-02-23 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(47, 'DEMO00053', '示範資料0014', '示範資料0002', 'DEMO-00031', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-14', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-13 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(48, 'DEMO00053', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-09-22', '競賽', '已通過', 'demo_user_0021', NULL, '2024-09-21 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(49, 'DEMO00053', '示範資料0004', '示範資料0002', 'DEMO-00032', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(50, 'DEMO00054', '示範資料0001', '示範資料0004', 'DEMO-00033', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-02-20', '證照', '已通過', 'demo_user_0021', NULL, '2026-02-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(51, 'DEMO00054', '示範資料0011', '示範資料0004', 'DEMO-00034', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-02', '證照', '已通過', 'demo_user_0021', NULL, '2025-11-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(52, 'DEMO00054', '示範資料0014', '示範資料0002', 'DEMO-00035', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-30', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(53, 'DEMO00054', '示範資料0015', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-12-19', '作品', '已通過', 'demo_user_0021', NULL, '2024-12-18 16:00:00', NULL, '示範資料0002', '[]', '2026-10-14 06:27:40'),
+(54, 'DEMO00018', '示範資料0011', '示範資料0004', 'DEMO-00036', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-02', '證照', '已通過', 'demo_user_0021', NULL, '2024-10-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(55, 'DEMO00019', '示範資料0006', '示範資料0004', 'DEMO-00037', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-06', '證照', '已通過', 'demo_user_0021', NULL, '2025-03-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(56, 'DEMO00019', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-13', '競賽', '已通過', 'demo_user_0021', NULL, '2025-05-12 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(57, 'DEMO00019', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-17', '競賽', '已通過', 'demo_user_0021', NULL, '2025-04-16 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(58, 'DEMO00020', '示範資料0001', '示範資料0004', 'DEMO-00038', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-23', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(59, 'DEMO00020', '示範資料0011', '示範資料0004', 'DEMO-00039', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-29', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-28 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(60, 'DEMO00055', '示範資料0009', '示範資料0006', 'DEMO-00040', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-18', '證照', '已通過', 'demo_user_0021', NULL, '2025-12-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(61, 'DEMO00055', '示範資料0008', '示範資料0002', 'DEMO-00041', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-11', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-10 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(62, 'DEMO00021', '示範資料0001', '示範資料0004', 'DEMO-00042', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-28', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(63, 'DEMO00021', '示範資料0014', '示範資料0002', 'DEMO-00043', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-20', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(64, 'DEMO00022', '示範資料0004', '示範資料0002', 'DEMO-00044', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-27', '證照', '已通過', 'demo_user_0021', NULL, '2025-10-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(65, 'DEMO00022', '示範資料0014', '示範資料0002', 'DEMO-00045', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-03', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-02 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(66, 'DEMO00023', '示範資料0009', '示範資料0006', 'DEMO-00046', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-25', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(67, 'DEMO00023', '示範資料0016', '示範資料0009', 'DEMO-00047', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-06-02', '證照', '已通過', 'demo_user_0021', NULL, '2026-06-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(68, 'DEMO00023', '示範資料0014', '示範資料0002', 'DEMO-00048', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-18', '證照', '已通過', 'demo_user_0021', NULL, '2025-11-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(69, 'DEMO00056', '示範資料0001', '示範資料0004', 'DEMO-00049', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-09-17', '證照', '已通過', 'demo_user_0021', NULL, '2024-09-16 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(70, 'DEMO00056', '示範資料0009', '示範資料0006', 'DEMO-00050', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-06-04', '證照', '已通過', 'demo_user_0021', NULL, '2024-06-03 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(71, 'DEMO00056', '示範資料0011', '示範資料0004', 'DEMO-00051', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-19', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(72, 'DEMO00056', '示範資料0004', '示範資料0002', 'DEMO-00052', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-20', '證照', '已通過', 'demo_user_0021', NULL, '2023-12-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(73, 'DEMO00056', '示範資料0009', '示範資料0006', 'DEMO-00053', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(74, 'DEMO00057', '示範資料0006', '示範資料0004', 'DEMO-00054', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-07', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-06 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(75, 'DEMO00057', '示範資料0016', '示範資料0009', 'DEMO-00055', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-09-27', '證照', '已通過', 'demo_user_0021', NULL, '2023-09-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(76, 'DEMO00057', '示範資料0002', '示範資料0004', 'DEMO-00056', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-02', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(77, 'DEMO00057', '示範資料0011', '示範資料0004', 'DEMO-00057', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-19', '證照', '已通過', 'demo_user_0021', NULL, '2023-12-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(78, 'DEMO00057', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-24', '競賽', '已通過', 'demo_user_0021', NULL, '2024-05-23 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(79, 'DEMO00057', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-07', '作品', '已通過', 'demo_user_0021', NULL, '2023-10-06 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(80, 'DEMO00024', '示範資料0001', '示範資料0004', 'DEMO-00058', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-09', '證照', '已通過', 'demo_user_0021', NULL, '2026-04-08 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(81, 'DEMO00024', '示範資料0001', '示範資料0004', 'DEMO-00059', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(82, 'DEMO00058', '示範資料0014', '示範資料0002', 'DEMO-00060', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-18', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(83, 'DEMO00058', '示範資料0016', '示範資料0009', 'DEMO-00061', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-24', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-23 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(84, 'DEMO00058', '示範資料0001', '示範資料0004', 'DEMO-00062', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-23', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(85, 'DEMO00058', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-31', '競賽', '已通過', 'demo_user_0021', NULL, '2026-03-30 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(86, 'DEMO00058', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-11-22', '作品', '已通過', 'demo_user_0021', NULL, '2023-11-21 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(87, 'DEMO00059', '示範資料0009', '示範資料0006', 'DEMO-00063', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-05', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-04 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(88, 'DEMO00059', '示範資料0006', '示範資料0004', 'DEMO-00064', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-09', '證照', '已通過', 'demo_user_0021', NULL, '2024-10-08 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(89, 'DEMO00025', '示範資料0006', '示範資料0004', 'DEMO-00065', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-26', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-25 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(90, 'DEMO00025', '示範資料0016', '示範資料0009', 'DEMO-00066', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-10', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(91, 'DEMO00025', '示範資料0009', '示範資料0006', 'DEMO-00067', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-19', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(92, 'DEMO00025', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-12', '競賽', '已通過', 'demo_user_0021', NULL, '2025-03-11 16:00:00', '示範資料0001', NULL, '[]', '2026-10-14 06:27:40'),
+(93, 'DEMO00026', '示範資料0001', '示範資料0004', 'DEMO-00068', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-04-13', '證照', '已通過', 'demo_user_0021', NULL, '2024-04-12 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(94, 'DEMO00026', '示範資料0006', '示範資料0004', 'DEMO-00069', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-25', '證照', '已通過', 'demo_user_0021', NULL, '2023-12-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(95, 'DEMO00027', '示範資料0016', '示範資料0009', 'DEMO-00070', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-23', '證照', '已通過', 'demo_user_0021', NULL, '2025-11-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(96, 'DEMO00027', '示範資料0004', '示範資料0002', 'DEMO-00071', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-05', '證照', '已通過', 'demo_user_0021', NULL, '2023-03-04 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(97, 'DEMO00027', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-09-24', '作品', '已通過', 'demo_user_0021', NULL, '2024-09-23 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(98, 'DEMO00028', '示範資料0004', '示範資料0002', 'DEMO-00072', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-04-14', '證照', '已通過', 'demo_user_0021', NULL, '2023-04-13 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(99, 'DEMO00028', '示範資料0006', '示範資料0004', 'DEMO-00073', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-12', '證照', '已通過', 'demo_user_0021', NULL, '2023-03-11 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(100, 'DEMO00028', '示範資料0014', '示範資料0002', 'DEMO-00074', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-29', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-28 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(101, 'DEMO00060', '示範資料0008', '示範資料0002', 'DEMO-00075', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-12-08', '證照', '已通過', 'demo_user_0021', NULL, '2022-12-07 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(102, 'DEMO00060', '示範資料0002', '示範資料0004', 'DEMO-00076', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-01', '證照', '已通過', 'demo_user_0021', NULL, '2023-09-30 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(103, 'DEMO00060', '示範資料0004', '示範資料0002', 'DEMO-00077', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-10-30', '證照', '已通過', 'demo_user_0021', NULL, '2022-10-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(104, 'DEMO00060', '示範資料0001', '示範資料0004', 'DEMO-00078', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-04-27', '證照', '已通過', 'demo_user_0021', NULL, '2023-04-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(105, 'DEMO00060', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-31', '競賽', '已通過', 'demo_user_0021', NULL, '2023-12-30 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(106, 'DEMO00060', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-26', '競賽', '已通過', 'demo_user_0021', NULL, '2024-11-25 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(107, 'DEMO00060', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-02-26', '作品', '已通過', 'demo_user_0021', NULL, '2024-02-25 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(108, 'DEMO00061', '示範資料0004', '示範資料0002', 'DEMO-00079', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-22', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-21 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(109, 'DEMO00061', '示範資料0006', '示範資料0004', 'DEMO-00080', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-18', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(110, 'DEMO00061', '示範資料0011', '示範資料0004', 'DEMO-00081', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-19', '證照', '已通過', 'demo_user_0021', NULL, '2023-03-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(111, 'DEMO00061', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-09-30', '競賽', '已通過', 'demo_user_0021', NULL, '2022-09-29 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(112, 'DEMO00061', '示範資料0014', '示範資料0002', 'DEMO-00082', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(113, 'DEMO00062', '示範資料0011', '示範資料0004', 'DEMO-00083', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-07', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-06 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(114, 'DEMO00062', '示範資料0016', '示範資料0009', 'DEMO-00084', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-04-20', '證照', '已通過', 'demo_user_0021', NULL, '2023-04-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(115, 'DEMO00062', '示範資料0008', '示範資料0002', 'DEMO-00085', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-04', '證照', '已通過', 'demo_user_0021', NULL, '2025-12-03 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(116, 'DEMO00062', '示範資料0002', '示範資料0004', 'DEMO-00086', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-15', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-14 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(117, 'DEMO00062', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-22', '競賽', '已通過', 'demo_user_0021', NULL, '2023-03-21 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(118, 'DEMO00062', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-25', '競賽', '已通過', 'demo_user_0021', NULL, '2025-10-24 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(119, 'DEMO00063', '示範資料0002', '示範資料0004', 'DEMO-00087', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-11-05', '證照', '已通過', 'demo_user_0021', NULL, '2022-11-04 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(120, 'DEMO00063', '示範資料0011', '示範資料0004', 'DEMO-00088', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-02-25', '證照', '已通過', 'demo_user_0021', NULL, '2025-02-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(121, 'DEMO00063', '示範資料0008', '示範資料0002', 'DEMO-00089', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-15', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-14 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(122, 'DEMO00063', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-11-04', '競賽', '已通過', 'demo_user_0021', NULL, '2022-11-03 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(123, 'DEMO00029', '示範資料0014', '示範資料0002', 'DEMO-00090', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-02-27', '證照', '已通過', 'demo_user_0021', NULL, '2024-02-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(124, 'DEMO00029', '示範資料0011', '示範資料0004', 'DEMO-00091', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-27', '證照', '已通過', 'demo_user_0021', NULL, '2026-04-26 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(125, 'DEMO00029', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-19', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-18 16:00:00', '示範資料0001', NULL, '[]', '2026-10-14 06:27:40'),
+(126, 'DEMO00029', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-13', '競賽', '已通過', 'demo_user_0021', NULL, '2026-05-12 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(127, 'DEMO00030', '示範資料0006', '示範資料0004', 'DEMO-00092', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-22', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-21 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(128, 'DEMO00030', '示範資料0001', '示範資料0004', 'DEMO-00093', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-02', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(129, 'DEMO00030', '示範資料0011', '示範資料0004', 'DEMO-00094', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-06-03', '證照', '已通過', 'demo_user_0021', NULL, '2024-06-02 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(130, 'DEMO00064', '示範資料0001', '示範資料0004', 'DEMO-00095', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-25', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(131, 'DEMO00064', '示範資料0014', '示範資料0002', 'DEMO-00096', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-31', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-30 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(132, 'DEMO00064', '示範資料0006', '示範資料0004', 'DEMO-00097', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-11-21', '證照', '已通過', 'demo_user_0021', NULL, '2022-11-20 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(133, 'DEMO00064', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-11-10', '競賽', '已通過', 'demo_user_0021', NULL, '2025-11-09 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(134, 'DEMO00031', '示範資料0014', '示範資料0002', 'DEMO-00098', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-10', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(135, 'DEMO00031', '示範資料0004', '示範資料0002', 'DEMO-00099', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-02', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-01 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(136, 'DEMO00032', '示範資料0006', '示範資料0004', 'DEMO-00100', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-09-30', '證照', '已通過', 'demo_user_0021', NULL, '2025-09-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(137, 'DEMO00032', '示範資料0002', '示範資料0004', 'DEMO-00101', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-25', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(138, 'DEMO00033', '示範資料0014', '示範資料0002', 'DEMO-00102', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-02-28', '證照', '已通過', 'demo_user_0021', NULL, '2024-02-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(139, 'DEMO00033', '示範資料0016', '示範資料0009', 'DEMO-00103', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-11-30', '證照', '已通過', 'demo_user_0021', NULL, '2022-11-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(140, 'DEMO00065', '示範資料0011', '示範資料0004', 'DEMO-00104', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-11-06', '證照', '已通過', 'demo_user_0021', NULL, '2023-11-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(141, 'DEMO00065', '示範資料0016', '示範資料0009', 'DEMO-00105', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-25', '證照', '已通過', 'demo_user_0021', NULL, '2023-03-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(142, 'DEMO00065', '示範資料0008', '示範資料0002', 'DEMO-00106', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-12-06', '證照', '已通過', 'demo_user_0021', NULL, '2022-12-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(143, 'DEMO00065', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-11', '競賽', '已通過', 'demo_user_0021', NULL, '2024-03-10 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(144, 'DEMO00065', '示範資料0015', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-06-08', '作品', '已通過', 'demo_user_0021', NULL, '2024-06-07 16:00:00', NULL, '示範資料0002', '[]', '2026-10-14 06:27:40'),
+(145, 'DEMO00066', '示範資料0009', '示範資料0006', 'DEMO-00107', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-30', '證照', '已通過', 'demo_user_0021', NULL, '2023-03-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(146, 'DEMO00066', '示範資料0008', '示範資料0002', 'DEMO-00108', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-04-29', '證照', '已通過', 'demo_user_0021', NULL, '2024-04-28 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(147, 'DEMO00066', '示範資料0014', '示範資料0002', 'DEMO-00109', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-05', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-04 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(148, 'DEMO00066', '示範資料0006', '示範資料0004', 'DEMO-00110', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-20', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(149, 'DEMO00066', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-09-18', '競賽', '已通過', 'demo_user_0021', NULL, '2022-09-17 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(150, 'DEMO00066', '示範資料0018', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-05-04', '作品', '已通過', 'demo_user_0021', NULL, '2023-05-03 16:00:00', NULL, '示範資料0003', '[]', '2026-10-14 06:27:40'),
+(151, 'DEMO00067', '示範資料0008', '示範資料0002', 'DEMO-00111', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-12', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-11 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(152, 'DEMO00067', '示範資料0001', '示範資料0004', 'DEMO-00112', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-14', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-13 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(153, 'DEMO00067', '示範資料0004', '示範資料0002', 'DEMO-00113', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-19', '證照', '已通過', 'demo_user_0021', NULL, '2025-03-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(154, 'DEMO00067', '示範資料0014', '示範資料0002', 'DEMO-00114', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-26', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-25 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(155, 'DEMO00067', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-03', '競賽', '已通過', 'demo_user_0021', NULL, '2025-12-02 16:00:00', '示範資料0002', NULL, '[]', '2026-10-14 06:27:40'),
+(156, 'DEMO00067', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-17', '競賽', '已通過', 'demo_user_0021', NULL, '2024-11-16 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(157, 'DEMO00068', '示範資料0006', '示範資料0004', 'DEMO-00115', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-06-10', '證照', '已通過', 'demo_user_0021', NULL, '2025-06-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(158, 'DEMO00068', '示範資料0009', '示範資料0006', 'DEMO-00116', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-14', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-13 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(159, 'DEMO00068', '示範資料0008', '示範資料0002', 'DEMO-00117', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-26', '證照', '已通過', 'demo_user_0021', NULL, '2025-03-25 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(160, 'DEMO00068', '示範資料0007', '示範資料0005', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-24', '競賽', '已通過', 'demo_user_0021', NULL, '2024-10-23 16:00:00', '示範資料0003', NULL, '[]', '2026-10-14 06:27:40'),
+(161, 'DEMO00068', '示範資料0017', '示範資料0010', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-14', '競賽', '已通過', 'demo_user_0021', NULL, '2026-03-13 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(162, 'DEMO00069', '示範資料0004', '示範資料0002', 'DEMO-00118', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-01-03', '證照', '已通過', 'demo_user_0021', NULL, '2024-01-02 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(163, 'DEMO00069', '示範資料0014', '示範資料0002', 'DEMO-00119', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-12-09', '證照', '已通過', 'demo_user_0021', NULL, '2025-12-08 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(164, 'DEMO00034', '示範資料0001', '示範資料0004', 'DEMO-00120', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-10-23', '證照', '已通過', 'demo_user_0021', NULL, '2022-10-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(165, 'DEMO00034', '示範資料0016', '示範資料0009', 'DEMO-00121', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-09-30', '證照', '已通過', 'demo_user_0021', NULL, '2024-09-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(166, 'DEMO00034', '示範資料0008', '示範資料0002', 'DEMO-00122', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-20', '證照', '已通過', 'demo_user_0021', NULL, '2023-12-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(167, 'DEMO00034', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-15', '競賽', '已通過', 'demo_user_0021', NULL, '2024-03-14 16:00:00', '示範資料0005', NULL, '[]', '2026-10-14 06:27:40'),
+(168, 'DEMO00070', '示範資料0008', '示範資料0002', 'DEMO-00123', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-11-22', '證照', '已通過', 'demo_user_0021', NULL, '2023-11-21 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(169, 'DEMO00070', '示範資料0014', '示範資料0002', 'DEMO-00124', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-10-26', '證照', '已通過', 'demo_user_0021', NULL, '2022-10-25 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(170, 'DEMO00070', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-01-01', '作品', '已通過', 'demo_user_0021', NULL, '2025-12-31 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(171, 'DEMO00071', '示範資料0002', '示範資料0004', 'DEMO-00125', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-06-06', '證照', '已通過', 'demo_user_0021', NULL, '2024-06-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(172, 'DEMO00071', '示範資料0011', '示範資料0004', 'DEMO-00126', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-09-19', '證照', '已通過', 'demo_user_0021', NULL, '2023-09-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(173, 'DEMO00071', '示範資料0012', '示範資料0008', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-25', '競賽', '已通過', 'demo_user_0021', NULL, '2023-03-24 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(174, 'DEMO00071', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-02-20', '作品', '已通過', 'demo_user_0021', NULL, '2024-02-19 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(175, 'DEMO00035', '示範資料0002', '示範資料0004', 'DEMO-00127', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-10-09', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-08 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(176, 'DEMO00035', '示範資料0006', '示範資料0004', 'DEMO-00128', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-09-17', '證照', '已通過', 'demo_user_0021', NULL, '2025-09-16 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(177, 'DEMO00035', '示範資料0014', '示範資料0002', 'DEMO-00129', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-09-25', '證照', '已通過', 'demo_user_0021', NULL, '2024-09-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(178, 'DEMO00036', '示範資料0001', '示範資料0004', 'DEMO-00130', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-13', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-12 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(179, 'DEMO00036', '示範資料0006', '示範資料0004', 'DEMO-00131', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-23', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-22 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(180, 'DEMO00036', '示範資料0002', '示範資料0004', 'DEMO-00132', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-09-21', '證照', '已通過', 'demo_user_0021', NULL, '2023-09-20 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(181, 'DEMO00036', '示範資料0018', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-04', '作品', '已通過', 'demo_user_0021', NULL, '2026-04-03 16:00:00', NULL, '示範資料0003', '[]', '2026-10-14 06:27:40'),
+(182, 'DEMO00037', '示範資料0004', '示範資料0002', 'DEMO-00133', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-02-29', '證照', '已通過', 'demo_user_0021', NULL, '2024-02-28 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(183, 'DEMO00037', '示範資料0009', '示範資料0006', 'DEMO-00134', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-24', '證照', '已通過', 'demo_user_0021', NULL, '2024-10-23 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(184, 'DEMO00037', '示範資料0013', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-05', '作品', '已通過', 'demo_user_0021', NULL, '2025-03-04 16:00:00', NULL, '示範資料0001', '[]', '2026-10-14 06:27:40'),
+(185, 'DEMO00038', '示範資料0006', '示範資料0004', 'DEMO-00135', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-21', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-20 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(186, 'DEMO00038', '示範資料0004', '示範資料0002', 'DEMO-00136', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-17', '證照', '已通過', 'demo_user_0021', NULL, '2026-03-16 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(187, 'DEMO00039', '示範資料0011', '示範資料0004', 'DEMO-00137', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-03-24', '證照', '已通過', 'demo_user_0021', NULL, '2024-03-23 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(188, 'DEMO00039', '示範資料0016', '示範資料0009', 'DEMO-00138', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-04-19', '證照', '已通過', 'demo_user_0021', NULL, '2023-04-18 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(189, 'DEMO00039', '示範資料0019', '示範資料0011', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-03-09', '競賽', '已通過', 'demo_user_0021', NULL, '2026-03-08 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(190, 'DEMO00040', '示範資料0009', '示範資料0006', 'DEMO-00139', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-11', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-10 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(191, 'DEMO00040', '示範資料0004', '示範資料0002', 'DEMO-00140', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-21', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-20 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(192, 'DEMO00040', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-02-23', '競賽', '已通過', 'demo_user_0021', NULL, '2023-02-22 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(193, 'DEMO00072', '示範資料0006', '示範資料0004', 'DEMO-00141', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-03-30', '證照', '已通過', 'demo_user_0021', NULL, '2025-03-29 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(194, 'DEMO00072', '示範資料0008', '示範資料0002', 'DEMO-00142', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-12-04', '證照', '已通過', 'demo_user_0021', NULL, '2024-12-03 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(195, 'DEMO00072', '示範資料0016', '示範資料0009', 'DEMO-00143', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-12-07', '證照', '已通過', 'demo_user_0021', NULL, '2023-12-06 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(196, 'DEMO00072', '示範資料0009', '示範資料0006', 'DEMO-00144', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-04-10', '證照', '已通過', 'demo_user_0021', NULL, '2025-04-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(197, 'DEMO00072', '示範資料0019', '示範資料0011', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-03-03', '競賽', '已通過', 'demo_user_0021', NULL, '2023-03-02 16:00:00', '示範資料0006', NULL, '[]', '2026-10-14 06:27:40'),
+(198, 'DEMO00072', '示範資料0006', '示範資料0004', 'DEMO-00145', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(199, 'DEMO00073', '示範資料0014', '示範資料0002', 'DEMO-00146', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-06-10', '證照', '已通過', 'demo_user_0021', NULL, '2026-06-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(200, 'DEMO00073', '示範資料0006', '示範資料0004', 'DEMO-00147', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-10-15', '證照', '已通過', 'demo_user_0021', NULL, '2025-10-14 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(201, 'DEMO00073', '示範資料0008', '示範資料0002', 'DEMO-00148', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-04-10', '證照', '已通過', 'demo_user_0021', NULL, '2024-04-09 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(202, 'DEMO00073', '示範資料0005', '示範資料0003', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-10-15', '競賽', '已通過', 'demo_user_0021', NULL, '2024-10-14 16:00:00', '示範資料0004', NULL, '[]', '2026-10-14 06:27:40'),
+(203, 'DEMO00041', '示範資料0008', '示範資料0002', 'DEMO-00149', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-26', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-25 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(204, 'DEMO00042', '示範資料0009', '示範資料0006', 'DEMO-00150', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2022-11-25', '證照', '已通過', 'demo_user_0021', NULL, '2022-11-24 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(205, 'DEMO00042', '示範資料0001', '示範資料0004', 'DEMO-00151', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-05-28', '證照', '已通過', 'demo_user_0021', NULL, '2024-05-27 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(206, 'DEMO00042', '示範資料0016', '示範資料0009', 'DEMO-00152', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-09-18', '證照', '已通過', 'demo_user_0021', NULL, '2025-09-17 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(207, 'DEMO00042', '示範資料0010', '示範資料0007', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-04-09', '競賽', '已通過', 'demo_user_0021', NULL, '2026-04-08 16:00:00', '示範資料0001', NULL, '[]', '2026-10-14 06:27:40'),
+(208, 'DEMO00042', '示範資料0009', '示範資料0006', 'DEMO-00153', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-10-03', '證照', '待審核', NULL, NULL, NULL, NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(209, 'DEMO00043', '示範資料0016', '示範資料0009', 'DEMO-00154', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-11-01', '證照', '已通過', 'demo_user_0021', NULL, '2023-10-31 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(210, 'DEMO00043', '示範資料0006', '示範資料0004', 'DEMO-00155', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2026-05-14', '證照', '已通過', 'demo_user_0021', NULL, '2026-05-13 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(211, 'DEMO00043', '示範資料0009', '示範資料0006', 'DEMO-00156', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-06', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(212, 'DEMO00044', '示範資料0004', '示範資料0002', 'DEMO-00157', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-06-01', '證照', '已通過', 'demo_user_0021', NULL, '2025-05-31 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(213, 'DEMO00044', '示範資料0002', '示範資料0004', 'DEMO-00158', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2023-11-20', '證照', '已通過', 'demo_user_0021', NULL, '2023-11-19 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(214, 'DEMO00044', '示範資料0011', '示範資料0004', 'DEMO-00159', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2024-11-07', '證照', '已通過', 'demo_user_0021', NULL, '2024-11-06 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(215, 'DEMO00045', '示範資料0002', '示範資料0004', 'DEMO-00160', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-06-06', '證照', '已通過', 'demo_user_0021', NULL, '2025-06-05 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(216, 'DEMO00045', '示範資料0004', '示範資料0002', 'DEMO-00161', NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-01-01', '證照', '已通過', 'demo_user_0021', NULL, '2024-12-31 16:00:00', NULL, NULL, '[]', '2026-10-14 06:27:40'),
+(217, 'DEMO00045', '示範資料0018', '', NULL, NULL, NULL, '及格發證', NULL, NULL, 'demo/sample.txt', NULL, '2025-05-19', '作品', '已通過', 'demo_user_0021', NULL, '2025-05-18 16:00:00', NULL, '示範資料0003', '[]', '2026-10-14 06:27:40');
 
 -- --------------------------------------------------------
--- 11. 校務服務斷點匿名回報表 `friction_reports`
--- --------------------------------------------------------
-CREATE TABLE `friction_reports` (
-  `report_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '回報唯一碼 (PK)',
-  `category` varchar(50) NOT NULL COMMENT '卡關類型 (忘記密碼/找不到表單/不知道進度等)',
-  `description` text DEFAULT NULL COMMENT '補充說明 (選填)',
-  `page_context` varchar(100) DEFAULT NULL COMMENT '發生於哪個功能頁籤',
-  `role_context` varchar(20) DEFAULT NULL COMMENT '回報當下身分 (僅供統計，非個資)',
-  `reported_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '回報時間',
-  `ip_address` varchar(50) DEFAULT '127.0.0.1' COMMENT '來源 IP 位址',
-  PRIMARY KEY (`report_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校務服務斷點匿名回報表';
 
-INSERT INTO `friction_reports` (`report_id`, `category`, `description`, `page_context`, `role_context`, `reported_at`, `ip_address`) VALUES
-(1, '不知道申請進度或結果', '送出停修申請後不知道現在審核到哪個階段。', 'tab-checklist', '學生', '2026-09-10 14:20:00', '127.0.0.1'),
-(2, '忘記密碼', '', 'tab-ai', '訪客', '2026-09-11 09:05:00', '127.0.0.1');
+--
+-- 資料表結構 `checklist_items`
+--
 
--- --------------------------------------------------------
--- 12. 跨系統期限雷達表 `deadlines`
--- --------------------------------------------------------
-CREATE TABLE `deadlines` (
-  `deadline_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '期限唯一碼 (PK)',
-  `title` varchar(100) NOT NULL COMMENT '期限標題',
-  `category` varchar(50) NOT NULL COMMENT '所屬系統 (選課/請假/抵免/獎助學金/教學評量等)',
-  `start_date` date DEFAULT NULL COMMENT '開始日期 (選填)',
-  `end_date` date NOT NULL COMMENT '截止日期',
-  `applies_to_role` varchar(20) NOT NULL DEFAULT 'all' COMMENT '適用身分 (all/學生/家長)',
-  `applies_to_dept` varchar(20) DEFAULT NULL COMMENT '適用系所 (NULL=全校)',
-  `related_system_url` varchar(300) DEFAULT NULL COMMENT '對應原系統入口連結',
-  `description` text DEFAULT NULL COMMENT '補充說明',
-  PRIMARY KEY (`deadline_id`),
-  KEY `fk_deadline_dept` (`applies_to_dept`),
-  CONSTRAINT `fk_deadline_dept` FOREIGN KEY (`applies_to_dept`) REFERENCES `departments` (`dept_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='跨系統期限雷達表';
+CREATE TABLE `checklist_items` (
+  `item_id` int(11) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `category_name` varchar(50) NOT NULL DEFAULT '課務組',
+  `business_name` varchar(100) NOT NULL,
+  `steps_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `required_docs` text DEFAULT NULL,
+  `office_hours` varchar(100) DEFAULT '週一至週五 08:30 - 17:00',
+  `office_location` varchar(100) DEFAULT '康寧樓 2 樓 A201 (教務處)',
+  `contact_phone` varchar(50) DEFAULT '02-2632-1181 分機 310',
+  `form_download_url` varchar(300) DEFAULT NULL,
+  `system_url` varchar(300) DEFAULT NULL,
+  `deadline_week_info` varchar(100) DEFAULT NULL,
+  `related_kb_id` int(11) DEFAULT NULL,
+  `audience` varchar(20) NOT NULL DEFAULT '學生'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`) VALUES
-(1, '加退選截止', '選課', '2026-09-14', '2026-09-20', 'all', NULL, 'https://www.ukn.edu.tw/', '逾期未完成加退選者，選課結果將依原排課確定生效。'),
-(2, '語言證照學分抵免申請截止', '抵免', NULL, '2026-09-30', '學生', NULL, 'https://www.ukn.edu.tw/', '須檢附證書正影本與歷年成績單向教務處註冊組申請。'),
-(3, '書卷獎與學海獎助學金申請截止', '獎助學金', NULL, '2026-10-15', '學生', NULL, 'https://www.ukn.edu.tw/', '依前一學期成績與家庭狀況審核，逾期不受理。'),
-(4, '期中學業預警名單公告與輔導期', '學習預警', '2026-11-01', '2026-11-05', 'all', NULL, 'https://www.ukn.edu.tw/', '被列入預警名單者將由導師安排面談，家長可同步關注。'),
-(5, '資訊管理科（五專）專題期中審查', '選課', NULL, '2026-11-10', '學生', 'CS', 'https://www.ukn.edu.tw/', '專題小組須完成期中進度報告並提交指導教師審核。'),
-(6, '停修（棄修）申請截止（第10-12週）', '選課', '2026-11-09', '2026-11-20', '學生', NULL, 'https://www.ukn.edu.tw/', '逾期不受理，停修後修習學分不得低於最低應修學分。'),
-(7, '教學評量填寫期間截止', '教學評量', '2026-12-15', '2026-12-25', '學生', NULL, 'https://www.ukn.edu.tw/', '完成填寫始可查詢學期成績，請於期末考前完成。'),
-(8, '導師班務座談會', '教師行政', NULL, '2026-10-15', '老師', NULL, 'https://www.ukn.edu.tw/', '各班導師與學務處生輔組召開期初班務座談，說明本學期預警與輔導重點。'),
-(9, '期中教學研討會議', '教師行政', NULL, '2026-11-12', '老師', NULL, 'https://www.ukn.edu.tw/', '全校教師參加，說明期中預警名單與教學評量作業重點。'),
-(10, '期中成績繳交截止', '教師行政', NULL, '2026-11-18', '老師', NULL, 'https://www.ukn.edu.tw/', '請於期限內至教師成績登錄系統完成期中成績輸入。'),
-(11, '期末成績繳交截止', '教師行政', NULL, '2027-01-15', '老師', NULL, 'https://www.ukn.edu.tw/', '請於期限內至教師成績登錄系統完成期末成績輸入，逾期將影響學生成績單產出。'),
-(12, '期中考試週', '考試', '2026-11-23', '2026-11-27', 'all', NULL, 'https://www.ukn.edu.tw/', '期中考試週期間，請留意各科考試時間與地點公告。'),
-(13, '期末考試週', '考試', '2027-01-05', '2027-01-09', 'all', NULL, 'https://www.ukn.edu.tw/', '期末考試週期間，請留意各科考試時間與地點公告。');
+--
+-- 傾印資料表的資料 `checklist_items`
+--
+
+INSERT INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `office_location`, `contact_phone`, `form_download_url`, `system_url`, `deadline_week_info`, `related_kb_id`, `audience`) VALUES
+(1, 1, '示範類別001', '示範資料0001', '[]', '示範資料0001', '示範資料0001', '示範資料0001', '0900000001', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0001', 1, '學生'),
+(2, 2, '示範類別002', '示範資料0002', '[]', '示範資料0002', '示範資料0002', '示範資料0002', '0900000002', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0002', 2, '學生'),
+(3, 3, '示範類別003', '示範資料0003', '[]', '示範資料0003', '示範資料0003', '示範資料0003', '0900000003', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0003', 3, '學生'),
+(4, 1, '示範類別004', '示範資料0004', '[]', '示範資料0004', '示範資料0001', '示範資料0004', '0900000004', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0004', 4, '學生'),
+(5, 3, '示範類別005', '示範資料0005', '[]', '示範資料0005', '示範資料0004', '示範資料0005', '0900000005', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0005', 5, '學生');
 
 -- --------------------------------------------------------
--- 13. 獎學金條件表 `scholarship_conditions` (全新建立)
--- --------------------------------------------------------
-CREATE TABLE `scholarship_conditions` (
-  `scholarship_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '獎學金條件唯一碼 (PK)',
-  `scholarship_name` varchar(100) NOT NULL COMMENT '獎學金名稱',
-  `academic_score_req` decimal(5,2) DEFAULT NULL COMMENT '學生成績門檻',
-  `conduct_score_req` decimal(5,2) DEFAULT NULL COMMENT '操行成績門檻',
-  `identity_type` varchar(50) DEFAULT '一般生' COMMENT '身分別 (例如：低收入戶、原住民、一般生等)',
-  `amount` int(11) DEFAULT NULL COMMENT '獎學金金額',
-  `description` text DEFAULT NULL COMMENT '其他條件說明',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '建立時間',
-  PRIMARY KEY (`scholarship_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='獎學金條件與資格設定表';
 
-INSERT INTO `scholarship_conditions` (`scholarship_id`, `scholarship_name`, `academic_score_req`, `conduct_score_req`, `identity_type`, `amount`, `description`) VALUES
-(1, '書卷獎學金', 90.00, 85.00, '一般生', 5000, '前一學期學業成績與操行皆達標者。'),
-(2, '清寒助學金', 70.00, 80.00, '低收入戶', 10000, '具備鄉鎮市區公所低收入戶證明文件。'),
-(3, '原住民學生助學金', 75.00, 80.00, '原住民', 8000, '具備原住民身分證明，學業成績達標者。');
+--
+-- 資料表結構 `checklist_progress`
+--
+
+CREATE TABLE `checklist_progress` (
+  `student_id` varchar(20) NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `step_index` int(11) NOT NULL,
+  `done` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `checklist_progress`
+--
+
+INSERT INTO `checklist_progress` (`student_id`, `item_id`, `step_index`, `done`) VALUES
+('DEMO00002', 1, 0, 1),
+('DEMO00002', 1, 1, 1),
+('DEMO00002', 3, 0, 1),
+('DEMO00004', 1, 0, 1);
 
 -- --------------------------------------------------------
--- 14. 科上通知與關懷紀錄系統 (衍生表)
--- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `class_groups` (
+
+--
+-- 資料表結構 `class_groups`
+--
+
+CREATE TABLE `class_groups` (
   `class_name` varchar(50) NOT NULL COMMENT '班級 / 群組名稱 (PK)',
   `password_hash` varchar(255) NOT NULL COMMENT '加入密碼雜湊',
   `created_by` varchar(50) NOT NULL COMMENT '建立者姓名',
   `created_by_username` varchar(50) DEFAULT NULL COMMENT '建立者帳號 (系統自動建立時為 NULL)',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`class_name`)
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級 / 群組';
 
-CREATE TABLE IF NOT EXISTS `class_group_members` (
+--
+-- 傾印資料表的資料 `class_groups`
+--
+
+INSERT INTO `class_groups` (`class_name`, `password_hash`, `created_by`, `created_by_username`, `created_at`) VALUES
+('示範班級002', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 01:56:18'),
+('示範班級004', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 02:23:50'),
+('示範班級005', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 02:23:50'),
+('示範班級006', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 02:23:50'),
+('示範班級003', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 01:56:18'),
+('示範班級001', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 01:56:18'),
+('示範班級007', '!DISABLED_DEMO_ACCOUNT', 'demo_user_0022', NULL, '2026-10-12 01:56:18');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `class_group_members`
+--
+
+CREATE TABLE `class_group_members` (
   `class_name` varchar(50) NOT NULL,
   `student_id` varchar(20) NOT NULL,
-  `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`class_name`, `student_id`),
-  KEY `fk_cgm_student` (`student_id`),
-  CONSTRAINT `fk_cgm_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_cgm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：班級成員';
 
-CREATE TABLE IF NOT EXISTS `class_notices` (
-  `reply_required` tinyint(1) NOT NULL DEFAULT 0,
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+--
+-- 傾印資料表的資料 `class_group_members`
+--
+
+INSERT INTO `class_group_members` (`class_name`, `student_id`, `joined_at`) VALUES
+('示範班級002', 'DEMO00074', '2026-10-12 01:56:18'),
+('示範班級003', 'DEMO00046', '2026-10-12 01:56:18'),
+('示範班級001', 'DEMO00001', '2026-10-12 01:56:18'),
+('示範班級007', 'DEMO00002', '2026-10-12 01:56:18'),
+('示範班級007', 'DEMO00003', '2026-10-12 01:56:18'),
+('示範班級007', 'DEMO00004', '2026-10-12 01:56:18');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `class_notices`
+--
+
+CREATE TABLE `class_notices` (
+  `id` int(11) NOT NULL,
   `class_name` varchar(50) DEFAULT NULL COMMENT '班級通知的班級；課程 / 科系 / 年級 / 全校廣播為 NULL',
   `target_type` enum('班級','課程','科系','年級','全校') NOT NULL DEFAULT '班級' COMMENT '通知對象類型',
   `target_label` varchar(100) DEFAULT NULL COMMENT '對象說明，例：資料庫系統概論（資管五忠）、資訊管理科（五專）、全校',
@@ -485,26 +864,115 @@ CREATE TABLE IF NOT EXISTS `class_notices` (
   `sender_username` varchar(50) DEFAULT NULL COMMENT '發送者帳號',
   `due_date` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_cn_class` (`class_name`),
-  KEY `idx_cn_sender` (`sender_username`),
-  CONSTRAINT `fk_cn_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON UPDATE CASCADE
+  `reply_required` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：通知內容';
 
-CREATE TABLE IF NOT EXISTS `class_notice_recipients` (
+--
+-- 傾印資料表的資料 `class_notices`
+--
+
+INSERT INTO `class_notices` (`id`, `class_name`, `target_type`, `target_label`, `whole_class`, `title`, `content`, `priority`, `sender`, `sender_username`, `due_date`, `created_at`, `reply_required`) VALUES
+(1, '示範班級001', '班級', '示範班級001', 1, '示範資料0014', '示範資料0008', '緊急', '示範人物0001', 'demo_user_0023', '2026-10-11', '2026-10-09 17:04:08', 0),
+(2, '示範班級001', '班級', '示範班級001', 1, '示範資料0014', '示範資料0008', '緊急', '示範人物0001', 'demo_user_0023', '2026-10-11', '2026-10-09 17:04:08', 0),
+(3, '示範班級001', '班級', '示範班級001', 0, '示範資料0015', '示範資料0009', '一般', '示範人物0001', 'demo_user_0023', '2026-10-27', '2026-10-20 01:46:16', 1),
+(4, '示範班級001', '班級', '示範班級001', 0, '示範資料0016', '示範資料0009', '一般', '示範人物0001', 'demo_user_0023', '2026-10-27', '2026-10-20 01:46:16', 1),
+(5, '示範班級001', '班級', '示範班級001', 0, '示範資料0017', '示範資料0009', '一般', '示範人物0001', 'demo_user_0023', '2026-10-27', '2026-10-20 01:46:16', 1),
+(6, '示範班級001', '班級', '示範班級001', 0, '示範資料0018', '示範資料0010', '重要', '示範人物0001', 'demo_user_0023', '2026-10-27', '2026-10-20 01:48:12', 0),
+(7, '示範班級001', '班級', '示範班級001', 0, '示範資料0019', '示範資料0011', '緊急', '示範人物0001', 'demo_user_0023', NULL, '2026-10-21 01:29:25', 0);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `class_notice_recipients`
+--
+
+CREATE TABLE `class_notice_recipients` (
   `notice_id` int(11) NOT NULL,
   `student_id` varchar(20) NOT NULL,
   `read_at` timestamp NULL DEFAULT NULL COMMENT 'NULL = 尚未讀',
   `reply` varchar(20) DEFAULT NULL,
-  `reply_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`notice_id`, `student_id`),
-  KEY `fk_cnr_student` (`student_id`),
-  CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  `reply_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='科上通知：收件人與已讀時間';
 
-CREATE TABLE IF NOT EXISTS `counseling_records` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+--
+-- 傾印資料表的資料 `class_notice_recipients`
+--
+
+INSERT INTO `class_notice_recipients` (`notice_id`, `student_id`, `read_at`, `reply`, `reply_at`) VALUES
+(1, 'DEMO00001', NULL, NULL, NULL),
+(2, 'DEMO00001', NULL, NULL, NULL),
+(3, 'DEMO00002', NULL, NULL, NULL),
+(3, 'DEMO00003', '2026-10-20 01:47:05', '示範資料0001', '2026-10-20 09:47:11'),
+(4, 'DEMO00002', '2026-10-20 01:46:16', '示範資料0002', '2026-10-20 09:46:16'),
+(4, 'DEMO00003', '2026-10-20 01:46:16', NULL, NULL),
+(5, 'DEMO00002', '2026-10-20 01:46:16', '示範資料0003', '2026-10-20 09:46:16'),
+(5, 'DEMO00003', '2026-10-20 01:46:16', '示範資料0003', '2026-10-20 09:46:16'),
+(6, 'DEMO00003', '2026-10-20 01:48:59', NULL, NULL),
+(7, 'DEMO00002', '2026-10-21 01:31:40', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `class_schedule`
+--
+
+CREATE TABLE `class_schedule` (
+  `id` int(11) NOT NULL,
+  `class_name` varchar(50) DEFAULT NULL,
+  `student_id` varchar(20) DEFAULT NULL,
+  `weekday` tinyint(4) NOT NULL COMMENT '1=週一 … 7=週日',
+  `period_start` tinyint(4) NOT NULL,
+  `period_end` tinyint(4) NOT NULL,
+  `course_name` varchar(100) NOT NULL,
+  `classroom` varchar(50) DEFAULT NULL,
+  `teacher` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `class_schedule`
+--
+
+INSERT INTO `class_schedule` (`id`, `class_name`, `student_id`, `weekday`, `period_start`, `period_end`, `course_name`, `classroom`, `teacher`) VALUES
+(1, '示範班級001', NULL, 1, 3, 4, '示範課程018', '示範資料0001', '示範人物0002'),
+(2, '示範班級001', NULL, 2, 1, 2, '示範課程004', '示範資料0002', '示範人物0003'),
+(3, '示範班級001', NULL, 2, 3, 5, '示範課程001', '示範資料0003', '示範人物0004'),
+(4, '示範班級001', NULL, 3, 3, 5, '示範課程002', '示範資料0004', '示範人物0005'),
+(5, '示範班級001', NULL, 4, 2, 4, '示範課程003', '示範資料0005', '示範人物0006'),
+(6, '示範班級001', NULL, 5, 3, 4, '示範課程007', '示範資料0006', '示範人物0007'),
+(7, '示範班級001', NULL, 5, 6, 7, '示範課程019', '示範資料0003', '示範人物0005'),
+(8, NULL, 'DEMO00002', 1, 6, 7, '示範課程005', '示範資料0007', '示範人物0008'),
+(9, NULL, 'DEMO00002', 3, 6, 6, '示範課程005', '示範資料0007', '示範人物0008'),
+(10, '示範班級003', NULL, 1, 1, 3, '示範課程001', '示範資料0003', '示範人物0004'),
+(11, '示範班級003', NULL, 2, 3, 4, '示範課程004', '示範資料0008', '示範人物0003'),
+(12, '示範班級003', NULL, 3, 2, 4, '示範課程003', '示範資料0005', '示範人物0006'),
+(13, '示範班級003', NULL, 4, 3, 5, '示範課程002', '示範資料0004', '示範人物0005'),
+(14, '示範班級003', NULL, 5, 6, 7, '示範課程019', '示範資料0009', '示範人物0004'),
+(15, '示範班級002', NULL, 1, 1, 3, '示範課程020', '示範資料0010', '示範人物0009'),
+(16, '示範班級002', NULL, 2, 1, 2, '示範課程006', '示範資料0011', '示範人物0010'),
+(17, '示範班級002', NULL, 3, 3, 4, '示範課程004', '示範資料0012', '示範人物0003'),
+(18, '示範班級002', NULL, 4, 1, 4, '示範課程021', '示範資料0013', '示範人物0009'),
+(19, '示範班級002', NULL, 5, 3, 4, '示範課程022', '示範資料0010', '示範人物0011'),
+(80, '示範班級001', NULL, 1, 1, 2, '示範課程023', '示範資料0014', '示範人物0005'),
+(81, '示範班級001', NULL, 1, 3, 8, '示範課程023', '示範資料0015', '示範人物0005'),
+(82, '示範班級001', NULL, 2, 3, 4, '示範課程024', '示範資料0016', '示範人物0005'),
+(83, '示範班級001', NULL, 2, 6, 8, '示範課程025', '示範資料0017', '示範人物0012'),
+(84, '示範班級001', NULL, 3, 1, 2, '示範課程026', '示範資料0018', '示範人物0013'),
+(85, '示範班級001', NULL, 3, 5, 6, '示範課程027', '示範資料0015', '示範人物0005'),
+(86, '示範班級001', NULL, 3, 7, 8, '示範課程028', '示範資料0015', '示範人物0005'),
+(87, '示範班級001', NULL, 4, 5, 6, '示範課程029', '示範資料0015', '示範人物0014'),
+(88, '示範班級001', NULL, 4, 8, 8, '示範課程024', '示範資料0016', '示範人物0005'),
+(89, '示範班級001', NULL, 5, 2, 4, '示範課程030', '示範資料0015', '示範人物0015'),
+(90, '示範班級001', NULL, 5, 5, 7, '示範課程031', '示範資料0019', '示範人物0005'),
+(91, '示範班級001', NULL, 6, 1, 1, '示範課程032', '示範資料0020', '示範人物0016');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `counseling_records`
+--
+
+CREATE TABLE `counseling_records` (
+  `id` int(11) NOT NULL,
   `student_id` varchar(20) NOT NULL,
   `class_name` varchar(50) DEFAULT NULL COMMENT '記錄當時學生的班級',
   `talk_date` date NOT NULL COMMENT '晤談日期',
@@ -514,42 +982,2673 @@ CREATE TABLE IF NOT EXISTS `counseling_records` (
   `follow_up` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 需要追蹤',
   `follow_up_note` varchar(200) DEFAULT NULL COMMENT '要追蹤什麼',
   `follow_up_done` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = 已追蹤完成',
-  `follow_up_date` date DEFAULT NULL,
-  `tracking_status` varchar(20) NOT NULL DEFAULT '待聯繫',
-  `tracking_result` text DEFAULT NULL,
   `counselor_username` varchar(50) NOT NULL COMMENT '記錄人帳號',
   `counselor_name` varchar(50) NOT NULL COMMENT '記錄人姓名',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_counsel_student` (`student_id`, `talk_date`),
-  KEY `idx_counsel_class` (`class_name`),
-  CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  `follow_up_date` date DEFAULT NULL,
+  `tracking_status` varchar(20) NOT NULL DEFAULT '待聯繫',
+  `tracking_result` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='導生關懷紀錄 (T14)';
 
+--
+-- 傾印資料表的資料 `counseling_records`
+--
 
-CREATE TABLE IF NOT EXISTS dorm_applications (
- id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
- student_id varchar(20) NOT NULL,
- student_name varchar(50) NOT NULL,
- semester varchar(20) NOT NULL,
- room_type varchar(20) NOT NULL,
- commute_minutes int NOT NULL,
- special_needs varchar(200) NOT NULL DEFAULT '',
- emergency_phone varchar(20) NOT NULL,
- stage int NOT NULL DEFAULT 0,
- status varchar(20) NOT NULL DEFAULT '進行中',
- bed varchar(20) NOT NULL DEFAULT '',
- note varchar(200) NOT NULL DEFAULT '',
- history_json longtext NOT NULL,
- created_at datetime NOT NULL,
- UNIQUE KEY uq_dorm_student_semester (student_id, semester),
- CONSTRAINT fk_dorm_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-;
+INSERT INTO `counseling_records` (`id`, `student_id`, `class_name`, `talk_date`, `method`, `topic`, `content`, `follow_up`, `follow_up_note`, `follow_up_done`, `counselor_username`, `counselor_name`, `created_at`, `updated_at`, `follow_up_date`, `tracking_status`, `tracking_result`) VALUES
+(1, 'DEMO00002', '示範班級001', '2026-10-20', '面談', '示範資料0001', '示範資料0012', 1, '示範資料0001', 0, 'demo_user_0023', '示範人物0001', '2026-10-20 01:46:16', '2026-10-20 01:46:16', '2026-10-19', '待聯繫', ''),
+(2, 'DEMO00003', '示範班級001', '2026-10-20', '面談', '示範資料0001', '示範資料0013', 1, '示範資料0002', 1, 'demo_user_0023', '示範人物0001', '2026-10-20 01:46:16', '2026-10-20 01:47:48', '2026-10-20', '已結案', '示範資料0001'),
+(3, 'DEMO00002', '示範班級001', '2026-10-20', '面談', '示範資料0001', '示範資料0014', 1, '示範資料0003', 0, 'demo_user_0023', '示範人物0001', '2026-10-20 01:46:16', '2026-10-20 01:46:16', '2026-10-23', '追蹤中', '示範資料0002'),
+(4, 'DEMO00003', '示範班級001', '2026-10-20', '面談', '示範資料0002', '示範資料0015', 1, '示範資料0004', 1, 'demo_user_0023', '示範人物0001', '2026-10-20 01:46:16', '2026-10-20 01:46:16', '2026-10-18', '已結案', '示範資料0003');
 
-COMMIT;
+-- --------------------------------------------------------
 
+--
+-- 資料表結構 `course_map`
+--
+
+CREATE TABLE `course_map` (
+  `course_id` varchar(20) NOT NULL,
+  `course_name` varchar(100) NOT NULL,
+  `credits` int(11) NOT NULL,
+  `prerequisite_id` varchar(20) DEFAULT NULL,
+  `is_required` tinyint(1) NOT NULL DEFAULT 1,
+  `course_type` enum('專業必修','專業選修','通識教育','共同必修') NOT NULL DEFAULT '專業必修',
+  `dept_id` varchar(20) NOT NULL DEFAULT 'CS',
+  `semester_suggest` varchar(20) DEFAULT '大一上',
+  `description` text DEFAULT NULL,
+  `semester_hours` decimal(8,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `course_map`
+--
+
+INSERT INTO `course_map` (`course_id`, `course_name`, `credits`, `prerequisite_id`, `is_required`, `course_type`, `dept_id`, `semester_suggest`, `description`, `semester_hours`) VALUES
+('5110311', '示範課程033', 2, NULL, 1, '通識教育', 'CS', NULL, NULL, NULL),
+('5121124', '示範課程034', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5125974', '示範課程035', 2, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5340249', '示範課程036', 1, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5340249B', '示範課程036', 1, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5340310', '示範課程037', 2, NULL, 1, '通識教育', 'CS', NULL, NULL, NULL),
+('5340311', '示範課程033', 2, NULL, 1, '通識教育', 'CS', NULL, NULL, NULL),
+('5340312', '示範課程038', 2, NULL, 1, '通識教育', 'CS', NULL, NULL, NULL),
+('5341000', '示範課程039', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341000B', '示範課程039', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341030', '示範課程040', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341045', '示範課程041', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341045B', '示範課程041', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341046', '示範課程042', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341093', '示範課程043', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341093B', '示範課程043', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341117', '示範課程044', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341117B', '示範課程044', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341259', '示範課程045', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341320', '示範課程046', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341322', '示範課程047', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341332', '示範課程048', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341332B', '示範課程048', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341393', '示範課程049', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341501', '示範課程050', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341506', '示範課程051', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341510', '示範課程052', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341514', '示範課程053', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341514B', '示範課程053', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341515', '示範課程054', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341515B', '示範課程054', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341518', '示範課程055', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341518B', '示範課程055', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341519', '示範課程056', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341519B', '示範課程056', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341521', '示範課程057', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341524', '示範課程058', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341524B', '示範課程058', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341602', '示範課程059', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341602B', '示範課程059', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341605', '示範課程060', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341605B', '示範課程060', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5341901', '示範課程061', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5341901B', '示範課程061', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342090', '示範課程062', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342090B', '示範課程062', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342110', '示範課程063', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342508', '示範課程034', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342515', '示範課程064', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342515B', '示範課程064', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342520', '示範課程065', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342528', '示範課程066', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342528B', '示範課程066', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342807', '示範課程067', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342807B', '示範課程067', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342808', '示範課程068', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342808B', '示範課程068', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342809', '示範課程069', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342829', '示範課程070', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342829B', '示範課程070', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342831', '示範課程071', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342833', '示範課程072', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342833B', '示範課程072', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5342901', '示範課程073', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5342901B', '示範課程073', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5343093', '示範課程024', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343096', '示範課程074', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343096B', '示範課程074', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343097H', '示範課程075', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5343113', '示範課程001', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343117', '示範課程076', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343211H', '示範課程077', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5343346', '示範課程078', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343346B', '示範課程078', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343607', '示範課程079', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343829', '示範課程080', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5343901', '示範課程081', 0, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5344100', '示範課程082', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344103H', '示範課程083', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5344108', '示範課程084', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344109', '示範課程085', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344110', '示範課程086', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344123', '示範課程087', 3, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344219', '示範課程088', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5344220H', '示範課程089', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5344353H', '示範課程090', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5344356H', '示範課程091', 3, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5344487H', '示範課程092', 9, NULL, 0, '專業選修', 'CS', NULL, NULL, NULL),
+('5345617', '示範課程093', 2, NULL, 1, '專業必修', 'CS', NULL, NULL, NULL),
+('5912222', '示範課程094', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5912222B', '示範課程094', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5915191', '示範課程095', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5915424', '示範課程096', 2, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5920088', '示範課程097', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('5920088B', '示範課程097', 1, NULL, 1, '共同必修', 'CS', NULL, NULL, NULL),
+('CS101', '示範課程009', 3, NULL, 1, '專業必修', 'CS', '大一上', '示範資料0004', NULL),
+('CS102', '示範課程005', 3, 'CS101', 1, '專業必修', 'CS', '大一下', '示範資料0005', NULL),
+('CS201', '示範課程001', 3, 'CS102', 1, '專業必修', 'CS', '大二上', '示範資料0006', NULL),
+('CS202', '示範課程003', 3, 'CS102', 1, '專業必修', 'CS', '大二下', '示範資料0007', NULL),
+('CS301', '示範課程011', 3, 'CS201', 1, '專業必修', 'CS', '大三上', '示範資料0008', NULL),
+('CS302', '示範課程002', 3, 'CS201', 1, '專業必修', 'CS', '大三上', '示範資料0009', NULL),
+('CS303', '示範課程012', 3, 'CS102', 0, '專業選修', 'CS', '大三上', '示範資料0010', NULL),
+('CS304', '示範課程013', 3, 'CS101', 0, '專業選修', 'CS', '大三下', '示範資料0011', NULL),
+('CS305', '示範課程076', 3, 'CS201', 0, '專業選修', 'CS', '大四上', '示範資料0012', NULL),
+('CS306', '示範課程098', 3, 'CS102', 0, '專業選修', 'CS', '大四下', '示範資料0013', NULL),
+('CS401', '示範課程099', 3, 'CS302', 1, '專業必修', 'CS', '大四上', '示範資料0014', NULL),
+('CS402', '示範課程100', 3, 'CS401', 1, '專業必修', 'CS', '大四下', '示範資料0015', NULL),
+('DEMO_RISK_AFTER', '示範課程016', 3, NULL, 0, '專業必修', 'CS', '示範', '示範資料0016', 54.00),
+('DEMO_RISK_AT', '示範課程015', 3, NULL, 0, '專業必修', 'CS', '示範', '示範資料0016', 54.00),
+('DEMO_RISK_BEFORE', '示範課程014', 3, NULL, 0, '專業必修', 'CS', '示範', '示範資料0016', 54.00),
+('DEMO_RISK_SICK', '示範課程017', 3, NULL, 0, '專業必修', 'CS', '示範', '示範資料0016', 54.00),
+('EN101', '示範課程008', 2, NULL, 1, '共同必修', 'CS', '大一上', '示範資料0017', NULL),
+('EN102', '示範課程004', 2, 'EN101', 1, '共同必修', 'CS', '大一下', '示範資料0018', NULL),
+('GE101', '示範課程010', 2, NULL, 0, '通識教育', 'CS', '大一上', '示範資料0019', NULL),
+('GE102', '示範課程007', 2, NULL, 0, '通識教育', 'CS', '大二上', '示範資料0020', NULL),
+('GE103', '示範課程018', 2, NULL, 0, '通識教育', 'CS', '大二下', '示範資料0021', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `deadlines`
+--
+
+CREATE TABLE `deadlines` (
+  `deadline_id` int(11) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `category` varchar(50) NOT NULL,
+  `semester_week` int(11) DEFAULT 11,
+  `start_date` date DEFAULT NULL,
+  `end_date` date NOT NULL,
+  `applies_to_role` varchar(20) NOT NULL DEFAULT 'all',
+  `applies_to_dept` varchar(20) DEFAULT NULL,
+  `related_system_url` varchar(300) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `status_badge` varchar(50) DEFAULT '進行中'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `deadlines`
+--
+
+INSERT INTO `deadlines` (`deadline_id`, `title`, `category`, `semester_week`, `start_date`, `end_date`, `applies_to_role`, `applies_to_dept`, `related_system_url`, `description`, `status_badge`) VALUES
+(1, '示範資料0020', '教務處課務組', 11, '2026-10-01', '2026-10-18', '學生', '示範資料0001', 'https://example.invalid/demo', '示範資料0022', '進行中 (剩 3 天)'),
+(2, '示範資料0021', '學務處/教務處', 11, '2026-10-05', '2026-10-20', '學生,老師,家長', '示範資料0001', 'https://example.invalid/demo', '示範資料0023', '進行中 (剩 5 天)'),
+(3, '示範資料0022', '教務處註冊組', 11, '2026-09-15', '2026-11-30', '學生', '示範資料0001', 'https://example.invalid/demo', '示範資料0024', '進行中 (剩 35 天)'),
+(4, '示範資料0023', '通識教育中心', 3, '2026-09-01', '2026-09-15', '學生', NULL, 'https://example.invalid/demo', '示範資料0025', '已截止'),
+(5, '示範資料0024', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', '示範資料0001', 'https://example.invalid/demo', '示範資料0026', '尚未開放');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `departments`
+--
+
+CREATE TABLE `departments` (
+  `dept_id` varchar(20) NOT NULL,
+  `dept_name` varchar(100) NOT NULL,
+  `college_name` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `departments`
+--
+
+INSERT INTO `departments` (`dept_id`, `dept_name`, `college_name`) VALUES
+('ANI', '示範系所001', '示範資料0001'),
+('BA', '示範系所002', '示範資料0001'),
+('CS', '示範系所003', '示範資料0001'),
+('ECE', '示範系所004', '示範資料0002'),
+('ENG', '示範系所005', '示範資料0001'),
+('LTC', '示範系所006', '示範資料0002'),
+('NUR', '示範系所007', '示範資料0002'),
+('OPT', '示範系所008', '示範資料0002');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `dorm_applications`
+--
+
+CREATE TABLE `dorm_applications` (
+  `id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `student_name` varchar(50) NOT NULL,
+  `semester` varchar(20) NOT NULL,
+  `room_type` varchar(20) NOT NULL,
+  `commute_minutes` int(11) NOT NULL,
+  `special_needs` varchar(200) NOT NULL DEFAULT '',
+  `emergency_phone` varchar(20) NOT NULL,
+  `stage` int(11) NOT NULL DEFAULT 0,
+  `status` varchar(20) NOT NULL DEFAULT '進行中',
+  `bed` varchar(20) NOT NULL DEFAULT '',
+  `note` varchar(200) NOT NULL DEFAULT '',
+  `history_json` longtext NOT NULL,
+  `created_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `dorm_applications`
+--
+
+INSERT INTO `dorm_applications` (`id`, `student_id`, `student_name`, `semester`, `room_type`, `commute_minutes`, `special_needs`, `emergency_phone`, `stage`, `status`, `bed`, `note`, `history_json`, `created_at`) VALUES
+(1, 'DEMO00002', '示範人物0017', '示範115-1', '四人房', 60, '示範資料0001', '0900000006', 4, '進行中', '示範資料0001', '', '[]', '2026-10-20 10:08:56'),
+(2, 'DEMO00003', '示範人物0018', '示範115-1', '四人房', 60, '示範資料0001', '0900000006', 0, '未通過', '', '示範資料0001', '[]', '2026-10-20 10:08:57');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `faculty_profiles`
+--
+
+CREATE TABLE `faculty_profiles` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `title` varchar(50) DEFAULT NULL,
+  `dept_name` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `fields` varchar(200) NOT NULL DEFAULT '' COMMENT '領域分類，逗號分隔',
+  `expertise` varchar(400) NOT NULL COMMENT '專長關鍵字，逗號分隔',
+  `research_summary` text DEFAULT NULL,
+  `accepts_projects` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否可指導專題',
+  `is_public` tinyint(1) NOT NULL DEFAULT 1,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `faculty_profiles`
+--
+
+INSERT INTO `faculty_profiles` (`id`, `name`, `title`, `dept_name`, `email`, `fields`, `expertise`, `research_summary`, `accepts_projects`, `is_public`, `updated_at`) VALUES
+(1, '示範人物0005', '示範資料0025', '示範系所009', 'person0001@example.invalid', '示範資料0001', '示範資料0001', '示範資料0001', 1, 1, '2026-10-08 06:56:44'),
+(2, '示範人物0004', '示範資料0026', '示範系所009', 'person0001@example.invalid', '示範資料0002', '示範資料0002', '示範資料0002', 1, 1, '2026-10-08 04:15:50'),
+(3, '示範人物0006', '示範資料0027', '示範系所009', 'person0001@example.invalid', '示範資料0003', '示範資料0003', '示範資料0003', 1, 1, '2026-10-08 04:15:50'),
+(4, '示範人物0008', '示範資料0027', '示範系所009', 'person0001@example.invalid', '示範資料0004', '示範資料0004', '示範資料0004', 0, 1, '2026-10-08 04:15:50'),
+(5, '示範人物0002', '示範資料0025', '示範系所010', 'person0001@example.invalid', '示範資料0005', '示範資料0005', '示範資料0005', 1, 1, '2026-10-08 04:15:50'),
+(6, '示範人物0007', '示範資料0026', '示範系所010', 'person0001@example.invalid', '示範資料0006', '示範資料0006', '示範資料0006', 1, 1, '2026-10-08 04:15:50'),
+(7, '示範人物0003', '示範資料0027', '示範系所011', 'person0001@example.invalid', '示範資料0007', '示範資料0007', '示範資料0007', 1, 1, '2026-10-08 04:15:50'),
+(8, '示範人物0009', '示範資料0025', '示範系所012', 'person0001@example.invalid', '示範資料0008', '示範資料0008', '示範資料0008', 1, 1, '2026-10-08 04:15:50'),
+(9, '示範人物0010', '示範資料0026', '示範系所012', 'person0001@example.invalid', '示範資料0009', '示範資料0009', '示範資料0009', 1, 1, '2026-10-08 04:15:50'),
+(10, '示範人物0011', '示範資料0027', '示範系所012', 'person0001@example.invalid', '示範資料0010', '示範資料0010', '示範資料0010', 0, 1, '2026-10-08 04:15:50');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `graduation_requirements`
+--
+
+CREATE TABLE `graduation_requirements` (
+  `req_id` int(11) NOT NULL,
+  `dept_id` varchar(20) NOT NULL,
+  `total_credits_req` int(11) NOT NULL DEFAULT 128,
+  `major_required_req` int(11) NOT NULL DEFAULT 60,
+  `major_elective_req` int(11) NOT NULL DEFAULT 30,
+  `general_req` int(11) NOT NULL DEFAULT 28,
+  `english_threshold_name` varchar(100) NOT NULL DEFAULT '多益 550 分或通過進階英文檢定',
+  `ethics_req` int(11) NOT NULL DEFAULT 2,
+  `project_req` int(11) NOT NULL DEFAULT 3
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `graduation_requirements`
+--
+
+INSERT INTO `graduation_requirements` (`req_id`, `dept_id`, `total_credits_req`, `major_required_req`, `major_elective_req`, `general_req`, `english_threshold_name`, `ethics_req`, `project_req`) VALUES
+(1, 'CS', 220, 60, 30, 28, '示範資料0001', 2, 6),
+(2, 'NUR', 220, 75, 25, 28, '示範資料0002', 2, 4),
+(3, 'ENG', 220, 55, 35, 28, '示範資料0003', 2, 6);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `knowledge_base`
+--
+
+CREATE TABLE `knowledge_base` (
+  `id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `subcategory` varchar(50) NOT NULL,
+  `keyword` varchar(255) NOT NULL,
+  `official_term` varchar(255) DEFAULT '',
+  `content` text NOT NULL,
+  `doc_name` varchar(255) NOT NULL,
+  `page` int(11) DEFAULT 1,
+  `url` varchar(500) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `knowledge_base`
+--
+
+INSERT INTO `knowledge_base` (`id`, `category_id`, `subcategory`, `keyword`, `official_term`, `content`, `doc_name`, `page`, `url`) VALUES
+(1, 1, '示範資料0001', '示範資料0001', '示範資料0001', '示範資料0016', '示範資料0001', 12, 'https://example.invalid/demo'),
+(2, 2, '示範資料0002', '示範資料0002', '示範資料0002', '示範資料0017', '示範資料0002', 5, 'https://example.invalid/demo'),
+(3, 3, '示範資料0003', '示範資料0003', '示範資料0003', '示範資料0018', '示範資料0003', 3, 'https://example.invalid/demo'),
+(4, 1, '示範資料0004', '示範資料0004', '示範資料0004', '示範資料0019', '示範資料0004', 8, 'https://example.invalid/demo'),
+(5, 3, '示範資料0005', '示範資料0005', '示範資料0005', '示範資料0020', '示範資料0005', 2, 'https://example.invalid/demo');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `knowledge_categories`
+--
+
+CREATE TABLE `knowledge_categories` (
+  `category_id` int(11) NOT NULL,
+  `category_name` varchar(50) NOT NULL,
+  `icon` varchar(20) DEFAULT '?',
+  `sort_order` int(11) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `knowledge_categories`
+--
+
+INSERT INTO `knowledge_categories` (`category_id`, `category_name`, `icon`, `sort_order`) VALUES
+(1, '示範類別006', '示範資料0001', 1),
+(2, '示範類別007', '示範資料0002', 2),
+(3, '示範類別008', '示範資料0003', 3),
+(4, '示範類別009', '示範資料0004', 4);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `leave_requests`
+--
+
+CREATE TABLE `leave_requests` (
+  `id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `leave_type` enum('病假','事假','公假','喪假','生理假') NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `periods` varchar(50) DEFAULT NULL COMMENT '節次，例如 3-4',
+  `reason` varchar(255) DEFAULT NULL,
+  `status` enum('待審核','已核准','已退回') NOT NULL DEFAULT '待審核',
+  `review_note` varchar(255) NOT NULL DEFAULT '',
+  `submitted_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `leave_requests`
+--
+
+INSERT INTO `leave_requests` (`id`, `student_id`, `leave_type`, `start_date`, `end_date`, `periods`, `reason`, `status`, `review_note`, `submitted_at`) VALUES
+(1, 'DEMO00002', '病假', '2026-09-18', '2026-09-18', '示範資料0001', '示範資料0001', '已核准', '', '2026-09-18 08:30:00'),
+(2, 'DEMO00002', '事假', '2026-09-30', '2026-09-30', '示範資料0002', '示範資料0002', '待審核', '', '2026-09-22 21:10:00'),
+(3, 'DEMO00003', '病假', '2026-09-16', '2026-09-16', '示範資料0002', '示範資料0003', '已核准', '', '2026-09-16 07:45:00'),
+(4, 'DEMO00004', '事假', '2026-09-22', '2026-09-22', '示範資料0003', '示範資料0004', '已退回', '示範資料0001', '2026-09-22 09:20:00'),
+(5, 'DEMO00002', '事假', '2026-10-20', '2026-10-20', '示範資料0001', '示範資料0005', '待審核', '', '2026-10-20 10:08:56'),
+(6, 'DEMO00003', '事假', '2026-10-20', '2026-10-20', '示範資料0001', '示範資料0006', '已核准', '示範資料0002', '2026-10-20 10:08:56');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `moodle_links`
+--
+
+CREATE TABLE `moodle_links` (
+  `student_id` varchar(20) NOT NULL,
+  `moodle_username` varchar(100) NOT NULL,
+  `moodle_fullname` varchar(100) DEFAULT NULL,
+  `token` varchar(255) NOT NULL,
+  `linked_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `moodle_links`
+--
+
+INSERT INTO `moodle_links` (`student_id`, `moodle_username`, `moodle_fullname`, `token`, `linked_at`) VALUES
+('DEMO00001', 'DEMO00001', '示範人物0019', '!DISABLED_DEMO_ACCOUNT', '2026-09-24 13:03:00');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `scholarships`
+--
+
+CREATE TABLE `scholarships` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `provider` enum('校內','校外') NOT NULL DEFAULT '校內',
+  `amount` int(11) DEFAULT NULL,
+  `deadline` date NOT NULL,
+  `apply_url` varchar(300) DEFAULT NULL,
+  `announcement_url` varchar(300) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `min_grade` tinyint(4) DEFAULT NULL,
+  `max_grade` tinyint(4) DEFAULT NULL,
+  `departments` varchar(200) DEFAULT NULL COMMENT '適用科系代碼，逗號分隔；NULL 代表全校',
+  `min_gpa` decimal(3,2) DEFAULT NULL,
+  `min_conduct` decimal(5,2) DEFAULT NULL,
+  `identity_required` varchar(100) DEFAULT NULL COMMENT '符合任一身分即可，逗號分隔；NULL 代表不限',
+  `no_fail_required` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否要求前學期無不及格'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `scholarships`
+--
+
+INSERT INTO `scholarships` (`id`, `name`, `provider`, `amount`, `deadline`, `apply_url`, `announcement_url`, `description`, `min_grade`, `max_grade`, `departments`, `min_gpa`, `min_conduct`, `identity_required`, `no_fail_required`) VALUES
+(1, '示範資料0020', '示範資料0001', 5000, '2026-10-15', NULL, 'https://example.invalid/demo', '示範資料0027', 2, 5, NULL, 3.50, 80.00, NULL, 1),
+(2, '示範資料0021', '示範資料0001', 10000, '2026-09-28', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0028', NULL, NULL, NULL, NULL, 70.00, '示範資料0001', 0),
+(3, '示範資料0022', '示範資料0002', 15000, '2026-10-31', NULL, 'https://example.invalid/demo', '示範資料0029', NULL, NULL, NULL, 2.50, NULL, '示範資料0002', 0),
+(4, '示範資料0023', '示範資料0002', 12000, '2026-11-15', NULL, 'https://example.invalid/demo', '示範資料0030', NULL, NULL, NULL, NULL, NULL, '示範資料0003', 0),
+(5, '示範資料0024', '示範資料0001', 8000, '2026-10-05', NULL, 'https://example.invalid/demo', '示範資料0031', 3, 5, '示範資料0001', 3.00, NULL, NULL, 0),
+(6, '示範資料0025', '示範資料0002', 20000, '2026-09-30', NULL, 'https://example.invalid/demo', '示範資料0032', 1, 5, '示範資料0001', 3.30, 85.00, NULL, 1),
+(7, '示範資料0026', '示範資料0002', 8000, '2026-10-20', 'https://example.invalid/demo', 'https://example.invalid/demo', '示範資料0033', NULL, NULL, NULL, NULL, NULL, '示範資料0004', 0),
+(8, '示範資料0027', '示範資料0001', 5000, '2026-10-10', NULL, 'https://example.invalid/demo', '示範資料0034', 2, 5, '示範資料0002', NULL, 80.00, NULL, 0),
+(9, '示範資料0028', '示範資料0002', 50000, '2026-09-15', NULL, 'https://example.invalid/demo', '示範資料0035', 2, 5, NULL, 3.00, NULL, NULL, 0),
+(10, '示範資料0029', '示範資料0001', 3000, '2026-11-30', NULL, 'https://example.invalid/demo', '示範資料0036', NULL, NULL, NULL, 3.00, 88.00, NULL, 1);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `search_feedback`
+--
+
+CREATE TABLE `search_feedback` (
+  `feedback_id` int(11) NOT NULL,
+  `kb_id` int(11) DEFAULT NULL,
+  `query_text` varchar(255) NOT NULL,
+  `is_helpful` tinyint(1) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `search_feedback`
+--
+
+INSERT INTO `search_feedback` (`feedback_id`, `kb_id`, `query_text`, `is_helpful`, `comment`, `created_at`) VALUES
+(1, 1, '示範資料0001', 1, '示範資料0001', '2026-09-24 04:10:29'),
+(2, 4, '示範資料0002', 1, '示範資料0002', '2026-09-24 04:10:29'),
+(3, 3, '示範資料0003', 1, '示範資料0003', '2026-09-24 04:10:29'),
+(4, 2, '示範資料0004', 0, '示範資料0004', '2026-09-24 04:10:29');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `search_logs`
+--
+
+CREATE TABLE `search_logs` (
+  `id` int(11) NOT NULL,
+  `query` varchar(255) NOT NULL,
+  `matched` tinyint(1) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `search_logs`
+--
+
+INSERT INTO `search_logs` (`id`, `query`, `matched`, `created_at`) VALUES
+(1, '示範資料0001', 1, '2026-10-15 01:22:15'),
+(2, '示範資料0002', 1, '2026-10-21 14:51:58');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `self_reviews`
+--
+
+CREATE TABLE `self_reviews` (
+  `id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `semester` varchar(10) NOT NULL COMMENT '學年-學期，例如 115-1',
+  `ratings_json` text NOT NULL COMMENT '各項 1-5 分',
+  `reflections_json` text NOT NULL COMMENT '文字反思',
+  `status` enum('草稿','已完成') NOT NULL DEFAULT '草稿',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `students`
+--
+
+CREATE TABLE `students` (
+  `student_id` varchar(20) NOT NULL,
+  `full_name` varchar(50) NOT NULL,
+  `dept_id` varchar(20) NOT NULL,
+  `admission_year` int(11) NOT NULL,
+  `class_name` varchar(50) NOT NULL,
+  `parent_phone` varchar(30) DEFAULT NULL,
+  `grade_level` tinyint(4) DEFAULT NULL,
+  `gpa` decimal(3,2) DEFAULT NULL,
+  `conduct_score` decimal(5,2) DEFAULT NULL,
+  `identity_type` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `students`
+--
+
+INSERT INTO `students` (`student_id`, `full_name`, `dept_id`, `admission_year`, `class_name`, `parent_phone`, `grade_level`, `gpa`, `conduct_score`, `identity_type`) VALUES
+('DEMO00027', '示範人物0030', 'CS', 111, '示範班級001', '0900000007', 5, 2.14, 91.00, '示範資料0001'),
+('DEMO00028', '示範人物0031', 'CS', 111, '示範班級001', '0900000008', 5, 1.40, 92.00, '示範資料0002'),
+('DEMO00060', '示範人物0032', 'CS', 111, '示範班級001', '0900000009', 5, 3.30, 83.00, '示範資料0002'),
+('DEMO00061', '示範人物0033', 'CS', 111, '示範班級001', '0900000010', 5, 2.03, 86.00, '示範資料0003'),
+('DEMO00062', '示範人物0034', 'CS', 111, '示範班級001', '0900000011', 5, 3.12, 91.00, '示範資料0004'),
+('DEMO00063', '示範人物0035', 'CS', 111, '示範班級001', '0900000012', 5, 2.03, 91.00, '示範資料0005'),
+('DEMO00029', '示範人物0036', 'CS', 111, '示範班級001', '0900000013', 5, 1.37, 91.00, NULL),
+('DEMO00030', '示範人物0037', 'CS', 111, '示範班級001', '0900000014', 5, 1.44, 91.00, NULL),
+('DEMO00064', '示範人物0038', 'CS', 111, '示範班級001', '0900000015', 5, 1.12, 86.00, NULL),
+('DEMO00031', '示範人物0039', 'CS', 111, '示範班級001', '0900000016', 5, 0.95, 78.00, NULL),
+('DEMO00032', '示範人物0040', 'CS', 111, '示範班級001', '0900000017', 5, 1.04, 86.00, NULL),
+('DEMO00033', '示範人物0041', 'CS', 111, '示範班級001', '0900000018', 5, 0.95, 72.00, NULL),
+('DEMO00065', '示範人物0042', 'CS', 111, '示範班級001', '0900000019', 5, 3.31, 83.00, NULL),
+('DEMO00066', '示範人物0043', 'CS', 111, '示範班級001', '0900000020', 5, 3.47, 85.00, NULL),
+('DEMO00067', '示範人物0044', 'CS', 111, '示範班級001', '0900000021', 5, 3.38, 86.00, NULL),
+('DEMO00068', '示範人物0045', 'CS', 111, '示範班級001', '0900000022', 5, 3.05, 89.00, NULL),
+('DEMO00001', '示範人物0046', 'CS', 111, '示範班級001', NULL, 5, 3.50, 85.00, NULL),
+('DEMO00069', '示範人物0047', 'CS', 111, '示範班級001', '0900000023', 5, 2.01, 92.00, NULL),
+('DEMO00034', '示範人物0048', 'CS', 111, '示範班級001', '0900000024', 5, 1.88, 88.00, NULL),
+('DEMO00070', '示範人物0049', 'CS', 111, '示範班級001', '0900000025', 5, 2.32, 83.00, NULL),
+('DEMO00071', '示範人物0050', 'CS', 111, '示範班級001', '0900000026', 5, 2.21, 90.00, NULL),
+('DEMO00035', '示範人物0051', 'CS', 111, '示範班級001', '0900000027', 5, 2.20, 84.00, NULL),
+('DEMO00036', '示範人物0052', 'CS', 111, '示範班級001', '0900000028', 5, 2.00, 92.00, NULL),
+('DEMO00037', '示範人物0053', 'CS', 111, '示範班級001', '0900000029', 5, 2.11, 89.00, NULL),
+('DEMO00038', '示範人物0054', 'CS', 111, '示範班級001', '0900000030', 5, 2.07, 91.00, NULL),
+('DEMO00039', '示範人物0055', 'CS', 111, '示範班級003', '0900000031', 5, 2.39, 91.00, '示範資料0002'),
+('DEMO00040', '示範人物0056', 'CS', 111, '示範班級003', '0900000032', 5, 1.27, 84.00, NULL),
+('DEMO00072', '示範人物0057', 'CS', 111, '示範班級003', '0900000033', 5, 3.32, 82.00, NULL),
+('DEMO00073', '示範人物0058', 'CS', 111, '示範班級003', '0900000034', 5, 3.31, 90.00, NULL),
+('DEMO00041', '示範人物0059', 'CS', 111, '示範班級003', '0900000035', 5, 1.30, 85.00, NULL),
+('DEMO00042', '示範人物0060', 'CS', 111, '示範班級003', '0900000036', 5, 2.07, 86.00, NULL),
+('DEMO00043', '示範人物0061', 'CS', 111, '示範班級003', '0900000037', 5, 2.01, 89.00, NULL),
+('DEMO00044', '示範人物0062', 'CS', 111, '示範班級003', '0900000038', 5, 2.13, 86.00, NULL),
+('DEMO00045', '示範人物0063', 'CS', 111, '示範班級003', '0900000039', 5, 2.20, 82.00, NULL),
+('DEMO00022', '示範人物0064', 'CS', 112, '示範班級007', '0900000040', 4, 2.14, 85.00, '示範資料0002'),
+('DEMO00023', '示範人物0065', 'CS', 112, '示範班級007', '0900000041', 4, 1.18, 91.00, NULL),
+('DEMO00056', '示範人物0066', 'CS', 112, '示範班級007', '0900000042', 4, 3.52, 87.00, NULL),
+('DEMO00057', '示範人物0067', 'CS', 112, '示範班級007', '0900000043', 4, 3.24, 85.00, NULL),
+('DEMO00024', '示範人物0068', 'CS', 112, '示範班級007', '0900000044', 4, 1.12, 87.00, NULL),
+('DEMO00058', '示範人物0069', 'CS', 112, '示範班級007', '0900000045', 4, 1.90, 84.00, NULL),
+('DEMO00059', '示範人物0070', 'CS', 112, '示範班級007', '0900000046', 4, 1.98, 88.00, NULL),
+('DEMO00025', '示範人物0071', 'CS', 112, '示範班級007', '0900000047', 4, 1.89, 85.00, NULL),
+('DEMO00026', '示範人物0072', 'CS', 112, '示範班級007', '0900000048', 4, 2.18, 86.00, NULL),
+('DEMO00016', '示範人物0073', 'CS', 113, '示範班級005', '0900000049', 3, 2.53, 87.00, '示範資料0002'),
+('DEMO00017', '示範人物0074', 'CS', 113, '示範班級005', '0900000050', 3, 1.01, 91.00, NULL),
+('DEMO00053', '示範人物0075', 'CS', 113, '示範班級005', '0900000051', 3, 3.28, 89.00, NULL),
+('DEMO00054', '示範人物0076', 'CS', 113, '示範班級005', '0900000052', 3, 3.62, 86.00, NULL),
+('DEMO00018', '示範人物0077', 'CS', 113, '示範班級005', '0900000053', 3, 1.13, 84.00, NULL),
+('DEMO00019', '示範人物0078', 'CS', 113, '示範班級005', '0900000054', 3, 2.10, 84.00, NULL),
+('DEMO00020', '示範人物0079', 'CS', 113, '示範班級005', '0900000055', 3, 2.24, 90.00, NULL),
+('DEMO00055', '示範人物0080', 'CS', 113, '示範班級005', '0900000056', 3, 1.79, 91.00, NULL),
+('DEMO00021', '示範人物0081', 'CS', 113, '示範班級005', '0900000057', 3, 2.35, 82.00, NULL),
+('DEMO00009', '示範人物0082', 'CS', 114, '示範班級006', '0900000058', 2, 2.57, 92.00, '示範資料0002'),
+('DEMO00010', '示範人物0083', 'CS', 114, '示範班級006', '0900000059', 2, 0.95, 82.00, NULL),
+('DEMO00051', '示範人物0084', 'CS', 114, '示範班級006', '0900000060', 2, 3.32, 90.00, NULL),
+('DEMO00052', '示範人物0085', 'CS', 114, '示範班級006', '0900000061', 2, 3.47, 86.00, NULL),
+('DEMO00011', '示範人物0086', 'CS', 114, '示範班級006', '0900000062', 2, 1.08, 88.00, NULL),
+('DEMO00012', '示範人物0087', 'CS', 114, '示範班級006', '0900000063', 2, 1.85, 83.00, NULL),
+('DEMO00013', '示範人物0088', 'CS', 114, '示範班級006', '0900000064', 2, 2.04, 91.00, NULL),
+('DEMO00014', '示範人物0089', 'CS', 114, '示範班級006', '0900000065', 2, 2.14, 89.00, NULL),
+('DEMO00015', '示範人物0090', 'CS', 114, '示範班級006', '0900000066', 2, 2.07, 92.00, NULL),
+('DEMO00005', '示範人物0091', 'CS', 115, '示範班級004', '0900000067', 1, NULL, 84.00, '示範資料0002'),
+('DEMO00006', '示範人物0092', 'CS', 115, '示範班級004', '0900000068', 1, NULL, 92.00, NULL),
+('DEMO00047', '示範人物0093', 'CS', 115, '示範班級004', '0900000069', 1, NULL, 92.00, NULL),
+('DEMO00048', '示範人物0094', 'CS', 115, '示範班級004', '0900000070', 1, NULL, 87.00, NULL),
+('DEMO00075', '示範人物0095', 'CS', 115, '示範班級004', '0900000071', 1, NULL, 86.00, NULL),
+('DEMO00049', '示範人物0096', 'CS', 115, '示範班級004', '0900000072', 1, NULL, 82.00, NULL),
+('DEMO00007', '示範人物0097', 'CS', 115, '示範班級004', '0900000073', 1, NULL, 87.00, NULL),
+('DEMO00008', '示範人物0098', 'CS', 115, '示範班級004', '0900000074', 1, NULL, 87.00, NULL),
+('DEMO00050', '示範人物0099', 'CS', 115, '示範班級004', '0900000075', 1, NULL, 83.00, NULL),
+('DEMO00002', '示範人物0017', 'CS', 112, '示範班級001', '0900000076', 4, 3.35, 86.00, '示範資料0002'),
+('DEMO00003', '示範人物0018', 'CS', 112, '示範班級001', '0900000077', 4, 3.62, 88.00, NULL),
+('DEMO00074', '示範人物0100', 'NUR', 112, '示範班級002', '0900000078', 4, 3.10, 85.00, '示範資料0004'),
+('DEMO00046', '示範人物0101', 'CS', 112, '示範班級003', '0900000079', 4, 3.85, 90.00, NULL),
+('DEMO00004', '示範人物0102', 'CS', 112, '示範班級001', '0900000080', 4, 3.20, 86.00, '示範資料0001');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `student_credits`
+--
+
+CREATE TABLE `student_credits` (
+  `credit_id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `course_id` varchar(20) NOT NULL,
+  `semester` varchar(20) NOT NULL,
+  `score` decimal(5,2) DEFAULT NULL,
+  `is_passed` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `student_credits`
+--
+
+INSERT INTO `student_credits` (`credit_id`, `student_id`, `course_id`, `semester`, `score`, `is_passed`) VALUES
+(1, 'DEMO00002', 'CS101', '112-1', 85.00, 1),
+(2, 'DEMO00002', 'CS102', '112-2', 55.00, 0),
+(3, 'DEMO00002', 'EN101', '112-1', 78.00, 1),
+(4, 'DEMO00002', 'GE101', '112-1', 82.00, 1),
+(5, 'DEMO00003', 'CS101', '112-1', 92.50, 1),
+(6, 'DEMO00003', 'CS102', '112-2', 88.00, 1),
+(7, 'DEMO00003', 'CS201', '113-1', 85.00, 1),
+(8, 'DEMO00003', 'EN101', '112-1', 80.00, 1),
+(9, 'DEMO00003', 'GE101', '112-1', 90.00, 1),
+(10, 'DEMO00046', 'CS101', '112-1', 88.00, 1),
+(11, 'DEMO00046', 'CS102', '112-2', 91.00, 1),
+(12, 'DEMO00046', 'CS201', '113-1', 84.00, 1),
+(13, 'DEMO00046', 'EN101', '112-1', 80.00, 1),
+(14, 'DEMO00046', 'CS202', '113-2', 79.00, 1),
+(15, 'DEMO00046', 'GE101', '112-1', 86.00, 1),
+(16, 'DEMO00004', 'CS101', '112-1', 76.00, 1),
+(17, 'DEMO00004', 'CS102', '112-2', 68.00, 1),
+(18, 'DEMO00004', 'CS201', '113-1', 48.00, 0),
+(19, 'DEMO00004', 'EN101', '112-1', 81.00, 1),
+(20, 'DEMO00004', 'GE101', '112-1', 88.00, 1),
+(411, 'DEMO00001', '5341501', '111-1', 80.00, 1),
+(412, 'DEMO00001', '5341514', '111-1', 77.00, 1),
+(413, 'DEMO00001', '5341901', '111-1', 91.00, 1),
+(414, 'DEMO00001', '5341510', '111-1', 80.00, 1),
+(415, 'DEMO00001', '5341515', '111-1', 82.00, 1),
+(416, 'DEMO00001', '5341518', '111-1', 87.00, 1),
+(417, 'DEMO00001', '5341519', '111-1', 66.00, 1),
+(418, 'DEMO00001', '5341521', '111-1', 85.00, 1),
+(419, 'DEMO00001', '5341524', '111-1', 92.00, 1),
+(420, 'DEMO00001', '5340249', '111-1', 70.00, 1),
+(421, 'DEMO00001', '5341093', '111-1', 81.00, 1),
+(422, 'DEMO00001', '5341602', '111-1', 70.00, 1),
+(423, 'DEMO00001', '5341605', '111-1', 74.00, 1),
+(424, 'DEMO00001', '5342829', '111-1', 60.00, 1),
+(425, 'DEMO00001', '5343346', '111-1', 64.00, 1),
+(426, 'DEMO00001', '5345617', '111-1', 95.00, 1),
+(427, 'DEMO00001', '5341514B', '111-2', 71.00, 1),
+(428, 'DEMO00001', '5341901B', '111-2', 76.00, 1),
+(429, 'DEMO00001', '5341515B', '111-2', 88.00, 1),
+(430, 'DEMO00001', '5341518B', '111-2', 76.00, 1),
+(431, 'DEMO00001', '5341519B', '111-2', 60.00, 1),
+(432, 'DEMO00001', '5341524B', '111-2', 70.00, 1),
+(433, 'DEMO00001', '5340249B', '111-2', 68.00, 1),
+(434, 'DEMO00001', '5341046', '111-2', 68.00, 1),
+(435, 'DEMO00001', '5341093B', '111-2', 61.00, 1),
+(436, 'DEMO00001', '5341320', '111-2', 60.00, 1),
+(437, 'DEMO00001', '5341322', '111-2', 81.00, 1),
+(438, 'DEMO00001', '5341602B', '111-2', 71.00, 1),
+(439, 'DEMO00001', '5341605B', '111-2', 87.00, 1),
+(440, 'DEMO00001', '5342829B', '111-2', 60.00, 1),
+(441, 'DEMO00001', '5343346B', '111-2', 63.00, 1),
+(442, 'DEMO00001', '5341000', '112-1', 80.00, 1),
+(443, 'DEMO00001', '5342901', '112-1', 65.00, 1),
+(444, 'DEMO00001', '5341259', '112-1', 68.00, 1),
+(445, 'DEMO00001', '5342515', '112-1', 60.00, 1),
+(446, 'DEMO00001', '5342520', '112-1', 68.00, 1),
+(447, 'DEMO00001', '5342528', '112-1', 60.00, 1),
+(448, 'DEMO00001', '5912222', '112-1', 60.00, 1),
+(449, 'DEMO00001', '5341117', '112-1', 60.00, 1),
+(450, 'DEMO00001', '5342807', '112-1', 23.00, 0),
+(451, 'DEMO00001', '5342808', '112-1', 60.00, 1),
+(452, 'DEMO00001', '5342809', '112-1', 70.00, 1),
+(453, 'DEMO00001', '5342833', '112-1', 68.00, 1),
+(454, 'DEMO00001', '5343093', '112-1', 30.00, 0),
+(455, 'DEMO00001', '5343096', '112-1', 55.00, 0),
+(456, 'DEMO00001', '5341000B', '112-2', 85.00, 1),
+(457, 'DEMO00001', '5342901B', '112-2', 82.00, 1),
+(458, 'DEMO00001', '5342508', '112-2', 55.00, 0),
+(459, 'DEMO00001', '5342515B', '112-2', 61.00, 1),
+(460, 'DEMO00001', '5342528B', '112-2', 60.00, 1),
+(461, 'DEMO00001', '5912222B', '112-2', 60.00, 1),
+(462, 'DEMO00001', '5915191', '112-2', 65.00, 1),
+(463, 'DEMO00001', '5341117B', '112-2', 60.00, 1),
+(464, 'DEMO00001', '5342110', '112-2', 48.00, 0),
+(465, 'DEMO00001', '5342807B', '112-2', 60.00, 1),
+(466, 'DEMO00001', '5342808B', '112-2', 50.00, 0),
+(467, 'DEMO00001', '5342833B', '112-2', 60.00, 1),
+(468, 'DEMO00001', '5343096B', '112-2', 65.00, 1),
+(469, 'DEMO00001', '5343901', '113-1', 85.00, 1),
+(470, 'DEMO00001', '5341393', '113-1', 83.00, 1),
+(471, 'DEMO00001', '5341506', '113-1', 83.00, 1),
+(472, 'DEMO00001', '5920088', '113-1', 76.00, 1),
+(473, 'DEMO00001', '5341045', '113-1', 82.00, 1),
+(474, 'DEMO00001', '5341332', '113-1', 73.00, 1),
+(475, 'DEMO00001', '5342090', '113-1', 71.00, 1),
+(476, 'DEMO00001', '5342831', '113-1', 69.00, 1),
+(477, 'DEMO00001', '5343113', '113-1', 71.00, 1),
+(478, 'DEMO00001', '5344110', '113-1', 66.00, 1),
+(479, 'DEMO00001', '5344219', '113-1', 89.00, 1),
+(480, 'DEMO00001', '5341030', '113-2', 70.00, 1),
+(481, 'DEMO00001', '5915424', '113-2', 65.00, 1),
+(482, 'DEMO00001', '5920088B', '113-2', 80.00, 1),
+(483, 'DEMO00001', '5341045B', '113-2', 75.00, 1),
+(484, 'DEMO00001', '5341332B', '113-2', 63.00, 1),
+(485, 'DEMO00001', '5342090B', '113-2', 87.00, 1),
+(486, 'DEMO00001', '5343117', '113-2', 80.00, 1),
+(487, 'DEMO00001', '5343829', '113-2', 86.00, 1),
+(488, 'DEMO00001', '5344109', '113-2', 83.00, 1),
+(489, 'DEMO00001', '5344123', '113-2', 75.00, 1),
+(490, 'DEMO00001', '5343607', '114-1', 77.00, 1),
+(491, 'DEMO00001', '5344100', '114-1', 86.00, 1),
+(492, 'DEMO00001', '5344108', '114-1', 72.00, 1),
+(493, 'DEMO00001', '5125974', '112-2', 81.00, 1),
+(494, 'DEMO00001', '5344220H', '112-2', 67.00, 1),
+(495, 'DEMO00001', '5344103H', '113-1', 62.00, 1),
+(496, 'DEMO00001', '5343211H', '113-2', 92.00, 1),
+(497, 'DEMO00001', '5343097H', '114-1', 89.00, 1),
+(498, 'DEMO00001', '5344353H', '114-1', 84.00, 1),
+(499, 'DEMO00001', '5344356H', '114-1', 84.00, 1),
+(500, 'DEMO00001', '5344487H', '114-2', 82.00, 1),
+(501, 'DEMO00001', '5340311', '112-1', 45.00, 0),
+(502, 'DEMO00001', '5110311', '113-1', 79.00, 1),
+(503, 'DEMO00001', '5343096', '113-1', 62.00, 1),
+(504, 'DEMO00001', '5121124', '113-2', 60.00, 1),
+(505, 'DEMO00001', '5342808B', '113-2', 63.00, 1),
+(506, 'DEMO00001', '5340310', '114-1', 73.00, 1),
+(507, 'DEMO00001', '5340312', '114-1', 93.00, 1),
+(508, 'DEMO00001', '5342807', '114-1', 60.00, 1),
+(1313, 'DEMO00009', 'CS101', '114-1', 74.80, 1),
+(1314, 'DEMO00009', 'EN101', '114-1', 85.80, 1),
+(1315, 'DEMO00009', 'GE101', '114-1', 80.60, 1),
+(1316, 'DEMO00009', 'CS102', '114-2', 89.50, 1),
+(1317, 'DEMO00009', 'EN102', '114-2', 72.90, 1),
+(1318, 'DEMO00010', 'CS101', '114-1', 47.20, 0),
+(1319, 'DEMO00010', 'EN101', '114-1', 69.70, 1),
+(1320, 'DEMO00010', 'GE101', '114-1', 64.20, 1),
+(1321, 'DEMO00010', 'CS102', '114-2', 75.00, 1),
+(1322, 'DEMO00010', 'EN102', '114-2', 66.60, 1),
+(1323, 'DEMO00051', 'CS101', '114-1', 95.50, 1),
+(1324, 'DEMO00051', 'EN101', '114-1', 80.20, 1),
+(1325, 'DEMO00051', 'GE101', '114-1', 89.20, 1),
+(1326, 'DEMO00051', 'CS102', '114-2', 85.50, 1),
+(1327, 'DEMO00051', 'EN102', '114-2', 90.60, 1),
+(1328, 'DEMO00052', 'CS101', '114-1', 97.20, 1),
+(1329, 'DEMO00052', 'EN101', '114-1', 87.10, 1),
+(1330, 'DEMO00052', 'GE101', '114-1', 80.40, 1),
+(1331, 'DEMO00052', 'CS102', '114-2', 93.20, 1),
+(1332, 'DEMO00052', 'EN102', '114-2', 90.40, 1),
+(1333, 'DEMO00011', 'CS101', '114-1', 76.60, 1),
+(1334, 'DEMO00011', 'EN101', '114-1', 64.10, 1),
+(1335, 'DEMO00011', 'GE101', '114-1', 71.10, 1),
+(1336, 'DEMO00011', 'CS102', '114-2', 50.10, 0),
+(1337, 'DEMO00011', 'EN102', '114-2', 67.10, 1),
+(1338, 'DEMO00012', 'CS101', '114-1', 81.00, 1),
+(1339, 'DEMO00012', 'EN101', '114-1', 73.80, 1),
+(1340, 'DEMO00012', 'GE101', '114-1', 77.70, 1),
+(1341, 'DEMO00012', 'CS102', '114-2', 63.90, 1),
+(1342, 'DEMO00012', 'EN102', '114-2', 71.00, 1),
+(1343, 'DEMO00013', 'CS101', '114-1', 73.10, 1),
+(1344, 'DEMO00013', 'EN101', '114-1', 73.20, 1),
+(1345, 'DEMO00013', 'GE101', '114-1', 81.30, 1),
+(1346, 'DEMO00013', 'CS102', '114-2', 77.90, 1),
+(1347, 'DEMO00013', 'EN102', '114-2', 71.40, 1),
+(1348, 'DEMO00014', 'CS101', '114-1', 76.40, 1),
+(1349, 'DEMO00014', 'EN101', '114-1', 69.50, 1),
+(1350, 'DEMO00014', 'GE101', '114-1', 82.70, 1),
+(1351, 'DEMO00014', 'CS102', '114-2', 76.40, 1),
+(1352, 'DEMO00014', 'EN102', '114-2', 76.80, 1),
+(1353, 'DEMO00015', 'CS101', '114-1', 74.90, 1),
+(1354, 'DEMO00015', 'EN101', '114-1', 70.50, 1),
+(1355, 'DEMO00015', 'GE101', '114-1', 86.10, 1),
+(1356, 'DEMO00015', 'CS102', '114-2', 77.20, 1),
+(1357, 'DEMO00015', 'EN102', '114-2', 69.60, 1),
+(1358, 'DEMO00016', 'CS101', '113-1', 77.40, 1),
+(1359, 'DEMO00016', 'EN101', '113-1', 84.50, 1),
+(1360, 'DEMO00016', 'GE101', '113-1', 79.70, 1),
+(1361, 'DEMO00016', 'CS102', '113-2', 76.70, 1),
+(1362, 'DEMO00016', 'EN102', '113-2', 74.60, 1),
+(1363, 'DEMO00016', 'CS201', '114-1', 79.50, 1),
+(1364, 'DEMO00016', 'GE102', '114-1', 80.50, 1),
+(1365, 'DEMO00016', 'CS202', '114-2', 81.10, 1),
+(1366, 'DEMO00016', 'GE103', '114-2', 88.30, 1),
+(1367, 'DEMO00017', 'CS101', '113-1', 60.30, 1),
+(1368, 'DEMO00017', 'EN101', '113-1', 73.60, 1),
+(1369, 'DEMO00017', 'GE101', '113-1', 74.60, 1),
+(1370, 'DEMO00017', 'CS102', '113-2', 62.30, 1),
+(1371, 'DEMO00017', 'EN102', '113-2', 63.40, 1),
+(1372, 'DEMO00017', 'CS201', '114-1', 49.60, 0),
+(1373, 'DEMO00017', 'GE102', '114-1', 66.20, 1),
+(1374, 'DEMO00017', 'CS202', '114-2', 70.00, 1),
+(1375, 'DEMO00017', 'GE103', '114-2', 65.80, 1),
+(1376, 'DEMO00053', 'CS101', '113-1', 85.40, 1),
+(1377, 'DEMO00053', 'EN101', '113-1', 88.00, 1),
+(1378, 'DEMO00053', 'GE101', '113-1', 91.90, 1),
+(1379, 'DEMO00053', 'CS102', '113-2', 90.40, 1),
+(1380, 'DEMO00053', 'EN102', '113-2', 90.30, 1),
+(1381, 'DEMO00053', 'CS201', '114-1', 74.60, 1),
+(1382, 'DEMO00053', 'GE102', '114-1', 92.40, 1),
+(1383, 'DEMO00053', 'CS202', '114-2', 86.70, 1),
+(1384, 'DEMO00053', 'GE103', '114-2', 90.50, 1),
+(1385, 'DEMO00054', 'CS101', '113-1', 95.40, 1),
+(1386, 'DEMO00054', 'EN101', '113-1', 91.40, 1),
+(1387, 'DEMO00054', 'GE101', '113-1', 89.50, 1),
+(1388, 'DEMO00054', 'CS102', '113-2', 84.30, 1),
+(1389, 'DEMO00054', 'EN102', '113-2', 86.10, 1),
+(1390, 'DEMO00054', 'CS201', '114-1', 86.50, 1),
+(1391, 'DEMO00054', 'GE102', '114-1', 98.10, 1),
+(1392, 'DEMO00054', 'CS202', '114-2', 99.00, 1),
+(1393, 'DEMO00054', 'GE103', '114-2', 90.30, 1),
+(1394, 'DEMO00018', 'CS101', '113-1', 66.00, 1),
+(1395, 'DEMO00018', 'EN101', '113-1', 63.90, 1),
+(1396, 'DEMO00018', 'GE101', '113-1', 64.50, 1),
+(1397, 'DEMO00018', 'CS102', '113-2', 73.80, 1),
+(1398, 'DEMO00018', 'EN102', '113-2', 74.30, 1),
+(1399, 'DEMO00018', 'CS201', '114-1', 68.80, 1),
+(1400, 'DEMO00018', 'GE102', '114-1', 74.30, 1),
+(1401, 'DEMO00018', 'CS202', '114-2', 38.50, 0),
+(1402, 'DEMO00018', 'GE103', '114-2', 73.00, 1),
+(1403, 'DEMO00019', 'CS101', '113-1', 71.20, 1),
+(1404, 'DEMO00019', 'EN101', '113-1', 79.00, 1),
+(1405, 'DEMO00019', 'GE101', '113-1', 75.10, 1),
+(1406, 'DEMO00019', 'CS102', '113-2', 75.60, 1),
+(1407, 'DEMO00019', 'EN102', '113-2', 82.10, 1),
+(1408, 'DEMO00019', 'CS201', '114-1', 70.10, 1),
+(1409, 'DEMO00019', 'GE102', '114-1', 82.80, 1),
+(1410, 'DEMO00019', 'CS202', '114-2', 76.70, 1),
+(1411, 'DEMO00019', 'GE103', '114-2', 71.00, 1),
+(1412, 'DEMO00020', 'CS101', '113-1', 88.10, 1),
+(1413, 'DEMO00020', 'EN101', '113-1', 80.50, 1),
+(1414, 'DEMO00020', 'GE101', '113-1', 81.80, 1),
+(1415, 'DEMO00020', 'CS102', '113-2', 78.90, 1),
+(1416, 'DEMO00020', 'EN102', '113-2', 78.00, 1),
+(1417, 'DEMO00020', 'CS201', '114-1', 70.20, 1),
+(1418, 'DEMO00020', 'GE102', '114-1', 64.50, 1),
+(1419, 'DEMO00020', 'CS202', '114-2', 74.80, 1),
+(1420, 'DEMO00020', 'GE103', '114-2', 80.00, 1),
+(1421, 'DEMO00055', 'CS101', '113-1', 62.20, 1),
+(1422, 'DEMO00055', 'EN101', '113-1', 75.20, 1),
+(1423, 'DEMO00055', 'GE101', '113-1', 70.10, 1),
+(1424, 'DEMO00055', 'CS102', '113-2', 75.30, 1),
+(1425, 'DEMO00055', 'EN102', '113-2', 71.70, 1),
+(1426, 'DEMO00055', 'CS201', '114-1', 77.00, 1),
+(1427, 'DEMO00055', 'GE102', '114-1', 71.00, 1),
+(1428, 'DEMO00055', 'CS202', '114-2', 77.50, 1),
+(1429, 'DEMO00055', 'GE103', '114-2', 76.10, 1),
+(1430, 'DEMO00021', 'CS101', '113-1', 67.00, 1),
+(1431, 'DEMO00021', 'EN101', '113-1', 88.10, 1),
+(1432, 'DEMO00021', 'GE101', '113-1', 74.70, 1),
+(1433, 'DEMO00021', 'CS102', '113-2', 77.30, 1),
+(1434, 'DEMO00021', 'EN102', '113-2', 71.90, 1),
+(1435, 'DEMO00021', 'CS201', '114-1', 85.70, 1),
+(1436, 'DEMO00021', 'GE102', '114-1', 79.40, 1),
+(1437, 'DEMO00021', 'CS202', '114-2', 83.80, 1),
+(1438, 'DEMO00021', 'GE103', '114-2', 79.00, 1),
+(1439, 'DEMO00022', 'CS101', '112-1', 70.30, 1),
+(1440, 'DEMO00022', 'EN101', '112-1', 65.60, 1),
+(1441, 'DEMO00022', 'GE101', '112-1', 77.10, 1),
+(1442, 'DEMO00022', 'CS102', '112-2', 79.90, 1),
+(1443, 'DEMO00022', 'EN102', '112-2', 77.60, 1),
+(1444, 'DEMO00022', 'CS201', '113-1', 77.40, 1),
+(1445, 'DEMO00022', 'GE102', '113-1', 67.30, 1),
+(1446, 'DEMO00022', 'CS202', '113-2', 75.90, 1),
+(1447, 'DEMO00022', 'GE103', '113-2', 88.40, 1),
+(1448, 'DEMO00022', 'CS301', '114-1', 84.40, 1),
+(1449, 'DEMO00022', 'CS303', '114-1', 81.00, 1),
+(1450, 'DEMO00022', 'CS302', '114-2', 80.60, 1),
+(1451, 'DEMO00022', 'CS304', '114-2', 68.10, 1),
+(1452, 'DEMO00023', 'CS101', '112-1', 63.60, 1),
+(1453, 'DEMO00023', 'EN101', '112-1', 67.00, 1),
+(1454, 'DEMO00023', 'GE101', '112-1', 67.10, 1),
+(1455, 'DEMO00023', 'CS102', '112-2', 75.80, 1),
+(1456, 'DEMO00023', 'EN102', '112-2', 65.00, 1),
+(1457, 'DEMO00023', 'CS201', '113-1', 38.80, 0),
+(1458, 'DEMO00023', 'GE102', '113-1', 66.90, 1),
+(1459, 'DEMO00023', 'CS202', '113-2', 68.10, 1),
+(1460, 'DEMO00023', 'GE103', '113-2', 64.00, 1),
+(1461, 'DEMO00023', 'CS301', '114-1', 74.00, 1),
+(1462, 'DEMO00023', 'CS303', '114-1', 65.00, 1),
+(1463, 'DEMO00023', 'CS302', '114-2', 81.40, 1),
+(1464, 'DEMO00023', 'CS304', '114-2', 71.10, 1),
+(1465, 'DEMO00056', 'CS101', '112-1', 93.30, 1),
+(1466, 'DEMO00056', 'EN101', '112-1', 98.00, 1),
+(1467, 'DEMO00056', 'GE101', '112-1', 99.00, 1),
+(1468, 'DEMO00056', 'CS102', '112-2', 90.50, 1),
+(1469, 'DEMO00056', 'EN102', '112-2', 77.70, 1),
+(1470, 'DEMO00056', 'CS201', '113-1', 81.40, 1),
+(1471, 'DEMO00056', 'GE102', '113-1', 88.30, 1),
+(1472, 'DEMO00056', 'CS202', '113-2', 89.10, 1),
+(1473, 'DEMO00056', 'GE103', '113-2', 94.30, 1),
+(1474, 'DEMO00056', 'CS301', '114-1', 89.60, 1),
+(1475, 'DEMO00056', 'CS303', '114-1', 99.00, 1),
+(1476, 'DEMO00056', 'CS302', '114-2', 91.60, 1),
+(1477, 'DEMO00056', 'CS304', '114-2', 80.50, 1),
+(1478, 'DEMO00057', 'CS101', '112-1', 88.50, 1),
+(1479, 'DEMO00057', 'EN101', '112-1', 83.60, 1),
+(1480, 'DEMO00057', 'GE101', '112-1', 91.20, 1),
+(1481, 'DEMO00057', 'CS102', '112-2', 88.00, 1),
+(1482, 'DEMO00057', 'EN102', '112-2', 81.50, 1),
+(1483, 'DEMO00057', 'CS201', '113-1', 79.90, 1),
+(1484, 'DEMO00057', 'GE102', '113-1', 95.00, 1),
+(1485, 'DEMO00057', 'CS202', '113-2', 85.30, 1),
+(1486, 'DEMO00057', 'GE103', '113-2', 90.10, 1),
+(1487, 'DEMO00057', 'CS301', '114-1', 93.80, 1),
+(1488, 'DEMO00057', 'CS303', '114-1', 81.70, 1),
+(1489, 'DEMO00057', 'CS302', '114-2', 84.40, 1),
+(1490, 'DEMO00057', 'CS304', '114-2', 92.90, 1),
+(1491, 'DEMO00024', 'CS101', '112-1', 67.90, 1),
+(1492, 'DEMO00024', 'EN101', '112-1', 67.00, 1),
+(1493, 'DEMO00024', 'GE101', '112-1', 61.80, 1),
+(1494, 'DEMO00024', 'CS102', '112-2', 64.00, 1),
+(1495, 'DEMO00024', 'EN102', '112-2', 67.40, 1),
+(1496, 'DEMO00024', 'CS201', '113-1', 60.00, 1),
+(1497, 'DEMO00024', 'GE102', '113-1', 76.60, 1),
+(1498, 'DEMO00024', 'CS202', '113-2', 65.90, 1),
+(1499, 'DEMO00024', 'GE103', '113-2', 72.10, 1),
+(1500, 'DEMO00024', 'CS301', '114-1', 66.40, 1),
+(1501, 'DEMO00024', 'CS303', '114-1', 74.90, 1),
+(1502, 'DEMO00024', 'CS302', '114-2', 41.20, 0),
+(1503, 'DEMO00024', 'CS304', '114-2', 75.70, 1),
+(1504, 'DEMO00058', 'CS101', '112-1', 73.10, 1),
+(1505, 'DEMO00058', 'EN101', '112-1', 76.80, 1),
+(1506, 'DEMO00058', 'GE101', '112-1', 67.40, 1),
+(1507, 'DEMO00058', 'CS102', '112-2', 80.00, 1),
+(1508, 'DEMO00058', 'EN102', '112-2', 69.90, 1),
+(1509, 'DEMO00058', 'CS201', '113-1', 80.60, 1),
+(1510, 'DEMO00058', 'GE102', '113-1', 74.10, 1),
+(1511, 'DEMO00058', 'CS202', '113-2', 70.50, 1),
+(1512, 'DEMO00058', 'GE103', '113-2', 77.00, 1),
+(1513, 'DEMO00058', 'CS301', '114-1', 79.30, 1),
+(1514, 'DEMO00058', 'CS303', '114-1', 70.90, 1),
+(1515, 'DEMO00058', 'CS302', '114-2', 61.10, 1),
+(1516, 'DEMO00058', 'CS304', '114-2', 81.10, 1),
+(1517, 'DEMO00059', 'CS101', '112-1', 68.50, 1),
+(1518, 'DEMO00059', 'EN101', '112-1', 79.50, 1),
+(1519, 'DEMO00059', 'GE101', '112-1', 72.00, 1),
+(1520, 'DEMO00059', 'CS102', '112-2', 69.80, 1),
+(1521, 'DEMO00059', 'EN102', '112-2', 74.00, 1),
+(1522, 'DEMO00059', 'CS201', '113-1', 77.80, 1),
+(1523, 'DEMO00059', 'GE102', '113-1', 74.90, 1),
+(1524, 'DEMO00059', 'CS202', '113-2', 66.80, 1),
+(1525, 'DEMO00059', 'GE103', '113-2', 68.60, 1),
+(1526, 'DEMO00059', 'CS301', '114-1', 78.30, 1),
+(1527, 'DEMO00059', 'CS303', '114-1', 75.20, 1),
+(1528, 'DEMO00059', 'CS302', '114-2', 85.90, 1),
+(1529, 'DEMO00059', 'CS304', '114-2', 81.20, 1),
+(1530, 'DEMO00025', 'CS101', '112-1', 73.50, 1),
+(1531, 'DEMO00025', 'EN101', '112-1', 69.20, 1),
+(1532, 'DEMO00025', 'GE101', '112-1', 79.80, 1),
+(1533, 'DEMO00025', 'CS102', '112-2', 77.10, 1),
+(1534, 'DEMO00025', 'EN102', '112-2', 71.40, 1),
+(1535, 'DEMO00025', 'CS201', '113-1', 61.00, 1),
+(1536, 'DEMO00025', 'GE102', '113-1', 71.00, 1),
+(1537, 'DEMO00025', 'CS202', '113-2', 67.40, 1),
+(1538, 'DEMO00025', 'GE103', '113-2', 80.40, 1),
+(1539, 'DEMO00025', 'CS301', '114-1', 76.90, 1),
+(1540, 'DEMO00025', 'CS303', '114-1', 70.40, 1),
+(1541, 'DEMO00025', 'CS302', '114-2', 87.00, 1),
+(1542, 'DEMO00025', 'CS304', '114-2', 75.60, 1),
+(1543, 'DEMO00026', 'CS101', '112-1', 80.50, 1),
+(1544, 'DEMO00026', 'EN101', '112-1', 77.70, 1),
+(1545, 'DEMO00026', 'GE101', '112-1', 78.30, 1),
+(1546, 'DEMO00026', 'CS102', '112-2', 77.20, 1),
+(1547, 'DEMO00026', 'EN102', '112-2', 86.00, 1),
+(1548, 'DEMO00026', 'CS201', '113-1', 85.30, 1),
+(1549, 'DEMO00026', 'GE102', '113-1', 64.00, 1),
+(1550, 'DEMO00026', 'CS202', '113-2', 64.80, 1),
+(1551, 'DEMO00026', 'GE103', '113-2', 72.30, 1),
+(1552, 'DEMO00026', 'CS301', '114-1', 75.20, 1),
+(1553, 'DEMO00026', 'CS303', '114-1', 82.80, 1),
+(1554, 'DEMO00026', 'CS302', '114-2', 77.60, 1),
+(1555, 'DEMO00026', 'CS304', '114-2', 77.00, 1),
+(1556, 'DEMO00027', 'CS101', '111-1', 80.00, 1),
+(1557, 'DEMO00027', 'EN101', '111-1', 71.50, 1),
+(1558, 'DEMO00027', 'GE101', '111-1', 80.20, 1),
+(1559, 'DEMO00027', 'CS102', '111-2', 76.20, 1),
+(1560, 'DEMO00027', 'EN102', '111-2', 75.10, 1),
+(1561, 'DEMO00027', 'CS201', '112-1', 77.90, 1),
+(1562, 'DEMO00027', 'GE102', '112-1', 77.60, 1),
+(1563, 'DEMO00027', 'CS202', '112-2', 73.90, 1),
+(1564, 'DEMO00027', 'GE103', '112-2', 72.90, 1),
+(1565, 'DEMO00027', 'CS301', '113-1', 85.10, 1),
+(1566, 'DEMO00027', 'CS303', '113-1', 66.40, 1),
+(1567, 'DEMO00027', 'CS302', '113-2', 80.40, 1),
+(1568, 'DEMO00027', 'CS304', '113-2', 75.80, 1),
+(1569, 'DEMO00027', 'CS401', '114-1', 76.90, 1),
+(1570, 'DEMO00027', 'CS305', '114-1', 75.60, 1),
+(1571, 'DEMO00027', 'CS402', '114-2', 73.40, 1),
+(1572, 'DEMO00027', 'CS306', '114-2', 80.40, 1),
+(1573, 'DEMO00028', 'CS101', '111-1', 73.60, 1),
+(1574, 'DEMO00028', 'EN101', '111-1', 63.10, 1),
+(1575, 'DEMO00028', 'GE101', '111-1', 70.30, 1),
+(1576, 'DEMO00028', 'CS102', '111-2', 73.90, 1),
+(1577, 'DEMO00028', 'EN102', '111-2', 73.80, 1),
+(1578, 'DEMO00028', 'CS201', '112-1', 67.90, 1),
+(1579, 'DEMO00028', 'GE102', '112-1', 62.20, 1),
+(1580, 'DEMO00028', 'CS202', '112-2', 76.80, 1),
+(1581, 'DEMO00028', 'GE103', '112-2', 63.30, 1),
+(1582, 'DEMO00028', 'CS301', '113-1', 73.30, 1),
+(1583, 'DEMO00028', 'CS303', '113-1', 86.50, 1),
+(1584, 'DEMO00028', 'CS302', '113-2', 64.80, 1),
+(1585, 'DEMO00028', 'CS304', '113-2', 73.60, 1),
+(1586, 'DEMO00028', 'CS401', '114-1', 52.30, 0),
+(1587, 'DEMO00028', 'CS305', '114-1', 65.00, 1),
+(1588, 'DEMO00028', 'CS402', '114-2', 61.10, 1),
+(1589, 'DEMO00028', 'CS306', '114-2', 72.10, 1),
+(1590, 'DEMO00060', 'CS101', '111-1', 95.70, 1),
+(1591, 'DEMO00060', 'EN101', '111-1', 79.50, 1),
+(1592, 'DEMO00060', 'GE101', '111-1', 82.70, 1),
+(1593, 'DEMO00060', 'CS102', '111-2', 86.70, 1),
+(1594, 'DEMO00060', 'EN102', '111-2', 83.10, 1),
+(1595, 'DEMO00060', 'CS201', '112-1', 85.70, 1),
+(1596, 'DEMO00060', 'GE102', '112-1', 86.40, 1),
+(1597, 'DEMO00060', 'CS202', '112-2', 90.10, 1),
+(1598, 'DEMO00060', 'GE103', '112-2', 86.90, 1),
+(1599, 'DEMO00060', 'CS301', '113-1', 87.20, 1),
+(1600, 'DEMO00060', 'CS303', '113-1', 93.80, 1),
+(1601, 'DEMO00060', 'CS302', '113-2', 98.70, 1),
+(1602, 'DEMO00060', 'CS304', '113-2', 82.80, 1),
+(1603, 'DEMO00060', 'CS401', '114-1', 86.30, 1),
+(1604, 'DEMO00060', 'CS305', '114-1', 89.30, 1),
+(1605, 'DEMO00060', 'CS402', '114-2', 86.80, 1),
+(1606, 'DEMO00060', 'CS306', '114-2', 95.00, 1),
+(1607, 'DEMO00061', 'CS101', '111-1', 68.90, 1),
+(1608, 'DEMO00061', 'EN101', '111-1', 77.30, 1),
+(1609, 'DEMO00061', 'GE101', '111-1', 69.80, 1),
+(1610, 'DEMO00061', 'CS102', '111-2', 80.40, 1),
+(1611, 'DEMO00061', 'EN102', '111-2', 72.80, 1),
+(1612, 'DEMO00061', 'CS201', '112-1', 66.00, 1),
+(1613, 'DEMO00061', 'GE102', '112-1', 70.90, 1),
+(1614, 'DEMO00061', 'CS202', '112-2', 65.30, 1),
+(1615, 'DEMO00061', 'GE103', '112-2', 80.00, 1),
+(1616, 'DEMO00061', 'CS301', '113-1', 73.80, 1),
+(1617, 'DEMO00061', 'CS303', '113-1', 72.80, 1),
+(1618, 'DEMO00061', 'CS302', '113-2', 77.90, 1),
+(1619, 'DEMO00061', 'CS304', '113-2', 79.80, 1),
+(1620, 'DEMO00061', 'CS401', '114-1', 83.50, 1),
+(1621, 'DEMO00061', 'CS305', '114-1', 88.20, 1),
+(1622, 'DEMO00061', 'CS402', '114-2', 82.90, 1),
+(1623, 'DEMO00061', 'CS306', '114-2', 70.20, 1),
+(1624, 'DEMO00062', 'CS101', '111-1', 80.20, 1),
+(1625, 'DEMO00062', 'EN101', '111-1', 80.20, 1),
+(1626, 'DEMO00062', 'GE101', '111-1', 84.00, 1),
+(1627, 'DEMO00062', 'CS102', '111-2', 82.20, 1),
+(1628, 'DEMO00062', 'EN102', '111-2', 86.20, 1),
+(1629, 'DEMO00062', 'CS201', '112-1', 89.60, 1),
+(1630, 'DEMO00062', 'GE102', '112-1', 81.70, 1),
+(1631, 'DEMO00062', 'CS202', '112-2', 90.60, 1),
+(1632, 'DEMO00062', 'GE103', '112-2', 84.60, 1),
+(1633, 'DEMO00062', 'CS301', '113-1', 91.20, 1),
+(1634, 'DEMO00062', 'CS303', '113-1', 86.20, 1),
+(1635, 'DEMO00062', 'CS302', '113-2', 79.90, 1),
+(1636, 'DEMO00062', 'CS304', '113-2', 82.80, 1),
+(1637, 'DEMO00062', 'CS401', '114-1', 86.80, 1),
+(1638, 'DEMO00062', 'CS305', '114-1', 91.70, 1),
+(1639, 'DEMO00062', 'CS402', '114-2', 88.80, 1),
+(1640, 'DEMO00062', 'CS306', '114-2', 99.00, 1),
+(1641, 'DEMO00063', 'CS101', '111-1', 65.30, 1),
+(1642, 'DEMO00063', 'EN101', '111-1', 85.50, 1),
+(1643, 'DEMO00063', 'GE101', '111-1', 71.50, 1),
+(1644, 'DEMO00063', 'CS102', '111-2', 82.10, 1),
+(1645, 'DEMO00063', 'EN102', '111-2', 65.40, 1),
+(1646, 'DEMO00063', 'CS201', '112-1', 81.10, 1),
+(1647, 'DEMO00063', 'GE102', '112-1', 70.60, 1),
+(1648, 'DEMO00063', 'CS202', '112-2', 86.60, 1),
+(1649, 'DEMO00063', 'GE103', '112-2', 71.00, 1),
+(1650, 'DEMO00063', 'CS301', '113-1', 80.70, 1),
+(1651, 'DEMO00063', 'CS303', '113-1', 78.60, 1),
+(1652, 'DEMO00063', 'CS302', '113-2', 69.40, 1),
+(1653, 'DEMO00063', 'CS304', '113-2', 66.40, 1),
+(1654, 'DEMO00063', 'CS401', '114-1', 88.30, 1),
+(1655, 'DEMO00063', 'CS305', '114-1', 75.40, 1),
+(1656, 'DEMO00063', 'CS402', '114-2', 74.50, 1),
+(1657, 'DEMO00063', 'CS306', '114-2', 67.20, 1),
+(1658, 'DEMO00029', 'CS101', '111-1', 38.70, 0),
+(1659, 'DEMO00029', 'EN101', '111-1', 71.40, 1),
+(1660, 'DEMO00029', 'GE101', '111-1', 73.60, 1),
+(1661, 'DEMO00029', 'CS102', '111-2', 69.10, 1),
+(1662, 'DEMO00029', 'EN102', '111-2', 68.80, 1),
+(1663, 'DEMO00029', 'CS201', '112-1', 77.30, 1),
+(1664, 'DEMO00029', 'GE102', '112-1', 72.80, 1),
+(1665, 'DEMO00029', 'CS202', '112-2', 66.10, 1),
+(1666, 'DEMO00029', 'GE103', '112-2', 81.30, 1),
+(1667, 'DEMO00029', 'CS301', '113-1', 66.20, 1),
+(1668, 'DEMO00029', 'CS303', '113-1', 76.30, 1),
+(1669, 'DEMO00029', 'CS302', '113-2', 75.40, 1),
+(1670, 'DEMO00029', 'CS304', '113-2', 74.70, 1),
+(1671, 'DEMO00029', 'CS401', '114-1', 61.30, 1),
+(1672, 'DEMO00029', 'CS305', '114-1', 64.90, 1),
+(1673, 'DEMO00029', 'CS402', '114-2', 61.00, 1),
+(1674, 'DEMO00029', 'CS306', '114-2', 68.80, 1),
+(1675, 'DEMO00030', 'CS101', '111-1', 63.00, 1),
+(1676, 'DEMO00030', 'EN101', '111-1', 60.30, 1),
+(1677, 'DEMO00030', 'GE101', '111-1', 65.40, 1),
+(1678, 'DEMO00030', 'CS102', '111-2', 79.90, 1),
+(1679, 'DEMO00030', 'EN102', '111-2', 75.10, 1),
+(1680, 'DEMO00030', 'CS201', '112-1', 69.30, 1),
+(1681, 'DEMO00030', 'GE102', '112-1', 78.50, 1),
+(1682, 'DEMO00030', 'CS202', '112-2', 64.10, 1),
+(1683, 'DEMO00030', 'GE103', '112-2', 68.50, 1),
+(1684, 'DEMO00030', 'CS301', '113-1', 42.20, 0),
+(1685, 'DEMO00030', 'CS303', '113-1', 76.60, 1),
+(1686, 'DEMO00030', 'CS302', '113-2', 74.30, 1),
+(1687, 'DEMO00030', 'CS304', '113-2', 77.00, 1),
+(1688, 'DEMO00030', 'CS401', '114-1', 80.70, 1),
+(1689, 'DEMO00030', 'CS305', '114-1', 68.80, 1),
+(1690, 'DEMO00030', 'CS402', '114-2', 73.70, 1),
+(1691, 'DEMO00030', 'CS306', '114-2', 62.10, 1),
+(1692, 'DEMO00064', 'CS101', '111-1', 67.10, 1),
+(1693, 'DEMO00064', 'EN101', '111-1', 67.00, 1),
+(1694, 'DEMO00064', 'GE101', '111-1', 68.70, 1),
+(1695, 'DEMO00064', 'CS102', '111-2', 36.10, 0),
+(1696, 'DEMO00064', 'EN102', '111-2', 73.60, 1),
+(1697, 'DEMO00064', 'CS201', '112-1', 69.90, 1),
+(1698, 'DEMO00064', 'GE102', '112-1', 66.20, 1),
+(1699, 'DEMO00064', 'CS202', '112-2', 76.90, 1),
+(1700, 'DEMO00064', 'GE103', '112-2', 61.30, 1),
+(1701, 'DEMO00064', 'CS301', '113-1', 61.90, 1),
+(1702, 'DEMO00064', 'CS303', '113-1', 72.60, 1),
+(1703, 'DEMO00064', 'CS302', '113-2', 60.30, 1),
+(1704, 'DEMO00064', 'CS304', '113-2', 68.60, 1),
+(1705, 'DEMO00064', 'CS401', '114-1', 69.00, 1),
+(1706, 'DEMO00064', 'CS305', '114-1', 65.70, 1),
+(1707, 'DEMO00064', 'CS402', '114-2', 67.80, 1),
+(1708, 'DEMO00064', 'CS306', '114-2', 73.00, 1),
+(1709, 'DEMO00031', 'CS101', '111-1', 67.20, 1),
+(1710, 'DEMO00031', 'EN101', '111-1', 72.00, 1),
+(1711, 'DEMO00031', 'GE101', '111-1', 65.70, 1),
+(1712, 'DEMO00031', 'CS102', '111-2', 75.20, 1),
+(1713, 'DEMO00031', 'EN102', '111-2', 73.40, 1),
+(1714, 'DEMO00031', 'CS201', '112-1', 66.10, 1),
+(1715, 'DEMO00031', 'GE102', '112-1', 66.80, 1),
+(1716, 'DEMO00031', 'CS202', '112-2', 63.00, 1),
+(1717, 'DEMO00031', 'GE103', '112-2', 65.00, 1),
+(1718, 'DEMO00031', 'CS301', '113-1', 61.10, 1),
+(1719, 'DEMO00031', 'CS303', '113-1', 60.00, 1),
+(1720, 'DEMO00031', 'CS302', '113-2', 63.00, 1),
+(1721, 'DEMO00031', 'CS304', '113-2', 62.00, 1),
+(1722, 'DEMO00031', 'CS401', '114-1', 64.40, 1),
+(1723, 'DEMO00031', 'CS305', '114-1', 62.20, 1),
+(1724, 'DEMO00031', 'CS402', '114-2', 37.00, 0),
+(1725, 'DEMO00031', 'CS306', '114-2', 72.10, 1),
+(1726, 'DEMO00032', 'CS101', '111-1', 67.80, 1),
+(1727, 'DEMO00032', 'EN101', '111-1', 68.70, 1),
+(1728, 'DEMO00032', 'GE101', '111-1', 66.60, 1),
+(1729, 'DEMO00032', 'CS102', '111-2', 70.50, 1),
+(1730, 'DEMO00032', 'EN102', '111-2', 68.80, 1),
+(1731, 'DEMO00032', 'CS201', '112-1', 62.00, 1),
+(1732, 'DEMO00032', 'GE102', '112-1', 62.20, 1),
+(1733, 'DEMO00032', 'CS202', '112-2', 60.00, 1),
+(1734, 'DEMO00032', 'GE103', '112-2', 71.40, 1),
+(1735, 'DEMO00032', 'CS301', '113-1', 61.00, 1),
+(1736, 'DEMO00032', 'CS303', '113-1', 64.50, 1),
+(1737, 'DEMO00032', 'CS302', '113-2', 77.60, 1),
+(1738, 'DEMO00032', 'CS304', '113-2', 61.00, 1),
+(1739, 'DEMO00032', 'CS401', '114-1', 72.30, 1),
+(1740, 'DEMO00032', 'CS305', '114-1', 68.00, 1),
+(1741, 'DEMO00032', 'CS402', '114-2', 42.90, 0),
+(1742, 'DEMO00032', 'CS306', '114-2', 67.10, 1),
+(1743, 'DEMO00033', 'CS101', '111-1', 65.00, 1),
+(1744, 'DEMO00033', 'EN101', '111-1', 64.70, 1),
+(1745, 'DEMO00033', 'GE101', '111-1', 62.00, 1),
+(1746, 'DEMO00033', 'CS102', '111-2', 70.40, 1),
+(1747, 'DEMO00033', 'EN102', '111-2', 67.30, 1),
+(1748, 'DEMO00033', 'CS201', '112-1', 64.70, 1),
+(1749, 'DEMO00033', 'GE102', '112-1', 69.30, 1),
+(1750, 'DEMO00033', 'CS202', '112-2', 65.60, 1),
+(1751, 'DEMO00033', 'GE103', '112-2', 65.80, 1),
+(1752, 'DEMO00033', 'CS301', '113-1', 74.60, 1),
+(1753, 'DEMO00033', 'CS303', '113-1', 69.80, 1),
+(1754, 'DEMO00033', 'CS302', '113-2', 62.00, 1),
+(1755, 'DEMO00033', 'CS304', '113-2', 62.00, 1),
+(1756, 'DEMO00033', 'CS401', '114-1', 62.30, 1),
+(1757, 'DEMO00033', 'CS305', '114-1', 63.00, 1),
+(1758, 'DEMO00033', 'CS402', '114-2', 45.10, 0),
+(1759, 'DEMO00033', 'CS306', '114-2', 63.00, 1),
+(1760, 'DEMO00065', 'CS101', '111-1', 96.70, 1),
+(1761, 'DEMO00065', 'EN101', '111-1', 91.50, 1),
+(1762, 'DEMO00065', 'GE101', '111-1', 86.40, 1),
+(1763, 'DEMO00065', 'CS102', '111-2', 82.20, 1),
+(1764, 'DEMO00065', 'EN102', '111-2', 93.60, 1),
+(1765, 'DEMO00065', 'CS201', '112-1', 85.70, 1),
+(1766, 'DEMO00065', 'GE102', '112-1', 82.30, 1),
+(1767, 'DEMO00065', 'CS202', '112-2', 88.10, 1),
+(1768, 'DEMO00065', 'GE103', '112-2', 90.40, 1),
+(1769, 'DEMO00065', 'CS301', '113-1', 89.90, 1),
+(1770, 'DEMO00065', 'CS303', '113-1', 90.60, 1),
+(1771, 'DEMO00065', 'CS302', '113-2', 86.10, 1),
+(1772, 'DEMO00065', 'CS304', '113-2', 86.20, 1),
+(1773, 'DEMO00065', 'CS401', '114-1', 89.70, 1),
+(1774, 'DEMO00065', 'CS305', '114-1', 81.20, 1),
+(1775, 'DEMO00065', 'CS402', '114-2', 95.90, 1),
+(1776, 'DEMO00065', 'CS306', '114-2', 82.00, 1),
+(1777, 'DEMO00066', 'CS101', '111-1', 90.30, 1),
+(1778, 'DEMO00066', 'EN101', '111-1', 93.40, 1),
+(1779, 'DEMO00066', 'GE101', '111-1', 96.20, 1),
+(1780, 'DEMO00066', 'CS102', '111-2', 95.50, 1),
+(1781, 'DEMO00066', 'EN102', '111-2', 81.00, 1),
+(1782, 'DEMO00066', 'CS201', '112-1', 93.90, 1),
+(1783, 'DEMO00066', 'GE102', '112-1', 91.90, 1),
+(1784, 'DEMO00066', 'CS202', '112-2', 91.10, 1),
+(1785, 'DEMO00066', 'GE103', '112-2', 85.20, 1),
+(1786, 'DEMO00066', 'CS301', '113-1', 89.30, 1),
+(1787, 'DEMO00066', 'CS303', '113-1', 75.50, 1),
+(1788, 'DEMO00066', 'CS302', '113-2', 90.70, 1),
+(1789, 'DEMO00066', 'CS304', '113-2', 90.30, 1),
+(1790, 'DEMO00066', 'CS401', '114-1', 99.00, 1),
+(1791, 'DEMO00066', 'CS305', '114-1', 87.70, 1),
+(1792, 'DEMO00066', 'CS402', '114-2', 84.10, 1),
+(1793, 'DEMO00066', 'CS306', '114-2', 89.10, 1),
+(1794, 'DEMO00067', 'CS101', '111-1', 94.60, 1),
+(1795, 'DEMO00067', 'EN101', '111-1', 95.30, 1),
+(1796, 'DEMO00067', 'GE101', '111-1', 94.90, 1),
+(1797, 'DEMO00067', 'CS102', '111-2', 88.90, 1),
+(1798, 'DEMO00067', 'EN102', '111-2', 83.10, 1),
+(1799, 'DEMO00067', 'CS201', '112-1', 84.80, 1),
+(1800, 'DEMO00067', 'GE102', '112-1', 88.60, 1),
+(1801, 'DEMO00067', 'CS202', '112-2', 78.80, 1),
+(1802, 'DEMO00067', 'GE103', '112-2', 87.40, 1),
+(1803, 'DEMO00067', 'CS301', '113-1', 90.70, 1),
+(1804, 'DEMO00067', 'CS303', '113-1', 86.00, 1),
+(1805, 'DEMO00067', 'CS302', '113-2', 99.00, 1),
+(1806, 'DEMO00067', 'CS304', '113-2', 86.90, 1),
+(1807, 'DEMO00067', 'CS401', '114-1', 85.50, 1),
+(1808, 'DEMO00067', 'CS305', '114-1', 84.70, 1),
+(1809, 'DEMO00067', 'CS402', '114-2', 83.40, 1),
+(1810, 'DEMO00067', 'CS306', '114-2', 97.10, 1),
+(1811, 'DEMO00068', 'CS101', '111-1', 86.20, 1),
+(1812, 'DEMO00068', 'EN101', '111-1', 87.50, 1),
+(1813, 'DEMO00068', 'GE101', '111-1', 75.30, 1),
+(1814, 'DEMO00068', 'CS102', '111-2', 83.50, 1),
+(1815, 'DEMO00068', 'EN102', '111-2', 84.50, 1),
+(1816, 'DEMO00068', 'CS201', '112-1', 89.60, 1),
+(1817, 'DEMO00068', 'GE102', '112-1', 78.80, 1),
+(1818, 'DEMO00068', 'CS202', '112-2', 85.40, 1),
+(1819, 'DEMO00068', 'GE103', '112-2', 97.80, 1),
+(1820, 'DEMO00068', 'CS301', '113-1', 91.60, 1),
+(1821, 'DEMO00068', 'CS303', '113-1', 81.00, 1),
+(1822, 'DEMO00068', 'CS302', '113-2', 86.90, 1),
+(1823, 'DEMO00068', 'CS304', '113-2', 76.70, 1),
+(1824, 'DEMO00068', 'CS401', '114-1', 89.20, 1),
+(1825, 'DEMO00068', 'CS305', '114-1', 87.40, 1),
+(1826, 'DEMO00068', 'CS402', '114-2', 89.90, 1),
+(1827, 'DEMO00068', 'CS306', '114-2', 81.90, 1),
+(1828, 'DEMO00069', 'CS101', '111-1', 76.20, 1),
+(1829, 'DEMO00069', 'EN101', '111-1', 75.60, 1),
+(1830, 'DEMO00069', 'GE101', '111-1', 78.10, 1),
+(1831, 'DEMO00069', 'CS102', '111-2', 71.30, 1),
+(1832, 'DEMO00069', 'EN102', '111-2', 83.20, 1),
+(1833, 'DEMO00069', 'CS201', '112-1', 78.90, 1),
+(1834, 'DEMO00069', 'GE102', '112-1', 76.00, 1),
+(1835, 'DEMO00069', 'CS202', '112-2', 74.70, 1),
+(1836, 'DEMO00069', 'GE103', '112-2', 71.20, 1),
+(1837, 'DEMO00069', 'CS301', '113-1', 70.70, 1),
+(1838, 'DEMO00069', 'CS303', '113-1', 67.20, 1),
+(1839, 'DEMO00069', 'CS302', '113-2', 84.50, 1),
+(1840, 'DEMO00069', 'CS304', '113-2', 74.70, 1),
+(1841, 'DEMO00069', 'CS401', '114-1', 69.20, 1),
+(1842, 'DEMO00069', 'CS305', '114-1', 65.80, 1),
+(1843, 'DEMO00069', 'CS402', '114-2', 76.80, 1),
+(1844, 'DEMO00069', 'CS306', '114-2', 82.40, 1),
+(1845, 'DEMO00034', 'CS101', '111-1', 77.40, 1),
+(1846, 'DEMO00034', 'EN101', '111-1', 75.50, 1),
+(1847, 'DEMO00034', 'GE101', '111-1', 82.70, 1),
+(1848, 'DEMO00034', 'CS102', '111-2', 67.40, 1),
+(1849, 'DEMO00034', 'EN102', '111-2', 72.90, 1),
+(1850, 'DEMO00034', 'CS201', '112-1', 62.70, 1),
+(1851, 'DEMO00034', 'GE102', '112-1', 72.70, 1),
+(1852, 'DEMO00034', 'CS202', '112-2', 72.80, 1),
+(1853, 'DEMO00034', 'GE103', '112-2', 82.20, 1),
+(1854, 'DEMO00034', 'CS301', '113-1', 77.60, 1),
+(1855, 'DEMO00034', 'CS303', '113-1', 71.70, 1),
+(1856, 'DEMO00034', 'CS302', '113-2', 77.60, 1),
+(1857, 'DEMO00034', 'CS304', '113-2', 75.80, 1),
+(1858, 'DEMO00034', 'CS401', '114-1', 79.30, 1),
+(1859, 'DEMO00034', 'CS305', '114-1', 65.70, 1),
+(1860, 'DEMO00034', 'CS402', '114-2', 69.40, 1),
+(1861, 'DEMO00034', 'CS306', '114-2', 71.10, 1),
+(1862, 'DEMO00070', 'CS101', '111-1', 86.30, 1),
+(1863, 'DEMO00070', 'EN101', '111-1', 83.50, 1),
+(1864, 'DEMO00070', 'GE101', '111-1', 79.60, 1),
+(1865, 'DEMO00070', 'CS102', '111-2', 76.10, 1),
+(1866, 'DEMO00070', 'EN102', '111-2', 79.50, 1),
+(1867, 'DEMO00070', 'CS201', '112-1', 77.50, 1),
+(1868, 'DEMO00070', 'GE102', '112-1', 74.60, 1),
+(1869, 'DEMO00070', 'CS202', '112-2', 83.30, 1),
+(1870, 'DEMO00070', 'GE103', '112-2', 81.60, 1),
+(1871, 'DEMO00070', 'CS301', '113-1', 81.50, 1),
+(1872, 'DEMO00070', 'CS303', '113-1', 70.00, 1),
+(1873, 'DEMO00070', 'CS302', '113-2', 82.00, 1),
+(1874, 'DEMO00070', 'CS304', '113-2', 63.70, 1),
+(1875, 'DEMO00070', 'CS401', '114-1', 77.50, 1),
+(1876, 'DEMO00070', 'CS305', '114-1', 76.70, 1),
+(1877, 'DEMO00070', 'CS402', '114-2', 75.90, 1),
+(1878, 'DEMO00070', 'CS306', '114-2', 79.50, 1),
+(1879, 'DEMO00071', 'CS101', '111-1', 76.10, 1),
+(1880, 'DEMO00071', 'EN101', '111-1', 73.30, 1),
+(1881, 'DEMO00071', 'GE101', '111-1', 86.50, 1),
+(1882, 'DEMO00071', 'CS102', '111-2', 76.60, 1),
+(1883, 'DEMO00071', 'EN102', '111-2', 68.60, 1),
+(1884, 'DEMO00071', 'CS201', '112-1', 83.20, 1),
+(1885, 'DEMO00071', 'GE102', '112-1', 79.10, 1),
+(1886, 'DEMO00071', 'CS202', '112-2', 73.00, 1),
+(1887, 'DEMO00071', 'GE103', '112-2', 71.60, 1),
+(1888, 'DEMO00071', 'CS301', '113-1', 67.20, 1),
+(1889, 'DEMO00071', 'CS303', '113-1', 87.40, 1),
+(1890, 'DEMO00071', 'CS302', '113-2', 69.40, 1),
+(1891, 'DEMO00071', 'CS304', '113-2', 88.00, 1),
+(1892, 'DEMO00071', 'CS401', '114-1', 79.30, 1),
+(1893, 'DEMO00071', 'CS305', '114-1', 76.80, 1),
+(1894, 'DEMO00071', 'CS402', '114-2', 77.20, 1),
+(1895, 'DEMO00071', 'CS306', '114-2', 76.70, 1),
+(1896, 'DEMO00035', 'CS101', '111-1', 80.70, 1),
+(1897, 'DEMO00035', 'EN101', '111-1', 78.30, 1),
+(1898, 'DEMO00035', 'GE101', '111-1', 74.70, 1),
+(1899, 'DEMO00035', 'CS102', '111-2', 75.70, 1),
+(1900, 'DEMO00035', 'EN102', '111-2', 80.30, 1),
+(1901, 'DEMO00035', 'CS201', '112-1', 74.60, 1),
+(1902, 'DEMO00035', 'GE102', '112-1', 71.80, 1),
+(1903, 'DEMO00035', 'CS202', '112-2', 75.40, 1),
+(1904, 'DEMO00035', 'GE103', '112-2', 74.90, 1),
+(1905, 'DEMO00035', 'CS301', '113-1', 82.00, 1),
+(1906, 'DEMO00035', 'CS303', '113-1', 89.60, 1),
+(1907, 'DEMO00035', 'CS302', '113-2', 83.60, 1),
+(1908, 'DEMO00035', 'CS304', '113-2', 81.40, 1),
+(1909, 'DEMO00035', 'CS401', '114-1', 63.80, 1),
+(1910, 'DEMO00035', 'CS305', '114-1', 75.70, 1),
+(1911, 'DEMO00035', 'CS402', '114-2', 63.60, 1),
+(1912, 'DEMO00035', 'CS306', '114-2', 83.10, 1),
+(1913, 'DEMO00036', 'CS101', '111-1', 72.70, 1),
+(1914, 'DEMO00036', 'EN101', '111-1', 80.10, 1),
+(1915, 'DEMO00036', 'GE101', '111-1', 76.10, 1),
+(1916, 'DEMO00036', 'CS102', '111-2', 78.90, 1),
+(1917, 'DEMO00036', 'EN102', '111-2', 70.90, 1),
+(1918, 'DEMO00036', 'CS201', '112-1', 61.60, 1),
+(1919, 'DEMO00036', 'GE102', '112-1', 83.30, 1),
+(1920, 'DEMO00036', 'CS202', '112-2', 81.20, 1),
+(1921, 'DEMO00036', 'GE103', '112-2', 78.40, 1),
+(1922, 'DEMO00036', 'CS301', '113-1', 81.30, 1),
+(1923, 'DEMO00036', 'CS303', '113-1', 74.70, 1),
+(1924, 'DEMO00036', 'CS302', '113-2', 65.70, 1),
+(1925, 'DEMO00036', 'CS304', '113-2', 72.80, 1),
+(1926, 'DEMO00036', 'CS401', '114-1', 76.90, 1),
+(1927, 'DEMO00036', 'CS305', '114-1', 78.60, 1),
+(1928, 'DEMO00036', 'CS402', '114-2', 70.30, 1),
+(1929, 'DEMO00036', 'CS306', '114-2', 71.50, 1),
+(1930, 'DEMO00037', 'CS101', '111-1', 79.50, 1),
+(1931, 'DEMO00037', 'EN101', '111-1', 76.90, 1),
+(1932, 'DEMO00037', 'GE101', '111-1', 83.80, 1),
+(1933, 'DEMO00037', 'CS102', '111-2', 88.50, 1),
+(1934, 'DEMO00037', 'EN102', '111-2', 67.50, 1),
+(1935, 'DEMO00037', 'CS201', '112-1', 78.30, 1),
+(1936, 'DEMO00037', 'GE102', '112-1', 70.90, 1),
+(1937, 'DEMO00037', 'CS202', '112-2', 78.50, 1),
+(1938, 'DEMO00037', 'GE103', '112-2', 75.20, 1),
+(1939, 'DEMO00037', 'CS301', '113-1', 78.80, 1),
+(1940, 'DEMO00037', 'CS303', '113-1', 74.80, 1),
+(1941, 'DEMO00037', 'CS302', '113-2', 76.50, 1),
+(1942, 'DEMO00037', 'CS304', '113-2', 72.20, 1),
+(1943, 'DEMO00037', 'CS401', '114-1', 76.70, 1),
+(1944, 'DEMO00037', 'CS305', '114-1', 74.90, 1),
+(1945, 'DEMO00037', 'CS402', '114-2', 70.50, 1),
+(1946, 'DEMO00037', 'CS306', '114-2', 70.70, 1),
+(1947, 'DEMO00038', 'CS101', '111-1', 86.70, 1),
+(1948, 'DEMO00038', 'EN101', '111-1', 77.60, 1),
+(1949, 'DEMO00038', 'GE101', '111-1', 78.90, 1),
+(1950, 'DEMO00038', 'CS102', '111-2', 73.40, 1),
+(1951, 'DEMO00038', 'EN102', '111-2', 81.70, 1),
+(1952, 'DEMO00038', 'CS201', '112-1', 69.80, 1),
+(1953, 'DEMO00038', 'GE102', '112-1', 80.50, 1),
+(1954, 'DEMO00038', 'CS202', '112-2', 74.90, 1),
+(1955, 'DEMO00038', 'GE103', '112-2', 74.10, 1),
+(1956, 'DEMO00038', 'CS301', '113-1', 83.10, 1),
+(1957, 'DEMO00038', 'CS303', '113-1', 79.40, 1),
+(1958, 'DEMO00038', 'CS302', '113-2', 81.70, 1),
+(1959, 'DEMO00038', 'CS304', '113-2', 71.30, 1),
+(1960, 'DEMO00038', 'CS401', '114-1', 68.30, 1),
+(1961, 'DEMO00038', 'CS305', '114-1', 62.00, 1),
+(1962, 'DEMO00038', 'CS402', '114-2', 70.80, 1),
+(1963, 'DEMO00038', 'CS306', '114-2', 73.50, 1),
+(1964, 'DEMO00039', 'CS101', '111-1', 71.30, 1),
+(1965, 'DEMO00039', 'EN101', '111-1', 81.80, 1),
+(1966, 'DEMO00039', 'GE101', '111-1', 81.60, 1),
+(1967, 'DEMO00039', 'CS102', '111-2', 80.40, 1),
+(1968, 'DEMO00039', 'EN102', '111-2', 81.20, 1),
+(1969, 'DEMO00039', 'CS201', '112-1', 85.60, 1),
+(1970, 'DEMO00039', 'GE102', '112-1', 74.20, 1),
+(1971, 'DEMO00039', 'CS202', '112-2', 78.90, 1),
+(1972, 'DEMO00039', 'GE103', '112-2', 76.20, 1),
+(1973, 'DEMO00039', 'CS301', '113-1', 82.30, 1),
+(1974, 'DEMO00039', 'CS303', '113-1', 82.90, 1),
+(1975, 'DEMO00039', 'CS302', '113-2', 74.10, 1),
+(1976, 'DEMO00039', 'CS304', '113-2', 79.10, 1),
+(1977, 'DEMO00039', 'CS401', '114-1', 74.60, 1),
+(1978, 'DEMO00039', 'CS305', '114-1', 73.00, 1),
+(1979, 'DEMO00039', 'CS402', '114-2', 80.40, 1),
+(1980, 'DEMO00039', 'CS306', '114-2', 83.50, 1),
+(1981, 'DEMO00040', 'CS101', '111-1', 61.00, 1),
+(1982, 'DEMO00040', 'EN101', '111-1', 74.20, 1),
+(1983, 'DEMO00040', 'GE101', '111-1', 61.50, 1),
+(1984, 'DEMO00040', 'CS102', '111-2', 69.00, 1),
+(1985, 'DEMO00040', 'EN102', '111-2', 67.60, 1),
+(1986, 'DEMO00040', 'CS201', '112-1', 76.00, 1),
+(1987, 'DEMO00040', 'GE102', '112-1', 72.50, 1),
+(1988, 'DEMO00040', 'CS202', '112-2', 71.40, 1),
+(1989, 'DEMO00040', 'GE103', '112-2', 63.30, 1),
+(1990, 'DEMO00040', 'CS301', '113-1', 62.00, 1),
+(1991, 'DEMO00040', 'CS303', '113-1', 73.90, 1),
+(1992, 'DEMO00040', 'CS302', '113-2', 73.10, 1),
+(1993, 'DEMO00040', 'CS304', '113-2', 71.00, 1),
+(1994, 'DEMO00040', 'CS401', '114-1', 55.30, 0),
+(1995, 'DEMO00040', 'CS305', '114-1', 65.40, 1),
+(1996, 'DEMO00040', 'CS402', '114-2', 66.10, 1),
+(1997, 'DEMO00040', 'CS306', '114-2', 67.90, 1),
+(1998, 'DEMO00072', 'CS101', '111-1', 90.70, 1),
+(1999, 'DEMO00072', 'EN101', '111-1', 79.60, 1),
+(2000, 'DEMO00072', 'GE101', '111-1', 92.60, 1),
+(2001, 'DEMO00072', 'CS102', '111-2', 84.80, 1),
+(2002, 'DEMO00072', 'EN102', '111-2', 83.90, 1),
+(2003, 'DEMO00072', 'CS201', '112-1', 88.00, 1),
+(2004, 'DEMO00072', 'GE102', '112-1', 86.20, 1),
+(2005, 'DEMO00072', 'CS202', '112-2', 86.90, 1),
+(2006, 'DEMO00072', 'GE103', '112-2', 80.40, 1),
+(2007, 'DEMO00072', 'CS301', '113-1', 86.90, 1),
+(2008, 'DEMO00072', 'CS303', '113-1', 84.30, 1),
+(2009, 'DEMO00072', 'CS302', '113-2', 89.80, 1),
+(2010, 'DEMO00072', 'CS304', '113-2', 84.30, 1),
+(2011, 'DEMO00072', 'CS401', '114-1', 97.30, 1),
+(2012, 'DEMO00072', 'CS305', '114-1', 92.90, 1),
+(2013, 'DEMO00072', 'CS402', '114-2', 99.00, 1),
+(2014, 'DEMO00072', 'CS306', '114-2', 91.50, 1),
+(2015, 'DEMO00073', 'CS101', '111-1', 94.90, 1),
+(2016, 'DEMO00073', 'EN101', '111-1', 92.30, 1),
+(2017, 'DEMO00073', 'GE101', '111-1', 90.10, 1),
+(2018, 'DEMO00073', 'CS102', '111-2', 84.60, 1),
+(2019, 'DEMO00073', 'EN102', '111-2', 90.60, 1),
+(2020, 'DEMO00073', 'CS201', '112-1', 93.10, 1),
+(2021, 'DEMO00073', 'GE102', '112-1', 99.00, 1),
+(2022, 'DEMO00073', 'CS202', '112-2', 84.80, 1),
+(2023, 'DEMO00073', 'GE103', '112-2', 89.90, 1),
+(2024, 'DEMO00073', 'CS301', '113-1', 87.10, 1),
+(2025, 'DEMO00073', 'CS303', '113-1', 79.90, 1),
+(2026, 'DEMO00073', 'CS302', '113-2', 83.20, 1),
+(2027, 'DEMO00073', 'CS304', '113-2', 79.60, 1),
+(2028, 'DEMO00073', 'CS401', '114-1', 92.30, 1),
+(2029, 'DEMO00073', 'CS305', '114-1', 90.40, 1),
+(2030, 'DEMO00073', 'CS402', '114-2', 88.40, 1),
+(2031, 'DEMO00073', 'CS306', '114-2', 77.30, 1),
+(2032, 'DEMO00041', 'CS101', '111-1', 78.90, 1),
+(2033, 'DEMO00041', 'EN101', '111-1', 60.50, 1),
+(2034, 'DEMO00041', 'GE101', '111-1', 73.20, 1),
+(2035, 'DEMO00041', 'CS102', '111-2', 66.10, 1),
+(2036, 'DEMO00041', 'EN102', '111-2', 74.30, 1),
+(2037, 'DEMO00041', 'CS201', '112-1', 72.40, 1),
+(2038, 'DEMO00041', 'GE102', '112-1', 65.00, 1),
+(2039, 'DEMO00041', 'CS202', '112-2', 64.00, 1),
+(2040, 'DEMO00041', 'GE103', '112-2', 72.70, 1),
+(2041, 'DEMO00041', 'CS301', '113-1', 64.60, 1),
+(2042, 'DEMO00041', 'CS303', '113-1', 68.20, 1),
+(2043, 'DEMO00041', 'CS302', '113-2', 67.60, 1),
+(2044, 'DEMO00041', 'CS304', '113-2', 79.20, 1),
+(2045, 'DEMO00041', 'CS401', '114-1', 70.00, 1),
+(2046, 'DEMO00041', 'CS305', '114-1', 67.70, 1),
+(2047, 'DEMO00041', 'CS402', '114-2', 42.10, 0),
+(2048, 'DEMO00041', 'CS306', '114-2', 69.30, 1),
+(2049, 'DEMO00042', 'CS101', '111-1', 81.10, 1),
+(2050, 'DEMO00042', 'EN101', '111-1', 81.90, 1),
+(2051, 'DEMO00042', 'GE101', '111-1', 73.70, 1),
+(2052, 'DEMO00042', 'CS102', '111-2', 69.80, 1),
+(2053, 'DEMO00042', 'EN102', '111-2', 76.10, 1),
+(2054, 'DEMO00042', 'CS201', '112-1', 74.20, 1),
+(2055, 'DEMO00042', 'GE102', '112-1', 74.10, 1),
+(2056, 'DEMO00042', 'CS202', '112-2', 71.90, 1),
+(2057, 'DEMO00042', 'GE103', '112-2', 80.30, 1),
+(2058, 'DEMO00042', 'CS301', '113-1', 72.20, 1),
+(2059, 'DEMO00042', 'CS303', '113-1', 78.50, 1),
+(2060, 'DEMO00042', 'CS302', '113-2', 78.60, 1),
+(2061, 'DEMO00042', 'CS304', '113-2', 71.30, 1),
+(2062, 'DEMO00042', 'CS401', '114-1', 80.50, 1),
+(2063, 'DEMO00042', 'CS305', '114-1', 77.90, 1),
+(2064, 'DEMO00042', 'CS402', '114-2', 76.00, 1),
+(2065, 'DEMO00042', 'CS306', '114-2', 68.70, 1),
+(2066, 'DEMO00043', 'CS101', '111-1', 62.80, 1),
+(2067, 'DEMO00043', 'EN101', '111-1', 73.20, 1),
+(2068, 'DEMO00043', 'GE101', '111-1', 77.70, 1),
+(2069, 'DEMO00043', 'CS102', '111-2', 70.20, 1),
+(2070, 'DEMO00043', 'EN102', '111-2', 85.10, 1),
+(2071, 'DEMO00043', 'CS201', '112-1', 74.80, 1),
+(2072, 'DEMO00043', 'GE102', '112-1', 81.30, 1),
+(2073, 'DEMO00043', 'CS202', '112-2', 76.10, 1),
+(2074, 'DEMO00043', 'GE103', '112-2', 87.80, 1),
+(2075, 'DEMO00043', 'CS301', '113-1', 73.70, 1),
+(2076, 'DEMO00043', 'CS303', '113-1', 73.30, 1),
+(2077, 'DEMO00043', 'CS302', '113-2', 82.70, 1),
+(2078, 'DEMO00043', 'CS304', '113-2', 74.80, 1),
+(2079, 'DEMO00043', 'CS401', '114-1', 73.00, 1),
+(2080, 'DEMO00043', 'CS305', '114-1', 67.30, 1),
+(2081, 'DEMO00043', 'CS402', '114-2', 78.70, 1),
+(2082, 'DEMO00043', 'CS306', '114-2', 63.70, 1),
+(2083, 'DEMO00044', 'CS101', '111-1', 81.90, 1),
+(2084, 'DEMO00044', 'EN101', '111-1', 79.70, 1),
+(2085, 'DEMO00044', 'GE101', '111-1', 86.10, 1),
+(2086, 'DEMO00044', 'CS102', '111-2', 75.20, 1),
+(2087, 'DEMO00044', 'EN102', '111-2', 81.80, 1),
+(2088, 'DEMO00044', 'CS201', '112-1', 67.20, 1),
+(2089, 'DEMO00044', 'GE102', '112-1', 70.10, 1),
+(2090, 'DEMO00044', 'CS202', '112-2', 72.30, 1),
+(2091, 'DEMO00044', 'GE103', '112-2', 68.10, 1),
+(2092, 'DEMO00044', 'CS301', '113-1', 74.20, 1),
+(2093, 'DEMO00044', 'CS303', '113-1', 84.80, 1),
+(2094, 'DEMO00044', 'CS302', '113-2', 80.60, 1),
+(2095, 'DEMO00044', 'CS304', '113-2', 77.70, 1),
+(2096, 'DEMO00044', 'CS401', '114-1', 79.30, 1),
+(2097, 'DEMO00044', 'CS305', '114-1', 71.20, 1),
+(2098, 'DEMO00044', 'CS402', '114-2', 71.70, 1),
+(2099, 'DEMO00044', 'CS306', '114-2', 74.50, 1),
+(2100, 'DEMO00045', 'CS101', '111-1', 69.40, 1),
+(2101, 'DEMO00045', 'EN101', '111-1', 78.20, 1),
+(2102, 'DEMO00045', 'GE101', '111-1', 83.20, 1),
+(2103, 'DEMO00045', 'CS102', '111-2', 82.10, 1),
+(2104, 'DEMO00045', 'EN102', '111-2', 86.40, 1),
+(2105, 'DEMO00045', 'CS201', '112-1', 81.10, 1),
+(2106, 'DEMO00045', 'GE102', '112-1', 77.70, 1),
+(2107, 'DEMO00045', 'CS202', '112-2', 66.00, 1),
+(2108, 'DEMO00045', 'GE103', '112-2', 77.00, 1),
+(2109, 'DEMO00045', 'CS301', '113-1', 74.10, 1),
+(2110, 'DEMO00045', 'CS303', '113-1', 71.90, 1),
+(2111, 'DEMO00045', 'CS302', '113-2', 86.70, 1),
+(2112, 'DEMO00045', 'CS304', '113-2', 73.50, 1),
+(2113, 'DEMO00045', 'CS401', '114-1', 78.40, 1),
+(2114, 'DEMO00045', 'CS305', '114-1', 73.00, 1),
+(2115, 'DEMO00045', 'CS402', '114-2', 66.80, 1),
+(2116, 'DEMO00045', 'CS306', '114-2', 83.70, 1);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `student_privacy_settings`
+--
+
+CREATE TABLE `student_privacy_settings` (
+  `setting_id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `parent_alert_consent` tinyint(1) NOT NULL DEFAULT 1,
+  `advisor_alert_consent` tinyint(1) NOT NULL DEFAULT 1,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `student_privacy_settings`
+--
+
+INSERT INTO `student_privacy_settings` (`setting_id`, `student_id`, `parent_alert_consent`, `advisor_alert_consent`, `updated_at`) VALUES
+(1, 'DEMO00002', 1, 1, '2026-09-24 04:10:29'),
+(2, 'DEMO00003', 0, 1, '2026-09-24 04:10:29'),
+(3, 'DEMO00046', 1, 1, '2026-09-24 04:10:29');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `student_records`
+--
+
+CREATE TABLE `student_records` (
+  `record_id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `kind` enum('獎懲','幹部') NOT NULL COMMENT '獎懲 或 幹部',
+  `item` varchar(20) NOT NULL COMMENT '獎懲：嘉獎、小功、大功、申誡、小過、大過；幹部：班長、課程小老師…',
+  `count` tinyint(4) NOT NULL DEFAULT 1 COMMENT '獎懲次數，例如嘉獎 2 次；幹部固定 1',
+  `reason` varchar(200) DEFAULT NULL COMMENT '獎懲事由；小老師填負責的科目',
+  `semester` varchar(10) NOT NULL COMMENT '學期，例如 115-1',
+  `record_date` date DEFAULT NULL COMMENT '核定或擔任日期',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='學生表現紀錄：獎懲與幹部 (T18)';
+
+--
+-- 傾印資料表的資料 `student_records`
+--
+
+INSERT INTO `student_records` (`record_id`, `student_id`, `kind`, `item`, `count`, `reason`, `semester`, `record_date`, `created_at`) VALUES
+(1, 'DEMO00047', '獎懲', '嘉獎', 1, '示範資料0007', '115-1', '2026-09-19', '2026-10-14 06:27:40'),
+(2, 'DEMO00048', '獎懲', '嘉獎', 1, '示範資料0008', '115-1', '2026-10-05', '2026-10-14 06:27:40'),
+(3, 'DEMO00007', '獎懲', '嘉獎', 1, '示範資料0007', '115-1', '2026-09-26', '2026-10-14 06:27:40'),
+(4, 'DEMO00050', '獎懲', '嘉獎', 1, '示範資料0007', '115-1', '2026-10-04', '2026-10-14 06:27:40'),
+(5, 'DEMO00048', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(6, 'DEMO00047', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(7, 'DEMO00007', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(8, 'DEMO00008', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(9, 'DEMO00005', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(10, 'DEMO00049', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(11, 'DEMO00075', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(12, 'DEMO00050', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(13, 'DEMO00048', '幹部', '課程小老師', 1, '示範資料0009', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(14, 'DEMO00005', '幹部', '課程小老師', 1, '示範資料0010', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(15, 'DEMO00007', '幹部', '課程小老師', 1, '示範資料0011', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(16, 'DEMO00009', '獎懲', '嘉獎', 1, '示範資料0007', '114-2', '2026-04-12', '2026-10-14 06:27:40'),
+(17, 'DEMO00051', '獎懲', '嘉獎', 1, '示範資料0012', '114-2', '2026-06-03', '2026-10-14 06:27:40'),
+(18, 'DEMO00052', '獎懲', '嘉獎', 1, '示範資料0012', '114-2', '2026-03-01', '2026-10-14 06:27:40'),
+(19, 'DEMO00011', '獎懲', '小功', 1, '示範資料0013', '114-2', '2026-04-04', '2026-10-14 06:27:40'),
+(20, 'DEMO00012', '獎懲', '嘉獎', 1, '示範資料0014', '114-2', '2026-03-23', '2026-10-14 06:27:40'),
+(21, 'DEMO00009', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(22, 'DEMO00011', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(23, 'DEMO00013', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(24, 'DEMO00015', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(25, 'DEMO00012', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(26, 'DEMO00051', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(27, 'DEMO00052', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(28, 'DEMO00014', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(29, 'DEMO00051', '幹部', '課程小老師', 1, '示範資料0015', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(30, 'DEMO00009', '幹部', '課程小老師', 1, '示範資料0016', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(31, 'DEMO00051', '幹部', '班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(32, 'DEMO00051', '獎懲', '嘉獎', 1, '示範資料0017', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(33, 'DEMO00011', '幹部', '副班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(34, 'DEMO00011', '獎懲', '嘉獎', 2, '示範資料0018', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(35, 'DEMO00013', '幹部', '學藝股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(36, 'DEMO00013', '獎懲', '嘉獎', 2, '示範資料0019', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(37, 'DEMO00012', '幹部', '總務股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(38, 'DEMO00012', '獎懲', '嘉獎', 1, '示範資料0020', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(39, 'DEMO00017', '獎懲', '嘉獎', 1, '示範資料0021', '114-2', '2026-04-11', '2026-10-14 06:27:40'),
+(40, 'DEMO00053', '獎懲', '嘉獎', 1, '示範資料0022', '113-1', '2024-09-22', '2026-10-14 06:27:40'),
+(41, 'DEMO00053', '獎懲', '嘉獎', 1, '示範資料0023', '113-1', '2024-10-16', '2026-10-14 06:27:40'),
+(42, 'DEMO00019', '獎懲', '小功', 1, '示範資料0013', '113-2', '2025-05-13', '2026-10-14 06:27:40'),
+(43, 'DEMO00019', '獎懲', '嘉獎', 1, '示範資料0021', '113-2', '2025-04-17', '2026-10-14 06:27:40'),
+(44, 'DEMO00020', '獎懲', '嘉獎', 1, '示範資料0014', '114-2', '2026-04-12', '2026-10-14 06:27:40'),
+(45, 'DEMO00020', '獎懲', '申誡', 1, '示範資料0024', '113-2', '2025-06-04', '2026-10-14 06:27:40'),
+(46, 'DEMO00055', '獎懲', '嘉獎', 1, '示範資料0014', '113-1', '2024-10-10', '2026-10-14 06:27:40'),
+(47, 'DEMO00021', '獎懲', '嘉獎', 1, '示範資料0014', '113-2', '2025-05-05', '2026-10-14 06:27:40'),
+(48, 'DEMO00020', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(49, 'DEMO00019', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(50, 'DEMO00016', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(51, 'DEMO00018', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(52, 'DEMO00055', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(53, 'DEMO00054', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(54, 'DEMO00021', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(55, 'DEMO00053', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(56, 'DEMO00053', '幹部', '課程小老師', 1, '示範資料0025', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(57, 'DEMO00021', '幹部', '課程小老師', 1, '示範資料0026', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(58, 'DEMO00018', '幹部', '班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(59, 'DEMO00018', '獎懲', '嘉獎', 2, '示範資料0017', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(60, 'DEMO00053', '幹部', '副班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(61, 'DEMO00053', '獎懲', '嘉獎', 1, '示範資料0018', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(62, 'DEMO00020', '幹部', '學藝股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(63, 'DEMO00020', '獎懲', '嘉獎', 1, '示範資料0019', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(64, 'DEMO00021', '幹部', '總務股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(65, 'DEMO00021', '獎懲', '嘉獎', 1, '示範資料0020', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(66, 'DEMO00023', '獎懲', '嘉獎', 1, '示範資料0023', '113-2', '2025-05-26', '2026-10-14 06:27:40'),
+(67, 'DEMO00056', '獎懲', '嘉獎', 1, '示範資料0014', '113-2', '2025-06-02', '2026-10-14 06:27:40'),
+(68, 'DEMO00057', '獎懲', '申誡', 1, '示範資料0027', '114-1', '2025-12-28', '2026-10-14 06:27:40'),
+(69, 'DEMO00024', '獎懲', '申誡', 1, '示範資料0024', '114-1', '2025-11-01', '2026-10-14 06:27:40'),
+(70, 'DEMO00058', '獎懲', '小功', 1, '示範資料0028', '114-2', '2026-03-31', '2026-10-14 06:27:40'),
+(71, 'DEMO00058', '獎懲', '嘉獎', 1, '示範資料0014', '112-2', '2024-05-12', '2026-10-14 06:27:40'),
+(72, 'DEMO00057', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(73, 'DEMO00025', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(74, 'DEMO00058', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(75, 'DEMO00026', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(76, 'DEMO00056', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(77, 'DEMO00022', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(78, 'DEMO00059', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(79, 'DEMO00024', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(80, 'DEMO00022', '幹部', '課程小老師', 1, '示範資料0029', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(81, 'DEMO00056', '幹部', '課程小老師', 1, '示範資料0030', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(82, 'DEMO00056', '幹部', '班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(83, 'DEMO00056', '獎懲', '嘉獎', 1, '示範資料0017', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(84, 'DEMO00022', '幹部', '副班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(85, 'DEMO00022', '獎懲', '嘉獎', 1, '示範資料0018', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(86, 'DEMO00058', '幹部', '學藝股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(87, 'DEMO00058', '獎懲', '嘉獎', 2, '示範資料0019', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(88, 'DEMO00059', '幹部', '總務股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(89, 'DEMO00059', '獎懲', '嘉獎', 1, '示範資料0020', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(90, 'DEMO00027', '獎懲', '嘉獎', 1, '示範資料0012', '114-1', '2025-10-27', '2026-10-14 06:27:40'),
+(91, 'DEMO00060', '獎懲', '小功', 1, '示範資料0031', '112-1', '2023-12-31', '2026-10-14 06:27:40'),
+(92, 'DEMO00060', '獎懲', '嘉獎', 1, '示範資料0032', '113-1', '2024-11-26', '2026-10-14 06:27:40'),
+(93, 'DEMO00062', '獎懲', '嘉獎', 2, '示範資料0033', '111-2', '2023-03-22', '2026-10-14 06:27:40'),
+(94, 'DEMO00063', '獎懲', '小功', 1, '示範資料0031', '111-1', '2022-11-04', '2026-10-14 06:27:40'),
+(95, 'DEMO00029', '獎懲', '嘉獎', 1, '示範資料0021', '114-2', '2026-05-13', '2026-10-14 06:27:40'),
+(96, 'DEMO00031', '獎懲', '申誡', 1, '示範資料0034', '115-1', '2026-10-08', '2026-10-14 06:27:40'),
+(97, 'DEMO00033', '獎懲', '小過', 2, '示範資料0034', '115-1', '2026-10-08', '2026-10-14 06:27:40'),
+(98, 'DEMO00065', '獎懲', '嘉獎', 1, '示範資料0035', '112-2', '2024-03-11', '2026-10-14 06:27:40'),
+(99, 'DEMO00066', '獎懲', '嘉獎', 1, '示範資料0035', '111-1', '2022-09-18', '2026-10-14 06:27:40'),
+(100, 'DEMO00066', '獎懲', '嘉獎', 1, '示範資料0036', '111-2', '2023-03-27', '2026-10-14 06:27:40'),
+(101, 'DEMO00067', '獎懲', '嘉獎', 1, '示範資料0037', '114-1', '2025-12-03', '2026-10-14 06:27:40'),
+(102, 'DEMO00067', '獎懲', '小功', 1, '示範資料0031', '113-1', '2024-11-17', '2026-10-14 06:27:40'),
+(103, 'DEMO00067', '獎懲', '申誡', 1, '示範資料0027', '112-2', '2024-03-15', '2026-10-14 06:27:40'),
+(104, 'DEMO00068', '獎懲', '小功', 1, '示範資料0038', '114-2', '2026-03-14', '2026-10-14 06:27:40'),
+(105, 'DEMO00070', '獎懲', '嘉獎', 1, '示範資料0023', '114-1', '2025-11-17', '2026-10-14 06:27:40'),
+(106, 'DEMO00071', '獎懲', '嘉獎', 1, '示範資料0035', '111-2', '2023-03-25', '2026-10-14 06:27:40'),
+(107, 'DEMO00071', '獎懲', '嘉獎', 1, '示範資料0012', '114-2', '2026-04-25', '2026-10-14 06:27:40'),
+(108, 'DEMO00035', '獎懲', '嘉獎', 1, '示範資料0012', '112-2', '2024-04-03', '2026-10-14 06:27:40'),
+(109, 'DEMO00064', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(110, 'DEMO00037', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(111, 'DEMO00035', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(112, 'DEMO00069', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(113, 'DEMO00068', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(114, 'DEMO00071', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(115, 'DEMO00063', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(116, 'DEMO00036', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(117, 'DEMO00035', '幹部', '課程小老師', 1, '示範資料0029', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(118, 'DEMO00063', '幹部', '課程小老師', 1, '示範資料0039', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(119, 'DEMO00036', '幹部', '課程小老師', 1, '示範資料0040', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(120, 'DEMO00034', '幹部', '課程小老師', 1, '示範資料0016', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(121, 'DEMO00063', '幹部', '班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(122, 'DEMO00063', '獎懲', '嘉獎', 1, '示範資料0017', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(123, 'DEMO00037', '幹部', '副班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(124, 'DEMO00037', '獎懲', '嘉獎', 1, '示範資料0018', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(125, 'DEMO00067', '幹部', '學藝股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(126, 'DEMO00067', '獎懲', '嘉獎', 1, '示範資料0019', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(127, 'DEMO00068', '幹部', '總務股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(128, 'DEMO00068', '獎懲', '嘉獎', 1, '示範資料0020', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(129, 'DEMO00039', '獎懲', '小功', 1, '示範資料0041', '114-2', '2026-03-09', '2026-10-14 06:27:40'),
+(130, 'DEMO00039', '獎懲', '嘉獎', 1, '示範資料0023', '111-2', '2023-05-11', '2026-10-14 06:27:40'),
+(131, 'DEMO00040', '獎懲', '小功', 1, '示範資料0042', '111-2', '2023-02-23', '2026-10-14 06:27:40'),
+(132, 'DEMO00040', '獎懲', '嘉獎', 1, '示範資料0008', '113-2', '2025-02-24', '2026-10-14 06:27:40'),
+(133, 'DEMO00072', '獎懲', '小功', 1, '示範資料0041', '111-2', '2023-03-03', '2026-10-14 06:27:40'),
+(134, 'DEMO00072', '獎懲', '嘉獎', 1, '示範資料0014', '111-1', '2022-10-23', '2026-10-14 06:27:40'),
+(135, 'DEMO00073', '獎懲', '嘉獎', 2, '示範資料0043', '113-1', '2024-10-15', '2026-10-14 06:27:40'),
+(136, 'DEMO00073', '獎懲', '申誡', 1, '示範資料0044', '112-1', '2023-09-28', '2026-10-14 06:27:40'),
+(137, 'DEMO00041', '獎懲', '嘉獎', 1, '示範資料0012', '112-1', '2023-12-25', '2026-10-14 06:27:40'),
+(138, 'DEMO00041', '獎懲', '申誡', 1, '示範資料0027', '113-1', '2024-11-24', '2026-10-14 06:27:40'),
+(139, 'DEMO00042', '獎懲', '嘉獎', 1, '示範資料0023', '111-1', '2022-11-27', '2026-10-14 06:27:40'),
+(140, 'DEMO00045', '獎懲', '嘉獎', 1, '示範資料0014', '111-1', '2022-10-28', '2026-10-14 06:27:40'),
+(141, 'DEMO00045', '獎懲', '申誡', 1, '示範資料0024', '111-1', '2022-12-12', '2026-10-14 06:27:40'),
+(142, 'DEMO00045', '幹部', '班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(143, 'DEMO00044', '幹部', '副班長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(144, 'DEMO00073', '幹部', '學藝股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(145, 'DEMO00041', '幹部', '總務股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(146, 'DEMO00042', '幹部', '風紀股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(147, 'DEMO00072', '幹部', '衛生股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(148, 'DEMO00039', '幹部', '康樂股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(149, 'DEMO00043', '幹部', '資訊股長', 1, NULL, '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(150, 'DEMO00073', '幹部', '課程小老師', 1, '示範資料0029', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(151, 'DEMO00044', '幹部', '課程小老師', 1, '示範資料0039', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(152, 'DEMO00039', '幹部', '課程小老師', 1, '示範資料0040', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(153, 'DEMO00043', '幹部', '課程小老師', 1, '示範資料0016', '115-1', '2026-09-14', '2026-10-14 06:27:40'),
+(154, 'DEMO00043', '幹部', '班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(155, 'DEMO00043', '獎懲', '嘉獎', 2, '示範資料0017', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(156, 'DEMO00073', '幹部', '副班長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(157, 'DEMO00073', '獎懲', '嘉獎', 2, '示範資料0018', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(158, 'DEMO00041', '幹部', '學藝股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(159, 'DEMO00041', '獎懲', '嘉獎', 1, '示範資料0019', '114-2', '2026-06-19', '2026-10-14 06:27:40'),
+(160, 'DEMO00044', '幹部', '總務股長', 1, NULL, '114-2', '2026-02-23', '2026-10-14 06:27:40'),
+(161, 'DEMO00044', '獎懲', '嘉獎', 2, '示範資料0020', '114-2', '2026-06-19', '2026-10-14 06:27:40');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `synonym_dictionary`
+--
+
+CREATE TABLE `synonym_dictionary` (
+  `synonym_id` int(11) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `user_keyword` varchar(50) NOT NULL,
+  `official_term` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `synonym_dictionary`
+--
+
+INSERT INTO `synonym_dictionary` (`synonym_id`, `category_id`, `user_keyword`, `official_term`) VALUES
+(1, 1, '示範資料0001', '示範資料0001'),
+(2, 1, '示範資料0002', '示範資料0001'),
+(3, 1, '示範資料0003', '示範資料0001'),
+(4, 1, '示範資料0004', '示範資料0004'),
+(5, 1, '示範資料0005', '示範資料0004'),
+(6, 3, '示範資料0006', '示範資料0003'),
+(7, 3, '示範資料0007', '示範資料0003'),
+(8, 3, '示範資料0008', '示範資料0003'),
+(9, 2, '示範資料0009', '示範資料0002'),
+(10, 2, '示範資料0010', '示範資料0002'),
+(11, 2, '示範資料0011', '示範資料0002'),
+(12, 3, '示範資料0012', '示範資料0005'),
+(13, 1, '示範資料0013', '示範資料0006'),
+(14, 1, '示範資料0014', '示範資料0007');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `unmatched_queries`
+--
+
+CREATE TABLE `unmatched_queries` (
+  `query_id` int(11) NOT NULL,
+  `query_text` varchar(255) NOT NULL,
+  `search_count` int(11) NOT NULL DEFAULT 1,
+  `status` enum('待處理','已轉同義詞','已建條文','已忽略') NOT NULL DEFAULT '待處理',
+  `resolved_term` varchar(100) DEFAULT NULL,
+  `first_searched_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_searched_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `unmatched_queries`
+--
+
+INSERT INTO `unmatched_queries` (`query_id`, `query_text`, `search_count`, `status`, `resolved_term`, `first_searched_at`, `last_searched_at`) VALUES
+(1, '示範資料0005', 14, '待處理', NULL, '2026-09-24 04:10:29', '2026-09-24 04:10:29'),
+(2, '示範資料0006', 9, '待處理', NULL, '2026-09-24 04:10:29', '2026-09-24 04:10:29'),
+(3, '示範資料0007', 18, '待處理', NULL, '2026-09-24 04:10:29', '2026-09-24 04:10:29'),
+(4, '示範資料0008', 22, '待處理', NULL, '2026-09-24 04:10:29', '2026-09-24 04:10:29'),
+(5, '示範資料0009', 7, '待處理', NULL, '2026-09-24 04:10:29', '2026-09-24 04:10:29');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `users`
+--
+
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` enum('學生','家長','教職員','老師','管理員','系統管理員','內容管理人員','處室承辦','科助','住宿管理員','訪客') NOT NULL,
+  `student_id` varchar(20) DEFAULT NULL,
+  `full_name` varchar(50) NOT NULL,
+  `advised_class` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `can_manage_dorm` tinyint(1) NOT NULL DEFAULT 0,
+  `office` varchar(100) NOT NULL DEFAULT '',
+  `permissions` varchar(255) NOT NULL DEFAULT '查看,建立,修改',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `users`
+--
+
+INSERT INTO `users` (`user_id`, `username`, `password_hash`, `role`, `student_id`, `full_name`, `advised_class`, `created_at`, `can_manage_dorm`) VALUES
+(1, 'demo_user_0024', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00002', '示範人物0017', NULL, '2026-09-24 04:10:29', 0),
+(2, 'demo_user_0025', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00003', '示範人物0018', NULL, '2026-09-24 04:10:29', 0),
+(3, 'demo_user_0026', '!DISABLED_DEMO_ACCOUNT', '家長', 'DEMO00002', '示範人物0103', NULL, '2026-09-24 04:10:29', 0),
+(4, 'demo_user_0027', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0104', NULL, '2026-09-24 04:10:29', 0),
+(5, 'demo_user_0028', '!DISABLED_DEMO_ACCOUNT', '管理員', NULL, '示範人物0105', NULL, '2026-09-24 04:10:29', 0),
+(6, 'demo_user_0023', '!DISABLED_DEMO_ACCOUNT', '老師', NULL, '示範人物0001', '示範班級001', '2026-09-24 04:10:29', 0),
+(7, 'demo_user_0029', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00046', '示範人物0101', NULL, '2026-09-24 04:10:29', 0),
+(8, 'demo_user_0030', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00004', '示範人物0102', NULL, '2026-09-24 04:10:29', 0),
+(9, 'DEMO00001', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00001', '示範人物0046', NULL, '2026-09-24 04:39:04', 0),
+(10, 'DEMO00005', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00005', '示範人物0091', NULL, '2026-10-12 02:23:50', 0),
+(11, 'DEMO00006', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00006', '示範人物0092', NULL, '2026-10-12 02:23:50', 0),
+(12, 'DEMO00047', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00047', '示範人物0093', NULL, '2026-10-12 02:23:50', 0),
+(13, 'DEMO00048', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00048', '示範人物0094', NULL, '2026-10-12 02:23:50', 0),
+(14, 'DEMO00075', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00075', '示範人物0095', NULL, '2026-10-12 02:23:50', 0),
+(15, 'DEMO00049', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00049', '示範人物0096', NULL, '2026-10-12 02:23:50', 0),
+(16, 'DEMO00007', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00007', '示範人物0097', NULL, '2026-10-12 02:23:50', 0),
+(17, 'DEMO00008', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00008', '示範人物0098', NULL, '2026-10-12 02:23:50', 0),
+(18, 'DEMO00050', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00050', '示範人物0099', NULL, '2026-10-12 02:23:50', 0),
+(19, 'DEMO00009', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00009', '示範人物0082', NULL, '2026-10-12 02:23:50', 0),
+(20, 'DEMO00010', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00010', '示範人物0083', NULL, '2026-10-12 02:23:50', 0),
+(21, 'DEMO00051', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00051', '示範人物0084', NULL, '2026-10-12 02:23:50', 0),
+(22, 'DEMO00052', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00052', '示範人物0085', NULL, '2026-10-12 02:23:50', 0),
+(23, 'DEMO00011', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00011', '示範人物0086', NULL, '2026-10-12 02:23:50', 0),
+(24, 'DEMO00012', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00012', '示範人物0087', NULL, '2026-10-12 02:23:50', 0),
+(25, 'DEMO00013', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00013', '示範人物0088', NULL, '2026-10-12 02:23:50', 0),
+(26, 'DEMO00014', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00014', '示範人物0089', NULL, '2026-10-12 02:23:50', 0),
+(27, 'DEMO00015', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00015', '示範人物0090', NULL, '2026-10-12 02:23:50', 0),
+(28, 'DEMO00016', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00016', '示範人物0073', NULL, '2026-10-12 02:23:50', 0),
+(29, 'DEMO00017', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00017', '示範人物0074', NULL, '2026-10-12 02:23:50', 0),
+(30, 'DEMO00053', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00053', '示範人物0075', NULL, '2026-10-12 02:23:50', 0),
+(31, 'DEMO00054', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00054', '示範人物0076', NULL, '2026-10-12 02:23:50', 0),
+(32, 'DEMO00018', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00018', '示範人物0077', NULL, '2026-10-12 02:23:50', 0),
+(33, 'DEMO00019', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00019', '示範人物0078', NULL, '2026-10-12 02:23:50', 0),
+(34, 'DEMO00020', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00020', '示範人物0079', NULL, '2026-10-12 02:23:50', 0),
+(35, 'DEMO00055', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00055', '示範人物0080', NULL, '2026-10-12 02:23:50', 0),
+(36, 'DEMO00021', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00021', '示範人物0081', NULL, '2026-10-12 02:23:50', 0),
+(37, 'DEMO00022', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00022', '示範人物0064', NULL, '2026-10-12 02:23:50', 0),
+(38, 'DEMO00023', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00023', '示範人物0065', NULL, '2026-10-12 02:23:50', 0),
+(39, 'DEMO00056', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00056', '示範人物0066', NULL, '2026-10-12 02:23:50', 0),
+(40, 'DEMO00057', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00057', '示範人物0067', NULL, '2026-10-12 02:23:50', 0),
+(41, 'DEMO00024', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00024', '示範人物0068', NULL, '2026-10-12 02:23:50', 0),
+(42, 'DEMO00058', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00058', '示範人物0069', NULL, '2026-10-12 02:23:50', 0),
+(43, 'DEMO00059', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00059', '示範人物0070', NULL, '2026-10-12 02:23:50', 0),
+(44, 'DEMO00025', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00025', '示範人物0071', NULL, '2026-10-12 02:23:50', 0),
+(45, 'DEMO00026', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00026', '示範人物0072', NULL, '2026-10-12 02:23:50', 0),
+(46, 'DEMO00027', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00027', '示範人物0030', NULL, '2026-10-12 02:23:50', 0),
+(47, 'DEMO00028', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00028', '示範人物0031', NULL, '2026-10-12 02:23:50', 0),
+(48, 'DEMO00060', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00060', '示範人物0032', NULL, '2026-10-12 02:23:50', 0),
+(49, 'DEMO00061', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00061', '示範人物0033', NULL, '2026-10-12 02:23:50', 0),
+(50, 'DEMO00062', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00062', '示範人物0034', NULL, '2026-10-12 02:23:50', 0),
+(51, 'DEMO00063', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00063', '示範人物0035', NULL, '2026-10-12 02:23:50', 0),
+(52, 'DEMO00029', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00029', '示範人物0036', NULL, '2026-10-12 02:23:50', 0),
+(53, 'DEMO00030', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00030', '示範人物0037', NULL, '2026-10-12 02:23:50', 0),
+(54, 'DEMO00064', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00064', '示範人物0038', NULL, '2026-10-12 02:23:50', 0),
+(55, 'DEMO00031', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00031', '示範人物0039', NULL, '2026-10-12 02:23:50', 0),
+(56, 'DEMO00032', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00032', '示範人物0040', NULL, '2026-10-12 02:23:50', 0),
+(57, 'DEMO00033', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00033', '示範人物0041', NULL, '2026-10-12 02:23:50', 0),
+(58, 'DEMO00065', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00065', '示範人物0042', NULL, '2026-10-12 02:23:50', 0),
+(59, 'DEMO00066', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00066', '示範人物0043', NULL, '2026-10-12 02:23:50', 0),
+(60, 'DEMO00067', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00067', '示範人物0044', NULL, '2026-10-12 02:23:50', 0),
+(61, 'DEMO00068', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00068', '示範人物0045', NULL, '2026-10-12 02:23:50', 0),
+(62, 'DEMO00069', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00069', '示範人物0047', NULL, '2026-10-12 02:23:50', 0),
+(63, 'DEMO00034', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00034', '示範人物0048', NULL, '2026-10-12 02:23:50', 0),
+(64, 'DEMO00070', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00070', '示範人物0049', NULL, '2026-10-12 02:23:50', 0),
+(65, 'DEMO00071', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00071', '示範人物0050', NULL, '2026-10-12 02:23:50', 0),
+(66, 'DEMO00035', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00035', '示範人物0051', NULL, '2026-10-12 02:23:50', 0),
+(67, 'DEMO00036', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00036', '示範人物0052', NULL, '2026-10-12 02:23:50', 0),
+(68, 'DEMO00037', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00037', '示範人物0053', NULL, '2026-10-12 02:23:50', 0),
+(69, 'DEMO00038', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00038', '示範人物0054', NULL, '2026-10-12 02:23:50', 0),
+(70, 'DEMO00039', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00039', '示範人物0055', NULL, '2026-10-12 02:23:50', 0),
+(71, 'DEMO00040', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00040', '示範人物0056', NULL, '2026-10-12 02:23:50', 0),
+(72, 'DEMO00072', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00072', '示範人物0057', NULL, '2026-10-12 02:23:50', 0),
+(73, 'DEMO00073', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00073', '示範人物0058', NULL, '2026-10-12 02:23:50', 0),
+(74, 'DEMO00041', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00041', '示範人物0059', NULL, '2026-10-12 02:23:50', 0),
+(75, 'DEMO00042', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00042', '示範人物0060', NULL, '2026-10-12 02:23:50', 0),
+(76, 'DEMO00043', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00043', '示範人物0061', NULL, '2026-10-12 02:23:50', 0),
+(77, 'DEMO00044', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00044', '示範人物0062', NULL, '2026-10-12 02:23:50', 0),
+(78, 'DEMO00045', '!DISABLED_DEMO_ACCOUNT', '學生', 'DEMO00045', '示範人物0063', NULL, '2026-10-12 02:23:50', 0),
+(79, 'demo_user_0031', '!DISABLED_DEMO_ACCOUNT', '老師', NULL, '示範人物0106', '示範班級003', '2026-10-12 02:23:50', 0),
+(150, 'demo_user_0032', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0107', NULL, '2026-10-20 02:04:33', 1),
+(151, 'demo_user_0033', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0108', NULL, '2026-10-21 01:36:14', 0),
+(152, 'demo_user_0034', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0109', NULL, '2026-10-21 01:36:14', 0),
+(153, 'demo_user_0035', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0110', NULL, '2026-10-21 01:36:14', 0),
+(154, 'demo_user_0036', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0111', NULL, '2026-10-21 01:36:14', 0),
+(155, 'demo_user_0037', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0112', NULL, '2026-10-21 01:36:14', 0),
+(156, 'demo_user_0038', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0113', NULL, '2026-10-21 01:36:14', 0),
+(157, 'demo_user_0039', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0114', NULL, '2026-10-21 01:36:14', 0),
+(158, 'demo_user_0040', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0115', NULL, '2026-10-21 01:36:14', 0),
+(159, 'demo_user_0041', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0116', NULL, '2026-10-21 01:36:14', 0),
+(160, 'demo_user_0042', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0117', NULL, '2026-10-21 01:36:14', 0),
+(161, 'demo_user_0043', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0118', NULL, '2026-10-21 01:36:14', 0),
+(162, 'demo_user_0044', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0119', NULL, '2026-10-21 01:36:14', 0),
+(163, 'demo_user_0045', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0120', NULL, '2026-10-21 01:36:14', 0),
+(164, 'demo_user_0046', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0121', NULL, '2026-10-21 01:36:14', 0),
+(165, 'demo_user_0047', '!DISABLED_DEMO_ACCOUNT', '教職員', NULL, '示範人物0122', NULL, '2026-10-21 01:36:14', 0);
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `user_preferences`
+--
+
+CREATE TABLE `user_preferences` (
+  `username` varchar(50) NOT NULL,
+  `dept_id` varchar(20) DEFAULT NULL,
+  `content_scope` enum('all','mine') NOT NULL DEFAULT 'all' COMMENT 'mine = 只看全校公開與本科資訊',
+  `pinned_features` varchar(500) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `user_preferences`
+--
+
+INSERT INTO `user_preferences` (`username`, `dept_id`, `content_scope`, `pinned_features`, `updated_at`) VALUES
+('DEMO00001', 'CS', 'all', '示範資料0001', '2026-10-12 03:18:57'),
+('demo_user_0028', NULL, 'all', '', '2026-10-15 01:30:21'),
+('demo_user_0032', NULL, 'all', '', '2026-10-21 01:27:19'),
+('demo_user_0026', NULL, 'all', '', '2026-10-15 01:28:49'),
+('demo_user_0024', 'CS', 'all', '', '2026-10-14 16:28:40'),
+('demo_user_0025', NULL, 'all', '', '2026-10-20 01:47:05'),
+('demo_user_0023', 'CS', 'all', '', '2026-10-14 16:28:21');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `visitor_logs`
+--
+
+CREATE TABLE `visitor_logs` (
+  `log_id` int(11) NOT NULL,
+  `visitor_name` varchar(50) NOT NULL,
+  `phone` varchar(30) NOT NULL,
+  `school_from` varchar(100) NOT NULL,
+  `purpose` varchar(100) NOT NULL,
+  `target_dept` varchar(100) DEFAULT '資訊管理科（五專）',
+  `visited_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ip_address` varchar(50) DEFAULT '127.0.0.1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 已傾印資料表的索引
+--
+
+--
+-- 資料表索引 `academic_calendar`
+--
+ALTER TABLE `academic_calendar`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_cal_dates` (`start_date`,`end_date`),
+  ADD KEY `fk_cal_checklist` (`related_checklist_id`);
+
+--
+-- 資料表索引 `anniversary_events`
+--
+ALTER TABLE `anniversary_events`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_anniv_dates` (`start_date`,`end_date`);
+
+--
+-- 資料表索引 `anniversary_wishes`
+--
+ALTER TABLE `anniversary_wishes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_wish_event_status` (`event_id`,`status`,`created_at`);
+
+--
+-- 資料表索引 `announcements`
+--
+ALTER TABLE `announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ann_date` (`publish_date`);
+
+--
+-- 資料表索引 `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  ADD PRIMARY KEY (`student_id`,`announcement_id`),
+  ADD KEY `fk_ar_ann` (`announcement_id`);
+
+--
+-- 資料表索引 `assignments`
+--
+ALTER TABLE `assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_asg_class` (`class_name`),
+  ADD KEY `idx_asg_student` (`student_id`);
+
+--
+-- 資料表索引 `assignment_submissions`
+--
+ALTER TABLE `assignment_submissions`
+  ADD PRIMARY KEY (`student_id`,`assignment_id`),
+  ADD KEY `fk_sub_asg` (`assignment_id`);
+
+--
+-- 資料表索引 `attendance_records`
+--
+ALTER TABLE `attendance_records`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_att_student_date` (`student_id`,`date`),
+  ADD KEY `idx_att_notified` (`notified`);
+
+--
+-- 資料表索引 `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `idx_audit_table_record` (`table_name`,`record_id`);
+
+--
+-- 資料表索引 `certificates`
+--
+ALTER TABLE `certificates`
+  ADD PRIMARY KEY (`cert_id`),
+  ADD KEY `fk_cert_student` (`student_id`);
+
+--
+-- 資料表索引 `checklist_items`
+--
+ALTER TABLE `checklist_items`
+  ADD PRIMARY KEY (`item_id`),
+  ADD KEY `fk_chk_cat` (`category_id`);
+
+--
+-- 資料表索引 `checklist_progress`
+--
+ALTER TABLE `checklist_progress`
+  ADD PRIMARY KEY (`student_id`,`item_id`,`step_index`),
+  ADD KEY `fk_cp_item` (`item_id`);
+
+--
+-- 資料表索引 `class_groups`
+--
+ALTER TABLE `class_groups`
+  ADD PRIMARY KEY (`class_name`);
+
+--
+-- 資料表索引 `class_group_members`
+--
+ALTER TABLE `class_group_members`
+  ADD PRIMARY KEY (`class_name`,`student_id`),
+  ADD KEY `fk_cgm_student` (`student_id`);
+
+--
+-- 資料表索引 `class_notices`
+--
+ALTER TABLE `class_notices`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_cn_class` (`class_name`),
+  ADD KEY `idx_cn_sender` (`sender_username`);
+
+--
+-- 資料表索引 `class_notice_recipients`
+--
+ALTER TABLE `class_notice_recipients`
+  ADD PRIMARY KEY (`notice_id`,`student_id`),
+  ADD KEY `fk_cnr_student` (`student_id`);
+
+--
+-- 資料表索引 `class_schedule`
+--
+ALTER TABLE `class_schedule`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_sched_class` (`class_name`,`weekday`),
+  ADD KEY `idx_sched_student` (`student_id`,`weekday`);
+
+--
+-- 資料表索引 `counseling_records`
+--
+ALTER TABLE `counseling_records`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_counsel_student` (`student_id`,`talk_date`),
+  ADD KEY `idx_counsel_class` (`class_name`);
+
+--
+-- 資料表索引 `course_map`
+--
+ALTER TABLE `course_map`
+  ADD PRIMARY KEY (`course_id`),
+  ADD KEY `fk_course_prereq` (`prerequisite_id`),
+  ADD KEY `fk_course_dept` (`dept_id`);
+
+--
+-- 資料表索引 `deadlines`
+--
+ALTER TABLE `deadlines`
+  ADD PRIMARY KEY (`deadline_id`),
+  ADD KEY `fk_deadline_dept` (`applies_to_dept`);
+
+--
+-- 資料表索引 `departments`
+--
+ALTER TABLE `departments`
+  ADD PRIMARY KEY (`dept_id`);
+
+--
+-- 資料表索引 `dorm_applications`
+--
+ALTER TABLE `dorm_applications`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_dorm_student_semester` (`student_id`,`semester`);
+
+--
+-- 資料表索引 `faculty_profiles`
+--
+ALTER TABLE `faculty_profiles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_faculty_name` (`name`);
+
+--
+-- 資料表索引 `graduation_requirements`
+--
+ALTER TABLE `graduation_requirements`
+  ADD PRIMARY KEY (`req_id`),
+  ADD UNIQUE KEY `uk_grad_dept` (`dept_id`);
+
+--
+-- 資料表索引 `knowledge_base`
+--
+ALTER TABLE `knowledge_base`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_kb_category` (`category_id`);
+
+--
+-- 資料表索引 `knowledge_categories`
+--
+ALTER TABLE `knowledge_categories`
+  ADD PRIMARY KEY (`category_id`);
+
+--
+-- 資料表索引 `leave_requests`
+--
+ALTER TABLE `leave_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_leave_student` (`student_id`,`submitted_at`);
+
+--
+-- 資料表索引 `moodle_links`
+--
+ALTER TABLE `moodle_links`
+  ADD PRIMARY KEY (`student_id`);
+
+--
+-- 資料表索引 `scholarships`
+--
+ALTER TABLE `scholarships`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_scholarship_deadline` (`deadline`);
+
+--
+-- 資料表索引 `search_feedback`
+--
+ALTER TABLE `search_feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD KEY `fk_fb_kb` (`kb_id`);
+
+--
+-- 資料表索引 `search_logs`
+--
+ALTER TABLE `search_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_search_created` (`created_at`),
+  ADD KEY `idx_search_matched_query` (`matched`,`query`);
+
+--
+-- 資料表索引 `self_reviews`
+--
+ALTER TABLE `self_reviews`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_review_student_semester` (`student_id`,`semester`);
+
+--
+-- 資料表索引 `students`
+--
+ALTER TABLE `students`
+  ADD PRIMARY KEY (`student_id`),
+  ADD KEY `fk_students_dept` (`dept_id`);
+
+--
+-- 資料表索引 `student_credits`
+--
+ALTER TABLE `student_credits`
+  ADD PRIMARY KEY (`credit_id`),
+  ADD KEY `fk_credits_student` (`student_id`),
+  ADD KEY `fk_credits_course` (`course_id`);
+
+--
+-- 資料表索引 `student_privacy_settings`
+--
+ALTER TABLE `student_privacy_settings`
+  ADD PRIMARY KEY (`setting_id`),
+  ADD UNIQUE KEY `uk_privacy_student` (`student_id`);
+
+--
+-- 資料表索引 `student_records`
+--
+ALTER TABLE `student_records`
+  ADD PRIMARY KEY (`record_id`),
+  ADD KEY `idx_records_student` (`student_id`,`record_date`);
+
+--
+-- 資料表索引 `synonym_dictionary`
+--
+ALTER TABLE `synonym_dictionary`
+  ADD PRIMARY KEY (`synonym_id`),
+  ADD KEY `fk_synonym_cat` (`category_id`);
+
+--
+-- 資料表索引 `unmatched_queries`
+--
+ALTER TABLE `unmatched_queries`
+  ADD PRIMARY KEY (`query_id`),
+  ADD UNIQUE KEY `uk_query_text` (`query_text`);
+
+--
+-- 資料表索引 `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `uk_username` (`username`),
+  ADD KEY `fk_users_student` (`student_id`);
+
+--
+-- 資料表索引 `user_preferences`
+--
+ALTER TABLE `user_preferences`
+  ADD PRIMARY KEY (`username`),
+  ADD KEY `fk_pref_dept` (`dept_id`);
+
+--
+-- 資料表索引 `visitor_logs`
+--
+ALTER TABLE `visitor_logs`
+  ADD PRIMARY KEY (`log_id`);
+
+--
+-- 在傾印的資料表使用自動遞增(AUTO_INCREMENT)
+--
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `academic_calendar`
+--
+ALTER TABLE `academic_calendar`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `anniversary_events`
+--
+ALTER TABLE `anniversary_events`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `anniversary_wishes`
+--
+ALTER TABLE `anniversary_wishes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `announcements`
+--
+ALTER TABLE `announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `assignments`
+--
+ALTER TABLE `assignments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `attendance_records`
+--
+ALTER TABLE `attendance_records`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=308;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `certificates`
+--
+ALTER TABLE `certificates`
+  MODIFY `cert_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=218;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `checklist_items`
+--
+ALTER TABLE `checklist_items`
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `class_notices`
+--
+ALTER TABLE `class_notices`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `class_schedule`
+--
+ALTER TABLE `class_schedule`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `counseling_records`
+--
+ALTER TABLE `counseling_records`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `deadlines`
+--
+ALTER TABLE `deadlines`
+  MODIFY `deadline_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `dorm_applications`
+--
+ALTER TABLE `dorm_applications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `faculty_profiles`
+--
+ALTER TABLE `faculty_profiles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `graduation_requirements`
+--
+ALTER TABLE `graduation_requirements`
+  MODIFY `req_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `knowledge_base`
+--
+ALTER TABLE `knowledge_base`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `knowledge_categories`
+--
+ALTER TABLE `knowledge_categories`
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `leave_requests`
+--
+ALTER TABLE `leave_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `scholarships`
+--
+ALTER TABLE `scholarships`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `search_feedback`
+--
+ALTER TABLE `search_feedback`
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `search_logs`
+--
+ALTER TABLE `search_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `self_reviews`
+--
+ALTER TABLE `self_reviews`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `student_credits`
+--
+ALTER TABLE `student_credits`
+  MODIFY `credit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2117;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `student_privacy_settings`
+--
+ALTER TABLE `student_privacy_settings`
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `student_records`
+--
+ALTER TABLE `student_records`
+  MODIFY `record_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=162;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `synonym_dictionary`
+--
+ALTER TABLE `synonym_dictionary`
+  MODIFY `synonym_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `unmatched_queries`
+--
+ALTER TABLE `unmatched_queries`
+  MODIFY `query_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `users`
+--
+ALTER TABLE `users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `visitor_logs`
+--
+ALTER TABLE `visitor_logs`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 已傾印資料表的限制式
+--
+
+--
+-- 資料表的限制式 `academic_calendar`
+--
+ALTER TABLE `academic_calendar`
+  ADD CONSTRAINT `fk_cal_checklist` FOREIGN KEY (`related_checklist_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `anniversary_wishes`
+--
+ALTER TABLE `anniversary_wishes`
+  ADD CONSTRAINT `fk_wish_event` FOREIGN KEY (`event_id`) REFERENCES `anniversary_events` (`id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  ADD CONSTRAINT `fk_ar_ann` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_ar_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `assignments`
+--
+ALTER TABLE `assignments`
+  ADD CONSTRAINT `fk_asg_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `assignment_submissions`
+--
+ALTER TABLE `assignment_submissions`
+  ADD CONSTRAINT `fk_sub_asg` FOREIGN KEY (`assignment_id`) REFERENCES `assignments` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_sub_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `attendance_records`
+--
+ALTER TABLE `attendance_records`
+  ADD CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `certificates`
+--
+ALTER TABLE `certificates`
+  ADD CONSTRAINT `fk_cert_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `checklist_items`
+--
+ALTER TABLE `checklist_items`
+  ADD CONSTRAINT `fk_chk_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `checklist_progress`
+--
+ALTER TABLE `checklist_progress`
+  ADD CONSTRAINT `fk_cp_item` FOREIGN KEY (`item_id`) REFERENCES `checklist_items` (`item_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_cp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `class_group_members`
+--
+ALTER TABLE `class_group_members`
+  ADD CONSTRAINT `fk_cgm_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_cgm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `class_notices`
+--
+ALTER TABLE `class_notices`
+  ADD CONSTRAINT `fk_cn_class` FOREIGN KEY (`class_name`) REFERENCES `class_groups` (`class_name`) ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `class_notice_recipients`
+--
+ALTER TABLE `class_notice_recipients`
+  ADD CONSTRAINT `fk_cnr_notice` FOREIGN KEY (`notice_id`) REFERENCES `class_notices` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_cnr_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `class_schedule`
+--
+ALTER TABLE `class_schedule`
+  ADD CONSTRAINT `fk_sched_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `counseling_records`
+--
+ALTER TABLE `counseling_records`
+  ADD CONSTRAINT `fk_counsel_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `course_map`
+--
+ALTER TABLE `course_map`
+  ADD CONSTRAINT `fk_course_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_course_prereq` FOREIGN KEY (`prerequisite_id`) REFERENCES `course_map` (`course_id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `deadlines`
+--
+ALTER TABLE `deadlines`
+  ADD CONSTRAINT `fk_deadline_dept` FOREIGN KEY (`applies_to_dept`) REFERENCES `departments` (`dept_id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `dorm_applications`
+--
+ALTER TABLE `dorm_applications`
+  ADD CONSTRAINT `fk_dorm_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `graduation_requirements`
+--
+ALTER TABLE `graduation_requirements`
+  ADD CONSTRAINT `fk_grad_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `knowledge_base`
+--
+ALTER TABLE `knowledge_base`
+  ADD CONSTRAINT `fk_kb_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `leave_requests`
+--
+ALTER TABLE `leave_requests`
+  ADD CONSTRAINT `fk_leave_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `moodle_links`
+--
+ALTER TABLE `moodle_links`
+  ADD CONSTRAINT `fk_moodle_links_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `search_feedback`
+--
+ALTER TABLE `search_feedback`
+  ADD CONSTRAINT `fk_fb_kb` FOREIGN KEY (`kb_id`) REFERENCES `knowledge_base` (`id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `self_reviews`
+--
+ALTER TABLE `self_reviews`
+  ADD CONSTRAINT `fk_review_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `students`
+--
+ALTER TABLE `students`
+  ADD CONSTRAINT `fk_students_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `student_credits`
+--
+ALTER TABLE `student_credits`
+  ADD CONSTRAINT `fk_credits_course` FOREIGN KEY (`course_id`) REFERENCES `course_map` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_credits_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `student_privacy_settings`
+--
+ALTER TABLE `student_privacy_settings`
+  ADD CONSTRAINT `fk_privacy_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- 資料表的限制式 `student_records`
+--
+ALTER TABLE `student_records`
+  ADD CONSTRAINT `fk_records_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `synonym_dictionary`
+--
+ALTER TABLE `synonym_dictionary`
+  ADD CONSTRAINT `fk_synonym_cat` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`category_id`) ON DELETE SET NULL;
+
+--
+-- 資料表的限制式 `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `fk_users_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- 資料表的限制式 `user_preferences`
+--
+ALTER TABLE `user_preferences`
+  ADD CONSTRAINT `fk_pref_dept` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`dept_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+SET FOREIGN_KEY_CHECKS = 1;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

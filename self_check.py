@@ -19,6 +19,7 @@
     因為那是環境限制，不是程式本身的錯誤。
 """
 import io
+import json
 import os
 import time
 import traceback
@@ -804,6 +805,116 @@ def t_health_stats(c):
     r2 = c.anon.get("/api/stats")
     assert r1.status_code == 200 and r2.status_code == 200
     return "系統健康檢查與統計 API 正常"
+
+
+@check("管理員角色分工", "內容管理人員不能管理帳號或修改權限（403 攔截）")
+def t_content_admin_cannot_manage_users(c):
+    content_client = _login(app_module.app.test_client(), "content_admin", "123456")
+    # 內容管理人員嘗試讀取/新增帳號 -> 必須 403
+    r_list = content_client.get("/api/admin/users")
+    assert r_list.status_code == 403, f"內容管理人員讀取帳號清單應回 403，實際 {r_list.status_code}"
+    r_create = content_client.post("/api/admin/users", json={
+        "username": f"illegal_{RUN_TAG}", "full_name": "非法建帳", "role": "系統管理員"
+    })
+    assert r_create.status_code == 403, f"內容管理人員新增帳號應回 403，實際 {r_create.status_code}"
+    r_self = content_client.post("/api/admin/self-check")
+    assert r_self.status_code == 403, f"內容管理人員執行系統檢測應回 403，實際 {r_self.status_code}"
+    return "內容管理人員管理帳號、權限與系統檢測皆正確以 403 攔截"
+
+
+@check("管理員角色分工", "系統管理員建立帳號、設定處室與權限、停用帳號（含清理）")
+def t_sys_admin_user_lifecycle(c):
+    uname = f"sc_user_{RUN_TAG}"
+    r_add = c.admin.post("/api/admin/users", json={
+        "username": uname,
+        "full_name": "自檢內容管理員",
+        "role": "內容管理人員",
+        "office": "教務處",
+        "permissions": "查看,建立,修改,帳號管理",  # 後端應自動過濾掉「帳號管理」
+        "is_active": 1,
+    })
+    data_add = _j(r_add)
+    assert r_add.status_code in (200, 201) and data_add.get("status") == "success", data_add
+    uid = data_add.get("user_id")
+    try:
+        r_list = c.admin.get(f"/api/admin/users?search={uname}")
+        rows = _j(r_list).get("data", [])
+        target = next((u for u in rows if u["username"] == uname), None)
+        assert target is not None, "應能查到新建帳號"
+        assert target.get("office") == "教務處"
+        assert "帳號管理" not in (target.get("permissions") or ""), "內容管理人員不可擁有帳號管理權限"
+        # 停用帳號
+        r_deact = c.admin.put(f"/api/admin/users/{uid}", json={"is_active": 0})
+        assert r_deact.status_code == 200, _j(r_deact)
+        return "系統管理員帳號建立、處室權限清洗與停用流程皆正常"
+    finally:
+        if uid:
+            c.admin.delete(f"/api/admin/users/{uid}")
+
+
+@check("管理員角色分工", "內容管理人員維護申辦資訊與重要期限 CRUD（含清理）")
+def t_content_admin_checklists_and_deadlines(c):
+    content_client = _login(app_module.app.test_client(), "content_admin", "123456")
+    # 1. 申辦資訊新增、修改、刪除
+    r_chk = content_client.post("/api/checklists", json={
+        "category_name": "教務處註冊組",
+        "business_name": f"SELFCHECK 申辦 {RUN_TAG}",
+        "steps": ["步驟一", "步驟二"],
+        "required_docs": "學生證（專題示範資料）",
+    })
+    d_chk = _j(r_chk)
+    assert r_chk.status_code == 201, d_chk
+    chk_id = d_chk.get("item_id")
+    try:
+        r_chk_put = content_client.put(f"/api/checklists/{chk_id}", json={
+            "category_name": "教務處註冊組",
+            "business_name": f"SELFCHECK 申辦更新 {RUN_TAG}",
+            "steps": ["步驟一更新"],
+            "required_docs": "學生證（專題示範資料）",
+        })
+        assert r_chk_put.status_code == 200, _j(r_chk_put)
+    finally:
+        if chk_id:
+            r_chk_del = content_client.delete(f"/api/checklists/{chk_id}")
+            assert r_chk_del.status_code == 200, _j(r_chk_del)
+
+    # 2. 重要期限新增、修改、刪除
+    r_dl = content_client.post("/api/deadlines", json={
+        "title": f"SELFCHECK 期限 {RUN_TAG}",
+        "category": "教務處",
+        "semester_week": 12,
+        "end_date": "2026-12-31",
+        "status_badge": "進行中",
+    })
+    d_dl = _j(r_dl)
+    assert r_dl.status_code == 201, d_dl
+    dl_id = d_dl.get("deadline_id")
+    try:
+        r_dl_put = content_client.put(f"/api/deadlines/{dl_id}", json={
+            "title": f"SELFCHECK 期限更新 {RUN_TAG}",
+            "category": "學務處",
+            "semester_week": 13,
+            "end_date": "2026-12-31",
+            "status_badge": "倒數 3 天",
+        })
+        assert r_dl_put.status_code == 200, _j(r_dl_put)
+    finally:
+        if dl_id:
+            r_dl_del = content_client.delete(f"/api/deadlines/{dl_id}")
+            assert r_dl_del.status_code == 200, _j(r_dl_del)
+    return "內容管理人員申辦資訊與重要期限新增/修改/刪除正常"
+
+
+@check("示範資料標示", "專題示範資料與付費設定不代表金流已完成標示檢查")
+def t_demo_and_payment_labels(c):
+    r_map = _j(c.anon.get("/api/campus/map"))
+    assert "專題示範資料" in json.dumps(r_map, ensure_ascii=False), "校園位置/停車應標示專題示範資料"
+    r_trans = _j(c.anon.get("/api/campus/transport"))
+    assert "專題示範資料" in json.dumps(r_trans, ensure_ascii=False), "接駁交通應標示專題示範資料"
+    r_lockers = _j(c.student.get("/api/campus/lockers"))
+    lockers_str = json.dumps(r_lockers, ensure_ascii=False)
+    assert "專題示範資料" in lockers_str and "付費設定不代表金流已完成" in lockers_str, "櫃子租借應標示專題示範資料與付費設定不代表金流已完成"
+    return "學費、補助、位置、停車、接駁與付費設定標示皆符合規範"
 
 
 # ============================================================

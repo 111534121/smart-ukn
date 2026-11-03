@@ -45,8 +45,18 @@ function showAdminToast(msg, type = 'success') {
     setTimeout(() => { toast.style.opacity = '0'; }, 3200);
 }
 
-// 通用後端請求包裝
+// 通用後端請求包裝（含寫入防連點鎖定）
+let _adminMutatingInFlight = false;
 async function adminFetch(url, options = {}) {
+    const method = (options.method || 'GET').toUpperCase();
+    const isMutating = ['POST', 'PUT', 'DELETE'].includes(method);
+    if (isMutating) {
+        if (_adminMutatingInFlight) {
+            showAdminToast('系統正在處理上一筆變更，請勿重複連點', 'error');
+            throw new Error('請求處理中');
+        }
+        _adminMutatingInFlight = true;
+    }
     try {
         const res = await fetch(url, {
             ...options,
@@ -61,8 +71,14 @@ async function adminFetch(url, options = {}) {
         }
         return data;
     } catch (err) {
-        showAdminToast(err.message, 'error');
+        if (err.message !== '請求處理中') {
+            showAdminToast(err.message, 'error');
+        }
         throw err;
+    } finally {
+        if (isMutating) {
+            _adminMutatingInFlight = false;
+        }
     }
 }
 
@@ -117,36 +133,129 @@ async function refreshDbStatus() {
     }
 }
 
-// 一鍵以超級管理員身分就緒
-async function quickLoginAsAdmin() {
+let currentAdminUser = {
+    username: 'admin',
+    full_name: '系統超級管理員',
+    role: '系統管理員',
+    role_display: '系統管理員',
+    office: '圖書資訊中心',
+    permissions: '查看,建立,修改,帳號管理,權限設定,系統檢測',
+    is_active: 1
+};
+
+function isCurrentSysAdmin() {
+    return true;
+}
+
+function applyRolePermissionUI() {
+    const idBadge = document.getElementById('adminIdentityBadge');
+    const officeText = currentAdminUser?.office ? ` · ${currentAdminUser.office}` : '';
+    if (idBadge) {
+        idBadge.textContent = `${currentAdminUser?.full_name || '系統管理員'} (系統管理員${officeText})`;
+        idBadge.className = 'font-bold text-ukn-900';
+    }
+}
+
+async function switchAdminRoleAccount(targetRole = '系統管理員') {
+    const credentials = { username: 'admin', password: '123456' };
+    try {
+        let res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials)
+        });
+        let data = await res.json();
+        if (data.status !== 'success') {
+            res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            });
+            data = await res.json();
+        }
+        if (data.status === 'success' && data.user) {
+            currentAdminUser = data.user;
+            applyRolePermissionUI();
+            loadUsers();
+            refreshDbStatus();
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+}
+
+function openAdminLoginModal() {
+    const modal = document.getElementById('adminLoginModal');
+    if (modal) {
+        const uInput = document.getElementById('adminLoginUsername');
+        if (uInput && currentAdminUser?.username) {
+            uInput.value = currentAdminUser.username;
+        }
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeAdminLoginModal() {
+    const modal = document.getElementById('adminLoginModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function submitAdminLoginModal(event) {
+    event.preventDefault();
+    const username = (document.getElementById('adminLoginUsername')?.value || '').trim();
+    const password = (document.getElementById('adminLoginPassword')?.value || '').trim();
+    if (!username || !password) return;
     try {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            body: JSON.stringify({ username, password })
         });
         const data = await res.json();
-        if (data.status === 'success') {
-            showAdminToast('已成功切換為超級管理員身分', 'success');
-            const idBadge = document.getElementById('adminIdentityBadge');
-            if (idBadge) idBadge.textContent = '系統超級管理員 (管理員)';
-            loadAllCoreAdminData();
-        } else {
-            showAdminToast(data.message || '登入失敗', 'error');
+        if (!res.ok || data.status !== 'success') {
+            showAdminToast(data.message || '帳號或密碼錯誤', 'error');
+            return;
         }
+        currentAdminUser = data.user;
+        applyRolePermissionUI();
+        closeAdminLoginModal();
+        showAdminToast(`已登入：${data.user.full_name} (${data.user.role_display || data.user.role})`, 'success');
+        if (isCurrentSysAdmin()) {
+            loadUsers();
+        } else {
+            const usersPanel = document.getElementById('panel-users');
+            const selfPanel = document.getElementById('panel-selfcheck');
+            if ((usersPanel && !usersPanel.classList.contains('hidden')) ||
+                (selfPanel && !selfPanel.classList.contains('hidden'))) {
+                switchAdminCoreTab('rules');
+            }
+        }
+        refreshDbStatus();
     } catch (e) {
-        showAdminToast(e.message, 'error');
+        showAdminToast('登入失敗：' + e.message, 'error');
     }
 }
 
+// 一鍵以超級管理員身分就緒
+async function quickLoginAsAdmin() {
+    await switchAdminRoleAccount('系統管理員');
+    loadAllCoreAdminData();
+}
+
 // ==========================================
-// 2. 系統帳號與權限 (users)
+// 2. 系統帳號與權限 (users - 僅限系統管理員)
 // ==========================================
 async function loadUsers() {
-    const role = document.getElementById('filterUserRole')?.value || '';
-    const search = document.getElementById('filterUserSearch')?.value || '';
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
+
+    if (!isCurrentSysAdmin()) {
+        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-rose-600 font-semibold">🔒 權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作。</td></tr>';
+        return;
+    }
+
+    const role = document.getElementById('filterUserRole')?.value || '';
+    const search = document.getElementById('filterUserSearch')?.value || '';
 
     tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">載入帳號資料中...</td></tr>';
     try {
@@ -165,29 +274,76 @@ async function loadUsers() {
         }
 
         tbody.innerHTML = coreDataCache.users.map(u => {
+            const rawRole = u.role_display || u.role || '';
+            const roleDisp = (rawRole === '管理員' || rawRole === '系統管理員')
+                ? '系統管理員'
+                : ((rawRole === '內容管理人員' || rawRole === '教職員') ? '處室承辦' : rawRole);
             const roleColors = {
-                '管理員': 'bg-rose-100 text-rose-800 border-rose-300',
+                '系統管理員': 'bg-rose-100 text-rose-800 border-rose-300',
+                '處室承辦': 'bg-amber-100 text-amber-800 border-amber-300',
+                '科助': 'bg-amber-100 text-amber-800 border-amber-300',
+                '住宿管理員': 'bg-purple-100 text-purple-800 border-purple-300',
                 '老師': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-                '教職員': 'bg-amber-100 text-amber-800 border-amber-300',
                 '學生': 'bg-emerald-100 text-emerald-800 border-emerald-300',
                 '家長': 'bg-sky-100 text-sky-800 border-sky-300'
             };
-            const roleBadge = `<span class="px-2 py-0.5 rounded text-xs border font-medium ${roleColors[u.role] || 'bg-slate-100 text-slate-700'}">${escapeHtml(u.role)}</span>`;
-            const dormBadge = u.can_manage_dorm ? '<span class="bg-purple-100 text-purple-800 text-[10px] px-1.5 py-0.5 rounded border border-purple-200">宿舍管理權限</span>' : '<span class="text-slate-300">—</span>';
-            const extraInfo = u.advised_class ? `<span class="text-indigo-700 font-medium">導師：${escapeHtml(u.advised_class)}</span>` : (u.student_id ? `<span class="text-emerald-700 font-mono">${escapeHtml(u.student_id)}${u.class_name ? ` (${escapeHtml(u.class_name)})` : ''}</span>` : '<span class="text-slate-300">—</span>');
+            const isActive = (u.is_active === undefined || u.is_active === null) ? 1 : Number(u.is_active);
+            const activeBadge = isActive
+                ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0">啟用中</span>'
+                : '<span class="bg-rose-100 text-rose-800 text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0">已停用</span>';
+            const roleBadge = `<span class="px-2 py-0.5 rounded text-xs border font-semibold whitespace-nowrap ${roleColors[roleDisp] || 'bg-slate-100 text-slate-700'}">${escapeHtml(roleDisp)}</span>`;
+            const officeHtml = u.office ? `<span class="text-xs text-slate-500 whitespace-nowrap">· ${escapeHtml(u.office)}</span>` : '';
+            const permsArr = String(u.permissions || '查看').split(',').map(s => s.trim()).filter(Boolean);
+            const permsBadges = permsArr.map(p => {
+                const isSysPerm = ['帳號管理', '權限設定', '系統檢測'].includes(p);
+                return `<span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold border whitespace-nowrap ${isSysPerm ? 'bg-indigo-50 text-indigo-800 border-indigo-200' : 'bg-slate-100 text-slate-700 border-slate-200'}">${escapeHtml(p)}</span>`;
+            }).join('');
+            const dormBadge = u.can_manage_dorm ? '<span class="inline-block bg-purple-100 text-purple-800 text-[11px] px-1.5 py-0.5 rounded border border-purple-200 whitespace-nowrap">宿舍管理</span>' : '';
+            const extraInfo = u.advised_class ? `<span class="text-indigo-700 font-medium whitespace-nowrap">導師：${escapeHtml(u.advised_class)}</span>` : (u.student_id ? `<span class="text-emerald-700 font-mono whitespace-nowrap">${escapeHtml(u.student_id)}${u.class_name ? ` (${escapeHtml(u.class_name)})` : ''}</span>` : '<span class="text-slate-300">—</span>');
+
+            const isProtectedAdmin = u.username === 'admin' || (typeof currentAdminUser !== 'undefined' && currentAdminUser && u.username === currentAdminUser.username);
+            const protectedBadge = isProtectedAdmin
+                ? '<span class="bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0" title="主系統管理員與當前登入帳號受系統防呆保護">🛡️ 受保護</span>'
+                : '';
+
+            const toggleBtn = isProtectedAdmin
+                ? `<button disabled title="防呆保護：不可停用主管理員或自己目前登入的帳號" class="border border-slate-200 text-slate-300 bg-slate-50 px-2 py-1 rounded text-xs font-semibold cursor-not-allowed">停用</button>`
+                : (isActive
+                    ? `<button onclick="toggleUserActive(${u.user_id}, '${escapeHtml(u.username)}', 0)" class="border border-amber-400 text-amber-800 hover:bg-amber-50 px-2 py-1 rounded text-xs font-semibold">停用</button>`
+                    : `<button onclick="toggleUserActive(${u.user_id}, '${escapeHtml(u.username)}', 1)" class="border border-emerald-400 text-emerald-800 hover:bg-emerald-50 px-2 py-1 rounded text-xs font-semibold">啟用</button>`);
+
+            const deleteBtn = isProtectedAdmin
+                ? `<button disabled title="防呆保護：不可刪除主管理員或自己目前登入的帳號" class="border border-slate-200 text-slate-300 bg-slate-50 px-2 py-1 rounded text-xs font-semibold cursor-not-allowed">刪除</button>`
+                : `<button onclick="deleteUser(${u.user_id}, '${escapeHtml(u.username)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs font-semibold">刪除</button>`;
 
             return `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                    <td class="p-3 font-mono text-slate-500">${u.user_id}</td>
-                    <td class="p-3 font-bold text-slate-900">${escapeHtml(u.username)}</td>
-                    <td class="p-3 text-slate-800 font-medium">${escapeHtml(u.full_name)}</td>
-                    <td class="p-3">${roleBadge}</td>
-                    <td class="p-3 text-xs">${extraInfo}</td>
-                    <td class="p-3 text-xs">${dormBadge}</td>
-                    <td class="p-3 text-xs text-slate-400 font-mono">${escapeHtml(String(u.created_at || '').substring(0, 16))}</td>
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${isActive ? '' : 'opacity-60 bg-rose-50/30'}">
+                    <td class="p-3 font-mono text-slate-500 whitespace-nowrap">${u.user_id}</td>
+                    <td class="p-3 whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-900">${escapeHtml(u.username)}</span>
+                            ${activeBadge}
+                            ${protectedBadge}
+                        </div>
+                    </td>
+                    <td class="p-3 text-slate-800 font-medium whitespace-nowrap">${escapeHtml(u.full_name)}</td>
+                    <td class="p-3 whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
+                            ${roleBadge}
+                            ${officeHtml}
+                        </div>
+                    </td>
+                    <td class="p-3 text-xs whitespace-nowrap">
+                        <div class="flex items-center gap-1">
+                            ${permsBadges}${dormBadge}
+                        </div>
+                    </td>
+                    <td class="p-3 text-xs whitespace-nowrap">${extraInfo}</td>
+                    <td class="p-3 text-xs text-slate-400 font-mono whitespace-nowrap">${escapeHtml(String(u.created_at || '').substring(0, 16))}</td>
                     <td class="p-3 text-center space-x-1 whitespace-nowrap">
                         <button onclick="openUserModal('edit', ${u.user_id})" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
-                        <button onclick="deleteUser(${u.user_id}, '${escapeHtml(u.username)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>
+                        ${toggleBtn}
+                        ${deleteBtn}
                     </td>
                 </tr>
             `;
@@ -197,32 +353,111 @@ async function loadUsers() {
     }
 }
 
+function onUserRoleSelectChange(roleVal) {
+    const isSys = roleVal === '系統管理員' || roleVal === '管理員';
+    const isContent = ['內容管理人員', '教職員', '處室承辦', '科助', '住宿管理員'].includes(roleVal);
+    const sysCheckboxes = ['mPermAccount', 'mPermPermission', 'mPermSelfCheck'].map(id => document.getElementById(id)).filter(Boolean);
+    sysCheckboxes.forEach(cb => {
+        cb.disabled = !isSys;
+        if (!isSys) cb.checked = false;
+        else cb.checked = true;
+    });
+    const viewCb = document.getElementById('mPermView');
+    const createCb = document.getElementById('mPermCreate');
+    const editCb = document.getElementById('mPermEdit');
+    if (viewCb) viewCb.checked = true;
+    if (createCb) createCb.checked = isSys || isContent;
+    if (editCb) editCb.checked = isSys || isContent || roleVal === '老師';
+
+    // 防呆提示：當身分為學生或家長時，綁定學號為必填
+    const studentIdInput = document.getElementById('mStudentId');
+    if (studentIdInput) {
+        if (roleVal === '學生' || roleVal === '家長') {
+            studentIdInput.required = true;
+            studentIdInput.placeholder = '必填：請輸入學號（如 S112001）';
+            studentIdInput.classList.add('border-amber-400', 'bg-amber-50/30');
+        } else {
+            studentIdInput.required = false;
+            studentIdInput.placeholder = '例如 S112001（非學生/家長可留空）';
+            studentIdInput.classList.remove('border-amber-400', 'bg-amber-50/30');
+        }
+    }
+}
+
+function setModalPermissionsCheckboxes(roleVal, permsStr) {
+    const isSys = roleVal === '系統管理員' || roleVal === '管理員';
+    const perms = String(permsStr || '').split(',').map(s => s.trim()).filter(Boolean);
+    const map = {
+        '查看': 'mPermView',
+        '建立': 'mPermCreate',
+        '修改': 'mPermEdit',
+        '帳號管理': 'mPermAccount',
+        '權限設定': 'mPermPermission',
+        '系統檢測': 'mPermSelfCheck'
+    };
+    Object.entries(map).forEach(([label, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isSysOnly = ['帳號管理', '權限設定', '系統檢測'].includes(label);
+        el.disabled = isSysOnly && !isSys;
+        el.checked = (!el.disabled) && perms.includes(label);
+    });
+}
+
+function collectModalPermissions() {
+    return [...document.querySelectorAll('input[name="mPermItem"]:checked')].map(el => el.value).join(',');
+}
+
 function openUserModal(mode, id = null) {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作', 'error');
+        return;
+    }
     const modal = document.getElementById('userModal');
     if (!modal) return;
     const title = document.getElementById('userModalTitle');
     document.getElementById('userForm').reset();
     document.getElementById('mUserId').value = '';
+    const roleSelect = document.getElementById('mRole');
+    const activeSelect = document.getElementById('mIsActive');
+    if (roleSelect) roleSelect.disabled = false;
+    if (activeSelect) activeSelect.disabled = false;
 
     if (mode === 'add') {
-        title.textContent = '新增系統使用者帳號';
+        title.textContent = '新增使用者帳號';
         document.getElementById('mUsername').readOnly = false;
         document.getElementById('mUsername').classList.remove('bg-slate-100');
-        document.getElementById('mPasswordHint').textContent = '預設密碼：123456';
+        document.getElementById('mPasswordHint').textContent = '預設密碼：123456（若自訂需至少 4 碼）';
+        document.getElementById('mRole').value = '系統管理員';
+        document.getElementById('mOffice').value = '圖書資訊中心';
+        document.getElementById('mIsActive').value = '1';
+        onUserRoleSelectChange('系統管理員');
     } else {
         const u = coreDataCache.users.find(x => x.user_id === id);
         if (!u) return;
-        title.textContent = `編輯使用者：${u.username}`;
+        const isProtectedAdmin = u.username === 'admin' || (typeof currentAdminUser !== 'undefined' && currentAdminUser && u.username === currentAdminUser.username);
+        title.textContent = `編輯帳號與權限：${u.username}${isProtectedAdmin ? ' (🛡️ 系統保護帳號)' : ''}`;
         document.getElementById('mUserId').value = u.user_id;
         document.getElementById('mUsername').value = u.username;
         document.getElementById('mUsername').readOnly = true;
         document.getElementById('mUsername').classList.add('bg-slate-100');
         document.getElementById('mFullName').value = u.full_name;
-        document.getElementById('mRole').value = u.role;
+        const roleVal = (u.role === '管理員' || u.role === '系統管理員')
+            ? '系統管理員'
+            : ((u.role === '教職員' || u.role === '內容管理人員') ? '處室承辦' : u.role);
+        document.getElementById('mRole').value = roleVal;
+        document.getElementById('mOffice').value = u.office || '';
+        document.getElementById('mIsActive').value = String((u.is_active === undefined || u.is_active === null) ? 1 : Number(u.is_active));
+        if (isProtectedAdmin) {
+            if (roleSelect) roleSelect.disabled = true;
+            if (activeSelect) activeSelect.disabled = true;
+        }
+        onUserRoleSelectChange(roleVal);
+        setModalPermissionsCheckboxes(roleVal, u.permissions || '查看,建立,修改');
         document.getElementById('mStudentId').value = u.student_id || '';
         document.getElementById('mAdvisedClass').value = u.advised_class || '';
         document.getElementById('mCanManageDorm').checked = Boolean(u.can_manage_dorm);
-        document.getElementById('mPasswordHint').textContent = '留空表示維持原密碼不變更';
+        document.getElementById('mPasswordHint').textContent = '留空表示維持原密碼不變更（若輸入新密碼需至少 4 碼）';
     }
     modal.classList.remove('hidden');
 }
@@ -233,25 +468,59 @@ function closeUserModal() {
 
 async function saveUser(e) {
     e.preventDefault();
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能管理帳號或修改權限', 'error');
+        return;
+    }
     const id = document.getElementById('mUserId').value;
+    const username = document.getElementById('mUsername').value.trim();
+    const fullName = document.getElementById('mFullName').value.trim();
+    const role = document.getElementById('mRole').value;
+    const studentId = document.getElementById('mStudentId').value.trim().toUpperCase() || null;
+    const password = document.getElementById('mPassword').value.trim();
+
+    if (!/^[A-Za-z0-9_.\-]{3,50}$/.test(username)) {
+        showAdminToast('防呆攔截：帳號格式不正確，僅限 3~50 碼英數字、底線(_)、點(.)或連字號(-)', 'error');
+        return;
+    }
+    if (!fullName || fullName.length > 50) {
+        showAdminToast('防呆攔截：姓名不可為空且不可超過 50 個字元', 'error');
+        return;
+    }
+    if (password && (password.length < 4 || password.length > 100)) {
+        showAdminToast('防呆攔截：密碼長度須介於 4 ~ 100 個字元之間', 'error');
+        return;
+    }
+    if ((role === '學生' || role === '家長') && !studentId) {
+        showAdminToast(`防呆攔截：身分為「${role}」時，必須填寫綁定學號（如 S112001）！`, 'error');
+        document.getElementById('mStudentId')?.focus();
+        return;
+    }
+    if (studentId && !/^[A-Za-z0-9_\-]{3,20}$/.test(studentId)) {
+        showAdminToast('防呆攔截：學號格式不正確，僅限 3~20 碼英數字（如 S112001）', 'error');
+        return;
+    }
+
     const payload = {
-        username: document.getElementById('mUsername').value.trim(),
-        full_name: document.getElementById('mFullName').value.trim(),
-        role: document.getElementById('mRole').value,
-        student_id: document.getElementById('mStudentId').value.trim() || null,
+        username,
+        full_name: fullName,
+        role,
+        office: document.getElementById('mOffice').value.trim(),
+        permissions: collectModalPermissions() || '查看',
+        is_active: Number(document.getElementById('mIsActive').value),
+        student_id: studentId,
         advised_class: document.getElementById('mAdvisedClass').value.trim() || null,
         can_manage_dorm: document.getElementById('mCanManageDorm').checked
     };
-    const password = document.getElementById('mPassword').value.trim();
     if (password) payload.password = password;
 
     try {
         if (id) {
             await adminFetch(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-            showAdminToast(`使用者「${payload.username}」資料已成功更新`);
+            showAdminToast(`使用者「${payload.username}」角色處室與權限已更新`);
         } else {
             await adminFetch('/api/admin/users', { method: 'POST', body: JSON.stringify(payload) });
-            showAdminToast(`已成功建立新使用者「${payload.username}」`);
+            showAdminToast(`已成功建立新使用者「${payload.username}」(${payload.role})`);
         }
         closeUserModal();
         loadUsers();
@@ -261,7 +530,37 @@ async function saveUser(e) {
     }
 }
 
+async function toggleUserActive(id, username, nextActive) {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能啟用或停用帳號', 'error');
+        return;
+    }
+    if (!nextActive && (username === 'admin' || (currentAdminUser && username === currentAdminUser.username))) {
+        showAdminToast('防呆攔截：不可停用主系統管理員或自己目前登入的帳號！', 'error');
+        return;
+    }
+    const actionLabel = nextActive ? '啟用' : '停用';
+    if (!confirm(`確定要${actionLabel}帳號「${username}」嗎？`)) return;
+    try {
+        await adminFetch(`/api/admin/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ is_active: nextActive })
+        });
+        showAdminToast(`帳號「${username}」已${actionLabel}`);
+        loadUsers();
+        refreshDbStatus();
+    } catch (e) { }
+}
+
 async function deleteUser(id, username) {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能刪除帳號', 'error');
+        return;
+    }
+    if (username === 'admin' || (currentAdminUser && username === currentAdminUser.username)) {
+        showAdminToast('防呆攔截：不可刪除主系統管理員或自己目前登入的帳號！', 'error');
+        return;
+    }
     if (!confirm(`確定要刪除使用者「${username}」？\n此動作將留下不可復原的系統稽核日誌。`)) return;
     try {
         await adminFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
@@ -287,7 +586,12 @@ async function loadDepartments() {
         // 同步更新其他下拉選單的科系選項
         updateDeptDropdownOptions(coreDataCache.departments);
 
-        tbody.innerHTML = coreDataCache.departments.map(d => `
+        tbody.innerHTML = coreDataCache.departments.map(d => {
+            const hasBoundData = (d.student_count || 0) > 0 || (d.course_count || 0) > 0;
+            const deleteBtn = hasBoundData
+                ? `<button onclick="deleteDepartment('${d.dept_id}', '${escapeHtml(d.dept_name)}')" title="此科系已有 ${d.student_count || 0} 位學生與 ${d.course_count || 0} 門課程，系統防呆將保護不可刪除" class="border border-slate-200 text-slate-400 hover:bg-slate-100 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>`
+                : `<button onclick="deleteDepartment('${d.dept_id}', '${escapeHtml(d.dept_name)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>`;
+            return `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="p-3 font-mono font-bold text-ukn-800 text-sm">${escapeHtml(d.dept_id)}</td>
                 <td class="p-3 font-bold text-slate-900">${escapeHtml(d.dept_name)}</td>
@@ -296,16 +600,22 @@ async function loadDepartments() {
                 <td class="p-3 font-mono text-indigo-700">${d.course_count || 0} 門課程</td>
                 <td class="p-3 text-center space-x-1 whitespace-nowrap">
                     <button onclick="openDeptModal('edit', '${d.dept_id}')" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
-                    <button onclick="deleteDepartment('${d.dept_id}', '${escapeHtml(d.dept_name)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>
+                    ${deleteBtn}
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     } catch (e) {
         tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</td></tr>`;
     }
 }
 
 function updateDeptDropdownOptions(depts) {
+    const list = (depts && depts.length > 0) ? depts : (coreDataCache.departments && coreDataCache.departments.length > 0 ? coreDataCache.departments : [
+        { dept_id: 'CS', dept_name: '資訊管理科', college_name: '創新資訊學院' },
+        { dept_id: 'NURS', dept_name: '護理科', college_name: '健康照顧學院' },
+        { dept_id: 'EC', dept_name: '幼兒保育科', college_name: '民生與幼保學院' },
+        { dept_id: 'DA', dept_name: '數位應用科', college_name: '創新資訊學院' }
+    ]);
     const selectors = ['filterCourseDept', 'mCourseDept', 'mGradDept'];
     selectors.forEach(sId => {
         const el = document.getElementById(sId);
@@ -313,7 +623,7 @@ function updateDeptDropdownOptions(depts) {
         const currentVal = el.value;
         const isFilter = sId.startsWith('filter');
         el.innerHTML = isFilter ? '<option value="">全校所有科系</option>' : '';
-        depts.forEach(d => {
+        list.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.dept_id;
             opt.textContent = `${d.dept_name} (${d.dept_id}) · ${d.college_name}`;
@@ -356,10 +666,26 @@ async function saveDepartment(e) {
     e.preventDefault();
     const origId = document.getElementById('mDeptIdOriginal').value;
     const deptId = document.getElementById('mDeptId').value.trim().toUpperCase();
+    const deptName = document.getElementById('mDeptName').value.trim();
+    const collegeName = document.getElementById('mCollegeName').value.trim();
+
+    if (!/^[A-Z0-9_]{2,10}$/.test(deptId)) {
+        showAdminToast('防呆攔截：系所代碼僅限 2~10 碼英數大寫（如 CS、NURS、IM）', 'error');
+        return;
+    }
+    if (!deptName || !collegeName) {
+        showAdminToast('防呆攔截：科系名稱與所屬學院皆不可空白', 'error');
+        return;
+    }
+    if (deptName.length > 50 || collegeName.length > 50) {
+        showAdminToast('防呆攔截：科系名稱與學院名稱不可超過 50 個字元', 'error');
+        return;
+    }
+
     const payload = {
         dept_id: deptId,
-        dept_name: document.getElementById('mDeptName').value.trim(),
-        college_name: document.getElementById('mCollegeName').value.trim()
+        dept_name: deptName,
+        college_name: collegeName
     };
 
     try {
@@ -377,6 +703,11 @@ async function saveDepartment(e) {
 }
 
 async function deleteDepartment(deptId, deptName) {
+    const d = coreDataCache.departments.find(x => x.dept_id === deptId);
+    if (d && ((d.student_count || 0) > 0 || (d.course_count || 0) > 0)) {
+        showAdminToast(`防呆攔截：科系「${deptName}」下仍有 ${d.student_count || 0} 名學生與 ${d.course_count || 0} 門課程，不可直接刪除！`, 'error');
+        return;
+    }
     if (!confirm(`確定要刪除科系「${deptName}」(${deptId})？\n若有學生學籍或課程綁定此科系將被系統安全防護擋下。`)) return;
     try {
         await adminFetch(`/api/admin/departments/${deptId}`, { method: 'DELETE' });
@@ -389,6 +720,21 @@ async function deleteDepartment(deptId, deptName) {
 // ==========================================
 // 4. 全校課程地圖與先修擋修 (course_map)
 // ==========================================
+// 防呆輔助：檢查將 candidatePrereqId 設為 targetCourseId 的先修課是否會形成循環擋修
+function wouldCreateCircularPrerequisite(targetCourseId, candidatePrereqId) {
+    if (!targetCourseId || !candidatePrereqId) return false;
+    if (targetCourseId === candidatePrereqId) return true;
+    const visited = new Set([targetCourseId]);
+    let curr = candidatePrereqId;
+    while (curr) {
+        if (visited.has(curr)) return true;
+        visited.add(curr);
+        const found = coreDataCache.courses.find(x => x.course_id === curr);
+        curr = found ? found.prerequisite_id : null;
+    }
+    return false;
+}
+
 async function loadCourseMap() {
     const dept = document.getElementById('filterCourseDept')?.value || '';
     const type = document.getElementById('filterCourseType')?.value || '';
@@ -415,28 +761,28 @@ async function loadCourseMap() {
 
         tbody.innerHTML = coreDataCache.courses.map(c => {
             const prereqBadge = c.prerequisite_id ? `
-                <div class="flex items-center gap-1.5">
-                    <span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-300">擋修先決</span>
+                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-300 shrink-0">擋修</span>
                     <span class="font-medium text-slate-800 text-xs">${escapeHtml(c.prerequisite_name || c.prerequisite_id)} (${escapeHtml(c.prerequisite_id)})</span>
                 </div>
-            ` : '<span class="text-slate-300">無先修擋修</span>';
+            ` : '<span class="text-slate-300">無</span>';
 
             const typePill = c.is_required
-                ? `<span class="bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-xs">${escapeHtml(c.course_type)} (必修)</span>`
-                : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs">${escapeHtml(c.course_type)} (選修)</span>`;
+                ? `<span class="bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-xs whitespace-nowrap">${escapeHtml(c.course_type)} (必修)</span>`
+                : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs whitespace-nowrap">${escapeHtml(c.course_type)} (選修)</span>`;
 
             return `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                    <td class="p-3 font-mono font-bold text-ukn-800">${escapeHtml(c.course_id)}</td>
-                    <td class="p-3">
+                    <td class="p-3 font-mono font-bold text-ukn-800 whitespace-nowrap">${escapeHtml(c.course_id)}</td>
+                    <td class="p-3 cell-wrap">
                         <div class="font-bold text-slate-900">${escapeHtml(c.course_name)}</div>
-                        ${c.description ? `<div class="text-[11px] text-slate-500 line-clamp-1 max-w-xs">${escapeHtml(c.description)}</div>` : ''}
+                        ${c.description ? `<div class="text-[11px] text-slate-500 line-clamp-1">${escapeHtml(c.description)}</div>` : ''}
                     </td>
-                    <td class="p-3 text-xs font-mono font-bold text-slate-800">${c.credits} 學分 / ${c.semester_hours || c.credits} 時</td>
-                    <td class="p-3 text-xs">${typePill}</td>
-                    <td class="p-3 text-xs"><span class="font-medium text-slate-700">${escapeHtml(c.dept_name || c.dept_id)}</span></td>
-                    <td class="p-3 text-xs font-medium text-slate-600">${escapeHtml(c.semester_suggest || '—')}</td>
-                    <td class="p-3 text-xs">${prereqBadge}</td>
+                    <td class="p-3 text-xs font-mono font-bold text-slate-800 whitespace-nowrap">${c.credits} 學分 / ${c.semester_hours || c.credits} 時</td>
+                    <td class="p-3 text-xs whitespace-nowrap">${typePill}</td>
+                    <td class="p-3 text-xs whitespace-nowrap"><span class="font-medium text-slate-700">${escapeHtml(c.dept_name || c.dept_id)}</span></td>
+                    <td class="p-3 text-xs font-medium text-slate-600 whitespace-nowrap">${escapeHtml(c.semester_suggest || '—')}</td>
+                    <td class="p-3 text-xs whitespace-nowrap">${prereqBadge}</td>
                     <td class="p-3 text-center space-x-1 whitespace-nowrap">
                         <button onclick="openCourseModal('edit', '${c.course_id}')" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
                         <button onclick="deleteCourse('${c.course_id}', '${escapeHtml(c.course_name)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>
@@ -456,11 +802,17 @@ function openCourseModal(mode, courseId = null) {
     document.getElementById('courseForm').reset();
     document.getElementById('mCourseIdOriginal').value = '';
 
-    // 更新先修課程下拉選單
+    // 更新開課系所下拉選單
+    const deptSelect = document.getElementById('mCourseDept');
+    if (deptSelect && deptSelect.children.length === 0) {
+        updateDeptDropdownOptions(coreDataCache.departments);
+    }
+
+    // 更新先修課程下拉選單（防呆：排除自身以及會造成循環擋修的下游課程）
     const prereqSelect = document.getElementById('mCoursePrereq');
     prereqSelect.innerHTML = '<option value="">(無先修科目，不設擋修限制)</option>';
     coreDataCache.courses.forEach(c => {
-        if (mode === 'edit' && c.course_id === courseId) return; // 不能先修自己
+        if (mode === 'edit' && wouldCreateCircularPrerequisite(courseId, c.course_id)) return;
         const opt = document.createElement('option');
         opt.value = c.course_id;
         opt.textContent = `${c.course_name} (${c.course_id}) · ${c.credits}學分`;
@@ -500,16 +852,42 @@ async function saveCourse(e) {
     e.preventDefault();
     const origId = document.getElementById('mCourseIdOriginal').value;
     const courseId = document.getElementById('mCourseId').value.trim().toUpperCase();
+    const courseName = document.getElementById('mCourseName').value.trim();
+    const credits = parseInt(document.getElementById('mCourseCredits').value, 10);
+    const hours = parseFloat(document.getElementById('mCourseHours').value);
+    const prereqId = document.getElementById('mCoursePrereq').value.trim() || null;
+
+    if (!/^[A-Z0-9_\-]{2,20}$/.test(courseId)) {
+        showAdminToast('防呆攔截：課程代碼格式不正確，僅限 2~20 碼英數大寫（如 CS101、NURS201）', 'error');
+        return;
+    }
+    if (!courseName || courseName.length > 80) {
+        showAdminToast('防呆攔截：課程名稱不可為空且不可超過 80 個字元', 'error');
+        return;
+    }
+    if (isNaN(credits) || credits < 0 || credits > 15) {
+        showAdminToast('防呆攔截：學分數必須介於 0 ~ 15 學分之間', 'error');
+        return;
+    }
+    if (isNaN(hours) || hours < 0 || hours > 20) {
+        showAdminToast('防呆攔截：每週授課時數必須介於 0 ~ 20 小時之間', 'error');
+        return;
+    }
+    if (prereqId && wouldCreateCircularPrerequisite(origId || courseId, prereqId)) {
+        showAdminToast('防呆攔截：先修課程不可設定為自己或會造成循環擋修（A ↔ B）的科目！', 'error');
+        return;
+    }
+
     const payload = {
         course_id: courseId,
-        course_name: document.getElementById('mCourseName').value.trim(),
-        credits: parseInt(document.getElementById('mCourseCredits').value, 10),
-        semester_hours: parseFloat(document.getElementById('mCourseHours').value),
+        course_name: courseName,
+        credits,
+        semester_hours: hours,
         dept_id: document.getElementById('mCourseDept').value,
         course_type: document.getElementById('mCourseType').value,
         is_required: document.getElementById('mCourseIsRequired').value === '1',
         semester_suggest: document.getElementById('mCourseSemester').value.trim(),
-        prerequisite_id: document.getElementById('mCoursePrereq').value.trim() || null,
+        prerequisite_id: prereqId,
         description: document.getElementById('mCourseDesc').value.trim() || null
     };
 
@@ -528,7 +906,13 @@ async function saveCourse(e) {
 }
 
 async function deleteCourse(courseId, courseName) {
-    if (!confirm(`確定要刪除課程「${courseName}」(${courseId})？\n若其他課程將此課程設為先修科目將被系統防護擋下。`)) return;
+    const dependentCourses = coreDataCache.courses.filter(x => x.prerequisite_id === courseId);
+    if (dependentCourses.length > 0) {
+        const names = dependentCourses.map(x => `${x.course_name}(${x.course_id})`).join('、');
+        showAdminToast(`防呆攔截：課程「${courseName}」目前被設為【${names}】的先修擋修科目，請先解除擋修關聯後再刪除！`, 'error');
+        return;
+    }
+    if (!confirm(`確定要刪除課程「${courseName}」(${courseId})？\n若有學生歷年成績綁定此課程，將被系統安全防護擋下。`)) return;
     try {
         await adminFetch(`/api/admin/course-map/${courseId}`, { method: 'DELETE' });
         showAdminToast(`課程「${courseName}」已成功刪除`);
@@ -552,19 +936,21 @@ async function loadGraduationRequirements() {
 
         tbody.innerHTML = coreDataCache.gradReqs.map(g => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                <td class="p-3">
-                    <div class="font-bold text-slate-900">${escapeHtml(g.dept_name || g.dept_id)}</div>
-                    <div class="text-[11px] font-mono text-ukn-700">${escapeHtml(g.dept_id)} · ${escapeHtml(g.college_name || '')}</div>
+                <td class="p-3 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900">${escapeHtml(g.dept_name || g.dept_id)}</span>
+                        <span class="text-xs font-mono text-slate-400">(${escapeHtml(g.dept_id)})</span>
+                    </div>
                 </td>
-                <td class="p-3 font-mono font-bold text-emerald-800 text-sm">${g.total_credits_req} 學分</td>
-                <td class="p-3 font-mono text-slate-700 text-xs">${g.major_required_req} 學分</td>
-                <td class="p-3 font-mono text-slate-700 text-xs">${g.major_elective_req} 學分</td>
-                <td class="p-3 font-mono text-slate-700 text-xs">${g.general_req} 學分</td>
-                <td class="p-3 text-xs">
+                <td class="p-3 font-mono font-bold text-emerald-800 text-sm whitespace-nowrap">${g.total_credits_req} 學分</td>
+                <td class="p-3 font-mono text-slate-700 text-xs whitespace-nowrap">${g.major_required_req} 學分</td>
+                <td class="p-3 font-mono text-slate-700 text-xs whitespace-nowrap">${g.major_elective_req} 學分</td>
+                <td class="p-3 font-mono text-slate-700 text-xs whitespace-nowrap">${g.general_req} 學分</td>
+                <td class="p-3 text-xs whitespace-nowrap">
                     <span class="bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-medium">${escapeHtml(g.english_threshold_name)}</span>
                 </td>
-                <td class="p-3 font-mono text-xs text-slate-600">${g.ethics_req} 學分</td>
-                <td class="p-3 font-mono text-xs text-slate-600">${g.project_req} 學分</td>
+                <td class="p-3 font-mono text-xs text-slate-600 whitespace-nowrap">${g.ethics_req} 學分</td>
+                <td class="p-3 font-mono text-xs text-slate-600 whitespace-nowrap">${g.project_req} 學分</td>
                 <td class="p-3 text-center space-x-1 whitespace-nowrap">
                     <button onclick="openGradReqModal('edit', ${g.req_id})" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
                     <button onclick="deleteGradReq(${g.req_id}, '${escapeHtml(g.dept_id)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>
@@ -611,15 +997,36 @@ function closeGradReqModal() {
 async function saveGradReq(e) {
     e.preventDefault();
     const id = document.getElementById('mReqId').value;
+    const totalCredits = parseInt(document.getElementById('mTotalCreditsReq').value, 10);
+    const majorReq = parseInt(document.getElementById('mMajorReq').value, 10);
+    const majorElec = parseInt(document.getElementById('mMajorElec').value, 10);
+    const generalReq = parseInt(document.getElementById('mGeneralReq').value, 10);
+    const ethicsReq = parseInt(document.getElementById('mEthicsReq').value, 10);
+    const projectReq = parseInt(document.getElementById('mProjectReq').value, 10);
+
+    if (isNaN(totalCredits) || totalCredits < 50 || totalCredits > 300) {
+        showAdminToast('防呆攔截：畢業總學分門檻須介於 50 ~ 300 學分之間', 'error');
+        return;
+    }
+    if ([majorReq, majorElec, generalReq, ethicsReq, projectReq].some(v => isNaN(v) || v < 0 || v > 250)) {
+        showAdminToast('防呆攔截：各分項學分不可為負數或超過 250 學分', 'error');
+        return;
+    }
+    const subSum = majorReq + majorElec + generalReq;
+    if (subSum > totalCredits) {
+        showAdminToast(`防呆攔截：專業必修(${majorReq}) + 專業選修(${majorElec}) + 通識(${generalReq}) = ${subSum} 學分，不可超過畢業總學分 (${totalCredits})！`, 'error');
+        return;
+    }
+
     const payload = {
         dept_id: document.getElementById('mGradDept').value,
-        total_credits_req: parseInt(document.getElementById('mTotalCreditsReq').value, 10),
-        major_required_req: parseInt(document.getElementById('mMajorReq').value, 10),
-        major_elective_req: parseInt(document.getElementById('mMajorElec').value, 10),
-        general_req: parseInt(document.getElementById('mGeneralReq').value, 10),
+        total_credits_req: totalCredits,
+        major_required_req: majorReq,
+        major_elective_req: majorElec,
+        general_req: generalReq,
         english_threshold_name: document.getElementById('mEnglishThreshold').value.trim(),
-        ethics_req: parseInt(document.getElementById('mEthicsReq').value, 10),
-        project_req: parseInt(document.getElementById('mProjectReq').value, 10)
+        ethics_req: ethicsReq,
+        project_req: projectReq
     };
 
     try {
@@ -662,7 +1069,12 @@ async function loadKnowledgeCategories() {
         // 同步更新同義詞與規章的新增下拉選單
         updateCategoryDropdowns(coreDataCache.categories);
 
-        tbody.innerHTML = coreDataCache.categories.map(c => `
+        tbody.innerHTML = coreDataCache.categories.map(c => {
+            const hasBoundItems = (c.article_count || 0) > 0 || (c.synonym_count || 0) > 0;
+            const deleteBtn = hasBoundItems
+                ? `<button onclick="deleteCategory(${c.category_id}, '${escapeHtml(c.category_name)}')" title="此分類下有 ${c.article_count || 0} 篇規章與 ${c.synonym_count || 0} 筆同義詞，系統防呆保護中" class="border border-slate-200 text-slate-400 hover:bg-slate-100 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>`
+                : `<button onclick="deleteCategory(${c.category_id}, '${escapeHtml(c.category_name)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>`;
+            return `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="p-3 font-mono text-slate-500">${c.category_id}</td>
                 <td class="p-3 text-2xl text-center w-12">${escapeHtml(c.icon || '📖')}</td>
@@ -674,10 +1086,10 @@ async function loadKnowledgeCategories() {
                 </td>
                 <td class="p-3 text-center space-x-1 whitespace-nowrap">
                     <button onclick="openCategoryModal('edit', ${c.category_id})" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
-                    <button onclick="deleteCategory(${c.category_id}, '${escapeHtml(c.category_name)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded text-xs font-semibold">刪除</button>
+                    ${deleteBtn}
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     } catch (e) {
         tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</td></tr>`;
     }
@@ -729,10 +1141,22 @@ function closeCategoryModal() {
 async function saveCategory(e) {
     e.preventDefault();
     const id = document.getElementById('mCategoryId').value;
+    const catName = document.getElementById('mCatName').value.trim();
+    const sortOrder = parseInt(document.getElementById('mCatSort').value, 10);
+
+    if (!catName || catName.length > 50) {
+        showAdminToast('防呆攔截：主分類名稱不可為空且不可超過 50 個字元', 'error');
+        return;
+    }
+    if (isNaN(sortOrder) || sortOrder < 0 || sortOrder > 999) {
+        showAdminToast('防呆攔截：排序權重須為 0 ~ 999 之間的整數', 'error');
+        return;
+    }
+
     const payload = {
-        category_name: document.getElementById('mCatName').value.trim(),
+        category_name: catName,
         icon: document.getElementById('mCatIcon').value.trim() || '📖',
-        sort_order: parseInt(document.getElementById('mCatSort').value, 10)
+        sort_order: sortOrder
     };
 
     try {
@@ -750,6 +1174,11 @@ async function saveCategory(e) {
 }
 
 async function deleteCategory(catId, catName) {
+    const c = coreDataCache.categories.find(x => x.category_id === catId);
+    if (c && ((c.article_count || 0) > 0 || (c.synonym_count || 0) > 0)) {
+        showAdminToast(`防呆攔截：分類「${catName}」下仍有 ${c.article_count || 0} 篇規章與 ${c.synonym_count || 0} 筆同義詞，不可直接刪除！`, 'error');
+        return;
+    }
     if (!confirm(`確定要刪除主分類「${catName}」？\n若分類下仍有條文將無法刪除。`)) return;
     try {
         await adminFetch(`/api/admin/knowledge-categories/${catId}`, { method: 'DELETE' });
@@ -828,11 +1257,28 @@ function closeSynonymModal() {
 
 async function saveSynonym(e) {
     e.preventDefault();
-    const id = document.getElementById('mSynId').value;
+    const id = document.getElementById('mSynId')?.value;
+    const userKeyword = (document.getElementById('mSynUserKeyword')?.value || document.getElementById('sKeyword')?.value || '').trim();
+    const officialTerm = (document.getElementById('mSynOfficialTerm')?.value || document.getElementById('sOfficial')?.value || '').trim();
+    const categoryId = document.getElementById('mSynCategory')?.value || document.getElementById('sCategory')?.value || null;
+
+    if (!userKeyword || !officialTerm) {
+        showAdminToast('日常俗稱與官方標準名稱為必填', 'error');
+        return;
+    }
+    if (userKeyword.length > 50 || officialTerm.length > 50) {
+        showAdminToast('防呆攔截：俗稱關鍵字與正式條文名稱不可超過 50 個字元', 'error');
+        return;
+    }
+    if (userKeyword.toLowerCase() === officialTerm.toLowerCase()) {
+        showAdminToast('防呆攔截：俗稱關鍵字與正式條文名稱不可完全相同（避免自我映射）', 'error');
+        return;
+    }
+
     const payload = {
-        user_keyword: document.getElementById('mSynUserKeyword').value.trim(),
-        official_term: document.getElementById('mSynOfficialTerm').value.trim(),
-        category_id: document.getElementById('mSynCategory').value || null
+        user_keyword: userKeyword,
+        official_term: officialTerm,
+        category_id: categoryId
     };
 
     try {
@@ -844,7 +1290,7 @@ async function saveSynonym(e) {
             showAdminToast(`已成功新增同義詞「${payload.user_keyword}」→「${payload.official_term}」`);
         }
         closeSynonymModal();
-        loadAdminSynonyms();
+        if (typeof loadAdminSynonyms === 'function') await loadAdminSynonyms();
         refreshDbStatus();
     } catch (e) { }
 }
@@ -886,29 +1332,58 @@ async function loadAuditLogs() {
             return;
         }
 
+        const tableLabelMap = {
+            users: '帳號與權限',
+            departments: '科系與學院',
+            course_map: '課程與擋修',
+            graduation_requirements: '畢業門檻',
+            knowledge_categories: '知識庫分類',
+            synonym_dictionary: '同義詞對照',
+            knowledge_base: '校規條文',
+            student_credits: '學生修課成績',
+            attendance_records: '出缺勤紀錄',
+            student_records: '獎懲與幹部紀錄',
+            visitor_logs: '訪客登記',
+            checklist_items: '申辦流程',
+            deadlines: '重要期限',
+            academic_calendar: '校曆事項',
+            links: '學生專區連結',
+            faculty_profiles: '教師專長',
+            conduct_settings: '操行計分規則',
+            anniversary_events: '校慶設定',
+            anniversary_wishes: '校慶祝福'
+        };
+
         tbody.innerHTML = coreDataCache.auditLogs.map(log => {
             const actionColors = {
                 'INSERT': 'bg-emerald-100 text-emerald-800 border-emerald-300',
                 'UPDATE': 'bg-sky-100 text-sky-800 border-sky-300',
-                'DELETE': 'bg-rose-100 text-rose-800 border-rose-300'
+                'DELETE': 'bg-rose-100 text-rose-800 border-rose-300',
+                '新增': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                '修改': 'bg-sky-100 text-sky-800 border-sky-300',
+                '刪除': 'bg-rose-100 text-rose-800 border-rose-300'
             };
-            const actionBadge = `<span class="px-2 py-0.5 rounded text-xs border font-bold ${actionColors[log.action] || 'bg-slate-100 text-slate-700'}">${escapeHtml(log.action)}</span>`;
+            const actionLabel = { 'INSERT': '新增', 'UPDATE': '修改', 'DELETE': '刪除' }[log.action] || log.action;
+            const actionBadge = `<span class="px-2 py-0.5 rounded text-xs border font-bold whitespace-nowrap ${actionColors[log.action] || 'bg-slate-100 text-slate-700'}">${escapeHtml(actionLabel)}</span>`;
+            const tableDisp = tableLabelMap[log.table_name] || log.table_name;
 
             return `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                    <td class="p-3 font-mono text-slate-500 text-xs">${log.log_id}</td>
-                    <td class="p-3 font-mono font-bold text-slate-900 text-xs">${escapeHtml(log.table_name)}</td>
-                    <td class="p-3 font-mono text-xs text-indigo-700">${escapeHtml(log.record_id)}</td>
-                    <td class="p-3">${actionBadge}</td>
-                    <td class="p-3 text-xs">
-                        <div class="font-bold text-slate-900">${escapeHtml(log.changed_by)}</div>
-                        <div class="text-[10px] text-slate-400">${escapeHtml(log.changed_by_role || '')}</div>
+                    <td class="p-3 font-mono text-slate-500 text-xs whitespace-nowrap">${log.log_id}</td>
+                    <td class="p-3 font-bold text-slate-900 text-xs whitespace-nowrap">${escapeHtml(tableDisp)}</td>
+                    <td class="p-3 font-mono text-xs text-indigo-700 whitespace-nowrap">${escapeHtml(log.record_id)}</td>
+                    <td class="p-3 whitespace-nowrap">${actionBadge}</td>
+                    <td class="p-3 text-xs whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-slate-900">${escapeHtml(log.changed_by)}</span>
+                            ${log.changed_by_role ? `<span class="text-slate-400">(${escapeHtml(log.changed_by_role)})</span>` : ''}
+                        </div>
                     </td>
-                    <td class="p-3 font-mono text-xs text-slate-500">${escapeHtml(log.ip_address || '127.0.0.1')}</td>
-                    <td class="p-3 font-mono text-xs text-slate-400">${escapeHtml(String(log.changed_at || ''))}</td>
-                    <td class="p-3 text-center">
+                    <td class="p-3 font-mono text-xs text-slate-500 whitespace-nowrap">${escapeHtml(log.ip_address || '127.0.0.1')}</td>
+                    <td class="p-3 font-mono text-xs text-slate-400 whitespace-nowrap">${escapeHtml(String(log.changed_at || ''))}</td>
+                    <td class="p-3 text-center whitespace-nowrap">
                         <button onclick="showAuditDiffModal(${log.log_id})" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-2.5 py-1 rounded font-semibold whitespace-nowrap">
-                            檢視 Diff 差異
+                            查看內容
                         </button>
                     </td>
                 </tr>
@@ -1194,6 +1669,12 @@ function filterNavItems(query) {
 }
 
 function switchAdminCoreTab(tabName) {
+    // 權限攔截：內容管理人員不能管理帳號或修改權限，亦不可執行系統管理員專屬功能
+    if ((tabName === 'users' || tabName === 'selfcheck') && !isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作', 'error');
+        return;
+    }
+
     const allPanels = [
         'dashboard',
         'users', 'departments', 'coursemap', 'gradreqs', 'categories', 'synonyms', 'rules',
@@ -1217,37 +1698,41 @@ function switchAdminCoreTab(tabName) {
     if (activeBtn) {
         activeBtn.className = 'nav-btn w-full flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg bg-ukn-800 text-white shadow-xs transition';
     }
+    applyRolePermissionUI();
 
-    // 更新動態麵包屑
     const breadcrumbs = {
-        'dashboard': ['總覽中心', '儀表總覽'],
-        'departments': ['教務與課程', '科系與學院組織'],
-        'coursemap': ['教務與課程', '全校課程與擋修'],
-        'gradreqs': ['教務與課程', '各系畢業門檻'],
-        'rules': ['教務與課程', '校規法規條文'],
-        'calendar': ['教務與課程', '校曆與行事曆'],
-        'deadlines': ['教務與課程', '重要申辦日程'],
-        'conduct': ['教務與課程', '操行獎懲規則'],
-        'users': ['學生與學務', '帳號與身分權限'],
-        'credits': ['學生與學務', '學生歷年成績歷史'],
-        'attendance_audit': ['學生與學務', '出缺勤審查歷史'],
-        'attendance': ['學生與學務', '缺曠登記與通知'],
-        'records': ['學生與學務', '學生獎懲與幹部履歷'],
-        'scholarwarn': ['學生與學務', '學業不及格預警'],
-        'checklists': ['學生與學務', '行政申辦處室'],
-        'campus': ['校園與行政', '生活、宿舍與設施借用'],
-        'faculty': ['校園與行政', '教師專長與課表'],
-        'anniversary': ['校園與行政', '校慶公告與跑馬燈'],
-        'links': ['校園與行政', '常用校務外部連結'],
-        'feedback': ['校園與行政', '搜尋滿意度回饋'],
-        'audit': ['稽核與字典', '系統安全稽核日誌'],
-        'searchlogs': ['稽核與字典', '全校搜尋日誌與效能'],
-        'unmatched': ['稽核與字典', '學生未匹配詞 (待轉字典)'],
-        'missed': ['稽核與字典', '提問未命中分析'],
-        'synonyms': ['稽核與字典', '搜尋同義詞字典'],
-        'categories': ['稽核與字典', '知識庫主分類目錄'],
-        'visitors': ['稽核與字典', '校外訪客登記日誌'],
-        'selfcheck': ['稽核與字典', '全站自動功能檢測']
+        'dashboard': ['總覽中心', '系統數據總覽'],
+        // 一、校規與搜尋
+        'rules': ['校規與搜尋', '校規法規條文'],
+        'categories': ['校規與搜尋', '知識庫分類'],
+        'synonyms': ['校規與搜尋', '同義詞對照'],
+        'unmatched': ['校規與搜尋', '搜尋未命中問題'],
+        'missed': ['校規與搜尋', '未命中統計分析'],
+        'feedback': ['校規與搜尋', '搜尋回饋'],
+        'searchlogs': ['校規與搜尋', '全校搜尋紀錄'],
+        // 二、申辦與日程
+        'checklists': ['申辦與日程', '申辦資訊與流程'],
+        'calendar': ['申辦與日程', '校曆管理'],
+        'deadlines': ['申辦與日程', '重要期限管理'],
+        'anniversary': ['申辦與日程', '跑馬燈與校慶公告'],
+        // 三、公開資訊
+        'links': ['公開資訊', '學生專區連結'],
+        'departments': ['公開資訊', '科系與學院'],
+        'coursemap': ['公開資訊', '全校課程與擋修'],
+        'gradreqs': ['公開資訊', '各系畢業門檻'],
+        'faculty': ['公開資訊', '教師專長與課表'],
+        'campus': ['公開資訊', '空間借用與櫃子繳費'],
+        'visitors': ['公開資訊', '校外訪客登記'],
+        'conduct': ['公開資訊', '操行計分規則'],
+        'credits': ['公開資訊', '學生歷年成績'],
+        'attendance_audit': ['公開資訊', '出缺勤紀錄查詢'],
+        'attendance': ['公開資訊', '缺曠登記與通知'],
+        'records': ['公開資訊', '學生獎懲與幹部'],
+        'scholarwarn': ['公開資訊', '學業與獎助預警推播'],
+        // 四、系統管理
+        'users': ['系統管理', '帳號與權限管理'],
+        'audit': ['系統管理', '修改紀錄'],
+        'selfcheck': ['系統管理', '系統檢測']
     };
     if (breadcrumbs[tabName]) {
         const catEl = document.getElementById('breadcrumbCategory');
@@ -1289,14 +1774,32 @@ function switchAdminCoreTab(tabName) {
     else if (tabName === 'checklists') { if (typeof loadChecklists === 'function') loadChecklists(); }
     else if (tabName === 'deadlines') { if (typeof loadDeadlines === 'function') loadDeadlines(); }
     else if (tabName === 'links') { if (typeof loadLinks === 'function') loadLinks(); }
-    else if (tabName === 'calendar') { if (typeof loadCalendarEvents === 'function') loadCalendarEvents(); }
+    else if (tabName === 'calendar') {
+        if (typeof loadCalendarEvents === 'function') loadCalendarEvents();
+        if (typeof loadSchoolCalendarInfo === 'function') loadSchoolCalendarInfo();
+    }
     else if (tabName === 'feedback') { if (typeof loadFeedbackStats === 'function') loadFeedbackStats(); }
 }
 
 // 啟動時自動載入核心資料與狀態
 async function loadAllCoreAdminData() {
+    const allowedAdminRoles = ['管理員', '系統管理員', '內容管理人員', '教職員', '處室承辦', '科助', '住宿管理員'];
+    try {
+        const meRes = await fetch('/api/auth/me');
+        const meData = await meRes.json().catch(() => ({}));
+        if (!(meData.is_authenticated || meData.authenticated) || !allowedAdminRoles.includes(meData.user?.role)) {
+            await switchAdminRoleAccount('系統管理員');
+        } else {
+            currentAdminUser = meData.user;
+            applyRolePermissionUI();
+        }
+    } catch (e) {
+        await switchAdminRoleAccount('系統管理員');
+    }
     await refreshDbStatus();
-    loadUsers();
+    if (isCurrentSysAdmin()) {
+        loadUsers();
+    }
     loadDepartments();
     loadCourseMap();
     loadGraduationRequirements();
@@ -1307,4 +1810,19 @@ async function loadAllCoreAdminData() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllCoreAdminData();
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            [
+                'userModal', 'deptModal', 'courseModal', 'gradReqModal',
+                'categoryModal', 'synonymModal', 'auditDiffModal', 'adminLoginModal',
+                'ruleModal', 'checklistModal', 'deadlineModal', 'linkModal',
+                'calendarModal', 'facultyModal', 'annivModal', 'convertSynonymModal'
+            ].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) {
+                    el.classList.add('hidden');
+                }
+            });
+        }
+    });
 });

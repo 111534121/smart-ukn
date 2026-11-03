@@ -2821,12 +2821,15 @@ CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
-  `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL,
+  `role` enum('學生','家長','教職員','老師','管理員','系統管理員','內容管理人員','處室承辦','科助','住宿管理員','訪客') NOT NULL,
   `student_id` varchar(20) DEFAULT NULL,
   `full_name` varchar(50) NOT NULL,
   `advised_class` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `can_manage_dorm` tinyint(1) NOT NULL DEFAULT 0
+  `can_manage_dorm` tinyint(1) NOT NULL DEFAULT 0,
+  `office` varchar(100) NOT NULL DEFAULT '',
+  `permissions` varchar(255) NOT NULL DEFAULT '查看,建立,修改',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --

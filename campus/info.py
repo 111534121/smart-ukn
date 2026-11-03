@@ -178,5 +178,13 @@ def transport():
         bus = _cached("bus_eta", load_bus_eta, ttl=60)
     except Exception as e:
         bus_error = str(e)
-    return ok(address=CAMPUS_ADDRESS, lat=CAMPUS_LAT, lon=CAMPUS_LON, links=links, bus=bus,
-              bus_configured=bool(os.getenv("TDX_CLIENT_ID")), bus_error=bus_error)
+    return ok(
+        address=f"{CAMPUS_ADDRESS}（位置、停車及接駁資訊：專題示範資料）",
+        lat=CAMPUS_LAT,
+        lon=CAMPUS_LON,
+        links=links,
+        bus=bus,
+        bus_configured=bool(os.getenv("TDX_CLIENT_ID")),
+        bus_error=bus_error,
+        demo_disclaimer="專題示範資料：未經校方確認的位置、停車及接駁資訊僅供展示；付費設定不代表金流已完成",
+    )

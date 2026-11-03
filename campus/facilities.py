@@ -73,10 +73,12 @@ TEACHER_OFFICES = [
 ]
 
 LOCKER_AREAS = [
-    {"area": "康寧樓 1F 走廊", "building": "A", "rows": 4, "cols": 10, "fee": 300},
-    {"area": "圖資大樓 B1", "building": "D", "rows": 3, "cols": 8, "fee": 200},
+    {"area": "康寧樓 1F 走廊（專題示範資料）", "building": "A", "rows": 4, "cols": 10, "fee": 300,
+     "payment_note": "專題示範資料｜付費設定不代表金流已完成"},
+    {"area": "圖資大樓 B1（專題示範資料）", "building": "D", "rows": 3, "cols": 8, "fee": 200,
+     "payment_note": "專題示範資料｜付費設定不代表金流已完成"},
 ]
-LOCKER_HOLD_DAYS = 3  # 線上保留後需在幾天內到現場繳費
+LOCKER_HOLD_DAYS = 3  # 線上保留後需在幾天內到現場繳費（付費設定不代表金流已完成）
 
 
 def parse_now():
@@ -110,7 +112,8 @@ def room_code(classroom):
 @bp.route("/api/campus/map", methods=["GET"])
 def campus_map():
     return ok(buildings=CAMPUS_BUILDINGS, gate=GATE, rooms=ROOMS, offices=OFFICES,
-              teachers=[{k: t[k] for k in ("name", "office", "building", "floor", "dept")} for t in TEACHER_OFFICES])
+              teachers=[{k: t[k] for k in ("name", "office", "building", "floor", "dept")} for t in TEACHER_OFFICES],
+              demo_disclaimer="專題示範資料：未經校方確認的位置、停車及接駁資訊僅供專題展示")
 
 
 @bp.route("/api/campus/map/find", methods=["GET"])
@@ -260,11 +263,11 @@ def book_room():
 @require()
 def my_bookings():
     u = current_user()
-    if request.args.get("scope") == "all" and u["role"] == "教職員":
+    if request.args.get("scope") == "all" and u["role"] in ("教職員", "內容管理人員"):
         from .admin_cases import is_dorm_staff
         if is_dorm_staff(u):
             return error("住宿管理帳號不能查看全校教室借用", 403)
-    if request.args.get("scope") == "all" and u["role"] in ("管理員", "教職員"):
+    if request.args.get("scope") == "all" and u["role"] in ("管理員", "系統管理員", "教職員", "內容管理人員"):
         items = bookings()
     else:
         items = [b for b in bookings() if b["applicant_key"] == user_key()]
@@ -283,7 +286,7 @@ def update_booking(booking_id):
         before = {"room_name": bk.get("room_name"), "date": bk.get("date"), "applicant": bk.get("applicant"), "status": bk.get("status")}
         if action == "cancel" and bk["applicant_key"] == user_key():
             patch = {"status": "已取消"}
-        elif action in ("approve", "reject") and u["role"] in ("管理員", "教職員"):
+        elif action in ("approve", "reject") and u["role"] in ("管理員", "系統管理員", "教職員", "內容管理人員"):
             from .admin_cases import is_dorm_staff
             if is_dorm_staff(u):
                 return error("住宿管理帳號不能審核教室借用", 403)
@@ -323,15 +326,18 @@ def list_lockers():
         expire_holds(items)
     areas = []
     for a in LOCKER_AREAS:
+        base_area = a["area"].replace("（專題示範資料）", "")
         cells = [{"locker_id": lk["locker_id"], "row": lk["row"], "col": lk["col"],
                   "status": "我的" if key and lk["holder_key"] == key else lk["status"]}
-                 for lk in items if lk["area"] == a["area"]]
+                 for lk in items if lk["area"] in (a["area"], base_area)]
         areas.append({**a, "cells": cells, "free": sum(1 for c in cells if c["status"] == "可租借")})
     mine = next((lk for lk in items if key and lk["holder_key"] == key), None)
     if mine:
         deadline = (datetime.strptime(mine["reserved_at"], "%Y-%m-%d %H:%M:%S") + timedelta(days=LOCKER_HOLD_DAYS)).strftime("%m/%d %H:%M") if mine["reserved_at"] else ""
-        mine = {**mine, "pay_deadline": deadline, "pay_at": "總務處出納組（行政大樓 2 樓）"}
-    return ok(areas=areas, mine=mine, hold_days=LOCKER_HOLD_DAYS)
+        mine = {**mine, "pay_deadline": deadline, "pay_at": "總務處出納組（行政大樓 2 樓｜專題示範資料；付費設定不代表金流已完成）"}
+    return ok(areas=areas, mine=mine, hold_days=LOCKER_HOLD_DAYS,
+              demo_disclaimer="專題示範資料",
+              payment_disclaimer="付費設定不代表金流已完成")
 
 
 @bp.route("/api/campus/lockers/<locker_id>/reserve", methods=["POST"])
@@ -349,7 +355,8 @@ def reserve_locker(locker_id):
         if lk["status"] != "可租借":
             return error("這一格已經被租走了，請選別格", 409)
         db.update_locker(locker_id, {"status": "保留中", "holder_key": key, "reserved_at": now_str()})
-    return ok(message=f"已幫你保留 {locker_id}，請在 {LOCKER_HOLD_DAYS} 天內到總務處出納組繳費 {lk['fee']} 元完成租借")
+    return ok(message=f"已幫你保留 {locker_id}，請在 {LOCKER_HOLD_DAYS} 天內到總務處出納組繳費 {lk['fee']} 元完成租借（專題示範資料；付費設定不代表金流已完成）",
+              payment_disclaimer="付費設定不代表金流已完成")
 
 
 @bp.route("/api/campus/lockers/<locker_id>/cancel", methods=["POST"])
@@ -380,9 +387,12 @@ def lockers_admin():
             if lk["reserved_at"]:
                 deadline = (datetime.strptime(lk["reserved_at"], "%Y-%m-%d %H:%M:%S") + timedelta(days=LOCKER_HOLD_DAYS)).strftime("%Y-%m-%d %H:%M")
             rows.append({"locker_id": lk["locker_id"], "area": lk["area"], "fee": lk["fee"], "status": lk["status"],
-                         "holder": lk["holder_key"], "reserved_at": lk["reserved_at"], "pay_deadline": deadline})
+                         "holder": lk["holder_key"], "reserved_at": lk["reserved_at"], "pay_deadline": deadline,
+                         "payment_disclaimer": "付費設定不代表金流已完成"})
     rows.sort(key=lambda r: (r["status"] != "保留中", r["locker_id"]))
-    return ok(data=rows, hold_days=LOCKER_HOLD_DAYS)
+    return ok(data=rows, hold_days=LOCKER_HOLD_DAYS,
+              demo_disclaimer="專題示範資料",
+              payment_disclaimer="付費設定不代表金流已完成")
 
 
 @bp.route("/api/campus/lockers/<locker_id>/paid", methods=["POST"])
@@ -395,7 +405,8 @@ def locker_paid(locker_id):
         before = {"locker_id": locker_id, "holder": lk.get("holder_key"), "status": lk["status"]}
         db.update_locker(locker_id, {"status": "已租用", "reserved_at": None})
     deps.write_audit_log("lockers", locker_id, "修改", before=before, after={**before, "status": "已租用"})
-    return ok(message=f"{locker_id} 已完成繳費")
+    return ok(message=f"{locker_id} 已標記完成繳費（專題示範資料；付費設定不代表金流已完成）",
+              payment_disclaimer="付費設定不代表金流已完成")
 
 
 # ---------- 人流分析 (模擬) ----------

@@ -251,3 +251,7 @@ GET,/admin/feature-map,/admin/feature-map,,功能對照表,401,403,403,403,403,4
 GET,/api/public-site,/api/public-site,,公開網站資訊,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/public-site/qr.svg,/api/public-site/qr.svg,,公開網站 QR Code,OK,OK,OK,OK,OK,OK,OK,
 GET,/healthz,/healthz,,網站健康檢查,OK,OK,OK,OK,OK,OK,OK,
+PUT,/api/deadlines/<int:deadline_id>,/api/deadlines/999999,"{""title"":""t"",""end_date"":""2026-12-31""}",修改重要期限,401,403,403,403,403,OK,OK,
+DELETE,/api/deadlines/<int:deadline_id>,/api/deadlines/999999,,刪除重要期限,401,403,403,403,403,OK,OK,
+PUT,/api/checklists/<int:item_id>,/api/checklists/999999,"{""business_name"":""t""}",修改申辦流程,401,403,403,403,403,OK,OK,
+DELETE,/api/checklists/<int:item_id>,/api/checklists/999999,,刪除申辦流程,401,403,403,403,403,OK,OK,

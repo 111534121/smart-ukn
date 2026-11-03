@@ -19,7 +19,7 @@ from .logic import FIELDS, expand_terms, score_profile, split_tags
 bp = Blueprint("faculty", __name__)
 deps = SimpleNamespace()
 
-ADMIN_ROLES = ("管理員", "教職員")
+ADMIN_ROLES = ("管理員", "系統管理員", "教職員", "內容管理人員")
 EDITABLE_BY_TEACHER = ("expertise", "fields", "research_summary", "accepts_projects", "email")
 PROFILE_FIELDS = ("name", "title", "dept_name", "email", "fields", "expertise", "research_summary", "accepts_projects", "is_public")
 
@@ -138,13 +138,13 @@ def _parse_profile(data, partial_keys=None):
     keys = partial_keys or PROFILE_FIELDS
     out = {}
     if "name" in keys:
-        out["name"] = str(data.get("name", "")).strip()[:50]
+        out["name"] = str(data.get("name") or data.get("teacher_name") or "").strip()[:50]
         if not out["name"]:
             return None, "請填寫老師姓名"
     if "title" in keys:
         out["title"] = str(data.get("title", "")).strip()[:50] or None
     if "dept_name" in keys:
-        out["dept_name"] = str(data.get("dept_name", "")).strip()[:100]
+        out["dept_name"] = str(data.get("dept_name") or data.get("dept_id") or "").strip()[:100]
         if not out["dept_name"]:
             return None, "請填寫所屬科別"
     if "email" in keys:
@@ -152,13 +152,17 @@ def _parse_profile(data, partial_keys=None):
         if out["email"] and "@" not in out["email"]:
             return None, "Email 格式不正確"
     if "fields" in keys:
-        fields = split_tags(",".join(data["fields"]) if isinstance(data.get("fields"), list) else data.get("fields"))
+        raw_fields = data.get("fields") or ["資訊科技"]
+        fields = split_tags(",".join(raw_fields) if isinstance(raw_fields, list) else raw_fields)
+        if not fields:
+            fields = ["資訊科技"]
         unknown = [f for f in fields if f not in FIELDS]
         if unknown:
             return None, f"未知的領域：{'、'.join(unknown)}"
         out["fields"] = ",".join(fields)
     if "expertise" in keys:
-        tags = split_tags(",".join(data["expertise"]) if isinstance(data.get("expertise"), list) else data.get("expertise"))
+        raw_exp = data.get("expertise") or data.get("specialties") or ""
+        tags = split_tags(",".join(raw_exp) if isinstance(raw_exp, list) else raw_exp)
         if not tags:
             return None, "請至少填寫一項專長"
         out["expertise"] = ",".join(tags)
