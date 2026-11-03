@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>設定常用功能｜Smart UKN</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: #f4f5f3; color: #1f2937; }
+  header { background: #16503f; color: #fff; padding: 14px 16px; font-weight: 700; }
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .muted { color: #64748b; font-size: 13px; }
+  input[type=text] { width: 100%; font-size: 22px; letter-spacing: 4px; text-align: center; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+  button.primary { width: 100%; background: #16503f; color: #fff; border: 0; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
+  button.primary:disabled { opacity: .5; }
+  label.row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+  label.row input { width: 18px; height: 18px; }
+  .msg { font-size: 13px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .msg.error { background: #fef2f2; color: #b91c1c; }
+  .msg.ok { background: #f0fdf4; color: #15803d; }
+  #hint { font-size: 12px; color: #94a3b8; text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+<header>Smart UKN · 設定常用功能</header>
+<main>
+  <div id="hint">連接 LINE 中…</div>
+  <div id="app" hidden></div>
+</main>
+<script>
+// 全部功能都是學生/教職員共用的 key，跟網站 static/js/campus-shell.js 的 FEATURES 對齊，
+// 不一致也不會壞 (網站端會自動濾掉不認得的 key)，只是不會顯示而已。
+const CATALOG = [
+  { key: 'calendar', name: '📅 行事曆' },
+  { key: 'course-plan', name: '🧮 選課檢查' },
+  { key: 'course', name: '📚 修業進度與擋修' },
+  { key: 'graduation', name: '🎓 畢業門檻' },
+  { key: 'certs', name: '🏅 證照與競賽成果' },
+  { key: 'warning', name: '⚠️ 學業預警' },
+  { key: 'retake', name: '🔁 重補修推薦' },
+  { key: 'conduct', name: '🎖️ 我的操行' },
+  { key: 'rules', name: '💬 AI 智慧校規' },
+  { key: 'checklist', name: '📝 行政申請流程' },
+  { key: 'scholarship', name: '💰 獎助學金檢核' },
+  { key: 'services', name: '🏢 宿舍與總務申請' },
+  { key: 'reports', name: '📄 報表與文件下載' },
+  { key: 'rent', name: '🔑 教室與櫃子租借' },
+  { key: 'events', name: '🎉 活動報名' },
+  { key: 'map', name: '🗺️ 校園地圖與老師辦公室' },
+  { key: 'traffic', name: '🚌 天氣與交通' },
+  { key: 'notices', name: '📣 班級通知' },
+  { key: 'meetings', name: '🎥 線上會議' },
+  { key: 'my-schedule', name: '🗓️ 我的課表（老師）' },
+  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）' },
+];
+
+const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
+let idToken = '';
+
+function show(html) {
+  document.getElementById('hint').hidden = true;
+  const app = document.getElementById('app');
+  app.hidden = false;
+  app.innerHTML = html;
+}
+
+async function call(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'X-Line-Id-Token': idToken, ...(options.headers || {}) },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.status === 'error') throw new Error(body.message || '發生錯誤');
+  return body;
+}
+
+function renderBindForm(message) {
+  show(`
+    <div class="card">
+      <p>請先到 Smart UKN 網站登入後，按「🔗 綁定 LINE」取得 6 位數代碼，再輸入到這裡：</p>
+      ${message ? `<div class="msg error">${message}</div>` : ''}
+      <input type="text" id="code" inputmode="numeric" maxlength="6" placeholder="123456">
+      <button class="primary" id="confirmBtn">完成綁定</button>
+    </div>`);
+  document.getElementById('confirmBtn').onclick = async () => {
+    const code = document.getElementById('code').value.trim();
+    if (!/^\d{6}$/.test(code)) { renderBindForm('請輸入 6 位數代碼'); return; }
+    try {
+      await call('/api/line/bind/confirm', { method: 'POST', body: JSON.stringify({ code, id_token: idToken }) });
+      await loadMenu();
+    } catch (e) { renderBindForm(e.message); }
+  };
+}
+
+function renderMenu(data, message) {
+  const pinned = new Set(data.pinned || []);
+  show(`
+    ${message ? `<div class="msg ok">${message}</div>` : ''}
+    <div class="card">
+      <p class="muted">帳號：${data.username}　勾選的功能會跟網站「★ 我的置頂」同步。</p>
+      ${CATALOG.map(f => `
+        <label class="row">
+          <input type="checkbox" value="${f.key}" ${pinned.has(f.key) ? 'checked' : ''}>
+          <span>${f.name}</span>
+        </label>`).join('')}
+      <button class="primary" id="saveBtn">儲存</button>
+    </div>`);
+  document.getElementById('saveBtn').onclick = async () => {
+    const keys = [...document.querySelectorAll('#app input[type=checkbox]:checked')].map(el => el.value);
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '儲存中…';
+    try {
+      const res = await call('/api/line/menu', { method: 'PUT', body: JSON.stringify({ pinned: keys }) });
+      renderMenu(res.data, '已儲存，回網站重新整理就會看到');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '儲存';
+      show(`<div class="msg error">${e.message}</div>` + document.getElementById('app').innerHTML);
+    }
+  };
+}
+
+async function loadMenu() {
+  try {
+    const res = await call('/api/line/menu');
+    if (res.data.bound) renderMenu(res.data);
+    else renderBindForm();
+  } catch (e) {
+    renderBindForm(e.message);
+  }
+}
+
+(async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    idToken = liff.getIDToken();
+    if (!idToken) { show('<div class="card msg error">無法取得 LINE 身分權杖，請關閉後重新從選單打開。</div>'); return; }
+    await loadMenu();
+  } catch (e) {
+    show(`<div class="card msg error">LIFF 初始化失敗：${e.message}</div>`);
+  }
+})();
+</script>
+</body>
+</html>

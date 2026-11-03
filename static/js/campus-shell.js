@@ -286,6 +286,27 @@ async function loadPinned() {
     }
     pinnedKeys = pinnedKeys.filter(k => featureByKey(k));
     renderServices();
+    document.getElementById('lineBindBtn')?.classList.toggle('hidden', !isLoggedIn());
+}
+
+// ---------- 綁定 LINE：取代碼，在 LINE「設定常用功能」輸入即可同步置頂清單 ----------
+
+async function openLineBindModal() {
+    openModal('綁定 LINE', '<div class="text-sm text-slate-500">取得代碼中…</div>');
+    try {
+        const res = await api('/api/line/bind/start', { method: 'POST' });
+        const { code, expires_in, already_bound } = res.data;
+        const minutes = Math.round(expires_in / 60);
+        openModal('綁定 LINE', `
+            <div class="space-y-3 text-sm">
+                ${already_bound ? '<p class="text-xs text-amber-600">你的帳號已經綁定過 LINE；再綁一次會改成綁到最新操作的那個 LINE 帳號。</p>' : ''}
+                <p>打開 LINE 官方帳號選單的「設定常用功能」，在裡面輸入這組代碼：</p>
+                <div class="text-3xl font-black tracking-widest text-center bg-slate-50 border border-slate-200 rounded py-4">${escapeHtml(code)}</div>
+                <p class="text-xs text-slate-500">代碼 ${minutes} 分鐘內有效，過期請重新打開這個視窗取得新代碼。</p>
+            </div>`);
+    } catch (e) {
+        openModal('綁定 LINE', `<div class="text-sm text-red-600">取得代碼失敗：${escapeHtml(e.message)}</div>`);
+    }
 }
 
 async function togglePin(key, event) {

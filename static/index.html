@@ -691,7 +691,7 @@
                 <div class="campus-access-actions"><button id="campusQr" type="button" disabled>QR Code</button><button
                         id="campusCopy" type="button" disabled>複製連結</button><a id="campusLine" class="campus-line"
                         hidden target="_blank" rel="noopener noreferrer">分享到 LINE ↗</a><button id="campusInstall"
-                        type="button">加入手機主畫面</button></div>
+                        type="button">加入手機主畫面</button><button id="campusLineOa" type="button" hidden>加 LINE 好友</button></div>
             </section>
 
             <!-- 主視覺輪播 (老師、教職員不顯示) -->
@@ -778,7 +778,11 @@
                     <div id="portalRecommended" class="portal-recommended"></div>
                 </div>
                 <div>
-                    <div class="text-[11px] font-bold text-accent-500 mb-2 tracking-wider">★ 我的置頂</div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-[11px] font-bold text-accent-500 tracking-wider">★ 我的置頂</div>
+                        <button type="button" id="lineBindBtn" onclick="openLineBindModal()"
+                            class="hidden text-xs text-ukn-700 hover:underline font-semibold">🔗 綁定 LINE，用 LINE 看我的常用功能</button>
+                    </div>
                     <div id="pinnedServices" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5"></div>
                 </div>
                 <div id="allServicesWrap" class="hidden space-y-4 pt-3 border-t border-slate-100"></div>

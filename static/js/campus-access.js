@@ -1,5 +1,6 @@
 /* Public homepage sharing only. Never include account names, query strings or private page URLs. */
 let publicSiteConfig = null;
+let lineOaConfig = null;
 let pendingCampusInstall = null;
 window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
@@ -45,6 +46,18 @@ function showCampusQr() {
     if (!publicSiteConfig) return;
     showCampusAccessDialog('掃碼開啟校園智慧官網', `<p>用另一支手機掃描，即可開啟網站首頁。</p><img class="campus-qr" src="/api/public-site/qr.svg" alt="校園智慧官網公開網址 QR Code" width="240" height="240"><p class="campus-public-url">${escapeHtml(publicSiteConfig.public_url)}</p><a class="campus-access-button" href="/api/public-site/qr.svg" download="smart-ukn-qr.svg">下載 QR Code</a><p class="campus-access-note">QR Code 僅包含公開首頁網址，不含登入資訊或個人資料。</p>`);
 }
+async function loadLineOa() {
+    const button = document.getElementById('campusLineOa');
+    try {
+        const config = await api('/api/line/oa');
+        lineOaConfig = config.ready ? config : null;
+    } catch { lineOaConfig = null; }
+    button.hidden = !lineOaConfig;
+}
+function showLineOaQr() {
+    if (!lineOaConfig) return;
+    showCampusAccessDialog('加 LINE 官方帳號好友', `<p>用手機掃描，或在手機上直接點下方連結加好友。</p><img class="campus-qr" src="${lineOaConfig.qr_url}" alt="Smart UKN LINE 官方帳號加好友 QR Code" width="240" height="240"><p><a class="campus-access-button" href="${escapeHtml(lineOaConfig.add_friend_url)}" target="_blank" rel="noopener noreferrer">在 LINE 開啟 ↗</a></p>`);
+}
 async function copyCampusUrl() {
     if (!publicSiteConfig) return;
     try {
@@ -83,9 +96,11 @@ function initCampusAccess() {
     document.getElementById('campusQr').addEventListener('click', showCampusQr);
     document.getElementById('campusCopy').addEventListener('click', copyCampusUrl);
     document.getElementById('campusInstall').addEventListener('click', installCampusHome);
+    document.getElementById('campusLineOa').addEventListener('click', showLineOaQr);
     document.getElementById('campusAccessRetry').addEventListener('click', loadCampusSharing);
     document.getElementById('campusAccessDialog').addEventListener('click', event => {
         if (event.target === event.currentTarget) event.currentTarget.close();
     });
     loadCampusSharing();
+    loadLineOa();
 }

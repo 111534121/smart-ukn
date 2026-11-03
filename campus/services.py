@@ -40,11 +40,44 @@ def _prefs_db():
     return True
 
 
+def _json_prefs_key(username):
+    """JSON 示範模式的鍵跟 user_key() 一致：學生用學號，其他身分用 "user:帳號"。"""
+    user = next((u for u in (deps.users or []) if u["username"] == username), None)
+    if user and user.get("role") == "學生" and user.get("student_id"):
+        return user["student_id"]
+    return f"user:{username}"
+
+
+def get_pinned(username, role):
+    """供網站與 LINE 常用功能共用：回傳某帳號的置頂清單 (DB 優先，JSON 示範模式退回)。"""
+    default = STAFF_DEFAULT_PINNED if role in STAFF_ROLES else DEFAULT_PINNED
+    if _prefs_db():
+        rows = deps.fetch_db_rows("SELECT pinned_features FROM user_preferences WHERE username = %s", (username,)) or []
+        saved = rows[0]["pinned_features"] if rows else None
+        return saved.split(",") if saved else ([] if saved == "" else list(default))
+    with store.lock:
+        mine = store.section("prefs", dict).get(_json_prefs_key(username)) or {}
+    return [str(p) for p in mine.get("pinned", [])] if "pinned" in mine else list(default)
+
+
+def set_pinned(username, pinned):
+    pinned = [str(p)[:40] for p in pinned or []][:12]
+    if _prefs_db():
+        deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
+                        "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
+                        (username, ",".join(pinned)))
+    else:
+        with store.lock:
+            all_prefs = store.section("prefs", dict)
+            all_prefs.setdefault(_json_prefs_key(username), {})["pinned"] = pinned
+            store.save()
+    return pinned
+
+
 @bp.route("/api/campus/prefs", methods=["GET", "PUT"])
 @require()
 def prefs():
     u = current_user()
-    default = STAFF_DEFAULT_PINNED if u["role"] in STAFF_ROLES else DEFAULT_PINNED
     data = (request.get_json(silent=True) or {}) if request.method == "PUT" else {}
     if "session_tour_dismiss" in data:
         # 只存在登入 session，不寫資料庫：共用示範帳號有人暫時關掉導覽，不會害別人也再也看不到，
@@ -56,23 +89,19 @@ def prefs():
         if request.method == "PUT":
             # 置頂與網站導覽分開存不會互相蓋掉：只更新有送來的欄位
             if "pinned" in data:
-                pinned = [str(p)[:40] for p in data.get("pinned", [])][:12]
-                deps.db_execute("INSERT INTO user_preferences (username, pinned_features) VALUES (%s, %s) "
-                                "ON DUPLICATE KEY UPDATE pinned_features = VALUES(pinned_features)",
-                                (u["username"], ",".join(pinned)))
+                set_pinned(u["username"], data.get("pinned", []))
             if "tour_seen" in data:
                 deps.db_execute("INSERT INTO user_preferences (username, tour_seen) VALUES (%s, %s) "
                                 "ON DUPLICATE KEY UPDATE tour_seen = VALUES(tour_seen)",
                                 (u["username"], 1 if data["tour_seen"] else 0))
-        rows = deps.fetch_db_rows("SELECT pinned_features, tour_seen FROM user_preferences WHERE username = %s", (u["username"],)) or []
-        saved = rows[0]["pinned_features"] if rows else None
+        rows = deps.fetch_db_rows("SELECT tour_seen FROM user_preferences WHERE username = %s", (u["username"],)) or []
         tour_seen = bool(rows[0]["tour_seen"]) if rows else False
-        return ok(data={"pinned": saved.split(",") if saved else ([] if saved == "" else list(default)),
+        return ok(data={"pinned": get_pinned(u["username"], u["role"]),
                         "tour_seen": tour_seen, "session_tour_dismissed": session_dismissed})
     key = user_key()
+    default = STAFF_DEFAULT_PINNED if u["role"] in STAFF_ROLES else DEFAULT_PINNED
     with store.lock:
         all_prefs = store.section("prefs", dict)
-        default = STAFF_DEFAULT_PINNED if current_user()["role"] in STAFF_ROLES else DEFAULT_PINNED
         mine = all_prefs.setdefault(key, {"pinned": list(default)})
         if request.method == "PUT":
             # 只更新有送來的欄位，置頂與網站導覽分開存不會互相蓋掉

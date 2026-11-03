@@ -831,6 +831,14 @@ def serve_admin():
 def serve_admin_core():
     return app.send_static_file("admin-core.html")
 
+@app.route("/liff/menu")
+def serve_liff_menu():
+    """LINE LIFF「設定常用功能」頁面；LIFF ID 從環境變數注入，避免寫死在前端原始碼裡。"""
+    path = os.path.join(app.static_folder, "liff", "menu.html")
+    with open(path, encoding="utf-8") as f:
+        html = f.read()
+    return html.replace("__LIFF_ID__", os.getenv("LINE_LIFF_ID", ""))
+
 # ==========================================
 # 4. 身分認證與 Session 管理 API (/api/auth)
 # ==========================================
