@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 from flask import Blueprint, jsonify, session
 
-from .logic import STATUS_LABELS, build_notifications, needs_retake, recommend
+from .logic import STATUS_LABELS, build_notifications, my_schedule, needs_retake, passed_course_ids, recommend
 
 bp = Blueprint("retake", __name__)
 deps = SimpleNamespace()
@@ -34,11 +34,17 @@ def recommendations_for(student_id):
     if not student:
         return None
     courses = {c["course_id"]: c for c in deps.load_course_map()}
-    failed = needs_retake(deps.load_student_credits(student_id), courses)
-    results = recommend(failed, deps.load_schedule(), student.get("class_name"), student_id)
+    credit_records = deps.load_student_credits(student_id)
+    failed = needs_retake(credit_records, courses)
+    schedule_rows = deps.load_schedule()
+    results = recommend(failed, schedule_rows, student.get("class_name"), student_id,
+                        courses=courses, passed_ids=passed_course_ids(credit_records))
     counts = {status: sum(r["status"] == status for r in results) for status in STATUS_LABELS}
+    # 畫面一進來先看自己現在的課表，再看下面的重補修推薦 (見 static/js/retake.js)
+    schedule = sorted(my_schedule(schedule_rows, student.get("class_name"), student_id),
+                      key=lambda s: (s["weekday"], s["period_start"]))
     return {"student": {k: student.get(k) for k in ("student_id", "full_name", "class_name", "dept_name")},
-            "semester": deps.current_semester(), "summary": counts, "data": results}
+            "semester": deps.current_semester(), "summary": counts, "data": results, "schedule": schedule}
 
 
 def notifications_for(student_id):

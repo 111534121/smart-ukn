@@ -2094,7 +2094,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3849
+          "line": 3853
         },
         {
           "file": "static/js/campus-features.js",
@@ -2114,7 +2114,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "retake/__init__.py",
-          "line": 51,
+          "line": 57,
           "function": "my_recommendations",
           "tables": [
             {
@@ -2136,7 +2136,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "retake/__init__.py",
-              "line": 51,
+              "line": 57,
               "function": "my_recommendations"
             },
             {
@@ -2176,11 +2176,11 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/retake.js",
-          "line": 12
+          "line": 32
         },
         {
           "file": "static/js/retake.js",
-          "line": 22
+          "line": 42
         }
       ]
     },
@@ -3292,23 +3292,23 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3778
+          "line": 3782
         },
         {
           "file": "static/index.html",
-          "line": 4113
+          "line": 4117
         },
         {
           "file": "static/index.html",
-          "line": 4141
+          "line": 4145
         },
         {
           "file": "static/index.html",
-          "line": 4315
+          "line": 4319
         },
         {
           "file": "static/index.html",
-          "line": 4406
+          "line": 4410
         }
       ]
     },
@@ -5863,15 +5863,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4360
+          "line": 4364
         },
         {
           "file": "static/index.html",
-          "line": 4379
+          "line": 4383
         },
         {
           "file": "static/index.html",
-          "line": 4384
+          "line": 4388
         }
       ]
     },
@@ -10262,23 +10262,23 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3901
-        },
-        {
-          "file": "static/index.html",
           "line": 3905
         },
         {
           "file": "static/index.html",
-          "line": 3907
+          "line": 3909
         },
         {
           "file": "static/index.html",
-          "line": 4007
+          "line": 3911
         },
         {
           "file": "static/index.html",
-          "line": 4045
+          "line": 4011
+        },
+        {
+          "file": "static/index.html",
+          "line": 4049
         },
         {
           "file": "static/js/campus-features.js",
@@ -11568,7 +11568,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 4502
+          "line": 4506
         },
         {
           "file": "static/js/campus-features.js",
@@ -16020,15 +16020,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4457
+          "line": 4461
         },
         {
           "file": "static/index.html",
-          "line": 4466
+          "line": 4470
         },
         {
           "file": "static/index.html",
-          "line": 4481
+          "line": 4485
         },
         {
           "file": "static/js/campus-shell.js",
