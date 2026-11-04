@@ -197,7 +197,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2889
+          "line": 2887
         },
         {
           "file": "static/js/admin-core.js",
@@ -1848,31 +1848,31 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 642
+          "line": 640
         },
         {
           "file": "static/index.html",
-          "line": 2702
+          "line": 2700
         },
         {
           "file": "static/index.html",
-          "line": 2717
+          "line": 2715
         },
         {
           "file": "static/index.html",
-          "line": 2759
+          "line": 2757
         },
         {
           "file": "static/index.html",
-          "line": 2775
+          "line": 2773
         },
         {
           "file": "static/index.html",
-          "line": 2786
+          "line": 2784
         },
         {
           "file": "static/index.html",
-          "line": 2821
+          "line": 2819
         }
       ]
     },
@@ -2086,15 +2086,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 3069
+          "line": 3067
         },
         {
           "file": "static/index.html",
-          "line": 3070
+          "line": 3068
         },
         {
           "file": "static/index.html",
-          "line": 3853
+          "line": 3851
         },
         {
           "file": "static/js/campus-features.js",
@@ -3288,27 +3288,27 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 1270
+          "line": 1268
         },
         {
           "file": "static/index.html",
-          "line": 3782
+          "line": 3780
         },
         {
           "file": "static/index.html",
-          "line": 4117
+          "line": 4115
         },
         {
           "file": "static/index.html",
-          "line": 4145
+          "line": 4143
         },
         {
           "file": "static/index.html",
-          "line": 4319
+          "line": 4317
         },
         {
           "file": "static/index.html",
-          "line": 4410
+          "line": 4408
         }
       ]
     },
@@ -4231,11 +4231,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1029
+          "line": 1027
         },
         {
           "file": "static/index.html",
-          "line": 2844
+          "line": 2842
         },
         {
           "file": "static/js/admin-core.js",
@@ -5863,15 +5863,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4364
+          "line": 4362
         },
         {
           "file": "static/index.html",
-          "line": 4383
+          "line": 4381
         },
         {
           "file": "static/index.html",
-          "line": 4388
+          "line": 4386
         }
       ]
     },
@@ -9772,15 +9772,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2946
+          "line": 2944
         },
         {
           "file": "static/index.html",
-          "line": 2970
+          "line": 2968
         },
         {
           "file": "static/index.html",
-          "line": 3043
+          "line": 3041
         },
         {
           "file": "static/js/home-portal.js",
@@ -10258,11 +10258,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1018
+          "line": 1016
         },
         {
           "file": "static/index.html",
-          "line": 3905
+          "line": 3903
+        },
+        {
+          "file": "static/index.html",
+          "line": 3907
         },
         {
           "file": "static/index.html",
@@ -10270,15 +10274,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3911
+          "line": 4009
         },
         {
           "file": "static/index.html",
-          "line": 4011
-        },
-        {
-          "file": "static/index.html",
-          "line": 4049
+          "line": 4047
         },
         {
           "file": "static/js/forms-finder.js",
@@ -11544,31 +11544,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 995
+          "line": 993
         },
         {
           "file": "static/index.html",
-          "line": 1759
+          "line": 1757
         },
         {
           "file": "static/index.html",
-          "line": 2530
+          "line": 2528
         },
         {
           "file": "static/index.html",
-          "line": 2926
+          "line": 2924
         },
         {
           "file": "static/index.html",
-          "line": 3280
+          "line": 3278
         },
         {
           "file": "static/index.html",
-          "line": 3317
+          "line": 3315
         },
         {
           "file": "static/index.html",
-          "line": 4506
+          "line": 4504
         },
         {
           "file": "static/js/campus-features.js",
@@ -12048,7 +12048,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1902
+          "line": 1900
         },
         {
           "file": "static/js/campus-life.js",
@@ -13746,11 +13746,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2051
+          "line": 2049
         },
         {
           "file": "static/index.html",
-          "line": 2453
+          "line": 2451
         },
         {
           "file": "static/js/home-portal.js",
@@ -16020,15 +16020,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4461
+          "line": 4459
         },
         {
           "file": "static/index.html",
-          "line": 4470
+          "line": 4468
         },
         {
           "file": "static/index.html",
-          "line": 4485
+          "line": 4483
         },
         {
           "file": "static/js/dept-scope.js",
@@ -24992,11 +24992,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3224
+          "line": 3222
         },
         {
           "file": "static/index.html",
-          "line": 3249
+          "line": 3247
         },
         {
           "file": "static/js/admin-core.js",

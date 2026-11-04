@@ -10,12 +10,13 @@ def guide():
     return json.loads(source.removeprefix('window.FEATURE_GUIDE = ').rstrip().removesuffix(';'))
 
 
-def test_guide_assets_and_home_entry(client):
+def test_guide_assets_and_no_home_entry(client):
     for path in ('/feature-guide.html', '/feature-guide-data.js', '/css/feature-guide.css', '/js/feature-guide.js'):
         response = client.get(path)
         assert response.status_code == 200
         response.close()
-    assert b'/feature-guide.html' in client.get('/').data
+    # 頁首不再顯示「功能對照說明」連結，頁面本身仍可直接用網址開啟
+    assert b'/feature-guide.html' not in client.get('/').data
 
 
 def test_guide_covers_registered_business_routes(client):
