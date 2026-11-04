@@ -118,3 +118,31 @@ def test_oa_info_and_qr_with_env(client, monkeypatch):
     qr = client.get("/api/line/oa-qr.svg")
     assert qr.status_code == 200
     assert qr.mimetype == "image/svg+xml"
+
+
+def test_schedule_requires_valid_token(client):
+    res = client.get("/api/line/schedule", headers={"X-Line-Id-Token": "bad-token"})
+    assert res.status_code == 401
+
+
+def test_schedule_unbound_reports_unbound(client, monkeypatch):
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify("U" + "6" * 32))
+    res = client.get("/api/line/schedule", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    assert res.get_json()["data"]["bound"] is False
+
+
+def test_schedule_for_bound_student(client, login, monkeypatch):
+    login("student1")
+    code = client.post("/api/line/bind/start").get_json()["data"]["code"]
+    line_user_id = "U" + "7" * 32
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
+    client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
+
+    res = client.get("/api/line/schedule", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    data = res.get_json()["data"]
+    assert data["bound"] is True
+    assert data["username"] == "student1"
+    assert data["student"]["student_id"] == "S112001"
+    assert isinstance(data["schedule"], list) and data["schedule"]

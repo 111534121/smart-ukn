@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的課表｜Smart UKN</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: #f4f5f3; color: #1f2937; }
+  header { background: #16503f; color: #fff; padding: 14px 16px; font-weight: 700; }
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .muted { color: #64748b; font-size: 13px; }
+  .msg { font-size: 13px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .msg.error { background: #fef2f2; color: #b91c1c; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #f1f5f9; }
+  th { color: #64748b; font-size: 12px; font-weight: 600; }
+  td.course { font-weight: 700; color: #16503f; }
+  td.meta { color: #64748b; font-size: 12px; }
+  a.link-btn { display: block; text-align: center; background: #16503f; color: #fff; text-decoration: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
+  #hint { font-size: 12px; color: #94a3b8; text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+<header>Smart UKN · 我的課表</header>
+<main>
+  <div id="hint">連接 LINE 中…</div>
+  <div id="app" hidden></div>
+</main>
+<script>
+const WEEKDAYS = ['', '一', '二', '三', '四', '五', '六', '日'];
+const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
+let idToken = '';
+
+function show(html) {
+  document.getElementById('hint').hidden = true;
+  const app = document.getElementById('app');
+  app.hidden = false;
+  app.innerHTML = html;
+}
+
+async function call(path) {
+  const res = await fetch(path, { headers: { 'X-Line-Id-Token': idToken } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.status === 'error') throw new Error(body.message || '發生錯誤');
+  return body;
+}
+
+function renderBindPrompt(message) {
+  show(`
+    <div class="card">
+      <p>這個 LINE 帳號還沒綁定 Smart UKN 帳號，請先到 LINE 選單「設定常用功能」完成綁定，再回來看課表。</p>
+      ${message ? `<div class="msg error">${message}</div>` : ''}
+    </div>`);
+}
+
+function renderSchedule(data) {
+  const rows = [...(data.schedule || [])].sort((a, b) => a.weekday - b.weekday || a.period_start - b.period_start);
+  const body = rows.length
+    ? rows.map(s => `
+        <tr>
+          <td>週${WEEKDAYS[s.weekday] || ''}</td>
+          <td>第 ${s.period_start === s.period_end ? s.period_start : `${s.period_start}-${s.period_end}`} 節</td>
+          <td class="course">${s.course_name}</td>
+          <td class="meta">${s.teacher || ''}${s.classroom ? ` · ${s.classroom}` : ''}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="4" class="meta">目前課表是空的。</td></tr>';
+  show(`
+    <div class="card">
+      <p class="muted">${data.student.full_name || data.username}　${data.semester} 學期 · ${data.student.class_name || ''}</p>
+      <table>
+        <thead><tr><th>星期</th><th>節次</th><th>課程</th><th>老師 / 教室</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+    <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
+}
+
+async function loadSchedule() {
+  try {
+    const res = await call('/api/line/schedule');
+    if (res.data.bound) renderSchedule(res.data);
+    else renderBindPrompt();
+  } catch (e) {
+    renderBindPrompt(e.message);
+  }
+}
+
+(async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    idToken = liff.getIDToken();
+    if (!idToken) { show('<div class="card msg error">無法取得 LINE 身分權杖，請關閉後重新從選單打開。</div>'); return; }
+    await loadSchedule();
+  } catch (e) {
+    show(`<div class="card msg error">LIFF 初始化失敗：${e.message}</div>`);
+  }
+})();
+</script>
+</body>
+</html>

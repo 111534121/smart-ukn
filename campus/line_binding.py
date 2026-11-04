@@ -41,6 +41,14 @@ def _role_for_username(username):
     return user["role"] if user else None
 
 
+def _student_id_for_username(username):
+    rows = deps.fetch_db_rows("SELECT student_id FROM users WHERE username = %s", (username,))
+    if rows is not None:
+        return rows[0]["student_id"] if rows else None
+    user = next((u for u in (deps.users or []) if u["username"] == username), None)
+    return user.get("student_id") if user else None
+
+
 def _liff_channel_id():
     liff_id = os.getenv("LINE_LIFF_ID", "")
     return liff_id.split("-")[0] if "-" in liff_id else ""
@@ -143,6 +151,26 @@ def line_menu():
         return ok(message="已更新常用功能", data={"bound": True, "username": username, "pinned": pinned})
     role = _role_for_username(username)
     return ok(data={"bound": True, "username": username, "role": role, "pinned": get_pinned(username, role)})
+
+
+@bp.route("/api/line/schedule", methods=["GET"])
+def line_schedule():
+    """LIFF「我的課表」頁面專用：帶 X-Line-Id-Token 標頭呼叫，綁定過的學生直接看自己本學期課表。"""
+    line_user_id = verify_line_id_token(_id_token_from_request())
+    if not line_user_id:
+        return error("LINE 驗證失敗，請從 LINE 選單重新打開這個頁面", 401)
+    username = username_for_line_user(line_user_id)
+    if not username:
+        return ok(data={"bound": False})
+    student_id = _student_id_for_username(username)
+    if not student_id:
+        return error("這個帳號沒有綁定學號，無法查詢課表", 403)
+    from retake import recommendations_for  # 延後匯入，避免跟 retake 互相匯入造成循環
+    report = recommendations_for(student_id)
+    if not report:
+        return error("查無學生資料", 404)
+    return ok(data={"bound": True, "username": username, "student": report["student"],
+                    "semester": report["semester"], "schedule": report["schedule"]})
 
 
 # ---------- LINE 官方帳號加好友：QR Code 與連結，公開資訊，不含任何登入狀態 ----------
