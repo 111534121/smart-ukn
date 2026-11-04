@@ -31,3 +31,7 @@
 .custom-notify-form input,.custom-notify-form textarea{font:inherit;width:100%;padding:8px;border:1px solid #c7d5ca;border-radius:6px}
 .custom-notify-form textarea{resize:vertical;min-height:60px}
 .custom-notify-form .actions{justify-content:flex-end}
+/* 欄位驗證錯誤：紅框 + 底下紅字 (static/js/field-validate.js 共用) */
+.field-error-input{border-color:#e11d48!important;background-color:#fff1f2!important}
+.field-error-text{color:#be123c;font-size:11px;margin-top:2px;display:none}
+.field-error-text.show{display:block}

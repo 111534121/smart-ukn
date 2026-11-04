@@ -101,6 +101,10 @@
         .no-scrollbar {
             scrollbar-width: none;
         }
+        /* 欄位驗證錯誤：紅框 + 底下紅字 (static/js/field-validate.js 共用) */
+        .field-error-input { border-color: #e11d48 !important; background-color: #fff1f2 !important; }
+        .field-error-text { color: #be123c; font-size: 11px; margin-top: 2px; display: none; }
+        .field-error-text.show { display: block; }
     </style>
 </head>
 
@@ -2079,6 +2083,7 @@
                         <label class="block font-semibold text-slate-700 mb-1">登入帳號 (Username) *</label>
                         <input type="text" id="mUsername" required placeholder="例如：teacher_wang, A112001"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
+                        <p id="mUsername-err" class="field-error-text"></p>
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">真實姓名 (Full Name) *</label>
@@ -2107,6 +2112,7 @@
                         <label class="block font-semibold text-slate-700 mb-1">綁定學號 (學生/家長)</label>
                         <input type="text" id="mStudentId" placeholder="例如：41001001"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
+                        <p id="mStudentId-err" class="field-error-text"></p>
                     </div>
                 </div>
                 <div>
@@ -3832,7 +3838,8 @@
             }
         }
     </script>
-    <script src="/js/admin-core.js?v=20261022"></script>
+    <script src="/js/field-validate.js"></script>
+    <script src="/js/admin-core.js?v=20261104"></script>
 </body>
 
 </html>

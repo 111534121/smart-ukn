@@ -62,6 +62,10 @@
         .ukn-footer a { color: #fff; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { scrollbar-width: none; }
+        /* 欄位驗證錯誤：紅框 + 底下紅字，標出是哪一欄 (全站共用同一套 class，見 static/js/field-validate.js) */
+        .field-error-input { border-color: #e11d48 !important; background-color: #fff1f2 !important; }
+        .field-error-text { color: #be123c; font-size: 11px; margin-top: 2px; display: none; }
+        .field-error-text.show { display: block; }
     </style>
 </head>
 <body class="bg-[#f5f6f8] min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-ukn-700 selection:text-white">
@@ -105,13 +109,16 @@
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">帳號 (學號 / 教職員代號)</label>
                         <input type="text" id="mUsername" placeholder="例如：student1 或 S112001" required
+                               inputmode="latin" autocapitalize="off"
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                        <p id="mUsername-err" class="field-error-text"></p>
                     </div>
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">密碼</label>
                         <input type="password" id="mPassword" placeholder="預設密碼 123456" required
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
+                        <p id="mPassword-err" class="field-error-text"></p>
                     </div>
 
                     <label class="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
@@ -262,6 +269,7 @@
         <p>地址：114 臺北市內湖區康寧路三段75巷137號 ｜ 電話：(02)2632-1181 ｜ 傳真：(02)2632-8744</p>
     </footer>
 
+    <script src="/js/field-validate.js"></script>
     <script>
         let selectedVisitorType = '未來學生';
 
@@ -297,6 +305,10 @@
             document.getElementById('mPassword').value = p;
         }
 
+        restrictAccountInput('mUsername');
+        document.getElementById('mUsername').addEventListener('input', () => clearFieldError('mUsername'));
+        document.getElementById('mPassword').addEventListener('input', () => clearFieldError('mPassword'));
+
         async function handleMemberLogin(e) {
             e.preventDefault();
             const u = document.getElementById('mUsername').value.trim();
@@ -305,6 +317,11 @@
             const btn = document.getElementById('loginBtn');
 
             errBox.classList.add('hidden');
+            clearFieldErrors(['mUsername', 'mPassword']);
+
+            if (!u) { setFieldError('mUsername', '請輸入帳號'); return; }
+            if (!p) { setFieldError('mPassword', '請輸入密碼'); return; }
+
             btn.disabled = true;
             btn.innerHTML = `<span>登入驗證中...</span>`;
 
@@ -321,6 +338,9 @@
                 } else {
                     errBox.textContent = data.message || '帳號或密碼錯誤';
                     errBox.classList.remove('hidden');
+                    // 帳密錯誤無法確定是哪一欄錯，兩欄都標紅，比對帳密後清空再試
+                    setFieldError('mUsername', '');
+                    setFieldError('mPassword', '');
                 }
             } catch (err) {
                 errBox.textContent = '連不上系統，請確認程式已經開啟';

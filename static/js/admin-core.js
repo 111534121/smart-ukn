@@ -388,6 +388,7 @@ function openUserModal(mode, id = null) {
     }
     const modal = document.getElementById('userModal');
     if (!modal) return;
+    if (typeof clearFieldErrors === 'function') clearFieldErrors(['mUsername', 'mStudentId']);
     const title = document.getElementById('userModalTitle');
     document.getElementById('userForm').reset();
     document.getElementById('mUserId').value = '';
@@ -451,8 +452,10 @@ async function saveUser(e) {
     const studentId = document.getElementById('mStudentId').value.trim().toUpperCase() || null;
     const password = document.getElementById('mPassword').value.trim();
 
+    if (typeof clearFieldErrors === 'function') clearFieldErrors(['mUsername', 'mStudentId']);
     if (!/^[A-Za-z0-9_.\-]{3,50}$/.test(username)) {
         showAdminToast('防呆攔截：帳號格式不正確，僅限 3~50 碼英數字、底線(_)、點(.)或連字號(-)', 'error');
+        if (typeof setFieldError === 'function') setFieldError('mUsername', '僅限 3~50 碼英數字、底線(_)、點(.)或連字號(-)');
         return;
     }
     if (!fullName || fullName.length > 50) {
@@ -465,11 +468,13 @@ async function saveUser(e) {
     }
     if ((role === '學生' || role === '家長') && !studentId) {
         showAdminToast(`防呆攔截：身分為「${role}」時，必須填寫綁定學號（如 S112001）！`, 'error');
+        if (typeof setFieldError === 'function') setFieldError('mStudentId', `身分為「${role}」時必須填寫綁定學號`);
         document.getElementById('mStudentId')?.focus();
         return;
     }
     if (studentId && !/^[A-Za-z0-9_\-]{3,20}$/.test(studentId)) {
         showAdminToast('防呆攔截：學號格式不正確，僅限 3~20 碼英數字（如 S112001）', 'error');
+        if (typeof setFieldError === 'function') setFieldError('mStudentId', '僅限 3~20 碼英數字（如 S112001）');
         return;
     }
 
@@ -1788,6 +1793,9 @@ async function loadAllCoreAdminData() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllCoreAdminData();
+    // 帳號/學號類欄位擋中文輸入 (static/js/field-validate.js)
+    ['mUsername', 'mStudentId', 'filterCreditStudentId', 'filterAttStudentId', 'filterRecStudentId']
+        .forEach(id => typeof restrictAccountInput === 'function' && restrictAccountInput(id));
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             [
