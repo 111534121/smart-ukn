@@ -34,6 +34,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")  # Windows 預設主控台編碼 (cp950) 印不出中文/全形符號
 
 API = "https://api.line.me"
+API_DATA = "https://api-data.line.me"  # 上傳/下載二進位內容 (圖文選單圖片等) 用這個主機，不是 api.line.me
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "line_assets")
 
 W, H = 2500, 1686
@@ -76,14 +77,14 @@ def build_menus():
         "chatBarText": "選單", "alias": "ukn-main",
         "image": os.path.join(ASSETS_DIR, "richmenu-main.jpg"),
         "areas": [
-            area(0, 0, 1250, H, switch_action("ukn-student", "學生專區")),
+            area(0, 0, 1250, H, switch_action("ukn-student", "學生・老師專區")),
             area(1250, 0, 1250, H, switch_action("ukn-visitor", "訪客・家長專區")),
         ],
     }
 
     student = {
         "size": {"width": W, "height": H}, "selected": False, "name": "ukn-student",
-        "chatBarText": "學生專區", "alias": "ukn-student",
+        "chatBarText": "學生・老師專區", "alias": "ukn-student",
         "image": os.path.join(ASSETS_DIR, "richmenu-student.jpg"),
         "areas": [
             area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
@@ -113,7 +114,7 @@ def build_menus():
     return [main, student, visitor]
 
 
-def _request(token, method, path, body=None, data=None, content_type="application/json"):
+def _request(token, method, path, body=None, data=None, content_type="application/json", base=API):
     headers = {"Authorization": f"Bearer {token}"}
     if data is not None:
         headers["Content-Type"] = content_type
@@ -121,7 +122,7 @@ def _request(token, method, path, body=None, data=None, content_type="applicatio
     else:
         headers["Content-Type"] = "application/json"
         payload = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(API + path, data=payload, headers=headers, method=method)
+    req = urllib.request.Request(base + path, data=payload, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
             raw = resp.read()
@@ -150,7 +151,7 @@ def create_menu(token, spec):
     with open(spec["image"], "rb") as f:
         image_bytes = f.read()
     _request(token, "POST", f"/v2/bot/richmenu/{rich_menu_id}/content",
-             data=image_bytes, content_type=content_type)
+             data=image_bytes, content_type=content_type, base=API_DATA)
     return rich_menu_id
 
 
