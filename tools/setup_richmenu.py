@@ -70,9 +70,11 @@ def message_action(label, text):
 def build_menus():
     demo_home = os.getenv("LINE_DEMO_HOME_URL", "https://smart-ukn-liff-demo.onrender.com/")
     liff_id = os.getenv("LINE_LIFF_ID", "2012266647-el203x6g")
-    # 「課表查詢」預設連去我們自己的 LIFF 課表頁 (/liff/schedule)；還沒設定好時退回 demo 首頁
+    # 「課表查詢」「我的常用功能」預設連去我們自己的 LIFF 頁面；還沒設定好對應 LIFF 時退回 demo 首頁
     schedule_liff_id = os.getenv("LINE_LIFF_ID_SCHEDULE", "")
     schedule_url = f"https://liff.line.me/{schedule_liff_id}" if schedule_liff_id else os.getenv("LINE_STUDENT_SCHEDULE_URL", demo_home)
+    favorites_liff_id = os.getenv("LINE_LIFF_ID_FAVORITES", "")
+    favorites_url = f"https://liff.line.me/{favorites_liff_id}" if favorites_liff_id else demo_home
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",
@@ -94,7 +96,7 @@ def build_menus():
             grid_cell(0, 1, uri_action("活動報名", demo_home)),
             grid_cell(0, 2, uri_action("最新公告", demo_home)),
             grid_cell(1, 0, uri_action("AI 客服", demo_home)),
-            grid_cell(1, 1, uri_action("我的常用功能", demo_home)),
+            grid_cell(1, 1, uri_action("我的常用功能", favorites_url)),
             grid_cell(1, 2, uri_action("設定常用功能", f"https://liff.line.me/{liff_id}")),
         ],
     }

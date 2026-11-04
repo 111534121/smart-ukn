@@ -853,6 +853,14 @@ def serve_liff_schedule():
         html = f.read()
     return html.replace("__LIFF_ID__", os.getenv("LINE_LIFF_ID_SCHEDULE", ""))
 
+@app.route("/liff/favorites")
+def serve_liff_favorites():
+    """LINE LIFF「我的常用功能」頁面；LIFF ID 從環境變數注入，避免寫死在前端原始碼裡。"""
+    path = os.path.join(app.static_folder, "liff", "favorites.html")
+    with open(path, encoding="utf-8") as f:
+        html = f.read()
+    return html.replace("__LIFF_ID__", os.getenv("LINE_LIFF_ID_FAVORITES", ""))
+
 # ==========================================
 # 4. 身分認證與 Session 管理 API (/api/auth)
 # ==========================================

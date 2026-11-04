@@ -12,13 +12,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 883,
+          "line": 891,
           "function": "auth_login",
           "tables": [
             {
               "name": "users",
               "file": "app.py",
-              "line": 905,
+              "line": 913,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -33,7 +33,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 905,
+              "line": 913,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -48,7 +48,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 905,
+              "line": 913,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -63,7 +63,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "users",
               "file": "app.py",
-              "line": 930,
+              "line": 938,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -79,17 +79,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 883,
+              "line": 891,
               "function": "auth_login"
             },
             {
               "file": "app.py",
-              "line": 878,
+              "line": 886,
               "function": "_clear_login_failures"
             },
             {
               "file": "app.py",
-              "line": 874,
+              "line": 882,
               "function": "_record_login_failure"
             },
             {
@@ -99,7 +99,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 866,
+              "line": 874,
               "function": "_login_too_many"
             }
           ],
@@ -111,13 +111,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1002,
+          "line": 1010,
           "function": "auth_logout",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 1002,
+              "line": 1010,
               "function": "auth_logout"
             }
           ],
@@ -129,13 +129,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1007,
+          "line": 1015,
           "function": "auth_me",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 1007,
+              "line": 1015,
               "function": "auth_me"
             }
           ],
@@ -147,13 +147,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1031,
+          "line": 1039,
           "function": "register_visitor",
           "tables": [
             {
               "name": "visitor_logs",
               "file": "app.py",
-              "line": 1050,
+              "line": 1058,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -169,12 +169,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1031,
+              "line": 1039,
               "function": "register_visitor"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -189,7 +189,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 2896
+          "line": 2904
         },
         {
           "file": "static/login.html",
@@ -233,7 +233,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4282,
+          "line": 4290,
           "function": "get_student_dashboard",
           "tables": [
             {
@@ -294,7 +294,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "course_map",
               "file": "app.py",
-              "line": 4111,
+              "line": 4119,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -309,7 +309,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4265,
+              "line": 4273,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -490,12 +490,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4282,
+              "line": 4290,
               "function": "get_student_dashboard"
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -510,27 +510,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4223,
+              "line": 4231,
               "function": "moodle_error_message"
             },
             {
               "file": "app.py",
-              "line": 4105,
+              "line": 4113,
               "function": "current_attendance_semester"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 4110,
+              "line": 4118,
               "function": "course_semester_hours"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -540,12 +540,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
@@ -625,17 +625,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4264,
+              "line": 4272,
               "function": "student_class_name"
             },
             {
               "file": "app.py",
-              "line": 4232,
+              "line": 4240,
               "function": "moodle_status_for"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -650,12 +650,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4271,
+              "line": 4279,
               "function": "parse_dashboard_now"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -667,7 +667,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4321,
+          "line": 4329,
           "function": "mark_announcement_read",
           "tables": [
             {
@@ -839,12 +839,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4321,
+              "line": 4329,
               "function": "mark_announcement_read"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -871,7 +871,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4357,
+          "line": 4365,
           "function": "submit_leave_request",
           "tables": [
             {
@@ -1043,12 +1043,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4357,
+              "line": 4365,
               "function": "submit_leave_request"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -1075,7 +1075,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 4390,
+          "line": 4398,
           "function": "cancel_leave_request",
           "tables": [
             {
@@ -1247,12 +1247,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4390,
+              "line": 4398,
               "function": "cancel_leave_request"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -1279,13 +1279,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4397,
+          "line": 4405,
           "function": "list_leave_requests_for_review",
           "tables": [
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -1465,7 +1465,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -1481,17 +1481,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4397,
+              "line": 4405,
               "function": "list_leave_requests_for_review"
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -1501,7 +1501,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -1516,12 +1516,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4341,
+              "line": 4349,
               "function": "reviewable_student_ids"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
@@ -1538,7 +1538,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4416,
+          "line": 4424,
           "function": "review_leave_request",
           "tables": [
             {
@@ -1582,7 +1582,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -1763,12 +1763,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4416,
+              "line": 4424,
               "function": "review_leave_request"
             },
             {
               "file": "app.py",
-              "line": 4347,
+              "line": 4355,
               "function": "notify_leave_result"
             },
             {
@@ -1808,22 +1808,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4341,
+              "line": 4349,
               "function": "reviewable_student_ids"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -1848,31 +1848,31 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 844
+          "line": 852
         },
         {
           "file": "static/index.html",
-          "line": 2709
+          "line": 2717
         },
         {
           "file": "static/index.html",
-          "line": 2724
+          "line": 2732
         },
         {
           "file": "static/index.html",
-          "line": 2766
+          "line": 2774
         },
         {
           "file": "static/index.html",
-          "line": 2782
+          "line": 2790
         },
         {
           "file": "static/index.html",
-          "line": 2793
+          "line": 2801
         },
         {
           "file": "static/index.html",
-          "line": 2828
+          "line": 2836
         }
       ]
     },
@@ -1888,23 +1888,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1976,
+          "line": 1984,
           "function": "get_all_courses",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 1976,
+              "line": 1984,
               "function": "get_all_courses"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -1922,13 +1922,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1985,
+          "line": 1993,
           "function": "check_courses_prerequisites",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -1944,17 +1944,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1985,
+              "line": 1993,
               "function": "check_courses_prerequisites"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -1964,22 +1964,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1957,
+              "line": 1965,
               "function": "hide_untaken_demo_courses"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             }
           ],
@@ -1991,13 +1991,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2067,
+          "line": 2075,
           "function": "get_personalized_courses",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2013,22 +2013,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2067,
+              "line": 2075,
               "function": "get_personalized_courses"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2038,12 +2038,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -2055,23 +2055,23 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 2167,
+          "line": 2175,
           "function": "what_if_course_failed",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 2167,
+              "line": 2175,
               "function": "what_if_course_failed"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2086,15 +2086,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 3076
+          "line": 3084
         },
         {
           "file": "static/index.html",
-          "line": 3077
+          "line": 3085
         },
         {
           "file": "static/index.html",
-          "line": 3865
+          "line": 3876
         },
         {
           "file": "static/js/campus-features.js",
@@ -2120,7 +2120,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2151,12 +2151,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2166,7 +2166,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             }
           ],
@@ -2217,12 +2217,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2245,7 +2245,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2266,12 +2266,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2296,12 +2296,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             }
           ],
@@ -2331,13 +2331,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2139,
+          "line": 2147,
           "function": "graduation_audit",
           "tables": [
             {
               "name": "students",
               "file": "app.py",
-              "line": 2151,
+              "line": 2159,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2517,7 +2517,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2532,7 +2532,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2547,7 +2547,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2563,12 +2563,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2139,
+              "line": 2147,
               "function": "graduation_audit"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -2583,12 +2583,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -2598,17 +2598,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 3651,
+              "line": 3659,
               "function": "teacher_can_view_student"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
@@ -2643,12 +2643,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 2236,
+              "line": 2244,
               "function": "_resolve_graduation_target_student"
             }
           ],
@@ -2660,13 +2660,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2370,
+          "line": 2378,
           "function": "student_graduation_dashboard",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2681,7 +2681,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "graduation_requirements",
               "file": "app.py",
-              "line": 2282,
+              "line": 2290,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -2692,7 +2692,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2261,
+              "line": 2269,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2707,7 +2707,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2722,7 +2722,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2737,7 +2737,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2752,7 +2752,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2766,213 +2766,8 @@ window.FEATURE_GUIDE = {
             },
             {
               "name": "students",
-              "file": "app.py",
-              "line": 2251,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 73
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 51
-                }
-              ]
-            },
-            {
-              "name": "departments",
-              "file": "app.py",
-              "line": 2251,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 53
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 41
-                }
-              ]
-            }
-          ],
-          "files": [
-            {
-              "file": "app.py",
-              "line": 2370,
-              "function": "student_graduation_dashboard"
-            },
-            {
-              "file": "app.py",
-              "line": 2359,
-              "function": "_graduation_target_or_error"
-            },
-            {
-              "file": "app.py",
-              "line": 2288,
-              "function": "_compute_graduation_dashboard"
-            },
-            {
-              "file": "app.py",
-              "line": 1932,
-              "function": "load_course_map"
-            },
-            {
-              "file": "app.py",
-              "line": 1486,
-              "function": "fetch_db_rows"
-            },
-            {
-              "file": "app.py",
-              "line": 161,
-              "function": "get_db_connection"
-            },
-            {
-              "file": "app.py",
-              "line": 1938,
-              "function": "load_student_credits"
-            },
-            {
-              "file": "app.py",
-              "line": 2281,
-              "function": "_load_dept_requirements"
-            },
-            {
               "file": "app.py",
               "line": 2259,
-              "function": "_load_cohort"
-            },
-            {
-              "file": "app.py",
-              "line": 1965,
-              "function": "summarize_credits"
-            },
-            {
-              "file": "app.py",
-              "line": 2250,
-              "function": "_load_student_info"
-            },
-            {
-              "file": "app.py",
-              "line": 2236,
-              "function": "_resolve_graduation_target_student"
-            }
-          ],
-          "storage": []
-        },
-        {
-          "url": "/api/student/graduation/export.csv",
-          "methods": [
-            "GET"
-          ],
-          "file": "app.py",
-          "line": 2378,
-          "function": "export_graduation_dashboard_csv",
-          "tables": [
-            {
-              "name": "student_credits",
-              "file": "app.py",
-              "line": 1941,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 156
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 104
-                }
-              ]
-            },
-            {
-              "name": "graduation_requirements",
-              "file": "app.py",
-              "line": 2282,
-              "schema": [
-                {
-                  "file": "init_db.py",
-                  "line": 299
-                }
-              ]
-            },
-            {
-              "name": "students",
-              "file": "app.py",
-              "line": 2261,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 73
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 51
-                }
-              ]
-            },
-            {
-              "name": "certificates",
-              "file": "app.py",
-              "line": 2262,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 186
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 121
-                }
-              ]
-            },
-            {
-              "name": "students",
-              "file": "app.py",
-              "line": 2262,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 73
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 51
-                }
-              ]
-            },
-            {
-              "name": "certificates",
-              "file": "app.py",
-              "line": 2269,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 186
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 121
-                }
-              ]
-            },
-            {
-              "name": "students",
-              "file": "app.py",
-              "line": 2269,
-              "schema": [
-                {
-                  "file": "smart_ukn.sql",
-                  "line": 73
-                },
-                {
-                  "file": "init_db.py",
-                  "line": 51
-                }
-              ]
-            },
-            {
-              "name": "students",
-              "file": "app.py",
-              "line": 2251,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -2987,7 +2782,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3004,26 +2799,26 @@ window.FEATURE_GUIDE = {
             {
               "file": "app.py",
               "line": 2378,
-              "function": "export_graduation_dashboard_csv"
+              "function": "student_graduation_dashboard"
             },
             {
               "file": "app.py",
-              "line": 2359,
+              "line": 2367,
               "function": "_graduation_target_or_error"
             },
             {
               "file": "app.py",
-              "line": 2288,
+              "line": 2296,
               "function": "_compute_graduation_dashboard"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -3033,50 +2828,50 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 2281,
+              "line": 2289,
               "function": "_load_dept_requirements"
             },
             {
               "file": "app.py",
-              "line": 2259,
+              "line": 2267,
               "function": "_load_cohort"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
               "file": "app.py",
-              "line": 2236,
+              "line": 2244,
               "function": "_resolve_graduation_target_student"
             }
           ],
           "storage": []
         },
         {
-          "url": "/api/teacher/class-summary",
+          "url": "/api/student/graduation/export.csv",
           "methods": [
             "GET"
           ],
           "file": "app.py",
-          "line": 2427,
-          "function": "teacher_class_summary",
+          "line": 2386,
+          "function": "export_graduation_dashboard_csv",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3091,7 +2886,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "graduation_requirements",
               "file": "app.py",
-              "line": 2282,
+              "line": 2290,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -3102,7 +2897,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2261,
+              "line": 2269,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3117,7 +2912,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3132,7 +2927,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3147,7 +2942,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3162,7 +2957,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3177,7 +2972,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3192,7 +2987,212 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 53
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 41
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "file": "app.py",
+              "line": 2386,
+              "function": "export_graduation_dashboard_csv"
+            },
+            {
+              "file": "app.py",
+              "line": 2367,
+              "function": "_graduation_target_or_error"
+            },
+            {
+              "file": "app.py",
+              "line": 2296,
+              "function": "_compute_graduation_dashboard"
+            },
+            {
+              "file": "app.py",
+              "line": 1940,
+              "function": "load_course_map"
+            },
+            {
+              "file": "app.py",
+              "line": 1494,
+              "function": "fetch_db_rows"
+            },
+            {
+              "file": "app.py",
+              "line": 161,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "app.py",
+              "line": 1946,
+              "function": "load_student_credits"
+            },
+            {
+              "file": "app.py",
+              "line": 2289,
+              "function": "_load_dept_requirements"
+            },
+            {
+              "file": "app.py",
+              "line": 2267,
+              "function": "_load_cohort"
+            },
+            {
+              "file": "app.py",
+              "line": 1973,
+              "function": "summarize_credits"
+            },
+            {
+              "file": "app.py",
+              "line": 2258,
+              "function": "_load_student_info"
+            },
+            {
+              "file": "app.py",
+              "line": 2244,
+              "function": "_resolve_graduation_target_student"
+            }
+          ],
+          "storage": []
+        },
+        {
+          "url": "/api/teacher/class-summary",
+          "methods": [
+            "GET"
+          ],
+          "file": "app.py",
+          "line": 2435,
+          "function": "teacher_class_summary",
+          "tables": [
+            {
+              "name": "student_credits",
+              "file": "app.py",
+              "line": 1949,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 156
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 104
+                }
+              ]
+            },
+            {
+              "name": "graduation_requirements",
+              "file": "app.py",
+              "line": 2290,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 299
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "app.py",
+              "line": 2269,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "certificates",
+              "file": "app.py",
+              "line": 2270,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 186
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 121
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "app.py",
+              "line": 2270,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "certificates",
+              "file": "app.py",
+              "line": 2277,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 186
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 121
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "app.py",
+              "line": 2277,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "students",
+              "file": "app.py",
+              "line": 2259,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 73
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 51
+                }
+              ]
+            },
+            {
+              "name": "departments",
+              "file": "app.py",
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3207,7 +3207,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3223,22 +3223,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2427,
+              "line": 2435,
               "function": "teacher_class_summary"
             },
             {
               "file": "app.py",
-              "line": 2288,
+              "line": 2296,
               "function": "_compute_graduation_dashboard"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -3248,32 +3248,32 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 2281,
+              "line": 2289,
               "function": "_load_dept_requirements"
             },
             {
               "file": "app.py",
-              "line": 2259,
+              "line": 2267,
               "function": "_load_cohort"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
@@ -3288,27 +3288,27 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 1275
+          "line": 1283
         },
         {
           "file": "static/index.html",
-          "line": 3794
+          "line": 3805
         },
         {
           "file": "static/index.html",
-          "line": 4129
+          "line": 4140
         },
         {
           "file": "static/index.html",
-          "line": 4157
+          "line": 4168
         },
         {
           "file": "static/index.html",
-          "line": 4331
+          "line": 4342
         },
         {
           "file": "static/index.html",
-          "line": 4422
+          "line": 4433
         }
       ]
     },
@@ -3324,13 +3324,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2461,
+          "line": 2469,
           "function": "teacher_class_attendance",
           "tables": [
             {
               "name": "course_map",
               "file": "app.py",
-              "line": 4111,
+              "line": 4119,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3510,7 +3510,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3525,7 +3525,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2454,
+              "line": 2462,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3540,7 +3540,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3611,27 +3611,27 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2461,
+              "line": 2469,
               "function": "teacher_class_attendance"
             },
             {
               "file": "app.py",
-              "line": 4105,
+              "line": 4113,
               "function": "current_attendance_semester"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 4110,
+              "line": 4118,
               "function": "course_semester_hours"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -3641,7 +3641,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -3656,7 +3656,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -3681,17 +3681,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2453,
+              "line": 2461,
               "function": "_list_class_names"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -3706,12 +3706,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
@@ -3728,7 +3728,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4116,
+          "line": 4124,
           "function": "get_my_attendance",
           "tables": [
             {
@@ -3789,7 +3789,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "course_map",
               "file": "app.py",
-              "line": 4111,
+              "line": 4119,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -3805,12 +3805,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4116,
+              "line": 4124,
               "function": "get_my_attendance"
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -3825,22 +3825,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4105,
+              "line": 4113,
               "function": "current_attendance_semester"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 4110,
+              "line": 4118,
               "function": "course_semester_hours"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -3850,12 +3850,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
@@ -3880,7 +3880,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -3893,13 +3893,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4132,
+          "line": 4140,
           "function": "manage_attendance_records",
           "tables": [
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4008,22 +4008,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4132,
+              "line": 4140,
               "function": "manage_attendance_records"
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -4048,7 +4048,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -4063,7 +4063,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -4090,7 +4090,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4185,
+          "line": 4193,
           "function": "notify_attendance_now",
           "tables": [
             {
@@ -4152,12 +4152,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4185,
+              "line": 4193,
               "function": "notify_attendance_now"
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -4231,11 +4231,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1034
+          "line": 1042
         },
         {
           "file": "static/index.html",
-          "line": 2851
+          "line": 2859
         },
         {
           "file": "static/js/admin-core.js",
@@ -4263,13 +4263,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2519,
+          "line": 2527,
           "function": "teacher_class_overview",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4284,7 +4284,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -4295,7 +4295,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "course_map",
               "file": "app.py",
-              "line": 4111,
+              "line": 4119,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4310,7 +4310,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4325,7 +4325,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2454,
+              "line": 2462,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4395,7 +4395,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4411,22 +4411,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2519,
+              "line": 2527,
               "function": "teacher_class_overview"
             },
             {
               "file": "app.py",
-              "line": 2899,
+              "line": 2907,
               "function": "compute_early_warning"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -4436,37 +4436,37 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             },
             {
               "file": "app.py",
-              "line": 4105,
+              "line": 4113,
               "function": "current_attendance_semester"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 4110,
+              "line": 4118,
               "function": "course_semester_hours"
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -4491,12 +4491,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2453,
+              "line": 2461,
               "function": "_list_class_names"
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -4511,12 +4511,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
@@ -4533,13 +4533,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2588,
+          "line": 2596,
           "function": "teacher_student_profile",
           "tables": [
             {
               "name": "students",
               "file": "app.py",
-              "line": 2580,
+              "line": 2588,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4774,7 +4774,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4789,7 +4789,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -4800,7 +4800,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "course_map",
               "file": "app.py",
-              "line": 4111,
+              "line": 4119,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4815,7 +4815,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "graduation_requirements",
               "file": "app.py",
-              "line": 2282,
+              "line": 2290,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -4826,7 +4826,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2261,
+              "line": 2269,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4841,7 +4841,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4856,7 +4856,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2262,
+              "line": 2270,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4871,7 +4871,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4886,7 +4886,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2269,
+              "line": 2277,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4901,7 +4901,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4916,7 +4916,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -4932,17 +4932,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2588,
+              "line": 2596,
               "function": "teacher_student_profile"
             },
             {
               "file": "app.py",
-              "line": 2579,
+              "line": 2587,
               "function": "_student_parent_phone"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -4952,7 +4952,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -4967,7 +4967,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4092,
+              "line": 4100,
               "function": "get_attendance_source"
             },
             {
@@ -4982,67 +4982,67 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2899,
+              "line": 2907,
               "function": "compute_early_warning"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             },
             {
               "file": "app.py",
-              "line": 4105,
+              "line": 4113,
               "function": "current_attendance_semester"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 4110,
+              "line": 4118,
               "function": "course_semester_hours"
             },
             {
               "file": "app.py",
-              "line": 4101,
+              "line": 4109,
               "function": "course_weekly_hours"
             },
             {
               "file": "app.py",
-              "line": 2288,
+              "line": 2296,
               "function": "_compute_graduation_dashboard"
             },
             {
               "file": "app.py",
-              "line": 2281,
+              "line": 2289,
               "function": "_load_dept_requirements"
             },
             {
               "file": "app.py",
-              "line": 2259,
+              "line": 2267,
               "function": "_load_cohort"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
@@ -5166,7 +5166,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5330,7 +5330,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5340,7 +5340,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -5505,7 +5505,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -5515,7 +5515,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5644,7 +5644,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5730,13 +5730,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2958,
+          "line": 2966,
           "function": "get_student_early_warning",
           "tables": [
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5751,7 +5751,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5766,7 +5766,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5781,7 +5781,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "users",
               "file": "app.py",
-              "line": 2894,
+              "line": 2902,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5796,7 +5796,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -5808,22 +5808,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2958,
+              "line": 2966,
               "function": "get_student_early_warning"
             },
             {
               "file": "app.py",
-              "line": 2899,
+              "line": 2907,
               "function": "compute_early_warning"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5833,27 +5833,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
               "file": "app.py",
-              "line": 2892,
+              "line": 2900,
               "function": "find_class_advisor"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             }
           ],
@@ -5863,15 +5863,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4376
+          "line": 4387
         },
         {
           "file": "static/index.html",
-          "line": 4395
+          "line": 4406
         },
         {
           "file": "static/index.html",
-          "line": 4400
+          "line": 4411
         }
       ]
     },
@@ -5888,13 +5888,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3664,
+          "line": 3672,
           "function": "manage_certificates",
           "tables": [
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 3751,
+              "line": 3759,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5909,7 +5909,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 3693,
+              "line": 3701,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5924,7 +5924,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 3761,
+              "line": 3769,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5939,7 +5939,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5954,7 +5954,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -5970,22 +5970,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3664,
+              "line": 3672,
               "function": "manage_certificates"
             },
             {
               "file": "app.py",
-              "line": 3651,
+              "line": 3659,
               "function": "teacher_can_view_student"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -5995,12 +5995,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3657,
+              "line": 3665,
               "function": "portfolio_row_dates"
             },
             {
               "file": "app.py",
-              "line": 3327,
+              "line": 3335,
               "function": "_date_str"
             },
             {
@@ -6022,13 +6022,13 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 3794,
+          "line": 3802,
           "function": "delete_certificate",
           "tables": [
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 3806,
+              "line": 3814,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6043,7 +6043,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "certificates",
               "file": "app.py",
-              "line": 3814,
+              "line": 3822,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6059,7 +6059,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3794,
+              "line": 3802,
               "function": "delete_certificate"
             },
             {
@@ -6077,13 +6077,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3838,
+          "line": 3846,
           "function": "manage_competitions",
           "tables": [
             {
               "name": "competitions",
               "file": "app.py",
-              "line": 3908,
+              "line": 3916,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6094,7 +6094,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "competitions",
               "file": "app.py",
-              "line": 3867,
+              "line": 3875,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6105,7 +6105,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6120,7 +6120,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 2251,
+              "line": 2259,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6136,22 +6136,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3838,
+              "line": 3846,
               "function": "manage_competitions"
             },
             {
               "file": "app.py",
-              "line": 3651,
+              "line": 3659,
               "function": "teacher_can_view_student"
             },
             {
               "file": "app.py",
-              "line": 2250,
+              "line": 2258,
               "function": "_load_student_info"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6161,12 +6161,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3657,
+              "line": 3665,
               "function": "portfolio_row_dates"
             },
             {
               "file": "app.py",
-              "line": 3327,
+              "line": 3335,
               "function": "_date_str"
             },
             {
@@ -6188,13 +6188,13 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 3942,
+          "line": 3950,
           "function": "delete_competition",
           "tables": [
             {
               "name": "competitions",
               "file": "app.py",
-              "line": 3954,
+              "line": 3962,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6205,7 +6205,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "competitions",
               "file": "app.py",
-              "line": 3962,
+              "line": 3970,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -6217,7 +6217,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3942,
+              "line": 3950,
               "function": "delete_competition"
             },
             {
@@ -6316,7 +6316,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6346,7 +6346,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -6457,7 +6457,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6487,7 +6487,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -6598,7 +6598,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6628,7 +6628,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -6734,7 +6734,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6764,7 +6764,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -6913,7 +6913,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -6943,7 +6943,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -7069,7 +7069,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -7099,7 +7099,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -7195,7 +7195,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -7225,7 +7225,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -7265,7 +7265,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 562
+          "line": 578
         }
       ]
     },
@@ -7319,7 +7319,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -7408,7 +7408,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -7418,7 +7418,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -7510,7 +7510,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -7970,7 +7970,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -8075,7 +8075,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -8095,7 +8095,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -8221,7 +8221,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -8246,7 +8246,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -8357,7 +8357,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -8397,7 +8397,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -8486,7 +8486,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "unmatched_queries",
               "file": "app.py",
-              "line": 1521,
+              "line": 1529,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8497,7 +8497,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3070,
+              "line": 3078,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8512,7 +8512,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8527,7 +8527,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_categories",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8542,7 +8542,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8557,7 +8557,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "search_logs",
               "file": "app.py",
-              "line": 1472,
+              "line": 1480,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8604,12 +8604,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1517,
+              "line": 1525,
               "function": "record_unmatched_query"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -8619,27 +8619,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3068,
+              "line": 3076,
               "function": "load_synonyms"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
               "file": "app.py",
-              "line": 3131,
+              "line": 3139,
               "function": "load_rules"
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1466,
+              "line": 1474,
               "function": "log_search"
             },
             {
@@ -8697,13 +8697,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1557,
+          "line": 1565,
           "function": "search_knowledge",
           "tables": [
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 1571,
+              "line": 1579,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8718,7 +8718,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 1575,
+              "line": 1583,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8733,7 +8733,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_categories",
               "file": "app.py",
-              "line": 1575,
+              "line": 1583,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8748,7 +8748,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "search_logs",
               "file": "app.py",
-              "line": 1472,
+              "line": 1480,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8759,7 +8759,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "unmatched_queries",
               "file": "app.py",
-              "line": 1521,
+              "line": 1529,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8770,7 +8770,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8786,7 +8786,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1557,
+              "line": 1565,
               "function": "search_knowledge"
             },
             {
@@ -8796,7 +8796,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1466,
+              "line": 1474,
               "function": "log_search"
             },
             {
@@ -8806,22 +8806,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1517,
+              "line": 1525,
               "function": "record_unmatched_query"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             }
           ],
@@ -8833,13 +8833,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1665,
+          "line": 1673,
           "function": "submit_search_feedback",
           "tables": [
             {
               "name": "search_feedback",
               "file": "app.py",
-              "line": 1688,
+              "line": 1696,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8851,7 +8851,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1665,
+              "line": 1673,
               "function": "submit_search_feedback"
             },
             {
@@ -8868,13 +8868,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1665,
+          "line": 1673,
           "function": "submit_search_feedback",
           "tables": [
             {
               "name": "search_feedback",
               "file": "app.py",
-              "line": 1688,
+              "line": 1696,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -8886,7 +8886,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1665,
+              "line": 1673,
               "function": "submit_search_feedback"
             },
             {
@@ -8903,13 +8903,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 3016,
+          "line": 3024,
           "function": "get_categories",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 3016,
+              "line": 3024,
               "function": "get_categories"
             }
           ],
@@ -8922,13 +8922,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3090,
+          "line": 3098,
           "function": "manage_synonyms",
           "tables": [
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3070,
+              "line": 3078,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8943,7 +8943,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3077,
+              "line": 3085,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -8997,17 +8997,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3090,
+              "line": 3098,
               "function": "manage_synonyms"
             },
             {
               "file": "app.py",
-              "line": 3068,
+              "line": 3076,
               "function": "load_synonyms"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9017,7 +9017,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3073,
+              "line": 3081,
               "function": "add_synonym"
             },
             {
@@ -9032,7 +9032,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -9049,13 +9049,13 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 3113,
+          "line": 3121,
           "function": "delete_synonym",
           "tables": [
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3119,
+              "line": 3127,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9070,7 +9070,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3070,
+              "line": 3078,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9124,17 +9124,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3113,
+              "line": 3121,
               "function": "delete_synonym"
             },
             {
               "file": "app.py",
-              "line": 3068,
+              "line": 3076,
               "function": "load_synonyms"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9144,7 +9144,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -9172,13 +9172,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3168,
+          "line": 3176,
           "function": "manage_rules",
           "tables": [
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3179,
+              "line": 3187,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9193,7 +9193,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9208,7 +9208,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_categories",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9262,17 +9262,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3168,
+              "line": 3176,
               "function": "manage_rules"
             },
             {
               "file": "app.py",
-              "line": 3131,
+              "line": 3139,
               "function": "load_rules"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9282,7 +9282,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -9297,7 +9297,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3138,
+              "line": 3146,
               "function": "parse_rule_payload"
             },
             {
@@ -9315,13 +9315,13 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 3195,
+          "line": 3203,
           "function": "update_or_delete_rule",
           "tables": [
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3204,
+              "line": 3212,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9336,7 +9336,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3217,
+              "line": 3225,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9351,7 +9351,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9366,7 +9366,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_categories",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9420,17 +9420,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3195,
+              "line": 3203,
               "function": "update_or_delete_rule"
             },
             {
               "file": "app.py",
-              "line": 3131,
+              "line": 3139,
               "function": "load_rules"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9440,7 +9440,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -9455,7 +9455,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3138,
+              "line": 3146,
               "function": "parse_rule_payload"
             },
             {
@@ -9539,7 +9539,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9638,7 +9638,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9717,7 +9717,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9772,15 +9772,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2953
+          "line": 2961
         },
         {
           "file": "static/index.html",
-          "line": 2977
+          "line": 2985
         },
         {
           "file": "static/index.html",
-          "line": 3050
+          "line": 3058
         },
         {
           "file": "static/js/campus-features.js",
@@ -9821,13 +9821,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 2739,
+          "line": 2747,
           "function": "manage_checklist_progress",
           "tables": [
             {
               "name": "checklist_progress",
               "file": "app.py",
-              "line": 2706,
+              "line": 2714,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -9838,7 +9838,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9853,7 +9853,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_progress",
               "file": "app.py",
-              "line": 2721,
+              "line": 2729,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -9865,17 +9865,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2739,
+              "line": 2747,
               "function": "manage_checklist_progress"
             },
             {
               "file": "app.py",
-              "line": 2703,
+              "line": 2711,
               "function": "load_checklist_progress"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9885,17 +9885,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 2716,
+              "line": 2724,
               "function": "save_checklist_step"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -9907,13 +9907,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 2774,
+          "line": 2782,
           "function": "get_my_applications",
           "tables": [
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9928,7 +9928,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_progress",
               "file": "app.py",
-              "line": 2706,
+              "line": 2714,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -9940,17 +9940,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2774,
+              "line": 2782,
               "function": "get_my_applications"
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -9960,12 +9960,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2703,
+              "line": 2711,
               "function": "load_checklist_progress"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -9978,13 +9978,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3021,
+          "line": 3029,
           "function": "manage_checklists",
           "tables": [
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 3051,
+              "line": 3059,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -9999,7 +9999,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -10053,17 +10053,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3021,
+              "line": 3029,
               "function": "manage_checklists"
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -10073,7 +10073,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -10138,7 +10138,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -10199,7 +10199,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -10209,7 +10209,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             }
           ],
@@ -10258,27 +10258,27 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1023
+          "line": 1031
         },
         {
           "file": "static/index.html",
-          "line": 3917
+          "line": 3928
         },
         {
           "file": "static/index.html",
-          "line": 3921
+          "line": 3932
         },
         {
           "file": "static/index.html",
-          "line": 3923
+          "line": 3934
         },
         {
           "file": "static/index.html",
-          "line": 4023
+          "line": 4034
         },
         {
           "file": "static/index.html",
-          "line": 4061
+          "line": 4072
         },
         {
           "file": "static/js/campus-features.js",
@@ -10314,23 +10314,23 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1147,
+          "line": 1155,
           "function": "get_current_week",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 1147,
+              "line": 1155,
               "function": "get_current_week"
             },
             {
               "file": "app.py",
-              "line": 1119,
+              "line": 1127,
               "function": "calendar_highlights"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             }
           ],
@@ -10343,13 +10343,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1221,
+          "line": 1229,
           "function": "manage_deadlines",
           "tables": [
             {
               "name": "deadlines",
               "file": "app.py",
-              "line": 1230,
+              "line": 1238,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -10364,7 +10364,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "deadlines",
               "file": "app.py",
-              "line": 1270,
+              "line": 1278,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -10418,27 +10418,27 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1221,
+              "line": 1229,
               "function": "manage_deadlines"
             },
             {
               "file": "app.py",
-              "line": 1173,
+              "line": 1181,
               "function": "_compute_deadline_status"
             },
             {
               "file": "app.py",
-              "line": 1165,
+              "line": 1173,
               "function": "_deadline_visible_to_role"
             },
             {
               "file": "app.py",
-              "line": 1211,
+              "line": 1219,
               "function": "normalize_deadline_row"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -10448,7 +10448,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -10475,13 +10475,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1346,
+          "line": 1354,
           "function": "get_calendar_now",
           "tables": [
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1303,
+              "line": 1311,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10492,7 +10492,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1307,
+              "line": 1315,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10504,17 +10504,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1346,
+              "line": 1354,
               "function": "get_calendar_now"
             },
             {
               "file": "app.py",
-              "line": 1296,
+              "line": 1304,
               "function": "fetch_calendar_events"
             },
             {
               "file": "app.py",
-              "line": 1288,
+              "line": 1296,
               "function": "normalize_calendar_row"
             },
             {
@@ -10532,13 +10532,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1374,
+          "line": 1382,
           "function": "manage_academic_calendar",
           "tables": [
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1388,
+              "line": 1396,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10549,7 +10549,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1303,
+              "line": 1311,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10560,7 +10560,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1307,
+              "line": 1315,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10610,17 +10610,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1374,
+              "line": 1382,
               "function": "manage_academic_calendar"
             },
             {
               "file": "app.py",
-              "line": 1296,
+              "line": 1304,
               "function": "fetch_calendar_events"
             },
             {
               "file": "app.py",
-              "line": 1288,
+              "line": 1296,
               "function": "normalize_calendar_row"
             },
             {
@@ -10640,7 +10640,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1316,
+              "line": 1324,
               "function": "parse_calendar_payload"
             },
             {
@@ -10658,13 +10658,24 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 1408,
+          "line": 1416,
           "function": "update_or_delete_academic_calendar",
           "tables": [
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1420,
+              "line": 1428,
+              "schema": [
+                {
+                  "file": "init_db.py",
+                  "line": 386
+                }
+              ]
+            },
+            {
+              "name": "academic_calendar",
+              "file": "app.py",
+              "line": 1442,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10686,18 +10697,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1426,
-              "schema": [
-                {
-                  "file": "init_db.py",
-                  "line": 386
-                }
-              ]
-            },
-            {
-              "name": "academic_calendar",
-              "file": "app.py",
-              "line": 1429,
+              "line": 1437,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -10747,7 +10747,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1408,
+              "line": 1416,
               "function": "update_or_delete_academic_calendar"
             },
             {
@@ -10767,12 +10767,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1288,
+              "line": 1296,
               "function": "normalize_calendar_row"
             },
             {
               "file": "app.py",
-              "line": 1316,
+              "line": 1324,
               "function": "parse_calendar_payload"
             },
             {
@@ -10789,13 +10789,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4012,
+          "line": 4020,
           "function": "get_school_calendar",
           "tables": [
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -10811,17 +10811,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4012,
+              "line": 4020,
               "function": "get_school_calendar"
             },
             {
               "file": "app.py",
-              "line": 3237,
+              "line": 3245,
               "function": "load_quick_links"
             },
             {
               "file": "app.py",
-              "line": 3984,
+              "line": 3992,
               "function": "_calendar_event_detail"
             },
             {
@@ -10831,12 +10831,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -10853,13 +10853,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 4035,
+          "line": 4043,
           "function": "sync_school_calendar",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 4035,
+              "line": 4043,
               "function": "sync_school_calendar"
             },
             {
@@ -11123,7 +11123,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1303,
+              "line": 1311,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11134,7 +11134,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "academic_calendar",
               "file": "app.py",
-              "line": 1307,
+              "line": 1315,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11211,7 +11211,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -11231,7 +11231,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -11251,7 +11251,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -11261,12 +11261,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1296,
+              "line": 1304,
               "function": "fetch_calendar_events"
             },
             {
               "file": "app.py",
-              "line": 1288,
+              "line": 1296,
               "function": "normalize_calendar_row"
             },
             {
@@ -11333,7 +11333,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -11353,7 +11353,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -11443,7 +11443,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -11458,7 +11458,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -11544,31 +11544,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1000
+          "line": 1008
         },
         {
           "file": "static/index.html",
-          "line": 1764
+          "line": 1772
         },
         {
           "file": "static/index.html",
-          "line": 2537
+          "line": 2545
         },
         {
           "file": "static/index.html",
-          "line": 2933
+          "line": 2941
         },
         {
           "file": "static/index.html",
-          "line": 3292
+          "line": 3300
         },
         {
           "file": "static/index.html",
-          "line": 3329
+          "line": 3337
         },
         {
           "file": "static/index.html",
-          "line": 4519
+          "line": 4530
         },
         {
           "file": "static/js/campus-features.js",
@@ -11584,11 +11584,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 450
+          "line": 466
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 493
+          "line": 509
         }
       ]
     },
@@ -11604,13 +11604,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 3481,
+          "line": 3489,
           "function": "match_scholarships",
           "tables": [
             {
               "name": "scholarships",
               "file": "app.py",
-              "line": 3331,
+              "line": 3339,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11621,7 +11621,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 3369,
+              "line": 3377,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11636,7 +11636,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 3360,
+              "line": 3368,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11651,7 +11651,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 3339,
+              "line": 3347,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11667,42 +11667,42 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3481,
+              "line": 3489,
               "function": "match_scholarships"
             },
             {
               "file": "app.py",
-              "line": 3324,
+              "line": 3332,
               "function": "_split_list"
             },
             {
               "file": "app.py",
-              "line": 3411,
+              "line": 3419,
               "function": "evaluate_scholarship"
             },
             {
               "file": "app.py",
-              "line": 3407,
+              "line": 3415,
               "function": "_fmt"
             },
             {
               "file": "app.py",
-              "line": 3330,
+              "line": 3338,
               "function": "load_scholarships"
             },
             {
               "file": "app.py",
-              "line": 3320,
+              "line": 3328,
               "function": "_num"
             },
             {
               "file": "app.py",
-              "line": 3327,
+              "line": 3335,
               "function": "_date_str"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -11712,27 +11712,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3368,
+              "line": 3376,
               "function": "department_names"
             },
             {
               "file": "app.py",
-              "line": 3358,
+              "line": 3366,
               "function": "latest_semester_fails"
             },
             {
               "file": "app.py",
-              "line": 3337,
+              "line": 3345,
               "function": "load_scholarship_profile"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -11744,13 +11744,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3584,
+          "line": 3592,
           "function": "notify_scholarship_and_warning",
           "tables": [
             {
               "name": "notification_log",
               "file": "app.py",
-              "line": 3545,
+              "line": 3553,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11761,7 +11761,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "notification_log",
               "file": "app.py",
-              "line": 3554,
+              "line": 3562,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11772,7 +11772,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 3360,
+              "line": 3368,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11787,7 +11787,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11802,7 +11802,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 3339,
+              "line": 3347,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11817,7 +11817,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "users",
               "file": "app.py",
-              "line": 3537,
+              "line": 3545,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11832,7 +11832,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11843,7 +11843,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11858,7 +11858,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "scholarships",
               "file": "app.py",
-              "line": 3331,
+              "line": 3339,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -11869,7 +11869,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "departments",
               "file": "app.py",
-              "line": 3369,
+              "line": 3377,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -11885,22 +11885,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3584,
+              "line": 3592,
               "function": "notify_scholarship_and_warning"
             },
             {
               "file": "app.py",
-              "line": 3411,
+              "line": 3419,
               "function": "evaluate_scholarship"
             },
             {
               "file": "app.py",
-              "line": 3407,
+              "line": 3415,
               "function": "_fmt"
             },
             {
               "file": "app.py",
-              "line": 3324,
+              "line": 3332,
               "function": "_split_list"
             },
             {
@@ -11910,17 +11910,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3569,
+              "line": 3577,
               "function": "_notify_once"
             },
             {
               "file": "app.py",
-              "line": 3543,
+              "line": 3551,
               "function": "already_notified"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -11930,72 +11930,72 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3552,
+              "line": 3560,
               "function": "mark_notified"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
               "file": "app.py",
-              "line": 3560,
+              "line": 3568,
               "function": "_send_once"
             },
             {
               "file": "app.py",
-              "line": 3358,
+              "line": 3366,
               "function": "latest_semester_fails"
             },
             {
               "file": "app.py",
-              "line": 2899,
+              "line": 2907,
               "function": "compute_early_warning"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 3337,
+              "line": 3345,
               "function": "load_scholarship_profile"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
               "file": "app.py",
-              "line": 3320,
+              "line": 3328,
               "function": "_num"
             },
             {
               "file": "app.py",
-              "line": 3535,
+              "line": 3543,
               "function": "find_parent_account"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -12015,17 +12015,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3330,
+              "line": 3338,
               "function": "load_scholarships"
             },
             {
               "file": "app.py",
-              "line": 3327,
+              "line": 3335,
               "function": "_date_str"
             },
             {
               "file": "app.py",
-              "line": 3368,
+              "line": 3376,
               "function": "department_names"
             },
             {
@@ -12048,7 +12048,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1907
+          "line": 1915
         },
         {
           "file": "static/js/campus-life.js",
@@ -12894,7 +12894,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -12949,7 +12949,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -13353,7 +13353,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -13403,7 +13403,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -13448,7 +13448,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -13522,7 +13522,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 467
+          "line": 483
         }
       ]
     },
@@ -13539,7 +13539,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 3273,
+          "line": 3281,
           "function": "manage_quick_links",
           "tables": [
             {
@@ -13584,22 +13584,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3273,
+              "line": 3281,
               "function": "manage_quick_links"
             },
             {
               "file": "app.py",
-              "line": 3243,
+              "line": 3251,
               "function": "save_quick_links"
             },
             {
               "file": "app.py",
-              "line": 3250,
+              "line": 3258,
               "function": "parse_link_payload"
             },
             {
               "file": "app.py",
-              "line": 3237,
+              "line": 3245,
               "function": "load_quick_links"
             },
             {
@@ -13632,7 +13632,7 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 3290,
+          "line": 3298,
           "function": "update_or_delete_quick_link",
           "tables": [
             {
@@ -13677,7 +13677,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3290,
+              "line": 3298,
               "function": "update_or_delete_quick_link"
             },
             {
@@ -13697,17 +13697,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3243,
+              "line": 3251,
               "function": "save_quick_links"
             },
             {
               "file": "app.py",
-              "line": 3250,
+              "line": 3258,
               "function": "parse_link_payload"
             },
             {
               "file": "app.py",
-              "line": 3237,
+              "line": 3245,
               "function": "load_quick_links"
             },
             {
@@ -13746,11 +13746,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2056
+          "line": 2064
         },
         {
           "file": "static/index.html",
-          "line": 2460
+          "line": 2468
         },
         {
           "file": "static/js/home-portal.js",
@@ -13995,7 +13995,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -14010,7 +14010,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -14217,7 +14217,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -14237,7 +14237,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -14423,7 +14423,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -14443,7 +14443,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -14599,7 +14599,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -14609,7 +14609,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -14815,7 +14815,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -14835,7 +14835,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -15084,7 +15084,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15104,7 +15104,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -15182,7 +15182,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15315,7 +15315,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15350,7 +15350,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -15487,7 +15487,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -15497,7 +15497,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15570,7 +15570,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15660,7 +15660,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 519
+          "line": 535
         }
       ]
     },
@@ -15677,13 +15677,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 2825,
+          "line": 2833,
           "function": "manage_privacy_consent",
           "tables": [
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2846,
+              "line": 2854,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -15694,7 +15694,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -15744,17 +15744,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2825,
+              "line": 2833,
               "function": "manage_privacy_consent"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15774,12 +15774,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             },
             {
@@ -15797,13 +15797,13 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "app.py",
-          "line": 2863,
+          "line": 2871,
           "function": "manage_emergency_contact",
           "tables": [
             {
               "name": "students",
               "file": "app.py",
-              "line": 2884,
+              "line": 2892,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -15818,7 +15818,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2877,
+              "line": 2885,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -15834,12 +15834,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 2863,
+              "line": 2871,
               "function": "manage_emergency_contact"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -15849,12 +15849,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
               "file": "app.py",
-              "line": 1949,
+              "line": 1957,
               "function": "current_student_id"
             }
           ],
@@ -15866,13 +15866,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 3373,
+          "line": 3381,
           "function": "list_departments_with_intro",
           "tables": [
             {
               "name": "departments",
               "file": "app.py",
-              "line": 3375,
+              "line": 3383,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -15888,12 +15888,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 3373,
+              "line": 3381,
               "function": "list_departments_with_intro"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -15980,7 +15980,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -16000,7 +16000,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16020,19 +16020,19 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4474
+          "line": 4485
         },
         {
           "file": "static/index.html",
-          "line": 4483
+          "line": 4494
         },
         {
           "file": "static/index.html",
-          "line": 4498
+          "line": 4509
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 735
+          "line": 751
         },
         {
           "file": "static/js/dept-scope.js",
@@ -16100,7 +16100,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16171,7 +16171,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16186,7 +16186,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -16252,7 +16252,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16360,7 +16360,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -16476,7 +16476,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16486,7 +16486,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -16607,7 +16607,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -16642,7 +16642,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -16797,15 +16797,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 782
-        },
-        {
-          "file": "static/js/campus-shell.js",
           "line": 798
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 806
+          "line": 814
+        },
+        {
+          "file": "static/js/campus-shell.js",
+          "line": 822
         }
       ]
     },
@@ -16927,7 +16927,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -16953,12 +16953,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17216,7 +17216,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17236,12 +17236,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -17353,7 +17353,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17470,7 +17470,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17539,7 +17539,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17851,7 +17851,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -17871,7 +17871,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -18110,7 +18110,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -18125,7 +18125,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -18374,7 +18374,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -18389,7 +18389,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -18575,7 +18575,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -18595,7 +18595,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -18786,7 +18786,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -18806,7 +18806,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -18998,7 +18998,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -19053,7 +19053,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -19323,7 +19323,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -19338,7 +19338,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -19553,7 +19553,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -19573,7 +19573,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -19731,7 +19731,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -19751,7 +19751,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -19813,7 +19813,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 364
+          "line": 380
         },
         {
           "file": "static/js/home-portal.js",
@@ -19992,7 +19992,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -20007,7 +20007,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -20028,11 +20028,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 281
+          "line": 297
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 317
+          "line": 333
         },
         {
           "file": "static/js/tour.js",
@@ -20146,7 +20146,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -20261,7 +20261,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -20418,7 +20418,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -20561,7 +20561,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23282,13 +23282,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1709,
+          "line": 1717,
           "function": "get_missed_queries",
           "tables": [
             {
               "name": "search_logs",
               "file": "app.py",
-              "line": 1711,
+              "line": 1719,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23299,7 +23299,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "search_feedback",
               "file": "app.py",
-              "line": 1712,
+              "line": 1720,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23311,12 +23311,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1709,
+              "line": 1717,
               "function": "get_missed_queries"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23338,13 +23338,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1741,
+          "line": 1749,
           "function": "get_search_stats",
           "tables": [
             {
               "name": "search_logs",
               "file": "app.py",
-              "line": 1746,
+              "line": 1754,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23356,12 +23356,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1741,
+              "line": 1749,
               "function": "get_search_stats"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23383,13 +23383,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1766,
+          "line": 1774,
           "function": "get_unmatched_queries",
           "tables": [
             {
               "name": "unmatched_queries",
               "file": "app.py",
-              "line": 1546,
+              "line": 1554,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23401,17 +23401,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1766,
+              "line": 1774,
               "function": "get_unmatched_queries"
             },
             {
               "file": "app.py",
-              "line": 1545,
+              "line": 1553,
               "function": "load_unmatched_queries"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23433,13 +23433,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1772,
+          "line": 1780,
           "function": "convert_unmatched_to_synonym",
           "tables": [
             {
               "name": "unmatched_queries",
               "file": "app.py",
-              "line": 1791,
+              "line": 1799,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23450,7 +23450,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3077,
+              "line": 3085,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23504,12 +23504,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1772,
+              "line": 1780,
               "function": "convert_unmatched_to_synonym"
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -23519,7 +23519,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 3073,
+              "line": 3081,
               "function": "add_synonym"
             },
             {
@@ -23546,13 +23546,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1806,
+          "line": 1814,
           "function": "get_audit_logs",
           "tables": [
             {
               "name": "audit_logs",
               "file": "app.py",
-              "line": 1808,
+              "line": 1816,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23572,12 +23572,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1806,
+              "line": 1814,
               "function": "get_audit_logs"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23599,13 +23599,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "app.py",
-          "line": 1825,
+          "line": 1833,
           "function": "run_self_check",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 1825,
+              "line": 1833,
               "function": "run_self_check"
             },
             {
@@ -23622,13 +23622,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1855,
+          "line": 1863,
           "function": "get_visitor_logs",
           "tables": [
             {
               "name": "visitor_logs",
               "file": "app.py",
-              "line": 1835,
+              "line": 1843,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23644,22 +23644,22 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1855,
+              "line": 1863,
               "function": "get_visitor_logs"
             },
             {
               "file": "app.py",
-              "line": 1842,
+              "line": 1850,
               "function": "mask_phone"
             },
             {
               "file": "app.py",
-              "line": 1832,
+              "line": 1840,
               "function": "load_visitor_logs"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23669,7 +23669,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1847,
+              "line": 1855,
               "function": "_visitor_days"
             },
             {
@@ -23686,7 +23686,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1879,
+          "line": 1887,
           "function": "export_visitor_logs",
           "tables": [
             {
@@ -23730,7 +23730,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "visitor_logs",
               "file": "app.py",
-              "line": 1835,
+              "line": 1843,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23746,7 +23746,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1879,
+              "line": 1887,
               "function": "export_visitor_logs"
             },
             {
@@ -23766,17 +23766,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1832,
+              "line": 1840,
               "function": "load_visitor_logs"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
               "file": "app.py",
-              "line": 1847,
+              "line": 1855,
               "function": "_visitor_days"
             },
             {
@@ -23793,13 +23793,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 1894,
+          "line": 1902,
           "function": "get_search_feedback_stats",
           "tables": [
             {
               "name": "search_feedback",
               "file": "app.py",
-              "line": 1896,
+              "line": 1904,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23811,12 +23811,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 1894,
+              "line": 1902,
               "function": "get_search_feedback_stats"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -23838,13 +23838,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 3403,
+          "line": 3411,
           "function": "list_visitor_faq",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 3403,
+              "line": 3411,
               "function": "list_visitor_faq"
             }
           ],
@@ -23856,13 +23856,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4052,
+          "line": 4060,
           "function": "health_check",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 4052,
+              "line": 4060,
               "function": "health_check"
             },
             {
@@ -23884,13 +23884,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4072,
+          "line": 4080,
           "function": "get_stats",
           "tables": [
             {
               "name": "unmatched_queries",
               "file": "app.py",
-              "line": 1546,
+              "line": 1554,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -23901,7 +23901,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23916,7 +23916,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "synonym_dictionary",
               "file": "app.py",
-              "line": 3070,
+              "line": 3078,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23931,7 +23931,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_base",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23946,7 +23946,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "knowledge_categories",
               "file": "app.py",
-              "line": 3134,
+              "line": 3142,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -23962,7 +23962,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4072,
+              "line": 4080,
               "function": "get_stats"
             },
             {
@@ -23977,27 +23977,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1545,
+              "line": 1553,
               "function": "load_unmatched_queries"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 3068,
+              "line": 3076,
               "function": "load_synonyms"
             },
             {
               "file": "app.py",
-              "line": 3131,
+              "line": 3139,
               "function": "load_rules"
             }
           ],
@@ -24010,13 +24010,13 @@ window.FEATURE_GUIDE = {
             "DELETE"
           ],
           "file": "app.py",
-          "line": 4241,
+          "line": 4249,
           "function": "link_moodle",
           "tables": [],
           "files": [
             {
               "file": "app.py",
-              "line": 4241,
+              "line": 4249,
               "function": "link_moodle"
             },
             {
@@ -24058,13 +24058,13 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "app.py",
-          "line": 4452,
+          "line": 4460,
           "function": "staff_alerts",
           "tables": [
             {
               "name": "student_privacy_settings",
               "file": "app.py",
-              "line": 2815,
+              "line": 2823,
               "schema": [
                 {
                   "file": "init_db.py",
@@ -24075,7 +24075,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "student_credits",
               "file": "app.py",
-              "line": 1941,
+              "line": 1949,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -24255,7 +24255,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -24270,7 +24270,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 2420,
+              "line": 2428,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -24286,17 +24286,17 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "app.py",
-              "line": 4452,
+              "line": 4460,
               "function": "staff_alerts"
             },
             {
               "file": "app.py",
-              "line": 2812,
+              "line": 2820,
               "function": "load_privacy_settings"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -24306,27 +24306,27 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2899,
+              "line": 2907,
               "function": "compute_early_warning"
             },
             {
               "file": "app.py",
-              "line": 1932,
+              "line": 1940,
               "function": "load_course_map"
             },
             {
               "file": "app.py",
-              "line": 1965,
+              "line": 1973,
               "function": "summarize_credits"
             },
             {
               "file": "app.py",
-              "line": 1938,
+              "line": 1946,
               "function": "load_student_credits"
             },
             {
               "file": "app.py",
-              "line": 4212,
+              "line": 4220,
               "function": "get_dashboard_source"
             },
             {
@@ -24341,17 +24341,17 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
               "file": "app.py",
-              "line": 4341,
+              "line": 4349,
               "function": "reviewable_student_ids"
             },
             {
               "file": "app.py",
-              "line": 2419,
+              "line": 2427,
               "function": "_get_class_student_ids"
             },
             {
@@ -24396,7 +24396,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -24462,7 +24462,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -24488,7 +24488,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -24508,12 +24508,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -24538,7 +24538,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -24658,7 +24658,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -24684,7 +24684,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -24724,7 +24724,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -24739,12 +24739,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -24769,7 +24769,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
@@ -24992,11 +24992,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3236
+          "line": 3244
         },
         {
           "file": "static/index.html",
-          "line": 3261
+          "line": 3269
         },
         {
           "file": "static/js/admin-core.js",
@@ -25128,11 +25128,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 578
+          "line": 594
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 736
+          "line": 752
         }
       ]
     },
@@ -25154,7 +25154,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -25185,12 +25185,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -25240,7 +25240,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -25344,7 +25344,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "checklist_items",
               "file": "app.py",
-              "line": 2694,
+              "line": 2702,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -25385,7 +25385,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -25415,7 +25415,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -25430,7 +25430,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 2692,
+              "line": 2700,
               "function": "load_checklists"
             }
           ],
@@ -25529,7 +25529,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -25559,7 +25559,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             }
           ],
@@ -25619,7 +25619,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -25718,7 +25718,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -25743,7 +25743,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4618,
+              "line": 4626,
               "function": "notify_student"
             },
             {
@@ -25778,7 +25778,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -26876,7 +26876,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -26952,7 +26952,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27181,12 +27181,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -27206,7 +27206,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27249,7 +27249,7 @@ window.FEATURE_GUIDE = {
             {
               "name": "students",
               "file": "app.py",
-              "line": 4098,
+              "line": 4106,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -27270,12 +27270,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4097,
+              "line": 4105,
               "function": "list_students"
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27362,12 +27362,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -27387,7 +27387,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27533,12 +27533,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -27558,7 +27558,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27593,7 +27593,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -27730,12 +27730,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -27755,7 +27755,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27775,7 +27775,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {
@@ -27916,12 +27916,12 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 4640,
+              "line": 4648,
               "function": "term_of"
             },
             {
               "file": "app.py",
-              "line": 1091,
+              "line": 1099,
               "function": "current_academic_term"
             },
             {
@@ -27941,7 +27941,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1486,
+              "line": 1494,
               "function": "fetch_db_rows"
             },
             {
@@ -27976,7 +27976,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "app.py",
-              "line": 1502,
+              "line": 1510,
               "function": "db_execute"
             },
             {

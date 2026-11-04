@@ -260,6 +260,7 @@ PUT,/api/line/menu,/api/line/menu,,LIFF 端更新我的常用功能,401,401,401,
 GET,/liff/menu,/liff/menu,,設定常用功能 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
 GET,/api/line/schedule,/api/line/schedule,,LIFF 端讀取我的課表,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 GET,/liff/schedule,/liff/schedule,,我的課表 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
+GET,/liff/favorites,/liff/favorites,,我的常用功能 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
 GET,/api/line/oa,/api/line/oa,,LINE 官方帳號加好友資訊,OK,OK,OK,OK,OK,OK,OK,公開資訊，不含任何登入狀態
 GET,/api/line/oa-qr.svg,/api/line/oa-qr.svg,,LINE 官方帳號加好友 QR Code,OK,OK,OK,OK,OK,OK,OK,公開資訊，不含任何登入狀態
 GET,/api/applications/form/<int:item_id>,/api/applications/form/999999,,線上申辦表單欄位,OK,OK,OK,OK,OK,OK,OK,

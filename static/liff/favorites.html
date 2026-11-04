@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的常用功能｜Smart UKN</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: #f4f5f3; color: #1f2937; }
+  header { background: #16503f; color: #fff; padding: 14px 16px; font-weight: 700; }
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .muted { color: #64748b; font-size: 13px; }
+  .msg { font-size: 13px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .msg.error { background: #fef2f2; color: #b91c1c; }
+  a.fav-link { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #f1f5f9; color: #1f2937; text-decoration: none; font-size: 15px; }
+  a.fav-link:last-child { border-bottom: 0; }
+  a.fav-link .arrow { color: #94a3b8; }
+  a.link-btn { display: block; text-align: center; background: #16503f; color: #fff; text-decoration: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
+  #hint { font-size: 12px; color: #94a3b8; text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+<header>Smart UKN · 我的常用功能</header>
+<main>
+  <div id="hint">連接 LINE 中…</div>
+  <div id="app" hidden></div>
+</main>
+<script>
+// 跟 static/liff/menu.html 用同一份對照表，key 要跟網站 static/js/campus-shell.js 的 FEATURES 對齊。
+const CATALOG = [
+  { key: 'calendar', name: '📅 行事曆' },
+  { key: 'course-plan', name: '🧮 選課檢查' },
+  { key: 'course', name: '📚 修業進度與擋修' },
+  { key: 'graduation', name: '🎓 畢業門檻' },
+  { key: 'certs', name: '🏅 證照與競賽成果' },
+  { key: 'warning', name: '⚠️ 學業預警' },
+  { key: 'retake', name: '🔁 重補修推薦' },
+  { key: 'conduct', name: '🎖️ 我的操行' },
+  { key: 'rules', name: '💬 AI 智慧校規' },
+  { key: 'checklist', name: '📝 行政申請流程' },
+  { key: 'scholarship', name: '💰 獎助學金檢核' },
+  { key: 'services', name: '🏢 宿舍與總務申請' },
+  { key: 'reports', name: '📄 報表與文件下載' },
+  { key: 'rent', name: '🔑 教室與櫃子租借' },
+  { key: 'events', name: '🎉 活動報名' },
+  { key: 'map', name: '🗺️ 校園地圖與老師辦公室' },
+  { key: 'traffic', name: '🚌 天氣與交通' },
+  { key: 'notices', name: '📣 班級通知' },
+  { key: 'meetings', name: '🎥 線上會議' },
+  { key: 'my-schedule', name: '🗓️ 我的課表（老師）' },
+  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）' },
+];
+const TAB_OF = { calendar: 'tab-calendar', 'course-plan': 'tab-plan', course: 'tab-course', graduation: 'tab-graduation',
+  certs: 'tab-certs', warning: 'tab-warning', retake: 'tab-retake', conduct: 'tab-conduct', rules: 'tab-ai',
+  checklist: 'tab-checklist', scholarship: 'tab-scholarship', services: 'tab-services', reports: 'tab-reports',
+  rent: 'tab-rent', events: 'tab-events', map: 'tab-map', traffic: 'tab-traffic', notices: 'tab-notices',
+  meetings: 'tab-meetings', 'my-schedule': 'tab-myschedule', 'my-class': 'tab-myclass' };
+
+const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
+let idToken = '';
+
+function show(html) {
+  document.getElementById('hint').hidden = true;
+  const app = document.getElementById('app');
+  app.hidden = false;
+  app.innerHTML = html;
+}
+
+async function call(path) {
+  const res = await fetch(path, { headers: { 'X-Line-Id-Token': idToken } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.status === 'error') throw new Error(body.message || '發生錯誤');
+  return body;
+}
+
+function renderBindPrompt(message) {
+  show(`
+    <div class="card">
+      <p>這個 LINE 帳號還沒綁定 Smart UKN 帳號，請先到 LINE 選單「設定常用功能」完成綁定。</p>
+      ${message ? `<div class="msg error">${message}</div>` : ''}
+    </div>`);
+}
+
+function renderFavorites(data) {
+  const pinned = (data.pinned || []).map(key => CATALOG.find(f => f.key === key)).filter(Boolean);
+  const body = pinned.length
+    ? pinned.map(f => `<a class="fav-link" href="/#${TAB_OF[f.key] || ''}" target="_top"><span>${f.name}</span><span class="arrow">›</span></a>`).join('')
+    : '<p class="muted">還沒有設定常用功能，點下面的按鈕去選幾項吧。</p>';
+  show(`
+    <div class="card">
+      <p class="muted">點項目直接開到網站上對應的功能（需要先登入網站帳號）。</p>
+      ${body}
+    </div>
+    <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
+}
+
+async function loadFavorites() {
+  try {
+    const res = await call('/api/line/menu');
+    if (res.data.bound) renderFavorites(res.data);
+    else renderBindPrompt();
+  } catch (e) {
+    renderBindPrompt(e.message);
+  }
+}
+
+(async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    idToken = liff.getIDToken();
+    if (!idToken) { show('<div class="card msg error">無法取得 LINE 身分權杖，請關閉後重新從選單打開。</div>'); return; }
+    await loadFavorites();
+  } catch (e) {
+    show(`<div class="card msg error">LIFF 初始化失敗：${e.message}</div>`);
+  }
+})();
+</script>
+</body>
+</html>
