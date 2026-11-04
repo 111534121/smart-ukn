@@ -197,6 +197,8 @@ def login_required(f):
     def wrapper(*args, **kwargs):
         if "username" not in session:
             return jsonify({"status": "error", "message": "請先登入系統"}), 401
+        if session.get("is_active") == 0:
+            return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
         return f(*args, **kwargs)
     return wrapper
 
@@ -207,6 +209,8 @@ def role_required(*allowed_roles):
         def wrapper(*args, **kwargs):
             if "username" not in session:
                 return jsonify({"status": "error", "message": "請先登入系統"}), 401
+            if session.get("is_active") == 0:
+                return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
             if session.get("role") not in allowed_roles:
                 return jsonify({"status": "error", "message": "權限不足，僅限特定身分存取"}), 403
             return f(*args, **kwargs)
@@ -221,6 +225,8 @@ def write_roles_required(*allowed_roles):
             if request.method not in ("GET", "HEAD", "OPTIONS"):
                 if "username" not in session:
                     return jsonify({"status": "error", "message": "請先登入系統"}), 401
+                if session.get("is_active") == 0:
+                    return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
                 if session.get("role") not in allowed_roles:
                     return jsonify({"status": "error", "message": "權限不足"}), 403
             return f(*args, **kwargs)
@@ -882,6 +888,7 @@ def auth_login():
 
     conn = get_db_connection()
     user_record = None
+    found_username_in_db = False
 
     if conn:
         try:
@@ -900,14 +907,36 @@ def auth_login():
             candidate = cursor.fetchone()
             cursor.close()
             conn.close()
-            if candidate and check_password_hash(candidate["password_hash"], password):
-                user_record = candidate
+            if candidate:
+                found_username_in_db = True
+                if check_password_hash(candidate["password_hash"], password):
+                    user_record = candidate
         except Exception:
             if conn: conn.close()
 
-    # 不管 MySQL 有沒有連上，只要上面沒找到或密碼對不起來，都回退檢查示範帳號清單
-    # (之前這裡多了 `and conn is None`，MySQL 一連上示範限定帳號如 dorm_demo 就整個登不進去)
-    if not user_record:
+    # MySQL 未找到帳號時，查詢持久化的 SQLite 備援帳號。
+    if not user_record and not found_username_in_db and not app.config.get("TESTING"):
+        try:
+            import admin_db
+            candidates = admin_db.query_db(
+                "SELECT * FROM users WHERE LOWER(username) = %s OR (student_id = %s AND role = '學生') LIMIT 1",
+                (username_key, username.upper()),
+            )
+            if candidates:
+                found_username_in_db = True
+                candidate = candidates[0]
+                if check_password_hash(candidate["password_hash"], password):
+                    user_record = dict(candidate)
+                    if candidate.get("student_id"):
+                        stu = next((s for s in DEMO_STUDENTS if s["student_id"] == candidate["student_id"]), None)
+                        if stu:
+                            user_record.setdefault("dept_id", stu["dept_id"])
+                            user_record.setdefault("class_name", stu["class_name"])
+                            user_record.setdefault("dept_name", stu.get("dept_name", "資訊管理科（五專）"))
+        except Exception:
+            pass
+
+    if not user_record and not found_username_in_db:
         for u in sorted(DEMO_USERS, key=lambda x: x["username"].lower() != username_key):
             is_login_name = u["username"].lower() == username_key or (u.get("student_id") == username.upper() and u["role"] == "學生")
             if is_login_name and check_password_hash(u["password_hash"], password):
@@ -921,12 +950,17 @@ def auth_login():
                 break
 
     if user_record:
+        if user_record.get("is_active") is not None and int(user_record["is_active"]) == 0:
+            return jsonify({"status": "error", "message": "此帳號已停用，請洽系統管理員"}), 403
         _clear_login_failures(ip)
         session.clear()
         session.permanent = data.get("remember", True) is not False
         session["user_id"] = user_record["user_id"]
         session["username"] = user_record["username"]
         session["role"] = user_record["role"]
+        session["is_active"] = user_record.get("is_active", 1)
+        session["permissions"] = user_record.get("permissions")
+        session["office"] = user_record.get("office", "")
         session["full_name"] = user_record["full_name"]
         session["student_id"] = user_record.get("student_id")
         session["dept_id"] = user_record.get("dept_id", "CS")
@@ -942,6 +976,8 @@ def auth_login():
                 "user_id": user_record["user_id"],
                 "username": user_record["username"],
                 "role": user_record["role"],
+                "permissions": user_record.get("permissions"),
+                "office": user_record.get("office", ""),
                 "workbench_url": "/admin-workbench" if user_record["role"] in ('處室承辦','科助','住宿管理員') else "/",
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
@@ -969,6 +1005,8 @@ def auth_me():
                 "user_id": session.get("user_id"),
                 "username": session.get("username"),
                 "role": session.get("role"),
+                "permissions": session.get("permissions"),
+                "office": session.get("office", ""),
                 "full_name": session.get("full_name"),
                 "student_id": session.get("student_id"),
                 "dept_name": session.get("dept_name", "資訊管理科（五專）"),

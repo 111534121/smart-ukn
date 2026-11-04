@@ -31,24 +31,120 @@ import admin_db
 
 bp = Blueprint("admin_core", __name__)
 
+SYS_ADMIN_ROLES = ("系統管理員", "管理員")
+CONTENT_MANAGER_ROLES = ("內容管理人員",)
+ALL_ADMIN_ROLES = SYS_ADMIN_ROLES + CONTENT_MANAGER_ROLES
+
+
+def _default_permissions_for_role(role):
+    if role in SYS_ADMIN_ROLES:
+        return "查看,建立,修改,帳號管理,權限設定"
+    if role in CONTENT_MANAGER_ROLES:
+        return "查看,建立,修改"
+    return "查看"
+
+
+def _sanitize_permissions(role, perms_raw):
+    if isinstance(perms_raw, list):
+        perms = [str(p).strip() for p in perms_raw if str(p).strip()]
+    elif isinstance(perms_raw, str) and perms_raw.strip():
+        perms = [p.strip() for p in perms_raw.split(",") if p.strip()]
+    else:
+        perms = _default_permissions_for_role(role).split(",")
+    # 內容管理人員絕對不可擁有帳號管理或權限設定
+    if role not in SYS_ADMIN_ROLES:
+        perms = [p for p in perms if p not in ("帳號管理", "權限設定")]
+    if not perms:
+        perms = ["查看"]
+    # 去重並維持固定順序
+    ordered = []
+    for p in ("查看", "建立", "修改", "帳號管理", "權限設定"):
+        if p in perms and p not in ordered:
+            ordered.append(p)
+    for p in perms:
+        if p not in ordered:
+            ordered.append(p)
+    return ",".join(ordered)
+
+
+def _get_effective_role():
+    """只從已登入的 Session 取得角色；管理員可預覽較低權限。"""
+    role = session.get("role")
+    header_role = request.headers.get("X-Admin-Role", "").strip()
+    if not session.get("username"):
+        return None
+    if role:
+        # 若管理員於後台切換預覽「內容管理人員」視角，以 Header 嚴格降權測試
+        if role in SYS_ADMIN_ROLES and header_role == "內容管理人員":
+            return "內容管理人員"
+        return role
+    return None
+
+
 def _get_current_actor():
     """取得操作者姓名、身分角色與 IP"""
     username = session.get("username")
     full_name = session.get("full_name") or username or "系統管理員"
-    role = session.get("role") or "管理員"
+    role = _get_effective_role() or "系統管理員"
     ip = request.remote_addr or "127.0.0.1"
     return full_name, role, ip
 
+
+def _check_user_active_and_perms(required_perm=None):
+    """檢查登入帳號是否啟用及是否具備指定權限（查看／建立／修改）"""
+    username = session.get("username")
+    if username:
+        row = admin_db.query_one("SELECT is_active, permissions, role FROM users WHERE username = %s", (username,))
+        if row:
+            if row.get("is_active") is not None and int(row.get("is_active")) == 0:
+                return False, "此帳號已停用，請洽系統管理員"
+            if required_perm:
+                perms_str = row.get("permissions") or _default_permissions_for_role(row.get("role"))
+                perms = [p.strip() for p in str(perms_str).split(",") if p.strip()]
+                if required_perm not in perms:
+                    return False, f"權限不足：您的帳號未開放「{required_perm}」權限"
+    return True, None
+
+
 def admin_required(f):
-    """所有管理資料與稽核端點只允許已登入的管理員。"""
+    """後台共用權限裝飾器（系統管理員與內容管理人員皆可存取，但依 HTTP 方法檢查查看／建立／修改權限）"""
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not session.get("username"):
-            return jsonify({"status": "error", "message": "請先登入"}), 401
-        if session.get("role") != "管理員":
-            return jsonify({"status": "error", "message": "權限不足，僅限管理員存取"}), 403
+        role = _get_effective_role()
+        if not role:
+            return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
+        if role not in ALL_ADMIN_ROLES:
+            return jsonify({"status": "error", "message": "權限不足，僅限系統管理員或內容管理人員存取"}), 403
+        req_perm = "查看"
+        if request.method == "POST":
+            req_perm = "建立"
+        elif request.method in ("PUT", "DELETE"):
+            req_perm = "修改"
+        ok_perm, err_msg = _check_user_active_and_perms(req_perm)
+        if not ok_perm:
+            return jsonify({"status": "error", "message": err_msg}), 403
         return f(*args, **kwargs)
     return wrapper
+
+
+def sys_admin_required(f):
+    """系統管理員專用裝飾器：內容管理人員不可管理帳號或修改權限"""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        role = _get_effective_role()
+        if not role:
+            return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
+        if role not in SYS_ADMIN_ROLES:
+            return jsonify({
+                "status": "error",
+                "message": "權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作"
+            }), 403
+        ok_perm, err_msg = _check_user_active_and_perms("修改" if request.method != "GET" else "查看")
+        if not ok_perm:
+            return jsonify({"status": "error", "message": err_msg}), 403
+        return f(*args, **kwargs)
+    return wrapper
+
 
 # ==========================================
 # 資料庫連線狀態與總覽統計 (/api/admin/db-status)
@@ -60,9 +156,12 @@ def get_db_status():
     counts = {}
     tables = [
         "users", "departments", "course_map", "graduation_requirements",
-        "knowledge_categories", "synonym_dictionary", "audit_logs",
-        "search_logs", "unmatched_queries", "visitor_logs",
-        "student_credits", "attendance_records", "student_records"
+        "knowledge_categories", "knowledge_base", "synonym_dictionary",
+        "checklist_items", "deadlines", "academic_calendar",
+        "audit_logs", "search_logs", "search_feedback",
+        "unmatched_queries", "visitor_logs",
+        "student_credits", "attendance_records", "student_records",
+        "anniversary_events", "anniversary_wishes"
     ]
     for t in tables:
         try:
@@ -85,17 +184,19 @@ def get_db_status():
 # =========================================================================
 
 # -------------------------------------------------------------------------
-# 1. users（系統帳號與權限）
+# 1. users（系統帳號與權限 — 僅限系統管理員，內容管理人員不可存取）
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/users", methods=["GET"])
-@admin_required
+@sys_admin_required
 def list_users():
     role_filter = request.args.get("role")
+    status_filter = request.args.get("is_active")
     search = request.args.get("search", "").strip()
 
     sql = """
         SELECT u.user_id, u.username, u.role, u.student_id, u.full_name,
-               u.advised_class, u.can_manage_dorm, u.created_at,
+               u.advised_class, u.can_manage_dorm, u.office, u.permissions,
+               u.is_active, u.created_at,
                s.class_name, s.dept_id
         FROM users u
         LEFT JOIN students s ON u.student_id = s.student_id
@@ -103,44 +204,82 @@ def list_users():
     """
     params = []
     if role_filter:
-        sql += " AND u.role = %s"
-        params.append(role_filter)
+        if role_filter in SYS_ADMIN_ROLES:
+            sql += " AND u.role IN ('系統管理員', '管理員')"
+        else:
+            sql += " AND u.role = %s"
+            params.append(role_filter)
+    if status_filter in ("0", "1"):
+        sql += " AND COALESCE(u.is_active, 1) = %s"
+        params.append(int(status_filter))
     if search:
-        sql += " AND (u.username LIKE %s OR u.full_name LIKE %s OR u.student_id LIKE %s)"
+        sql += " AND (u.username LIKE %s OR u.full_name LIKE %s OR COALESCE(u.student_id, '') LIKE %s OR COALESCE(u.office, '') LIKE %s)"
         kw = f"%{search}%"
-        params.extend([kw, kw, kw])
+        params.extend([kw, kw, kw, kw])
 
     sql += " ORDER BY u.user_id DESC"
     users = admin_db.query_db(sql, tuple(params))
+    for u in users:
+        u["is_active"] = 1 if u.get("is_active") is None else int(u.get("is_active"))
+        u["office"] = u.get("office") or ""
+        u["permissions"] = _sanitize_permissions(u.get("role"), u.get("permissions"))
+        # 對齊角色顯示名稱：管理員 -> 系統管理員
+        u["role_display"] = "系統管理員" if u.get("role") in SYS_ADMIN_ROLES else u.get("role")
     return jsonify({"status": "success", "data": users, "total": len(users)}), 200
 
 @bp.route("/api/admin/users", methods=["POST"])
-@admin_required
+@sys_admin_required
 def create_user():
-    data = request.get_json() or {}
-    username = data.get("username", "").strip()
-    password = data.get("password", "").strip()
-    role = data.get("role", "學生").strip()
-    full_name = data.get("full_name", "").strip()
-    student_id = data.get("student_id", "").strip() or None
-    advised_class = data.get("advised_class", "").strip() or None
+    import re
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+    role = (data.get("role") or "處室承辦").strip()
+    full_name = (data.get("full_name") or "").strip()
+    office = (data.get("office") or "").strip()[:100]
+    permissions = _sanitize_permissions(role, data.get("permissions"))
+    is_active = 0 if data.get("is_active") in (0, "0", False, "false") else 1
+    student_id = (str(data.get("student_id")).strip().upper() or None) if data.get("student_id") is not None else None
+    advised_class = (str(data.get("advised_class")).strip() or None) if data.get("advised_class") is not None else None
     can_manage_dorm = 1 if data.get("can_manage_dorm") else 0
 
     if not username or not full_name:
         return jsonify({"status": "error", "message": "帳號名稱與姓名為必填欄位"}), 400
-    if not password:
-        password = "default_password_123"
+    if not re.match(r"^[A-Za-z0-9_.\-]{3,50}$", username):
+        return jsonify({"status": "error", "message": "帳號格式不正確：請使用 3～50 字元的英數字、底線、點或連字號"}), 400
+    if len(full_name) > 50:
+        return jsonify({"status": "error", "message": "姓名長度不可超過 50 字元"}), 400
 
-    # 檢查帳號重疊
-    existing = admin_db.query_one("SELECT user_id FROM users WHERE username = %s", (username,))
+    allowed_roles = ("系統管理員", "管理員", "處室承辦", "內容管理人員", "科助", "住宿管理員", "教職員", "老師", "學生", "家長", "訪客")
+    if role not in allowed_roles:
+        return jsonify({"status": "error", "message": f"不支援的角色類型：{role}"}), 400
+
+    if role in ("學生", "家長") and not student_id:
+        return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
+    if student_id and not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
+        return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+
+    if not password or len(password) < 8 or len(password) > 100:
+        return jsonify({"status": "error", "message": "請輸入 8～100 字元的密碼"}), 400
+
+    # 檢查帳號重疊 (大小寫不敏感)
+    existing = admin_db.query_one("SELECT user_id FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
     if existing:
         return jsonify({"status": "error", "message": f"帳號「{username}」已存在，請使用其他帳號"}), 400
 
+    if student_id:
+        stu = admin_db.query_one("SELECT student_id FROM students WHERE student_id = %s", (student_id,))
+        if not stu:
+            admin_db.execute_db("""
+                INSERT INTO students (student_id, full_name, dept_id, admission_year, class_name)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (student_id, full_name if role == "學生" else f"{full_name}之子女", "CS", 112, advised_class or "資管五忠"))
+
     pw_hash = generate_password_hash(password)
     res = admin_db.execute_db("""
-        INSERT INTO users (username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (username, pw_hash, role, student_id, full_name, advised_class, can_manage_dorm))
+        INSERT INTO users (username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (username, pw_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active))
 
     new_id = res.get("lastrowid") or username
     actor_name, actor_role, actor_ip = _get_current_actor()
@@ -148,81 +287,155 @@ def create_user():
     new_dict = {
         "user_id": new_id, "username": username, "role": role,
         "student_id": student_id, "full_name": full_name,
+        "office": office, "permissions": permissions, "is_active": is_active,
         "advised_class": advised_class, "can_manage_dorm": can_manage_dorm
     }
-    admin_db.log_audit_trail("users", new_id, "INSERT", None, new_dict, actor_name, actor_role, actor_ip)
+    admin_db.log_audit_trail("users", new_id, "新增", None, new_dict, actor_name, actor_role, actor_ip)
 
     # 同步至 app.DEMO_USERS
     try:
         from app import DEMO_USERS
-        DEMO_USERS.append({"user_id": new_id, "username": username, "password_hash": pw_hash, "role": role, "student_id": student_id, "full_name": full_name, "can_manage_dorm": bool(can_manage_dorm)})
+        demo_id = max([u.get("user_id", 0) for u in DEMO_USERS], default=100) + 1
+        DEMO_USERS.append({
+            "user_id": demo_id, "username": username, "password_hash": pw_hash,
+            "role": role, "student_id": student_id, "full_name": full_name,
+            "office": office, "permissions": permissions, "is_active": is_active,
+            "can_manage_dorm": bool(can_manage_dorm)
+        })
     except Exception:
         pass
 
-    return jsonify({"status": "success", "message": f"已成功建立使用者「{username}」({full_name})", "user_id": new_id}), 201
+    return jsonify({"status": "success", "message": f"已成功建立使用者「{username}」({full_name})", "user_id": new_id, "data": new_dict}), 201
 
 @bp.route("/api/admin/users/<int:user_id>", methods=["PUT"])
-@admin_required
+@sys_admin_required
 def update_user(user_id):
-    data = request.get_json() or {}
-    before = admin_db.query_one("SELECT user_id, username, role, student_id, full_name, advised_class, can_manage_dorm FROM users WHERE user_id = %s", (user_id,))
+    import re
+    data = request.get_json(silent=True) or {}
+    before = admin_db.query_one("SELECT user_id, username, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active FROM users WHERE user_id = %s", (user_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該使用者帳號"}), 404
 
-    role = data.get("role", before["role"]).strip()
-    full_name = data.get("full_name", before["full_name"]).strip()
-    student_id = data.get("student_id", before["student_id"])
-    if student_id is not None:
-        student_id = student_id.strip() or None
-    advised_class = data.get("advised_class", before["advised_class"])
-    if advised_class is not None:
-        advised_class = advised_class.strip() or None
-    can_manage_dorm = 1 if data.get("can_manage_dorm") else 0
+    role = (data.get("role") or before["role"]).strip()
+    full_name = (data.get("full_name") if data.get("full_name") is not None else before["full_name"]).strip()
+    if not full_name:
+        return jsonify({"status": "error", "message": "姓名不可為空白"}), 400
+    if len(full_name) > 50:
+        return jsonify({"status": "error", "message": "姓名長度不可超過 50 字元"}), 400
+
+    allowed_roles = ("系統管理員", "管理員", "處室承辦", "內容管理人員", "科助", "住宿管理員", "教職員", "老師", "學生", "家長", "訪客")
+    if role not in allowed_roles:
+        return jsonify({"status": "error", "message": f"不支援的角色類型：{role}"}), 400
+
+    office = (data.get("office") if data.get("office") is not None else (before.get("office") or "")).strip()[:100]
+    raw_perms = data.get("permissions") if data.get("permissions") is not None else before.get("permissions")
+    permissions = _sanitize_permissions(role, raw_perms)
+    if "is_active" in data and data.get("is_active") is not None:
+        is_active = 0 if data.get("is_active") in (0, "0", False, "false") else 1
+    else:
+        is_active = 1 if before.get("is_active") is None else int(before.get("is_active"))
+
+    is_self = (session.get("username") == before["username"])
+    is_root_admin = (before["username"].lower() == "admin")
+
+    # 防呆 1：不可停用主管理員 admin 或目前登入中的管理員自身帳號
+    if (is_self or is_root_admin) and is_active == 0:
+        return jsonify({"status": "error", "message": "防呆保護：不可停用主管理員或目前正在使用的管理員帳號"}), 400
+
+    # 防呆 2：不可將主管理員 admin 或目前登入中的管理員降權為非管理員
+    if (is_self or is_root_admin) and role not in SYS_ADMIN_ROLES:
+        return jsonify({"status": "error", "message": "防呆保護：不可將主管理員或目前登入中的管理員降權為其他角色"}), 400
+
+    # 防呆 3：確保系統至少保留一位啟用中的系統管理員
+    if before["role"] in SYS_ADMIN_ROLES and (role not in SYS_ADMIN_ROLES or is_active == 0):
+        active_admins = admin_db.query_one(
+            "SELECT COUNT(*) AS c FROM users WHERE role IN ('系統管理員', '管理員') AND COALESCE(is_active, 1) = 1 AND user_id != %s",
+            (user_id,)
+        )
+        if not active_admins or active_admins["c"] == 0:
+            return jsonify({"status": "error", "message": "防呆保護：系統至少須保留一位啟用中的「系統管理員」"}), 400
+
+    student_id = (str(data.get("student_id")).strip().upper() or None) if "student_id" in data and data.get("student_id") is not None else (before["student_id"] if "student_id" not in data else None)
+    advised_class = (str(data.get("advised_class")).strip() or None) if "advised_class" in data and data.get("advised_class") is not None else (before["advised_class"] if "advised_class" not in data else None)
+    can_manage_dorm = 1 if data.get("can_manage_dorm") else (int(before.get("can_manage_dorm") or 0) if "can_manage_dorm" not in data else 0)
+
+    if role in ("學生", "家長") and not student_id:
+        return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
+    if student_id and not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
+        return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+
+    if student_id:
+        stu = admin_db.query_one("SELECT student_id FROM students WHERE student_id = %s", (student_id,))
+        if not stu:
+            admin_db.execute_db("""
+                INSERT INTO students (student_id, full_name, dept_id, admission_year, class_name)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (student_id, full_name if role == "學生" else f"{full_name}之子女", "CS", 112, advised_class or "資管五忠"))
 
     password = data.get("password")
-    if password and password.strip():
-        pw_hash = generate_password_hash(password.strip())
+    if password and str(password).strip():
+        pw_clean = str(password).strip()
+        if len(pw_clean) < 8 or len(pw_clean) > 100:
+            return jsonify({"status": "error", "message": "新密碼長度須介於 8～100 字元之間"}), 400
+        pw_hash = generate_password_hash(pw_clean)
         admin_db.execute_db("""
-            UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s, can_manage_dorm = %s, password_hash = %s
+            UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s,
+                             can_manage_dorm = %s, office = %s, permissions = %s, is_active = %s, password_hash = %s
             WHERE user_id = %s
-        """, (role, full_name, student_id, advised_class, can_manage_dorm, pw_hash, user_id))
+        """, (role, full_name, student_id, advised_class, can_manage_dorm, office, permissions, is_active, pw_hash, user_id))
     else:
         admin_db.execute_db("""
-            UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s, can_manage_dorm = %s
+            UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s,
+                             can_manage_dorm = %s, office = %s, permissions = %s, is_active = %s
             WHERE user_id = %s
-        """, (role, full_name, student_id, advised_class, can_manage_dorm, user_id))
+        """, (role, full_name, student_id, advised_class, can_manage_dorm, office, permissions, is_active, user_id))
 
     after = {
         "user_id": user_id, "username": before["username"], "role": role,
         "student_id": student_id, "full_name": full_name,
+        "office": office, "permissions": permissions, "is_active": is_active,
         "advised_class": advised_class, "can_manage_dorm": can_manage_dorm
     }
+    action_label = "停用帳號" if (before.get("is_active", 1) == 1 and is_active == 0) else ("啟用帳號" if (before.get("is_active", 1) == 0 and is_active == 1) else "修改")
     actor_name, actor_role, actor_ip = _get_current_actor()
-    admin_db.log_audit_trail("users", user_id, "UPDATE", before, after, actor_name, actor_role, actor_ip)
+    admin_db.log_audit_trail("users", user_id, action_label, before, after, actor_name, actor_role, actor_ip)
 
     # 同步至 app.DEMO_USERS
     try:
         from app import DEMO_USERS
         for u in DEMO_USERS:
-            if u.get("user_id") == user_id:
-                u.update({"role": role, "full_name": full_name, "student_id": student_id, "can_manage_dorm": bool(can_manage_dorm)})
-                if password and password.strip():
-                    u["password_hash"] = generate_password_hash(password.strip())
+            if u.get("username") == before["username"]:
+                u.update({
+                    "role": role, "full_name": full_name, "student_id": student_id,
+                    "office": office, "permissions": permissions, "is_active": is_active,
+                    "can_manage_dorm": bool(can_manage_dorm)
+                })
+                if password and str(password).strip():
+                    u["password_hash"] = generate_password_hash(str(password).strip())
     except Exception:
         pass
 
-    return jsonify({"status": "success", "message": f"使用者「{before['username']}」資料已更新"}), 200
+    return jsonify({"status": "success", "message": f"使用者「{before['username']}」資料已更新", "data": after}), 200
 
 @bp.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
-@admin_required
+@sys_admin_required
 def delete_user(user_id):
     before = admin_db.query_one("SELECT user_id, username, role, full_name FROM users WHERE user_id = %s", (user_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該使用者帳號"}), 404
 
-    # 防呆：避免刪除目前登入的管理者帳號
-    if session.get("username") == before["username"]:
-        return jsonify({"status": "error", "message": "不可刪除目前正在使用的管理員帳號"}), 400
+    # 防呆 1：不可刪除主管理員 admin 或目前登入中的管理員帳號
+    if session.get("username") == before["username"] or before["username"].lower() == "admin":
+        return jsonify({"status": "error", "message": "防呆保護：不可刪除主管理員或目前正在使用的管理員帳號"}), 400
+
+    # 防呆 2：若為管理員角色，確保刪除後仍有至少一位啟用中的系統管理員
+    if before["role"] in SYS_ADMIN_ROLES:
+        active_admins = admin_db.query_one(
+            "SELECT COUNT(*) AS c FROM users WHERE role IN ('系統管理員', '管理員') AND COALESCE(is_active, 1) = 1 AND user_id != %s",
+            (user_id,)
+        )
+        if not active_admins or active_admins["c"] == 0:
+            return jsonify({"status": "error", "message": "防呆保護：系統至少須保留一位啟用中的「系統管理員」，無法刪除此帳號"}), 400
 
     admin_db.execute_db("DELETE FROM users WHERE user_id = %s", (user_id,))
     actor_name, actor_role, actor_ip = _get_current_actor()
@@ -230,7 +443,7 @@ def delete_user(user_id):
 
     try:
         from app import DEMO_USERS
-        DEMO_USERS[:] = [u for u in DEMO_USERS if u.get("user_id") != user_id]
+        DEMO_USERS[:] = [u for u in DEMO_USERS if u.get("username") != before["username"]]
     except Exception:
         pass
 
@@ -254,17 +467,26 @@ def list_departments():
 @bp.route("/api/admin/departments", methods=["POST"])
 @admin_required
 def create_department():
-    data = request.get_json() or {}
-    dept_id = data.get("dept_id", "").strip().upper()
-    dept_name = data.get("dept_name", "").strip()
-    college_name = data.get("college_name", "").strip()
+    import re
+    data = request.get_json(silent=True) or {}
+    dept_id = (data.get("dept_id") or "").strip().upper()
+    dept_name = (data.get("dept_name") or "").strip()
+    college_name = (data.get("college_name") or "").strip()
 
     if not dept_id or not dept_name or not college_name:
         return jsonify({"status": "error", "message": "科系代碼、科系名稱與學院名稱皆為必填"}), 400
+    if not re.match(r"^[A-Z0-9_]{2,10}$", dept_id):
+        return jsonify({"status": "error", "message": "科系代碼格式不正確：請輸入 2～10 字元的大寫英數字（例如 CS、NUR）"}), 400
+    if len(dept_name) > 100 or len(college_name) > 100:
+        return jsonify({"status": "error", "message": "科系名稱與學院名稱長度不可超過 100 字元"}), 400
 
     existing = admin_db.query_one("SELECT dept_id FROM departments WHERE dept_id = %s", (dept_id,))
     if existing:
         return jsonify({"status": "error", "message": f"科系代碼「{dept_id}」已存在"}), 400
+
+    dup_name = admin_db.query_one("SELECT dept_id FROM departments WHERE dept_name = %s", (dept_name,))
+    if dup_name:
+        return jsonify({"status": "error", "message": f"科系名稱「{dept_name}」已存在（代碼：{dup_name['dept_id']}）"}), 400
 
     admin_db.execute_db("""
         INSERT INTO departments (dept_id, dept_name, college_name)
@@ -287,13 +509,21 @@ def create_department():
 @admin_required
 def update_department(dept_id):
     dept_id = dept_id.strip().upper()
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT dept_id, dept_name, college_name FROM departments WHERE dept_id = %s", (dept_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該科系代碼"}), 404
 
-    dept_name = data.get("dept_name", before["dept_name"]).strip()
-    college_name = data.get("college_name", before["college_name"]).strip()
+    dept_name = (data.get("dept_name") if data.get("dept_name") is not None else before["dept_name"]).strip()
+    college_name = (data.get("college_name") if data.get("college_name") is not None else before["college_name"]).strip()
+    if not dept_name or not college_name:
+        return jsonify({"status": "error", "message": "科系名稱與學院名稱不可為空白"}), 400
+    if len(dept_name) > 100 or len(college_name) > 100:
+        return jsonify({"status": "error", "message": "科系名稱與學院名稱長度不可超過 100 字元"}), 400
+
+    dup_name = admin_db.query_one("SELECT dept_id FROM departments WHERE dept_name = %s AND dept_id != %s", (dept_name, dept_id))
+    if dup_name:
+        return jsonify({"status": "error", "message": f"科系名稱「{dept_name}」已被其他代碼（{dup_name['dept_id']}）使用"}), 400
 
     admin_db.execute_db("""
         UPDATE departments SET dept_name = %s, college_name = %s WHERE dept_id = %s
@@ -324,12 +554,14 @@ def delete_department(dept_id):
     # 關聯檢查
     stu_check = admin_db.query_one("SELECT COUNT(*) AS c FROM students WHERE dept_id = %s", (dept_id,))
     course_check = admin_db.query_one("SELECT COUNT(*) AS c FROM course_map WHERE dept_id = %s", (dept_id,))
-    if (stu_check and stu_check["c"] > 0) or (course_check and course_check["c"] > 0):
-        s_count = stu_check["c"] if stu_check else 0
-        c_count = course_check["c"] if course_check else 0
+    grad_check = admin_db.query_one("SELECT COUNT(*) AS c FROM graduation_requirements WHERE dept_id = %s", (dept_id,))
+    s_count = stu_check["c"] if stu_check else 0
+    c_count = course_check["c"] if course_check else 0
+    g_count = grad_check["c"] if grad_check else 0
+    if s_count > 0 or c_count > 0 or g_count > 0:
         return jsonify({
             "status": "error",
-            "message": f"無法刪除科系「{before['dept_name']}」：目前仍有 {s_count} 位學生學籍與 {c_count} 門課程綁定此科系。請先遷移關聯資料。"
+            "message": f"防呆保護：無法刪除科系「{before['dept_name']}」，目前仍有 {s_count} 位學生、{c_count} 門課程或 {g_count} 筆畢業門檻綁定此科系，請先解除關聯。"
         }), 400
 
     admin_db.execute_db("DELETE FROM departments WHERE dept_id = %s", (dept_id,))
@@ -347,6 +579,22 @@ def delete_department(dept_id):
 # -------------------------------------------------------------------------
 # 3. course_map（全校課程地圖）
 # -------------------------------------------------------------------------
+def _has_circular_prerequisite(course_id, prereq_id):
+    """檢查若將 course_id 的先修設為 prereq_id，是否會形成循環擋修 (例如 A -> B -> A)"""
+    if not prereq_id:
+        return False
+    if course_id == prereq_id:
+        return True
+    visited = {course_id}
+    curr = prereq_id
+    while curr:
+        if curr in visited:
+            return True
+        visited.add(curr)
+        row = admin_db.query_one("SELECT prerequisite_id FROM course_map WHERE course_id = %s", (curr,))
+        curr = row["prerequisite_id"] if row and row.get("prerequisite_id") else None
+    return False
+
 @bp.route("/api/admin/course-map", methods=["GET"])
 @admin_required
 def list_course_map():
@@ -384,28 +632,48 @@ def list_course_map():
 @bp.route("/api/admin/course-map", methods=["POST"])
 @admin_required
 def create_course():
-    data = request.get_json() or {}
-    course_id = data.get("course_id", "").strip().upper()
-    course_name = data.get("course_name", "").strip()
-    credits = int(data.get("credits", 2))
-    prerequisite_id = data.get("prerequisite_id", "").strip().upper() or None
+    import re
+    data = request.get_json(silent=True) or {}
+    course_id = (data.get("course_id") or "").strip().upper()
+    course_name = (data.get("course_name") or "").strip()
+    try:
+        credits = int(data.get("credits") if data.get("credits") is not None else 2)
+        semester_hours = float(data.get("semester_hours") if data.get("semester_hours") is not None else credits)
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "學分數與每週時數必須為有效數字"}), 400
+
+    if credits < 0 or credits > 15 or semester_hours < 0 or semester_hours > 20:
+        return jsonify({"status": "error", "message": "學分數須介於 0～15 之間，每週時數須介於 0～20 之間"}), 400
+
+    prerequisite_id = (str(data.get("prerequisite_id")).strip().upper() or None) if data.get("prerequisite_id") is not None else None
     is_required = 1 if data.get("is_required", True) else 0
-    course_type = data.get("course_type", "專業必修").strip()
-    dept_id = data.get("dept_id", "CS").strip().upper()
-    semester_suggest = data.get("semester_suggest", "大一上").strip()
-    description = data.get("description", "").strip() or None
-    semester_hours = float(data.get("semester_hours", credits)) if data.get("semester_hours") else float(credits)
+    course_type = (data.get("course_type") or "專業必修").strip()
+    dept_id = (data.get("dept_id") or "CS").strip().upper()
+    semester_suggest = (data.get("semester_suggest") or "大一上").strip()
+    description = (str(data.get("description")).strip() or None) if data.get("description") is not None else None
 
     if not course_id or not course_name:
         return jsonify({"status": "error", "message": "課程代碼與課程名稱為必填"}), 400
+    if not re.match(r"^[A-Z0-9_\-]{2,20}$", course_id):
+        return jsonify({"status": "error", "message": "課程代碼格式不正確：請輸入 2～20 字元的大寫英數字（例如 CS101）"}), 400
 
     existing = admin_db.query_one("SELECT course_id FROM course_map WHERE course_id = %s", (course_id,))
     if existing:
         return jsonify({"status": "error", "message": f"課程代碼「{course_id}」已存在"}), 400
 
-    # 避免自我先修遞迴
-    if prerequisite_id == course_id:
-        return jsonify({"status": "error", "message": "課程不能將自身設為先修科目"}), 400
+    # 避免自我先修遞迴、循環擋修或不存在的先修科目
+    if prerequisite_id:
+        if _has_circular_prerequisite(course_id, prerequisite_id):
+            return jsonify({"status": "error", "message": "防呆保護：先修科目設定會造成循環擋修（不能將自身或後續關聯課程設為先修科目）"}), 400
+        p_row = admin_db.query_one("SELECT course_id FROM course_map WHERE course_id = %s", (prerequisite_id,))
+        if not p_row:
+            return jsonify({"status": "error", "message": f"找不到指定的先修科目代碼「{prerequisite_id}」"}), 400
+
+    # 確保科系代碼存在，避免外鍵衝突
+    dept_row = admin_db.query_one("SELECT dept_id FROM departments WHERE dept_id = %s", (dept_id,))
+    if not dept_row:
+        admin_db.execute_db("INSERT IGNORE INTO departments (dept_id, dept_name, college_name) VALUES (%s, %s, %s)",
+                            (dept_id, f"{dept_id}系", "通用學院"))
 
     admin_db.execute_db("""
         INSERT INTO course_map (course_id, course_name, credits, prerequisite_id, is_required, course_type, dept_id, semester_suggest, description, semester_hours)
@@ -433,28 +701,38 @@ def create_course():
 @admin_required
 def update_course(course_id):
     course_id = course_id.strip().upper()
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM course_map WHERE course_id = %s", (course_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該課程代碼"}), 404
 
-    course_name = data.get("course_name", before["course_name"]).strip()
-    credits = int(data.get("credits", before["credits"]))
-    prerequisite_id = data.get("prerequisite_id")
-    if prerequisite_id is not None:
-        prerequisite_id = prerequisite_id.strip().upper() or None
-    else:
-        prerequisite_id = before["prerequisite_id"]
+    course_name = (data.get("course_name") if data.get("course_name") is not None else before["course_name"]).strip()
+    if not course_name:
+        return jsonify({"status": "error", "message": "課程名稱不可為空白"}), 400
 
-    if prerequisite_id == course_id:
-        return jsonify({"status": "error", "message": "課程不能將自身設為先修科目"}), 400
+    try:
+        credits = int(data.get("credits") if data.get("credits") is not None else before["credits"])
+        semester_hours = float(data.get("semester_hours") if data.get("semester_hours") is not None else (before.get("semester_hours") or credits))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "學分數與每週時數必須為有效數字"}), 400
+
+    if credits < 0 or credits > 15 or semester_hours < 0 or semester_hours > 20:
+        return jsonify({"status": "error", "message": "學分數須介於 0～15 之間，每週時數須介於 0～20 之間"}), 400
+
+    prerequisite_id = (str(data.get("prerequisite_id")).strip().upper() or None) if "prerequisite_id" in data and data.get("prerequisite_id") is not None else (before["prerequisite_id"] if "prerequisite_id" not in data else None)
+
+    if prerequisite_id:
+        if _has_circular_prerequisite(course_id, prerequisite_id):
+            return jsonify({"status": "error", "message": "防呆保護：先修科目設定會造成循環擋修（不能將自身或後續關聯課程設為先修科目）"}), 400
+        p_row = admin_db.query_one("SELECT course_id FROM course_map WHERE course_id = %s", (prerequisite_id,))
+        if not p_row:
+            return jsonify({"status": "error", "message": f"找不到指定的先修科目代碼「{prerequisite_id}」"}), 400
 
     is_required = 1 if data.get("is_required", before["is_required"]) else 0
-    course_type = data.get("course_type", before["course_type"]).strip()
-    dept_id = data.get("dept_id", before["dept_id"]).strip().upper()
-    semester_suggest = data.get("semester_suggest", before["semester_suggest"]).strip()
-    description = data.get("description", before["description"])
-    semester_hours = float(data.get("semester_hours", before["semester_hours"] or credits))
+    course_type = (data.get("course_type") or before["course_type"]).strip()
+    dept_id = (data.get("dept_id") or before["dept_id"]).strip().upper()
+    semester_suggest = (data.get("semester_suggest") or before["semester_suggest"]).strip()
+    description = (str(data.get("description")).strip() or None) if data.get("description") is not None else before.get("description")
 
     admin_db.execute_db("""
         UPDATE course_map
@@ -490,13 +768,21 @@ def delete_course(course_id):
     if not before:
         return jsonify({"status": "error", "message": "找不到該課程代碼"}), 404
 
-    # 檢查是否為其他課程的先修科目
+    # 1. 檢查是否為其他課程的先修科目
     children = admin_db.query_db("SELECT course_id, course_name FROM course_map WHERE prerequisite_id = %s", (course_id,))
     if children:
         child_names = "、".join([f"{c['course_name']}({c['course_id']})" for c in children])
         return jsonify({
             "status": "error",
-            "message": f"無法刪除「{before['course_name']}」：此課程被設定為【{child_names}】的先修科目，請先解除其先修擋修關聯。"
+            "message": f"防呆保護：無法刪除「{before['course_name']}」，此課程被設定為【{child_names}】的先修科目，請先解除其先修擋修關聯。"
+        }), 400
+
+    # 2. 檢查是否已有學生歷年修課成績綁定此課程 (防止誤刪課程連帶抹除學生歷史成績)
+    cred_check = admin_db.query_one("SELECT COUNT(*) AS c FROM student_credits WHERE course_id = %s", (course_id,))
+    if cred_check and cred_check["c"] > 0:
+        return jsonify({
+            "status": "error",
+            "message": f"防呆保護：無法刪除「{before['course_name']}」({course_id})，目前已有 {cred_check['c']} 筆學生歷年修課成績紀錄綁定此課程。"
         }), 400
 
     admin_db.execute_db("DELETE FROM course_map WHERE course_id = %s", (course_id,))
@@ -514,6 +800,39 @@ def delete_course(course_id):
 # -------------------------------------------------------------------------
 # 4. graduation_requirements（畢業門檻）
 # -------------------------------------------------------------------------
+def _validate_grad_req_values(data, defaults=None):
+    defaults = defaults or {}
+    try:
+        total_credits = int(data.get("total_credits_req", defaults.get("total_credits_req", 128)))
+        major_required = int(data.get("major_required_req", defaults.get("major_required_req", 60)))
+        major_elective = int(data.get("major_elective_req", defaults.get("major_elective_req", 30)))
+        general_req = int(data.get("general_req", defaults.get("general_req", 28)))
+        ethics_req = int(data.get("ethics_req", defaults.get("ethics_req", 2)))
+        project_req = int(data.get("project_req", defaults.get("project_req", 3)))
+    except (ValueError, TypeError):
+        return None, "各類學分門檻必須為有效整數"
+
+    if total_credits < 50 or total_credits > 300:
+        return None, "畢業總學分要求須介於 50～300 學分之間"
+    if any(x < 0 for x in (major_required, major_elective, general_req, ethics_req, project_req)):
+        return None, "學分要求不可為負數"
+    if (major_required + major_elective + general_req) > total_credits:
+        return None, f"防呆檢查：專業必修({major_required}) + 專業選修({major_elective}) + 通識學分({general_req}) 的加總({major_required + major_elective + general_req}) 不可大於畢業總學分要求({total_credits})"
+
+    english_name = (data.get("english_threshold_name") if data.get("english_threshold_name") is not None else defaults.get("english_threshold_name", "多益 550 分或通過進階英文檢定")).strip()
+    if not english_name:
+        return None, "語文檢定門檻說明不可為空白"
+
+    return {
+        "total_credits_req": total_credits,
+        "major_required_req": major_required,
+        "major_elective_req": major_elective,
+        "general_req": general_req,
+        "english_threshold_name": english_name,
+        "ethics_req": ethics_req,
+        "project_req": project_req
+    }, None
+
 @bp.route("/api/admin/graduation-requirements", methods=["GET"])
 @admin_required
 def list_graduation_requirements():
@@ -528,22 +847,41 @@ def list_graduation_requirements():
 @bp.route("/api/admin/graduation-requirements", methods=["POST"])
 @admin_required
 def create_graduation_requirement():
-    data = request.get_json() or {}
-    dept_id = data.get("dept_id", "").strip().upper()
-    total_credits = int(data.get("total_credits_req", 128))
-    major_required = int(data.get("major_required_req", 60))
-    major_elective = int(data.get("major_elective_req", 30))
-    general_req = int(data.get("general_req", 28))
-    english_name = data.get("english_threshold_name", "多益 550 分或通過進階英文檢定").strip()
-    ethics_req = int(data.get("ethics_req", 2))
-    project_req = int(data.get("project_req", 3))
-
+    data = request.get_json(silent=True) or {}
+    dept_id = (data.get("dept_id") or "").strip().upper()
     if not dept_id:
         return jsonify({"status": "error", "message": "必須選擇所屬科系"}), 400
 
-    existing = admin_db.query_one("SELECT req_id FROM graduation_requirements WHERE dept_id = %s", (dept_id,))
+    vals, err = _validate_grad_req_values(data)
+    if err:
+        return jsonify({"status": "error", "message": err}), 400
+
+    total_credits = vals["total_credits_req"]
+    major_required = vals["major_required_req"]
+    major_elective = vals["major_elective_req"]
+    general_req = vals["general_req"]
+    english_name = vals["english_threshold_name"]
+    ethics_req = vals["ethics_req"]
+    project_req = vals["project_req"]
+
+    existing = admin_db.query_one("SELECT * FROM graduation_requirements WHERE dept_id = %s", (dept_id,))
     if existing:
-        return jsonify({"status": "error", "message": f"科系「{dept_id}」已設定過畢業門檻，請直接編輯原紀錄"}), 400
+        req_id = existing["req_id"]
+        admin_db.execute_db("""
+            UPDATE graduation_requirements
+            SET total_credits_req = %s, major_required_req = %s, major_elective_req = %s,
+                general_req = %s, english_threshold_name = %s, ethics_req = %s, project_req = %s
+            WHERE req_id = %s
+        """, (total_credits, major_required, major_elective, general_req, english_name, ethics_req, project_req, req_id))
+        after = {"req_id": req_id, "dept_id": dept_id, **vals}
+        actor_name, actor_role, actor_ip = _get_current_actor()
+        admin_db.log_audit_trail("graduation_requirements", req_id, "UPDATE", existing, after, actor_name, actor_role, actor_ip)
+        try:
+            from app import DEMO_GRADUATION_REQUIREMENTS
+            DEMO_GRADUATION_REQUIREMENTS[dept_id] = after
+        except Exception:
+            pass
+        return jsonify({"status": "success", "message": f"已成功更新科系「{dept_id}」畢業門檻", "req_id": req_id, "data": after}), 200
 
     res = admin_db.execute_db("""
         INSERT INTO graduation_requirements
@@ -552,12 +890,7 @@ def create_graduation_requirement():
     """, (dept_id, total_credits, major_required, major_elective, general_req, english_name, ethics_req, project_req))
 
     new_id = res.get("lastrowid") or 1
-    new_dict = {
-        "req_id": new_id, "dept_id": dept_id, "total_credits_req": total_credits,
-        "major_required_req": major_required, "major_elective_req": major_elective,
-        "general_req": general_req, "english_threshold_name": english_name,
-        "ethics_req": ethics_req, "project_req": project_req
-    }
+    new_dict = {"req_id": new_id, "dept_id": dept_id, **vals}
     actor_name, actor_role, actor_ip = _get_current_actor()
     admin_db.log_audit_trail("graduation_requirements", new_id, "INSERT", None, new_dict, actor_name, actor_role, actor_ip)
 
@@ -572,33 +905,25 @@ def create_graduation_requirement():
 @bp.route("/api/admin/graduation-requirements/<int:req_id>", methods=["PUT"])
 @admin_required
 def update_graduation_requirement(req_id):
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM graduation_requirements WHERE req_id = %s", (req_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該畢業門檻設定"}), 404
 
-    dept_id = data.get("dept_id", before["dept_id"]).strip().upper()
-    total_credits = int(data.get("total_credits_req", before["total_credits_req"]))
-    major_required = int(data.get("major_required_req", before["major_required_req"]))
-    major_elective = int(data.get("major_elective_req", before["major_elective_req"]))
-    general_req = int(data.get("general_req", before["general_req"]))
-    english_name = data.get("english_threshold_name", before["english_threshold_name"]).strip()
-    ethics_req = int(data.get("ethics_req", before["ethics_req"]))
-    project_req = int(data.get("project_req", before["project_req"]))
+    dept_id = (data.get("dept_id") or before["dept_id"]).strip().upper()
+    vals, err = _validate_grad_req_values(data, before)
+    if err:
+        return jsonify({"status": "error", "message": err}), 400
 
     admin_db.execute_db("""
         UPDATE graduation_requirements
         SET dept_id = %s, total_credits_req = %s, major_required_req = %s, major_elective_req = %s,
             general_req = %s, english_threshold_name = %s, ethics_req = %s, project_req = %s
         WHERE req_id = %s
-    """, (dept_id, total_credits, major_required, major_elective, general_req, english_name, ethics_req, project_req, req_id))
+    """, (dept_id, vals["total_credits_req"], vals["major_required_req"], vals["major_elective_req"],
+          vals["general_req"], vals["english_threshold_name"], vals["ethics_req"], vals["project_req"], req_id))
 
-    after = {
-        "req_id": req_id, "dept_id": dept_id, "total_credits_req": total_credits,
-        "major_required_req": major_required, "major_elective_req": major_elective,
-        "general_req": general_req, "english_threshold_name": english_name,
-        "ethics_req": ethics_req, "project_req": project_req
-    }
+    after = {"req_id": req_id, "dept_id": dept_id, **vals}
     actor_name, actor_role, actor_ip = _get_current_actor()
     admin_db.log_audit_trail("graduation_requirements", req_id, "UPDATE", before, after, actor_name, actor_role, actor_ip)
 
@@ -647,13 +972,22 @@ def list_knowledge_categories():
 @bp.route("/api/admin/knowledge-categories", methods=["POST"])
 @admin_required
 def create_knowledge_category():
-    data = request.get_json() or {}
-    category_name = data.get("category_name", "").strip()
-    icon = data.get("icon", "📖").strip() or "📖"
-    sort_order = int(data.get("sort_order", 1))
+    data = request.get_json(silent=True) or {}
+    category_name = (data.get("category_name") or "").strip()
+    icon = (data.get("icon") or "📖").strip() or "📖"
+    try:
+        sort_order = int(data.get("sort_order", 1))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "選單排序必須為有效整數"}), 400
 
     if not category_name:
         return jsonify({"status": "error", "message": "主分類名稱為必填"}), 400
+    if len(category_name) > 50:
+        return jsonify({"status": "error", "message": "主分類名稱不可超過 50 字元"}), 400
+
+    dup = admin_db.query_one("SELECT category_id FROM knowledge_categories WHERE category_name = %s", (category_name,))
+    if dup:
+        return jsonify({"status": "error", "message": f"主分類名稱「{category_name}」已存在"}), 400
 
     res = admin_db.execute_db("""
         INSERT INTO knowledge_categories (category_name, icon, sort_order)
@@ -676,14 +1010,26 @@ def create_knowledge_category():
 @bp.route("/api/admin/knowledge-categories/<int:category_id>", methods=["PUT"])
 @admin_required
 def update_knowledge_category(category_id):
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM knowledge_categories WHERE category_id = %s", (category_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該規章分類"}), 404
 
-    category_name = data.get("category_name", before["category_name"]).strip()
-    icon = data.get("icon", before["icon"]).strip()
-    sort_order = int(data.get("sort_order", before["sort_order"]))
+    category_name = (data.get("category_name") if data.get("category_name") is not None else before["category_name"]).strip()
+    icon = (data.get("icon") if data.get("icon") is not None else before["icon"]).strip() or "📖"
+    try:
+        sort_order = int(data.get("sort_order", before["sort_order"]))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "選單排序必須為有效整數"}), 400
+
+    if not category_name:
+        return jsonify({"status": "error", "message": "主分類名稱不可為空白"}), 400
+    if len(category_name) > 50:
+        return jsonify({"status": "error", "message": "主分類名稱不可超過 50 字元"}), 400
+
+    dup = admin_db.query_one("SELECT category_id FROM knowledge_categories WHERE category_name = %s AND category_id != %s", (category_name, category_id))
+    if dup:
+        return jsonify({"status": "error", "message": f"主分類名稱「{category_name}」已存在"}), 400
 
     admin_db.execute_db("""
         UPDATE knowledge_categories SET category_name = %s, icon = %s, sort_order = %s WHERE category_id = %s
@@ -710,12 +1056,15 @@ def delete_knowledge_category(category_id):
     if not before:
         return jsonify({"status": "error", "message": "找不到該規章分類"}), 404
 
-    # 檢查是否有法規文章綁定此分類
+    # 檢查是否有法規文章或同義詞綁定此分類
     kb_check = admin_db.query_one("SELECT COUNT(*) AS c FROM knowledge_base WHERE category_id = %s", (category_id,))
-    if kb_check and kb_check["c"] > 0:
+    syn_check = admin_db.query_one("SELECT COUNT(*) AS c FROM synonym_dictionary WHERE category_id = %s", (category_id,))
+    kb_cnt = kb_check["c"] if kb_check else 0
+    syn_cnt = syn_check["c"] if syn_check else 0
+    if kb_cnt > 0 or syn_cnt > 0:
         return jsonify({
             "status": "error",
-            "message": f"無法刪除「{before['category_name']}」：目前仍有 {kb_check['c']} 篇規章條文隸屬於此主分類，請先遷移或刪除關聯條文。"
+            "message": f"防呆保護：無法刪除「{before['category_name']}」，目前仍有 {kb_cnt} 篇規章條文與 {syn_cnt} 筆同義詞隸屬於此主分類，請先遷移或刪除關聯項目。"
         }), 400
 
     admin_db.execute_db("DELETE FROM knowledge_categories WHERE category_id = %s", (category_id,))
@@ -762,16 +1111,29 @@ def list_synonyms():
 @bp.route("/api/admin/synonyms", methods=["POST"])
 @admin_required
 def create_synonym():
-    data = request.get_json() or {}
-    user_keyword = data.get("user_keyword", "").strip()
-    official_term = data.get("official_term", "").strip()
+    data = request.get_json(silent=True) or {}
+    user_keyword = (data.get("user_keyword") or "").strip()
+    official_term = (data.get("official_term") or "").strip()
     category_id = data.get("category_id")
     if category_id:
-        try: category_id = int(category_id)
-        except Exception: category_id = None
+        try:
+            category_id = int(category_id)
+            chk = admin_db.query_one("SELECT category_id FROM knowledge_categories WHERE category_id = %s", (category_id,))
+            if not chk:
+                category_id = None
+        except Exception:
+            category_id = None
 
     if not user_keyword or not official_term:
         return jsonify({"status": "error", "message": "日常俗稱與正式條文名稱皆為必填"}), 400
+    if user_keyword.lower() == official_term.lower():
+        return jsonify({"status": "error", "message": "防呆檢查：日常俗稱與對應的官方標準名稱不可相同"}), 400
+    if len(user_keyword) > 50 or len(official_term) > 50:
+        return jsonify({"status": "error", "message": "俗稱與標準名稱長度不可超過 50 字元"}), 400
+
+    dup = admin_db.query_one("SELECT synonym_id, official_term FROM synonym_dictionary WHERE LOWER(user_keyword) = LOWER(%s)", (user_keyword,))
+    if dup:
+        return jsonify({"status": "error", "message": f"口語俗稱「{user_keyword}」已存在（目前已對應至「{dup['official_term']}」）"}), 400
 
     res = admin_db.execute_db("""
         INSERT INTO synonym_dictionary (user_keyword, official_term, category_id)
@@ -797,17 +1159,26 @@ def create_synonym():
 @bp.route("/api/admin/synonyms/<int:synonym_id>", methods=["PUT"])
 @admin_required
 def update_synonym(synonym_id):
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM synonym_dictionary WHERE synonym_id = %s", (synonym_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該同義詞項目"}), 404
 
-    user_keyword = data.get("user_keyword", before["user_keyword"]).strip()
-    official_term = data.get("official_term", before["official_term"]).strip()
+    user_keyword = (data.get("user_keyword") if data.get("user_keyword") is not None else before["user_keyword"]).strip()
+    official_term = (data.get("official_term") if data.get("official_term") is not None else before["official_term"]).strip()
     category_id = data.get("category_id", before["category_id"])
     if category_id:
         try: category_id = int(category_id)
         except Exception: category_id = None
+
+    if not user_keyword or not official_term:
+        return jsonify({"status": "error", "message": "日常俗稱與正式條文名稱不可為空白"}), 400
+    if user_keyword.lower() == official_term.lower():
+        return jsonify({"status": "error", "message": "防呆檢查：日常俗稱與對應的官方標準名稱不可相同"}), 400
+
+    dup = admin_db.query_one("SELECT synonym_id, official_term FROM synonym_dictionary WHERE LOWER(user_keyword) = LOWER(%s) AND synonym_id != %s", (user_keyword, synonym_id))
+    if dup:
+        return jsonify({"status": "error", "message": f"口語俗稱「{user_keyword}」已存在（目前已對應至「{dup['official_term']}」）"}), 400
 
     admin_db.execute_db("""
         UPDATE synonym_dictionary SET user_keyword = %s, official_term = %s, category_id = %s WHERE synonym_id = %s
@@ -854,12 +1225,16 @@ def delete_synonym(synonym_id):
 # 1. 系統安全稽核日誌 (audit_logs)
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/core/audit-logs", methods=["GET"])
+@bp.route("/api/admin/audit-logs", methods=["GET"])
 @admin_required
 def list_audit_logs():
     table_filter = request.args.get("table_name")
     action_filter = request.args.get("action")
     changed_by = request.args.get("changed_by", "").strip()
-    limit = int(request.args.get("limit", 200))
+    try:
+        limit = max(1, min(500, int(request.args.get("limit", 200))))
+    except (ValueError, TypeError):
+        limit = 200
 
     sql = "SELECT * FROM audit_logs WHERE 1=1"
     params = []
@@ -893,7 +1268,10 @@ def list_audit_logs():
 @bp.route("/api/admin/search-logs", methods=["GET"])
 @admin_required
 def list_search_logs():
-    limit = int(request.args.get("limit", 100))
+    try:
+        limit = max(1, min(500, int(request.args.get("limit", 100))))
+    except (ValueError, TypeError):
+        limit = 100
     search = request.args.get("search", "").strip()
 
     sql = "SELECT * FROM search_logs WHERE 1=1"
@@ -939,6 +1317,7 @@ def list_search_logs():
 # 3. 未匹配紀錄 (unmatched_queries)
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/core/unmatched-queries", methods=["GET"])
+@bp.route("/api/admin/unmatched-queries", methods=["GET"])
 @admin_required
 def list_unmatched_queries():
     status = request.args.get("status")
@@ -952,6 +1331,7 @@ def list_unmatched_queries():
     return jsonify({"status": "success", "data": queries, "total": len(queries)}), 200
 
 @bp.route("/api/admin/core/unmatched-queries/convert-synonym", methods=["POST"])
+@bp.route("/api/admin/unmatched-queries/convert-synonym", methods=["POST"])
 @admin_required
 def convert_unmatched_to_synonym():
     data = request.get_json() or {}
@@ -965,13 +1345,24 @@ def convert_unmatched_to_synonym():
 
     if not user_keyword or not official_term:
         return jsonify({"status": "error", "message": "俗稱關鍵字與正式條文名稱皆為必填"}), 400
+    if len(user_keyword) > 50 or len(official_term) > 50:
+        return jsonify({"status": "error", "message": "俗稱關鍵字與正式條文名稱不可超過 50 個字元"}), 400
+    if user_keyword.lower() == official_term.lower():
+        return jsonify({"status": "error", "message": "防呆攔截：俗稱關鍵字與正式條文名稱不可完全相同（避免自我映射）"}), 400
 
-    # 1. 寫入同義詞字典
-    syn_res = admin_db.execute_db("""
-        INSERT INTO synonym_dictionary (user_keyword, official_term, category_id)
-        VALUES (%s, %s, %s)
-    """, (user_keyword, official_term, category_id))
-    syn_id = syn_res.get("lastrowid") or 1
+    # 1. 寫入或更新同義詞字典（防呆：若已存在相同俗稱則直接更新對應正式詞彙）
+    dup = admin_db.query_one("SELECT synonym_id FROM synonym_dictionary WHERE LOWER(user_keyword) = LOWER(%s)", (user_keyword,))
+    if dup:
+        syn_id = dup["synonym_id"]
+        admin_db.execute_db("""
+            UPDATE synonym_dictionary SET official_term = %s, category_id = %s WHERE synonym_id = %s
+        """, (official_term, category_id, syn_id))
+    else:
+        syn_res = admin_db.execute_db("""
+            INSERT INTO synonym_dictionary (user_keyword, official_term, category_id)
+            VALUES (%s, %s, %s)
+        """, (user_keyword, official_term, category_id))
+        syn_id = syn_res.get("lastrowid") or 1
 
     # 2. 更新 unmatched_queries 狀態為「已轉同義詞」
     if query_id:
@@ -985,13 +1376,14 @@ def convert_unmatched_to_synonym():
 
     actor_name, actor_role, actor_ip = _get_current_actor()
     admin_db.log_audit_trail(
-        "synonym_dictionary", syn_id, "INSERT", None,
+        "synonym_dictionary", syn_id, "UPDATE" if dup else "INSERT", None,
         {"user_keyword": user_keyword, "official_term": official_term, "from_unmatched_id": query_id},
         actor_name, actor_role, actor_ip
     )
 
     try:
         from app import DEMO_SYNONYMS, DEMO_UNMATCHED_QUERIES
+        DEMO_SYNONYMS[:] = [s for s in DEMO_SYNONYMS if s.get("synonym_id") != syn_id]
         DEMO_SYNONYMS.append({"synonym_id": syn_id, "user_keyword": user_keyword, "official_term": official_term, "category_id": category_id})
         for u in DEMO_UNMATCHED_QUERIES:
             if u.get("query_id") == query_id or u.get("query_text") == user_keyword:
@@ -1003,10 +1395,14 @@ def convert_unmatched_to_synonym():
     return jsonify({"status": "success", "message": f"成功將「{user_keyword}」轉換為同義詞「{official_term}」！詞庫已即時更新。"}), 200
 
 @bp.route("/api/admin/core/unmatched-queries/<int:query_id>/status", methods=["PUT"])
+@bp.route("/api/admin/unmatched-queries/<int:query_id>/status", methods=["PUT"])
 @admin_required
 def update_unmatched_status(query_id):
     data = request.get_json() or {}
     new_status = data.get("status", "待處理").strip()
+    allowed_statuses = {"待處理", "已轉同義詞", "已新增法規", "已忽略"}
+    if new_status not in allowed_statuses:
+        return jsonify({"status": "error", "message": f"不合法的處理狀態：{new_status}"}), 400
     before = admin_db.query_one("SELECT * FROM unmatched_queries WHERE query_id = %s", (query_id,))
     if not before:
         return jsonify({"status": "error", "message": "找不到該未匹配關鍵字"}), 404
@@ -1029,9 +1425,13 @@ def update_unmatched_status(query_id):
 # 4. 訪客登記日誌 (visitor_logs)
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/core/visitor-logs", methods=["GET"])
+@bp.route("/api/admin/visitor-logs", methods=["GET"])
 @admin_required
 def list_visitor_logs():
-    days = int(request.args.get("days", 30))
+    try:
+        days = max(1, min(365, int(request.args.get("days", 30))))
+    except (ValueError, TypeError):
+        days = 30
     search = request.args.get("search", "").strip()
 
     sql = "SELECT * FROM visitor_logs WHERE 1=1"
@@ -1046,6 +1446,7 @@ def list_visitor_logs():
     return jsonify({"status": "success", "data": logs, "total": len(logs)}), 200
 
 @bp.route("/api/admin/core/visitor-logs/export.csv", methods=["GET"])
+@bp.route("/api/admin/visitor-logs/export.csv", methods=["GET"])
 @admin_required
 def export_visitor_logs():
     logs = admin_db.query_db("SELECT * FROM visitor_logs ORDER BY log_id DESC")

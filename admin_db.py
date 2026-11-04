@@ -43,8 +43,9 @@ def is_mysql_active():
 
 def get_sqlite_conn():
     """取得 SQLite 連線並設定 row_factory 為 sqlite3.Row"""
-    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=10)
+    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=2)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -215,9 +216,21 @@ def init_sqlite_schema():
                 full_name TEXT NOT NULL,
                 advised_class TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                can_manage_dorm INTEGER DEFAULT 0
+                can_manage_dorm INTEGER DEFAULT 0,
+                office TEXT DEFAULT '',
+                permissions TEXT DEFAULT '查看,建立,修改',
+                is_active INTEGER DEFAULT 1
             )
         """)
+        for alter_sql in (
+            "ALTER TABLE users ADD COLUMN office TEXT DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '查看,建立,修改'",
+            "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1",
+        ):
+            try:
+                cur.execute(alter_sql)
+            except Exception:
+                pass
 
         # 4. course_map
         cur.execute("""
@@ -380,6 +393,94 @@ def init_sqlite_schema():
             )
         """)
 
+        # 16. checklist_items (行政申辦資訊)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS checklist_items (
+                item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_name TEXT NOT NULL,
+                business_name TEXT NOT NULL,
+                office_location TEXT DEFAULT '',
+                office_hours TEXT DEFAULT '週一至週五 08:30-17:00',
+                contact_phone TEXT DEFAULT '',
+                required_docs TEXT DEFAULT '',
+                steps_json TEXT DEFAULT '[]',
+                apply_period TEXT DEFAULT '',
+                form_download_url TEXT DEFAULT '#',
+                system_url TEXT DEFAULT ''
+            )
+        """)
+
+        # 17. deadlines (重要日程與期限)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS deadlines (
+                deadline_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                category TEXT DEFAULT '教務處',
+                week_label TEXT DEFAULT '本學期',
+                start_date TEXT,
+                end_date TEXT NOT NULL,
+                status_badge TEXT DEFAULT '進行中',
+                description TEXT DEFAULT '',
+                related_system_url TEXT DEFAULT '',
+                applies_to_dept TEXT,
+                applies_to_role TEXT DEFAULT 'all'
+            )
+        """)
+
+        # 18. academic_calendar (學期校曆事項)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS academic_calendar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_name TEXT NOT NULL,
+                start_date TEXT NOT NULL,
+                end_date TEXT NOT NULL,
+                category TEXT DEFAULT '教務',
+                related_checklist_id INTEGER,
+                owner_key TEXT,
+                note TEXT,
+                source TEXT
+            )
+        """)
+
+        # 19. search_feedback (搜尋滿意度回饋)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS search_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query TEXT NOT NULL,
+                kb_id INTEGER,
+                helpful INTEGER NOT NULL,
+                comment TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # 20. anniversary_events & anniversary_wishes (校慶跑馬燈公告與祝福)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS anniversary_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                start_date TEXT NOT NULL,
+                end_date TEXT NOT NULL,
+                link_url TEXT DEFAULT '',
+                allow_wishes INTEGER DEFAULT 1,
+                is_active INTEGER DEFAULT 1,
+                sort_order INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS anniversary_wishes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id INTEGER,
+                nickname TEXT DEFAULT '匿名同學',
+                message TEXT NOT NULL,
+                is_approved INTEGER DEFAULT 1,
+                ip_hash TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.commit()
 
         # 檢查是否需要載入種子資料
@@ -420,14 +521,15 @@ def _seed_sqlite_data(cur, conn):
     users_data = [
         (1, 'student1', pw_std, '學生', 'S112001', '王小明', None, 0),
         (2, 'student2', pw_std, '學生', 'S112002', '李美華', None, 0),
-        (3, 'parent1', pw_std, '家長', 'S112001', '王大明 (小明家長)', None, 0),
-        (4, 'staff1', pw_std, '教職員', None, '周立威 (教務處職員)', None, 0),
-        (5, 'admin', pw_adm, '管理員', None, '系統超級管理員', None, 1),
+        (3, 'parent1', pw_std, '家長', 'S112001', '王大明 (王小明家長)', None, 0),
+        (4, 'staff1', pw_std, '教職員', None, '周立威 (教務處課務組)', None, 0),
+        (5, 'admin', pw_adm, '系統管理員', None, '系統總管理員', None, 1),
         (6, 'teacher1', pw_std, '老師', None, '彭賓鈺 老師', '資管五忠', 0),
         (7, 'S112004', pw_std, '學生', 'S112004', '陳冠宇', None, 0),
         (8, 'S112005', pw_std, '學生', 'S112005', '林雨潔', None, 0),
-        (9, 'parent2', pw_std, '家長', 'S112002', '李建國 (美華家長)', None, 0),
-        (20, 'dorm_demo', pw_std, '教職員', None, '宿舍管理示範員', None, 1)
+        (9, 'parent2', pw_std, '家長', 'S112002', '李建國 (李美華家長)', None, 0),
+        (10, 'S112003', pw_std, '學生', 'S112003', '張建華', None, 0),
+        (20, 'dorm_demo', pw_std, '教職員', None, '宿舍管理員 (生輔組)', None, 1)
     ]
     cur.executemany("INSERT OR REPLACE INTO users (user_id, username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", users_data)
 
@@ -583,13 +685,54 @@ def _seed_sqlite_data(cur, conn):
 
     # 15. audit_logs
     audit_init_data = [
-        (1, 'departments', 'CS', 'INSERT', '系統超級管理員', '管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'dept_name': '資訊管理科（五專）'}), '2026-10-22 10:00:00'),
-        (2, 'course_map', 'CS101', 'INSERT', '系統超級管理員', '管理員', '127.0.0.1', None, json.dumps({'course_id': 'CS101', 'course_name': '計算機概論', 'credits': 3}), '2026-10-22 10:05:00'),
-        (3, 'graduation_requirements', '1', 'INSERT', '系統超級管理員', '管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'total_credits_req': 128}), '2026-10-22 10:10:00')
+        (1, 'departments', 'CS', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'dept_name': '資訊管理科（五專）'}), '2026-10-22 10:00:00'),
+        (2, 'course_map', 'CS101', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'course_id': 'CS101', 'course_name': '計算機概論', 'credits': 3}), '2026-10-22 10:05:00'),
+        (3, 'graduation_requirements', '1', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'total_credits_req': 128}), '2026-10-22 10:10:00')
     ]
     cur.executemany("INSERT OR REPLACE INTO audit_logs (log_id, table_name, record_id, action, changed_by, changed_by_role, ip_address, before_json, after_json, changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", audit_init_data)
 
     conn.commit()
 
-# 模組載入時自動初始化 SQLite 資料表
+
+def init_mysql_schema():
+    """若 MySQL 可用，只補齊管理帳號所需的資料表欄位。"""
+    mysql_conn = _get_mysql_conn()
+    if not mysql_conn:
+        return
+    try:
+        cur = mysql_conn.cursor(dictionary=True)
+        cur.execute("SHOW COLUMNS FROM users")
+        cols = {row["Field"]: row for row in cur.fetchall()}
+
+        # 1. 擴充 role enum
+        try:
+            cur.execute("""
+                ALTER TABLE users
+                MODIFY COLUMN role ENUM('學生','家長','教職員','老師','管理員','系統管理員','內容管理人員','處室承辦','科助','住宿管理員','訪客') NOT NULL
+            """)
+        except Exception:
+            pass
+
+        # 2. 補齊 office, permissions, is_active 欄位
+        if "office" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN office VARCHAR(100) NOT NULL DEFAULT ''")
+        if "permissions" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN permissions VARCHAR(255) NOT NULL DEFAULT '查看,建立,修改'")
+        if "is_active" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1")
+
+
+        mysql_conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"⚠️ MySQL schema 自動升級略過: {e}")
+    finally:
+        try:
+            mysql_conn.close()
+        except Exception:
+            pass
+
+
+# 模組載入時自動初始化 SQLite 與 MySQL 資料表
 init_sqlite_schema()
+init_mysql_schema()
