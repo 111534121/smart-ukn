@@ -571,21 +571,29 @@
                                 class="hidden absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow"></span>
                         </button>
 
+                        <!-- 手機版背景遮罩：點空白處也能關閉通知卡片 -->
+                        <div id="notificationBackdrop" onclick="closeNotificationMenu()"
+                            class="hidden sm:!hidden fixed inset-0 bg-slate-900/30 z-40"></div>
+
                         <!-- 通知下拉卡片 (Notification Dropdown) -->
                         <!-- 手機版改為貼齊螢幕左右邊距，避免卡片超出畫面 -->
                         <div id="notificationMenu"
                             class="hidden fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden origin-top-right transition-all">
                             <!-- 頂部標題與操作 -->
                             <div
-                                class="p-3.5 bg-gradient-to-r from-ukn-900 to-ukn-800 text-white flex items-center justify-between">
-                                <div class="flex items-center gap-2">
+                                class="p-3.5 bg-gradient-to-r from-ukn-900 to-ukn-800 text-white flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
                                     <span class="text-base">🔔</span>
-                                    <span class="font-bold text-sm">通知與待辦提醒</span>
+                                    <span class="font-bold text-sm whitespace-nowrap">通知與待辦提醒</span>
                                     <span id="unreadCountText"
-                                        class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">已無未讀通知</span>
+                                        class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">已無未讀通知</span>
                                 </div>
-                                <button onclick="markAllNotificationsRead()"
-                                    class="text-[11px] text-white/80 hover:text-white hover:underline transition cursor-pointer">全部標為已讀</button>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="markAllNotificationsRead()"
+                                        class="text-[11px] text-white/80 hover:text-white hover:underline transition cursor-pointer whitespace-nowrap">全部標為已讀</button>
+                                    <button type="button" onclick="closeNotificationMenu()" aria-label="關閉通知"
+                                        class="text-white/80 hover:text-white text-lg leading-none px-1 cursor-pointer">&times;</button>
+                                </div>
                             </div>
 
                             <!-- 通知清單 -->
@@ -613,7 +621,7 @@
                         <div class="text-[11px] text-slate-500 hidden md:block" id="userSubInfo"></div>
                     </div>
                     <a href="/feature-guide.html"
-                        class="text-xs text-ukn-700 hover:text-ukn-900 whitespace-nowrap">功能對照說明</a>
+                        class="hidden sm:inline text-xs text-ukn-700 hover:text-ukn-900 whitespace-nowrap">功能對照說明</a>
                     <button type="button" id="logoutBtn" onclick="logoutUser()"
                         class="hidden text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">登出</button>
                     <button type="button" id="mobileMenuBtn" onclick="toggleMobileMenu()"
@@ -3412,12 +3420,14 @@
                     : e.status === 'ongoing' ? 'bg-ukn-50 text-ukn-800 border border-ukn-200' : 'bg-white text-slate-600 border border-slate-200';
             return `
                 <li>
-                    <button onclick="openSchoolCalEvent(${e.id})" class="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 ${past ? 'text-slate-400' : 'text-slate-800'}">
-                        <span class="shrink-0 w-24 text-xs ${past ? '' : 'text-slate-500'}">${schoolCalDateText(e)}</span>
-                        <span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${SCHOOL_CAL_STYLE[past ? 'past' : e.category].replace('line-through', '')}">${SCHOOL_CAL_LABEL[e.category]}</span>
-                        <span class="flex-1 min-w-0 text-sm ${past ? 'line-through' : ''}">${escapeHtml(e.title)}${e.tentative ? '<span class="ml-1 text-[10px] text-amber-700">（日期待確認）</span>' : ''}</span>
+                    <button onclick="openSchoolCalEvent(${e.id})" class="w-full text-left px-4 py-2.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 hover:bg-slate-50 ${past ? 'text-slate-400' : 'text-slate-800'}">
+                        <div class="flex items-center flex-wrap gap-1.5 sm:gap-3 sm:shrink-0">
+                            <span class="shrink-0 sm:w-24 text-xs ${past ? '' : 'text-slate-500'}">${schoolCalDateText(e)}</span>
+                            <span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${SCHOOL_CAL_STYLE[past ? 'past' : e.category].replace('line-through', '')}">${SCHOOL_CAL_LABEL[e.category]}</span>
+                            <span class="shrink-0 text-[11px] px-2 py-0.5 rounded ${statusClass}">${schoolCalStatusText(e)}</span>
+                        </div>
+                        <span class="flex-1 min-w-0 text-sm break-words ${past ? 'line-through' : ''}">${escapeHtml(e.title)}${e.tentative ? '<span class="ml-1 text-[10px] text-amber-700">（日期待確認）</span>' : ''}</span>
                         ${hasAction && !past ? '<span class="hidden sm:inline shrink-0 text-[11px] text-ukn-700">申請方式 ➔</span>' : ''}
-                        <span class="shrink-0 text-[11px] px-2 py-0.5 rounded ${statusClass}">${schoolCalStatusText(e)}</span>
                     </button>
                 </li>`;
         }
@@ -3739,10 +3749,10 @@
             const isHidden = menu.classList.contains('hidden');
             if (isHidden) {
                 menu.classList.remove('hidden');
+                document.getElementById('notificationBackdrop')?.classList.remove('hidden');
                 if (btn) btn.setAttribute('aria-expanded', 'true');
             } else {
-                menu.classList.add('hidden');
-                if (btn) btn.setAttribute('aria-expanded', 'false');
+                closeNotificationMenu();
             }
         }
 
@@ -3750,6 +3760,7 @@
             const menu = document.getElementById('notificationMenu');
             const btn = document.getElementById('notificationBellBtn');
             if (menu) menu.classList.add('hidden');
+            document.getElementById('notificationBackdrop')?.classList.add('hidden');
             if (btn) btn.setAttribute('aria-expanded', 'false');
         }
 
@@ -4594,7 +4605,7 @@
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
     <script src="/js/field-validate.js"></script>
-    <script src="/js/campus-shell.js?v=20261104-line"></script>
+    <script src="/js/campus-shell.js?v=20261104-mobile"></script>
     <script src="/js/home-portal.js?v=50"></script>
     <script src="/js/campus-access.js?v=48"></script>
     <script src="/js/campus-features.js?v=20261029-meet"></script>

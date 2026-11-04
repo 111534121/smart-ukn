@@ -120,12 +120,16 @@ function renderNav() {
     document.getElementById('megaPanel').addEventListener('mouseleave', closeMegaPanel);
 
     document.getElementById('mobileMenu').innerHTML = `
-        <div class="px-4 py-3 space-y-4">
+        <div class="px-4 py-3 space-y-2">
             <button type="button" class="mega-link w-full" onclick="switchTab('${HOME_TAB}')">🏠 首頁</button>
             ${FEATURE_GROUPS.map(g => `
-                <div>
-                    <div class="text-[11px] font-bold text-accent-500 tracking-wider px-3 mb-1">${g}</div>
-                    <div class="grid grid-cols-2 gap-1">
+                <div class="border-t border-slate-100 pt-2">
+                    <button type="button" data-group="${g}" onclick="toggleMobileGroup('${g}')" aria-expanded="false"
+                        class="mobile-group-toggle w-full flex items-center justify-between px-3 py-2 text-left">
+                        <span class="text-xs font-bold text-accent-500 tracking-wider">${g}</span>
+                        <span class="mobile-group-chevron text-slate-400 transition-transform">▾</span>
+                    </button>
+                    <div class="mobile-group-body hidden grid grid-cols-2 gap-1 pb-1">
                         ${FEATURES.filter(f => f.group === g).map(f => `<button type="button" class="mega-link text-sm" data-tab="${f.tab}" onclick="switchTab('${f.tab}')">${f.icon} ${escapeHtml(f.name)}</button>`).join('')}
                     </div>
                 </div>`).join('')}
@@ -175,6 +179,18 @@ function toggleMobileMenu(force) {
     const open = force !== undefined ? force : menu.classList.contains('hidden');
     menu.classList.toggle('hidden', !open);
     document.getElementById('mobileMenuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+// 手機選單每個分類預設收起來，點了才展開那一類 (跟首頁「常用服務」的顯示全部服務同樣邏輯)
+function toggleMobileGroup(group) {
+    document.querySelectorAll('#mobileMenu .mobile-group-toggle').forEach(btn => {
+        const body = btn.nextElementSibling;
+        const isThis = btn.dataset.group === group;
+        const willOpen = isThis && body.classList.contains('hidden');
+        body.classList.toggle('hidden', !willOpen);
+        btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        btn.querySelector('.mobile-group-chevron').style.transform = willOpen ? 'rotate(180deg)' : '';
+    });
 }
 
 function highlightNav(tabId) {
