@@ -188,16 +188,16 @@ window.FEATURE_GUIDE = {
       ],
       "frontend": [
         {
-          "file": "static/index.html",
-          "line": 2889
-        },
-        {
           "file": "static/login.html",
           "line": 312
         },
         {
           "file": "static/login.html",
           "line": 352
+        },
+        {
+          "file": "static/index.html",
+          "line": 2889
         },
         {
           "file": "static/js/admin-core.js",
@@ -208,16 +208,16 @@ window.FEATURE_GUIDE = {
           "line": 1760
         },
         {
+          "file": "static/js/events-admin.js",
+          "line": 242
+        },
+        {
           "file": "static/js/admin-workbench.js",
           "line": 112
         },
         {
           "file": "static/js/campus-shell.js",
           "line": 106
-        },
-        {
-          "file": "static/js/events-admin.js",
-          "line": 242
         }
       ]
     },
@@ -1848,7 +1848,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 840
+          "line": 642
         },
         {
           "file": "static/index.html",
@@ -8447,10 +8447,6 @@ window.FEATURE_GUIDE = {
           "line": 1405
         },
         {
-          "file": "static/js/campus-life.js",
-          "line": 592
-        },
-        {
           "file": "static/js/faculty.js",
           "line": 47
         },
@@ -8465,6 +8461,10 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/faculty.js",
           "line": 155
+        },
+        {
+          "file": "static/js/campus-life.js",
+          "line": 592
         }
       ]
     },
@@ -9783,6 +9783,10 @@ window.FEATURE_GUIDE = {
           "line": 3043
         },
         {
+          "file": "static/js/home-portal.js",
+          "line": 65
+        },
+        {
           "file": "static/js/campus-features.js",
           "line": 276
         },
@@ -9801,10 +9805,6 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/campus-features.js",
           "line": 399
-        },
-        {
-          "file": "static/js/home-portal.js",
-          "line": 65
         }
       ]
     },
@@ -10281,14 +10281,6 @@ window.FEATURE_GUIDE = {
           "line": 4049
         },
         {
-          "file": "static/js/campus-features.js",
-          "line": 472
-        },
-        {
-          "file": "static/js/campus-features.js",
-          "line": 491
-        },
-        {
           "file": "static/js/forms-finder.js",
           "line": 25
         },
@@ -10299,6 +10291,14 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/forms-finder.js",
           "line": 67
+        },
+        {
+          "file": "static/js/campus-features.js",
+          "line": 472
+        },
+        {
+          "file": "static/js/campus-features.js",
+          "line": 491
         }
       ]
     },
@@ -16031,16 +16031,16 @@ window.FEATURE_GUIDE = {
           "line": 4485
         },
         {
-          "file": "static/js/campus-shell.js",
-          "line": 735
-        },
-        {
           "file": "static/js/dept-scope.js",
           "line": 27
         },
         {
           "file": "static/js/dept-scope.js",
           "line": 75
+        },
+        {
+          "file": "static/js/campus-shell.js",
+          "line": 735
         }
       ]
     },
@@ -19772,6 +19772,42 @@ window.FEATURE_GUIDE = {
       ],
       "frontend": [
         {
+          "file": "static/js/meetings.js",
+          "line": 24
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 149
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 178
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 199
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 211
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 220
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 225
+        },
+        {
+          "file": "static/js/meetings.js",
+          "line": 242
+        },
+        {
+          "file": "static/js/home-portal.js",
+          "line": 65
+        },
+        {
           "file": "static/js/campus-life.js",
           "line": 756
         },
@@ -19814,42 +19850,6 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/campus-shell.js",
           "line": 364
-        },
-        {
-          "file": "static/js/home-portal.js",
-          "line": 65
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 24
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 149
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 178
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 199
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 211
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 220
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 225
-        },
-        {
-          "file": "static/js/meetings.js",
-          "line": 242
         }
       ]
     },
@@ -20023,18 +20023,6 @@ window.FEATURE_GUIDE = {
       ],
       "frontend": [
         {
-          "file": "static/js/campus-life.js",
-          "line": 694
-        },
-        {
-          "file": "static/js/campus-shell.js",
-          "line": 281
-        },
-        {
-          "file": "static/js/campus-shell.js",
-          "line": 317
-        },
-        {
           "file": "static/js/tour.js",
           "line": 2
         },
@@ -20045,6 +20033,18 @@ window.FEATURE_GUIDE = {
         {
           "file": "static/js/tour.js",
           "line": 189
+        },
+        {
+          "file": "static/js/campus-life.js",
+          "line": 694
+        },
+        {
+          "file": "static/js/campus-shell.js",
+          "line": 281
+        },
+        {
+          "file": "static/js/campus-shell.js",
+          "line": 317
         }
       ]
     },

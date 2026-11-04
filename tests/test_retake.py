@@ -130,6 +130,28 @@ def test_class_meeting_period_counts_as_free_time():
     assert r["sections"][0]["uses_free_time"] == ["週三 第 6-7 節"]
 
 
+def test_every_course_reports_prerequisite_check():
+    """每一科都先回報擋修檢查結果 (畫面先顯示有沒有擋修，再看班別)"""
+    schedule = MY_CLASS + [row("資管五孝", 4, 2, 4, "資料結構")]
+    blocked = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
+                              courses=COURSES, passed_ids=set())[0]["prereq"]
+    assert blocked["has_prerequisite"] and blocked["blocked"] and not blocked["passed"]
+    assert blocked["course_name"] == "程式設計(一)"
+    cleared = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
+                              courses=COURSES, passed_ids={"CS102"})[0]["prereq"]
+    assert cleared["passed"] and not cleared["blocked"]
+    none = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1",
+                           courses=COURSES)[0]["prereq"]
+    assert not none["has_prerequisite"] and not none["blocked"]
+
+
+def test_class_weekly_meeting_name_counts_as_free_time():
+    """課表寫「班週會」也算空堂；校部週會不算"""
+    assert logic.is_free_time({"course_name": "班週會"})
+    assert logic.is_free_time({"course_name": "班會 / 導師時間"})
+    assert not logic.is_free_time({"course_name": "校部週會"})
+
+
 def test_not_offered():
     """無課可選：這學期沒有任何班級開微積分"""
     r = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1")[0]
