@@ -205,7 +205,7 @@ def can_review(u, item):
         from .admin_cases import is_dorm_staff
         if is_dorm_staff(u):
             return False
-    if u["role"] in ("管理員", "教職員"):
+    if u["role"] in ("管理員", "系統管理員", "教職員"):
         return True
     return u["role"] == "老師" and u.get("advised_class") and u["advised_class"] == item["class_name"]
 

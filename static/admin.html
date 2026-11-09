@@ -119,10 +119,6 @@
             line-height: 1.5;
             word-break: break-word;
         }
-        /* 欄位驗證錯誤：紅框 + 底下紅字 (static/js/field-validate.js 共用) */
-        .field-error-input { border-color: #e11d48 !important; background-color: #fff1f2 !important; }
-        .field-error-text { color: #be123c; font-size: 11px; margin-top: 2px; display: none; }
-        .field-error-text.show { display: block; }
     </style>
 </head>
 
@@ -166,9 +162,11 @@
                 <a href="/admin/events"
                     class="text-xs bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-2.5 py-1.5 rounded transition shadow-xs whitespace-nowrap">活動報名管理
                     ↗</a>
-                <a href="/"
-                    class="inline-flex items-center gap-1 text-xs bg-slate-800 hover:bg-slate-700 text-white font-bold px-2.5 py-1.5 rounded transition whitespace-nowrap shadow-xs">🏠
-                    切換至前台首頁</a>
+                <button type="button" onclick="handleAdminLogout()"
+                    class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1.5 rounded transition shadow-xs whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                    title="登出並返回一般登入頁面">
+                    <span>🚪 登出系統</span>
+                </button>
             </div>
         </div>
     </header>
@@ -387,6 +385,19 @@
                     </div>
                 </div>
 
+                <!-- 側邊欄底部登出與切換 -->
+                <div class="p-3 border-t border-slate-200 bg-slate-50 space-y-2 mt-4 rounded-lg">
+                    <button type="button" onclick="handleAdminLogout()"
+                        class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer">
+                        <span>🚪</span>
+                        <span>登出管理系統</span>
+                    </button>
+                    <a href="/login" onclick="event.preventDefault(); handleAdminLogout();"
+                        class="w-full block text-center text-[11px] text-slate-500 hover:text-slate-800 transition">
+                        返回師生/家長登入頁 →
+                    </a>
+                </div>
+
             </nav>
         </aside>
 
@@ -595,10 +606,16 @@
                             <div class="font-bold text-slate-900 text-sm">👤 帳號與權限管理</div>
                             <p class="text-slate-500">管理系統帳號之新增、停用、所屬處室及操作權限。</p>
                         </div>
-                        <button onclick="openUserModal('add')"
-                            class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-3.5 py-2 rounded text-xs transition shrink-0 shadow-sm flex items-center gap-1">
-                            <span>+ 新增帳號</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openCredentialQueryModal()"
+                                class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-3.5 py-2 rounded text-xs transition shrink-0 shadow-sm flex items-center gap-1">
+                                <span>🔍 帳密查詢</span>
+                            </button>
+                            <button onclick="openUserModal('add')"
+                                class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-3.5 py-2 rounded text-xs transition shrink-0 shadow-sm flex items-center gap-1">
+                                <span>+ 新增帳號</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 搜尋與篩選列 -->
@@ -629,6 +646,15 @@
                             class="border border-slate-300 text-slate-600 hover:bg-slate-100 px-2.5 py-1.5 rounded transition">清除重設</button>
                     </div>
 
+                    <!-- 安全提示與密碼說明 -->
+                    <div class="bg-indigo-50/70 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-900 flex items-start gap-2">
+                        <span class="text-base shrink-0">💡</span>
+                        <div class="leading-relaxed">
+                            <span class="font-bold">資料庫密碼防護說明：</span>
+                            使用者密碼在資料庫中一律採用業界安全標準之「加鹽雜湊 (Salted Hash)」儲存（即 <code>scrypt / pbkdf2</code>），防止資料庫外洩時遭逆向破解，<span class="font-semibold text-ukn-900">並非系統亂碼</span>。本系統預設密碼：一般在校師生／家長為 <code class="bg-white px-1.5 py-0.5 rounded font-bold border border-indigo-200 text-indigo-800">123456</code>，系統管理員為 <code class="bg-white px-1.5 py-0.5 rounded font-bold border border-indigo-200 text-indigo-800">admin123</code>。資料庫內已同步提供清晰的 <code>default_password</code> 欄位，您亦可隨時透過操作欄「帳密」查詢或一鍵還原。
+                        </div>
+                    </div>
+
                     <!-- 帳號清單表格 -->
                     <div class="overflow-x-auto rounded border border-slate-200 bg-white">
                         <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -638,6 +664,7 @@
                                     <th class="p-3">帳號 / 狀態</th>
                                     <th class="p-3">姓名</th>
                                     <th class="p-3">角色 / 處室</th>
+                                    <th class="p-3">密碼狀態</th>
                                     <th class="p-3">操作權限</th>
                                     <th class="p-3">學號 / 導師班級</th>
                                     <th class="p-3">建立時間</th>
@@ -2028,6 +2055,96 @@
         </div>
     </div>
 
+    <!-- 彈窗 Modal: 帳密查詢與密碼管理 -->
+    <div id="credentialQueryModal"
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>🔍 管理員帳密查詢與密碼管理</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-500">快速查詢帳號、姓名、學號與密碼狀態，支援一鍵還原預設密碼或指定新密碼。</p>
+                </div>
+                <button type="button" onclick="closeCredentialQueryModal()"
+                    class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+
+            <!-- 查詢工具列 -->
+            <div class="flex flex-wrap items-center gap-2.5 bg-slate-50 border border-slate-200 p-3 rounded text-xs">
+                <div class="flex items-center gap-1.5">
+                    <span class="font-semibold text-slate-600">角色：</span>
+                    <select id="credFilterRole" onchange="searchCredentials()"
+                        class="border border-slate-300 rounded px-2 py-1.5 bg-white text-xs">
+                        <option value="">全部身分角色</option>
+                        <option value="學生">學生</option>
+                        <option value="老師">老師</option>
+                        <option value="處室承辦">處室承辦</option>
+                        <option value="科助">科助</option>
+                        <option value="住宿管理員">住宿管理員</option>
+                        <option value="內容管理人員">內容管理人員</option>
+                        <option value="系統管理員">系統管理員</option>
+                        <option value="家長">家長</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <input type="text" id="credSearchKeyword" placeholder="輸入帳號、姓名、學號或處室查詢..."
+                        onkeyup="if(event.key==='Enter')searchCredentials()"
+                        class="w-full border border-slate-300 rounded px-3 py-1.5 bg-white text-xs focus:ring-2 focus:ring-ukn-500">
+                </div>
+                <button type="button" onclick="searchCredentials()"
+                    class="bg-indigo-700 hover:bg-indigo-800 text-white px-3 py-1.5 rounded font-semibold transition text-xs">查詢</button>
+                <button type="button"
+                    onclick="document.getElementById('credFilterRole').value='';document.getElementById('credSearchKeyword').value='';searchCredentials()"
+                    class="border border-slate-300 text-slate-600 hover:bg-slate-100 px-2.5 py-1.5 rounded transition text-xs">重設</button>
+            </div>
+
+            <!-- 查詢結果表格 -->
+            <div class="overflow-x-auto rounded border border-slate-200 bg-white">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <th class="p-2.5 w-12 font-mono">ID</th>
+                            <th class="p-2.5">帳號</th>
+                            <th class="p-2.5">姓名</th>
+                            <th class="p-2.5">身分角色</th>
+                            <th class="p-2.5">綁定學號 / 處室</th>
+                            <th class="p-2.5">密碼設定狀態</th>
+                            <th class="p-2.5">帳號狀態</th>
+                            <th class="p-2.5 text-center w-44">密碼管理操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="credentialsTableBody" class="divide-y divide-slate-100 text-slate-700">
+                        <tr>
+                            <td colspan="8" class="p-6 text-center text-slate-400">請輸入關鍵字或直接點擊查詢</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 說明卡片 -->
+            <div class="bg-amber-50 border border-amber-200 rounded p-3 text-[11px] text-amber-900 space-y-1">
+                <div class="font-bold flex items-center gap-1">
+                    <span>💡 帳號與密碼防呆說明：</span>
+                </div>
+                <ul class="list-disc pl-4 space-y-0.5 text-amber-800">
+                    <li>系統密碼採不可逆單向雜湊加密（Werkzeug Security Scrypt / PBKDF2）存檔，維護師生隱私安全。</li>
+                    <li>新進在校師生預設密碼為 <code
+                            class="bg-white px-1 py-0.5 rounded border border-amber-300 font-mono font-bold">123456</code>；系統管理員預設密碼為
+                        <code
+                            class="bg-white px-1 py-0.5 rounded border border-amber-300 font-mono font-bold">admin123</code>。
+                    </li>
+                    <li>若師生忘記密碼，管理員可點擊「重設為預設密碼」即時還原；自訂新密碼長度須為 8～100 字元。</li>
+                </ul>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t">
+                <button type="button" onclick="closeCredentialQueryModal()"
+                    class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-2 rounded text-xs transition">關閉視窗</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 彈窗 Modal: 使用者帳號與權限 -->
     <div id="userModal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -2046,7 +2163,6 @@
                         <label class="block font-semibold text-slate-700 mb-1">登入帳號 *</label>
                         <input type="text" id="mUsername" required placeholder="例如：admin, staff_edu"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
-                        <p id="mUsername-err" class="field-error-text"></p>
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">姓名 *</label>
@@ -2059,7 +2175,8 @@
                         <label class="block font-semibold text-slate-700 mb-1">登入密碼</label>
                         <input type="password" id="mPassword" placeholder="••••••••"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
-                        <span id="mPasswordHint" class="text-[11px] text-slate-500 mt-0.5 block">新增帳號時請設定至少 8 字元的密碼</span>
+                        <span id="mPasswordHint" class="text-[11px] text-slate-500 mt-0.5 block">新增帳號時請設定至少 8
+                            字元的密碼</span>
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">帳號狀態 *</label>
@@ -2145,7 +2262,6 @@
                         <label class="block font-semibold text-slate-700 mb-1">綁定學號 (學生/家長)</label>
                         <input type="text" id="mStudentId" placeholder="例如：41001001"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
-                        <p id="mStudentId-err" class="field-error-text"></p>
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">導師班級 (老師選填)</label>
@@ -4210,8 +4326,7 @@
             }
         }
     </script>
-    <script src="/js/field-validate.js"></script>
-    <script src="/js/admin-core.js?v=20261104b"></script>
+    <script src="/js/admin-core.js?v=20261104"></script>
 </body>
 
 </html>

@@ -239,8 +239,6 @@
     }
 
     async function init() {
-        // 學號欄位擋中文輸入 (static/js/field-validate.js)
-        ['addStudentId', 'editStudentId'].forEach(id => restrictAccountInput(id));
         const me = await api('/api/auth/me');
         if (!me.is_authenticated) throw new Error('請先登入系統');
         user = me.user;
@@ -342,19 +340,13 @@
     $('addForm').addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
-        clearFieldError('addStudentId');
         busy(form.querySelector('button'), async () => {
-            try {
-                const result = await api(`/api/campus/events/${currentEvent}/registrations`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formToFields(form)),
-                });
-                form.reset();
-                message(result.message);
-                await loadEvent(currentEvent);
-            } catch (err) {
-                if (err.message.includes('學號')) setFieldError('addStudentId', err.message);
-                throw err;
-            }
+            const result = await api(`/api/campus/events/${currentEvent}/registrations`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formToFields(form)),
+            });
+            form.reset();
+            message(result.message);
+            await loadEvent(currentEvent);
         });
     });
 
@@ -376,19 +368,13 @@
     $('editForm').addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
-        clearFieldError('editStudentId');
         busy(form.querySelector('button'), async () => {
-            try {
-                const result = await api(`/api/campus/events/${currentEvent}/registrations/${editingId}`, {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formToFields(form)),
-                });
-                message(result.message);
-                closeEdit();
-                await loadEvent(currentEvent);
-            } catch (err) {
-                if (err.message.includes('學號')) setFieldError('editStudentId', err.message);
-                throw err;
-            }
+            const result = await api(`/api/campus/events/${currentEvent}/registrations/${editingId}`, {
+                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formToFields(form)),
+            });
+            message(result.message);
+            closeEdit();
+            await loadEvent(currentEvent);
         });
     });
 

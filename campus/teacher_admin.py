@@ -98,18 +98,18 @@ def create_teacher():
     u = current_user()
     now = now_str()
     meta = {"submitted_by": u["full_name"] or u["username"], "created_at": now, "updated_at": now}
-    if u["role"] == "管理員":
+    if u["role"] in ("管理員", "系統管理員"):
         meta.update(is_published=1, status="已核准", **_reviewer_meta())
     else:
         meta.update(is_published=0, status="待審核", pending_action="新增")
     saved = db.insert_teacher({**fields, **meta})
     deps.write_audit_log("teacher_directory", saved["id"], "新增", after=fields)
-    return ok(message="已新增並上線" if u["role"] == "管理員" else "已送出，等管理員審核後才會出現在學生端", id=saved["id"])
+    return ok(message="已新增並上線" if u["role"] in ("管理員", "系統管理員") else "已送出，等管理員審核後才會出現在學生端", id=saved["id"])
 
 
 # 【功能：老師辦公室審核】教職員修改已上線的資料 → 存進 pending_data 等審核，學生仍看到舊資料
 @bp.route("/api/admin/teachers/<int:teacher_id>", methods=["PUT"])
-@require("管理員", "教職員")
+@require("管理員", "系統管理員", "教職員")
 def update_teacher(teacher_id):
     before = _find(teacher_id)
     if not before:
@@ -120,7 +120,7 @@ def update_teacher(teacher_id):
     if _name_taken(fields["name"], teacher_id):
         return error("已有同名老師的資料")
     u = current_user()
-    if u["role"] == "管理員":
+    if u["role"] in ("管理員", "系統管理員"):
         db.update_teacher(teacher_id, {**fields, "updated_at": now_str()})
         message = "已更新"
     elif not before["is_published"]:
@@ -139,13 +139,13 @@ def update_teacher(teacher_id):
 
 
 @bp.route("/api/admin/teachers/<int:teacher_id>", methods=["DELETE"])
-@require("管理員", "教職員")
+@require("管理員", "系統管理員", "教職員")
 def delete_teacher(teacher_id):
     before = _find(teacher_id)
     if not before:
         return error("找不到該筆資料", 404)
     u = current_user()
-    if u["role"] == "管理員" or not before["is_published"]:
+    if u["role"] in ("管理員", "系統管理員") or not before["is_published"]:
         db.delete_teacher(teacher_id)
         deps.write_audit_log("teacher_directory", teacher_id, "刪除", before={k: before.get(k) for k in db.PROFILE_FIELDS})
         return ok(message="已刪除")
@@ -158,7 +158,7 @@ def delete_teacher(teacher_id):
 
 # 【功能：老師辦公室審核】管理員核准：新增上線 / 套用修改 / 刪除；退回要寫原因
 @bp.route("/api/admin/teachers/<int:teacher_id>/review", methods=["POST"])
-@require("管理員")
+@require("管理員", "系統管理員")
 def review_teacher(teacher_id):
     item = _find(teacher_id)
     if not item:

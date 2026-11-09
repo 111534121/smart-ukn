@@ -25,7 +25,7 @@ bp = Blueprint("applications", __name__, template_folder="templates")
 deps = SimpleNamespace()
 
 STATUS_RUNNING, STATUS_DONE, STATUS_REJECTED, STATUS_WITHDRAWN = "審核中", "已完成", "已退回", "已撤回"
-REVIEW_ROLES = ("老師", "教職員", "管理員")
+REVIEW_ROLES = ("老師", "教職員", "管理員", "系統管理員")
 FIELD_MAX = 300
 
 # MySQL 離線時的示範資料：王小明一張停修跑到「導師簽核」、一張證照獎勵已完成
@@ -128,7 +128,7 @@ def can_review(app, student_class=None):
     if app["status"] != STATUS_RUNNING or role not in REVIEW_ROLES:
         return False
     stage = app["stages"][app["current_stage"]]
-    if role in ("教職員", "管理員"):
+    if role in ("教職員", "管理員", "系統管理員"):
         return True
     return stage.get("role") == "老師" and student_class is not None and student_class == session.get("advised_class")
 

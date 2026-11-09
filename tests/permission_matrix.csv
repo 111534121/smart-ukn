@@ -7,6 +7,8 @@ GET,/login,/login,,登入頁,OK,OK,OK,OK,OK,OK,OK,
 GET,/admin,/admin,,後台頁面,OK,OK,OK,OK,OK,OK,OK,頁面本身公開，資料靠後台 API 保護
 POST,/api/auth/login,/api/auth/login,,登入,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/auth/logout,/api/auth/logout,,登出,OK,OK,OK,OK,OK,OK,OK,
+GET,/logout,/logout,,快速登出,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/auth/logout,/api/auth/logout,,登出重定向,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/auth/me,/api/auth/me,,目前登入者,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/visitor/register,/api/visitor/register,,訪客登記,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/calendar/current-week,/api/calendar/current-week,,本週校曆,OK,OK,OK,OK,OK,OK,OK,
@@ -258,8 +260,6 @@ POST,/api/line/unbind,/api/line/unbind,,LIFF 端解除綁定,401,401,401,401,401
 GET,/api/line/menu,/api/line/menu,,LIFF 端讀取我的常用功能,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 PUT,/api/line/menu,/api/line/menu,,LIFF 端更新我的常用功能,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 GET,/liff/menu,/liff/menu,,設定常用功能 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
-GET,/api/line/schedule,/api/line/schedule,,LIFF 端讀取我的課表,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
-GET,/liff/schedule,/liff/schedule,,我的課表 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
 GET,/api/line/oa,/api/line/oa,,LINE 官方帳號加好友資訊,OK,OK,OK,OK,OK,OK,OK,公開資訊，不含任何登入狀態
 GET,/api/line/oa-qr.svg,/api/line/oa-qr.svg,,LINE 官方帳號加好友 QR Code,OK,OK,OK,OK,OK,OK,OK,公開資訊，不含任何登入狀態
 GET,/api/applications/form/<int:item_id>,/api/applications/form/999999,,線上申辦表單欄位,OK,OK,OK,OK,OK,OK,OK,
@@ -318,3 +318,6 @@ GET,/api/admin/student-credits,/api/admin/student-credits,,核心管理員資料
 GET,/api/admin/attendance-records,/api/admin/attendance-records,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
 GET,/api/admin/student-records,/api/admin/student-records,,核心管理員資料與稽核,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
 PUT,/api/admin/unmatched-queries/<int:query_id>/status,/api/admin/unmatched-queries/999999/status,,更新未匹配查詢狀態,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/credentials/query,/api/admin/credentials/query,,管理員帳密查詢,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+POST,/api/admin/users/<int:user_id>/reset-password,/api/admin/users/999999/reset-password,,管理員重設密碼,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/api/admin/users/<int:user_id>/credential-info,/api/admin/users/999999/credential-info,,查詢使用者帳密詳情,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite

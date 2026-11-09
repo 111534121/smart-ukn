@@ -70,9 +70,7 @@ def message_action(label, text):
 def build_menus():
     demo_home = os.getenv("LINE_DEMO_HOME_URL", "https://smart-ukn-liff-demo.onrender.com/")
     liff_id = os.getenv("LINE_LIFF_ID", "2012266647-el203x6g")
-    # 「課表查詢」預設連去我們自己的 LIFF 課表頁 (/liff/schedule)；還沒設定好時退回 demo 首頁
-    schedule_liff_id = os.getenv("LINE_LIFF_ID_SCHEDULE", "")
-    schedule_url = f"https://liff.line.me/{schedule_liff_id}" if schedule_liff_id else os.getenv("LINE_STUDENT_SCHEDULE_URL", demo_home)
+    schedule_url = os.getenv("LINE_STUDENT_SCHEDULE_URL", demo_home)
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",

@@ -62,10 +62,6 @@
         .ukn-footer a { color: #fff; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { scrollbar-width: none; }
-        /* 欄位驗證錯誤：紅框 + 底下紅字，標出是哪一欄 (全站共用同一套 class，見 static/js/field-validate.js) */
-        .field-error-input { border-color: #e11d48 !important; background-color: #fff1f2 !important; }
-        .field-error-text { color: #be123c; font-size: 11px; margin-top: 2px; display: none; }
-        .field-error-text.show { display: block; }
     </style>
 </head>
 <body class="bg-[#f5f6f8] min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-ukn-700 selection:text-white">
@@ -109,16 +105,21 @@
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">帳號 (學號 / 教職員代號)</label>
                         <input type="text" id="mUsername" placeholder="例如：student1 或 S112001" required
-                               inputmode="latin" autocapitalize="off"
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
-                        <p id="mUsername-err" class="field-error-text"></p>
                     </div>
 
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">密碼</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block font-semibold text-slate-700">密碼</label>
+                            <span id="mPasswordRuleText" class="text-[11px] text-slate-400">僅限半形數字</span>
+                        </div>
                         <input type="password" id="mPassword" placeholder="預設密碼 123456" required
+                               inputmode="numeric" autocomplete="current-password"
                                class="w-full px-4 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
-                        <p id="mPassword-err" class="field-error-text"></p>
+                        <p id="mPasswordHint" class="text-xs text-rose-600 mt-1 hidden font-semibold flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span id="mPasswordHintText"></span>
+                        </p>
                     </div>
 
                     <label class="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
@@ -138,23 +139,23 @@
                 <div class="pt-4 border-t border-slate-100 space-y-2">
                     <span class="text-[11px] font-semibold text-slate-500 block text-center">快捷填入測試帳號（點擊即填入）：</span>
                     <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
-                        <button onclick="fillAccount('student1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('student1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">學生：王小明</div>
                             <div class="text-[10px] text-slate-500 font-normal">S112001 (資管五忠)</div>
                         </button>
-                        <button onclick="fillAccount('S112004', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('S112004', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">學生：陳冠宇</div>
                             <div class="text-[10px] text-slate-500 font-normal">學號登入 S112004 (全數及格)</div>
                         </button>
-                        <button onclick="fillAccount('S112005', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('S112005', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">學生：林雨潔</div>
                             <div class="text-[10px] text-slate-500 font-normal">學號登入 S112005 (資料結構未過)</div>
                         </button>
-                        <button onclick="fillAccount('parent1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('parent1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-amber-900">家長：王大明</div>
                             <div class="text-[10px] text-slate-500 font-normal">學生王小明之家長</div>
                         </button>
-                        <button onclick="fillAccount('teacher1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('teacher1', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-ukn-900">導師：彭賓鈺</div>
                             <div class="text-[10px] text-slate-500 font-normal">資管五忠導師</div>
                         </button>
@@ -162,7 +163,11 @@
                             <div class="font-bold text-ukn-900">宿舍行政人員</div>
                             <div class="text-[10px] text-slate-500 font-normal">dorm_demo／123456 · 宿舍審核與住宿案件</div>
                         </button>
-                        <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                        <button type="button" onclick="fillAccount('demo_assistant_cs', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-purple-900">科助：資訊管理科</div>
+                            <div class="text-[10px] text-slate-500 font-normal">demo_assistant_cs／123456 · 科務工作台</div>
+                        </button>
+                        <button type="button" onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-emerald-900">管理員：系統後台</div>
                             <div class="text-[10px] text-slate-500 font-normal">CMS 規章維護權限</div>
                         </button>
@@ -269,7 +274,6 @@
         <p>地址：114 臺北市內湖區康寧路三段75巷137號 ｜ 電話：(02)2632-1181 ｜ 傳真：(02)2632-8744</p>
     </footer>
 
-    <script src="/js/field-validate.js"></script>
     <script>
         let selectedVisitorType = '未來學生';
 
@@ -300,14 +304,84 @@
             }
         }
 
+        function showPasswordHint(msg) {
+            const hint = document.getElementById('mPasswordHint');
+            const hintText = document.getElementById('mPasswordHintText');
+            if (!hint || !hintText) return;
+            hintText.textContent = msg;
+            hint.classList.remove('hidden');
+            clearTimeout(hint._timer);
+            hint._timer = setTimeout(() => {
+                hint.classList.add('hidden');
+            }, 3500);
+        }
+
+        function filterPasswordInput() {
+            const pInput = document.getElementById('mPassword');
+            const uInput = document.getElementById('mUsername');
+            const ruleText = document.getElementById('mPasswordRuleText');
+            if (!pInput) return;
+
+            const isAdmin = (uInput?.value || '').trim().toLowerCase() === 'admin';
+            if (ruleText) {
+                ruleText.textContent = isAdmin ? '管理員可輸入英數' : '僅限半形數字';
+            }
+
+            let val = pInput.value;
+            let warned = false;
+
+            // 1. 防呆：阻擋中文字、全形符號與空白字元
+            if (/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef\s]/.test(val)) {
+                val = val.replace(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef\s]/g, '');
+                showPasswordHint('防呆阻擋：密碼欄位不可輸入中文字元或全形符號！');
+                warned = true;
+            }
+
+            // 2. 防呆：密碼欄位只能輸入數字（管理員除外）
+            if (!isAdmin) {
+                if (/[^0-9]/.test(val)) {
+                    val = val.replace(/[^0-9]/g, '');
+                    if (!warned) {
+                        showPasswordHint('防呆限制：密碼僅能輸入半形數字（預設 123456），不可輸入英文或特殊符號！');
+                    }
+                }
+            } else {
+                if (/[^a-zA-Z0-9]/.test(val)) {
+                    val = val.replace(/[^a-zA-Z0-9]/g, '');
+                    if (!warned) {
+                        showPasswordHint('管理員密碼僅能輸入半形英數字！');
+                    }
+                }
+            }
+
+            if (pInput.value !== val) {
+                pInput.value = val;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const pInput = document.getElementById('mPassword');
+            const uInput = document.getElementById('mUsername');
+            if (pInput) {
+                pInput.addEventListener('input', filterPasswordInput);
+                pInput.addEventListener('paste', () => setTimeout(filterPasswordInput, 10));
+                pInput.addEventListener('compositionend', filterPasswordInput);
+            }
+            if (uInput) {
+                uInput.addEventListener('input', () => {
+                    const isAdmin = uInput.value.trim().toLowerCase() === 'admin';
+                    const ruleText = document.getElementById('mPasswordRuleText');
+                    if (ruleText) ruleText.textContent = isAdmin ? '管理員可輸入英數' : '僅限半形數字';
+                    filterPasswordInput();
+                });
+            }
+        });
+
         function fillAccount(u, p) {
             document.getElementById('mUsername').value = u;
             document.getElementById('mPassword').value = p;
+            filterPasswordInput();
         }
-
-        restrictAccountInput('mUsername');
-        document.getElementById('mUsername').addEventListener('input', () => clearFieldError('mUsername'));
-        document.getElementById('mPassword').addEventListener('input', () => clearFieldError('mPassword'));
 
         async function handleMemberLogin(e) {
             e.preventDefault();
@@ -317,10 +391,18 @@
             const btn = document.getElementById('loginBtn');
 
             errBox.classList.add('hidden');
-            clearFieldErrors(['mUsername', 'mPassword']);
 
-            if (!u) { setFieldError('mUsername', '請輸入帳號'); return; }
-            if (!p) { setFieldError('mPassword', '請輸入密碼'); return; }
+            // 送出前嚴格防呆阻絕
+            if (/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(p)) {
+                errBox.textContent = '密碼格式錯誤：密碼不可包含中文字元或全形字元！請輸入半形數字。';
+                errBox.classList.remove('hidden');
+                return;
+            }
+            if (u.toLowerCase() !== 'admin' && !/^\d+$/.test(p)) {
+                errBox.textContent = '密碼格式錯誤：密碼欄位僅能輸入半形數字（預設密碼為 123456）！';
+                errBox.classList.remove('hidden');
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = `<span>登入驗證中...</span>`;
@@ -338,9 +420,6 @@
                 } else {
                     errBox.textContent = data.message || '帳號或密碼錯誤';
                     errBox.classList.remove('hidden');
-                    // 帳密錯誤無法確定是哪一欄錯，兩欄都標紅，比對帳密後清空再試
-                    setFieldError('mUsername', '');
-                    setFieldError('mPassword', '');
                 }
             } catch (err) {
                 errBox.textContent = '連不上系統，請確認程式已經開啟';

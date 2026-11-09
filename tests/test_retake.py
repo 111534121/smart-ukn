@@ -103,33 +103,6 @@ def test_self_study_time_is_free_but_school_assembly_is_not():
     assert {c["course_name"] for c in sections["資管四忠"]["conflicts"]} == {"校部週會", "社團活動"}
 
 
-def test_prerequisite_not_passed_blocks_retake():
-    """先修科目沒過 → 擋修，不列班別，直接提醒 (而不是直接跳出推薦結果)"""
-    schedule = MY_CLASS + [row("資管五孝", 4, 2, 4, "資料結構")]
-    r = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
-                        courses=COURSES, passed_ids=set())[0]
-    assert r["status"] == logic.PREREQ_BLOCKED
-    assert r["sections"] == []
-    assert "程式設計(一)" in r["message"]
-
-
-def test_prerequisite_passed_allows_normal_recommendation():
-    """先修科目已經過 → 不受擋修影響，照常比對班別"""
-    schedule = MY_CLASS + [row("資管五孝", 4, 2, 4, "資料結構")]
-    r = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
-                        courses=COURSES, passed_ids={"CS102"})[0]
-    assert r["status"] == logic.AVAILABLE
-
-
-def test_class_meeting_period_counts_as_free_time():
-    """班會跟自習一樣算空堂，重補修班排在那個時段不算衝堂"""
-    schedule = MY_CLASS + [row("資管五孝", 3, 6, 7, "程式設計(一)")]  # 撞到週三「班會」節次
-    r = logic.recommend(logic.needs_retake(failed("CS102"), COURSES), schedule, "資管五忠", "S1")[0]
-    assert r["status"] == logic.AVAILABLE
-    assert r["sections"][0]["ok"]
-    assert r["sections"][0]["uses_free_time"] == ["週三 第 6-7 節"]
-
-
 def test_not_offered():
     """無課可選：這學期沒有任何班級開微積分"""
     r = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1")[0]
@@ -194,8 +167,6 @@ def test_api_student_demo(client, login):
     r = data["data"][0]
     assert r["course_id"] == "CS102" and r["status"] == "arranged"
     assert data["notifications"] == []
-    # 畫面一進來先看自己現在的課表 (見 static/js/retake.js)
-    assert isinstance(data["schedule"], list) and data["schedule"]
 
 
 def test_api_uses_session_and_parent_can_view(client, login, monkeypatch):

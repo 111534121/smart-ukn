@@ -141,7 +141,7 @@ def student_in_scope(u, student_id):
 
 
 def can_edit(u, record):
-    return u["role"] == "管理員" or record["counselor_username"] == u["username"]
+    return u["role"] in ("管理員", "系統管理員") or record["counselor_username"] == u["username"]
 
 
 def clean(data, partial=False):

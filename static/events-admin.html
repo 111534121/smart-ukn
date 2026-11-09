@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>活動報名｜報名者管理</title>
 <link rel="stylesheet" href="/css/admin-workbench.css?v=20261028">
-<link rel="stylesheet" href="/css/events-admin.css?v=20261104">
+<link rel="stylesheet" href="/css/events-admin.css?v=20261028">
 </head>
 <body>
 <header>
@@ -65,7 +65,7 @@
     <p class="muted">用於現場或電話報名；不受線上報名截止日限制，名額滿了會自動轉候補。</p>
     <form id="addForm">
       <div class="formgrid">
-        <label>學號<input name="student_id" id="addStudentId" maxlength="20" required placeholder="例如 S112001"><span id="addStudentId-err" class="field-error-text"></span></label>
+        <label>學號<input name="student_id" maxlength="20" required placeholder="例如 S112001"></label>
         <label>姓名<input name="full_name" maxlength="50" required></label>
         <label>Email<input name="email" type="email" maxlength="100" required></label>
         <label>電話（選填）<input name="phone" type="tel" maxlength="30" placeholder="例如 0912-345-678"></label>
@@ -118,7 +118,7 @@
     <div class="sectionhead"><h2>編輯報名者</h2><button type="button" id="editCancel">關閉</button></div>
     <form id="editForm">
       <div class="formgrid">
-        <label>學號<input name="student_id" id="editStudentId" maxlength="20" required><span id="editStudentId-err" class="field-error-text"></span></label>
+        <label>學號<input name="student_id" maxlength="20" required></label>
         <label>姓名<input name="full_name" maxlength="50" required></label>
         <label>Email<input name="email" type="email" maxlength="100" required></label>
         <label>電話（選填）<input name="phone" type="tel" maxlength="30"></label>
@@ -130,7 +130,6 @@
   </section>
 </main>
 <footer>康寧大學 · 活動報名服務</footer>
-<script src="/js/field-validate.js"></script>
-<script src="/js/events-admin.js?v=20261104"></script>
+<script src="/js/events-admin.js?v=20261028"></script>
 </body>
 </html>
