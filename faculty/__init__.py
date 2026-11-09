@@ -19,7 +19,7 @@ from .logic import FIELDS, expand_terms, score_profile, split_tags
 bp = Blueprint("faculty", __name__)
 deps = SimpleNamespace()
 
-ADMIN_ROLES = ("管理員", "教職員")
+ADMIN_ROLES = ("管理員", "系統管理員", "教職員")
 EDITABLE_BY_TEACHER = ("expertise", "fields", "research_summary", "accepts_projects", "email")
 PROFILE_FIELDS = ("name", "title", "dept_name", "email", "fields", "expertise", "research_summary", "accepts_projects", "is_public")
 

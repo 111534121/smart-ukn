@@ -43,7 +43,7 @@ def is_mysql_active():
 
 def get_sqlite_conn():
     """取得 SQLite 連線並設定 row_factory 為 sqlite3.Row"""
-    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=2)
+    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")
@@ -69,8 +69,11 @@ def query_db(sql, params=()):
             mysql_conn.close()
             return rows
         except Exception as e:
-            try: mysql_conn.close()
-            except Exception: pass
+            if mysql_conn:
+                try:
+                    mysql_conn.close()
+                except Exception:
+                    pass
             print(f"⚠️ MySQL 查詢失敗，切換至 SQLite: {e}")
 
     # SQLite 備援
@@ -111,16 +114,21 @@ def execute_db(sql, params=()):
             try:
                 with _db_lock:
                     s_conn = get_sqlite_conn()
-                    s_cur = s_conn.cursor()
-                    s_cur.execute(adapt_sql_for_sqlite(sql), params)
-                    s_conn.commit()
-                    s_conn.close()
+                    try:
+                        s_cur = s_conn.cursor()
+                        s_cur.execute(adapt_sql_for_sqlite(sql), params)
+                        s_conn.commit()
+                    finally:
+                        s_conn.close()
             except Exception:
                 pass
             return res
         except Exception as e:
-            try: mysql_conn.close()
-            except Exception: pass
+            if mysql_conn:
+                try:
+                    mysql_conn.close()
+                except Exception:
+                    pass
             print(f"⚠️ MySQL 寫入失敗，改用 SQLite: {e}")
 
     # SQLite 寫入
@@ -178,317 +186,438 @@ def init_sqlite_schema():
     """初始化 SQLite 資料表結構與種子資料"""
     with _db_lock:
         conn = get_sqlite_conn()
-        cur = conn.cursor()
+        try:
+            _init_sqlite_schema_internal(conn)
+        finally:
+            conn.close()
 
-        # 1. departments
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS departments (
-                dept_id TEXT PRIMARY KEY,
-                dept_name TEXT NOT NULL,
-                college_name TEXT NOT NULL
-            )
-        """)
+def _init_sqlite_schema_internal(conn):
+    cur = conn.cursor()
+    # 1. departments
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS departments (
+            dept_id TEXT PRIMARY KEY,
+            dept_name TEXT NOT NULL,
+            college_name TEXT NOT NULL
+        )
+    """)
 
-        # 2. students
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS students (
-                student_id TEXT PRIMARY KEY,
-                full_name TEXT NOT NULL,
-                dept_id TEXT NOT NULL,
-                admission_year INTEGER NOT NULL,
-                class_name TEXT NOT NULL,
-                parent_phone TEXT,
-                grade_level INTEGER,
-                gpa REAL,
-                conduct_score REAL,
-                identity_type TEXT
-            )
-        """)
+    # 2. students
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            student_id TEXT PRIMARY KEY,
+            full_name TEXT NOT NULL,
+            dept_id TEXT NOT NULL,
+            admission_year INTEGER NOT NULL,
+            class_name TEXT NOT NULL,
+            parent_phone TEXT,
+            grade_level INTEGER,
+            gpa REAL,
+            conduct_score REAL,
+            identity_type TEXT
+        )
+    """)
 
-        # 3. users
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                role TEXT NOT NULL,
-                student_id TEXT,
-                full_name TEXT NOT NULL,
-                advised_class TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                can_manage_dorm INTEGER DEFAULT 0,
-                office TEXT DEFAULT '',
-                permissions TEXT DEFAULT '查看,建立,修改',
-                is_active INTEGER DEFAULT 1
-            )
-        """)
-        for alter_sql in (
-            "ALTER TABLE users ADD COLUMN office TEXT DEFAULT ''",
-            "ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '查看,建立,修改'",
-            "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1",
-        ):
-            try:
-                cur.execute(alter_sql)
-            except Exception:
-                pass
+    # 3. users
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            student_id TEXT,
+            full_name TEXT NOT NULL,
+            advised_class TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            can_manage_dorm INTEGER DEFAULT 0,
+            office TEXT DEFAULT '',
+            permissions TEXT DEFAULT '查看,建立,修改',
+            is_active INTEGER DEFAULT 1,
+            default_password TEXT DEFAULT '123456'
+        )
+    """)
+    for alter_sql in (
+        "ALTER TABLE users ADD COLUMN office TEXT DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '查看,建立,修改'",
+        "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1",
+        "ALTER TABLE users ADD COLUMN default_password TEXT DEFAULT '123456'",
+    ):
+        try:
+            cur.execute(alter_sql)
+        except Exception:
+            pass
 
-        # 4. course_map
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS course_map (
-                course_id TEXT PRIMARY KEY,
-                course_name TEXT NOT NULL,
-                credits INTEGER NOT NULL,
-                prerequisite_id TEXT,
-                is_required INTEGER NOT NULL DEFAULT 1,
-                course_type TEXT NOT NULL DEFAULT '專業必修',
-                dept_id TEXT NOT NULL DEFAULT 'CS',
-                semester_suggest TEXT DEFAULT '大一上',
-                description TEXT,
-                semester_hours REAL
-            )
-        """)
+    # 4. course_map
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS course_map (
+            course_id TEXT PRIMARY KEY,
+            course_name TEXT NOT NULL,
+            credits INTEGER NOT NULL,
+            prerequisite_id TEXT,
+            is_required INTEGER NOT NULL DEFAULT 1,
+            course_type TEXT NOT NULL DEFAULT '專業必修',
+            dept_id TEXT NOT NULL DEFAULT 'CS',
+            semester_suggest TEXT DEFAULT '大一上',
+            description TEXT,
+            semester_hours REAL
+        )
+    """)
 
-        # 5. graduation_requirements
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS graduation_requirements (
-                req_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dept_id TEXT NOT NULL,
-                total_credits_req INTEGER NOT NULL DEFAULT 128,
-                major_required_req INTEGER NOT NULL DEFAULT 60,
-                major_elective_req INTEGER NOT NULL DEFAULT 30,
-                general_req INTEGER NOT NULL DEFAULT 28,
-                english_threshold_name TEXT NOT NULL DEFAULT '多益 550 分或通過進階英文檢定',
-                ethics_req INTEGER NOT NULL DEFAULT 2,
-                project_req INTEGER NOT NULL DEFAULT 3
-            )
-        """)
+    # 5. graduation_requirements
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS graduation_requirements (
+            req_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dept_id TEXT NOT NULL,
+            total_credits_req INTEGER NOT NULL DEFAULT 128,
+            major_required_req INTEGER NOT NULL DEFAULT 60,
+            major_elective_req INTEGER NOT NULL DEFAULT 30,
+            general_req INTEGER NOT NULL DEFAULT 28,
+            english_threshold_name TEXT NOT NULL DEFAULT '多益 550 分或通過進階英文檢定',
+            ethics_req INTEGER NOT NULL DEFAULT 2,
+            project_req INTEGER NOT NULL DEFAULT 3
+        )
+    """)
 
-        # 6. knowledge_categories
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS knowledge_categories (
-                category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category_name TEXT NOT NULL,
-                icon TEXT DEFAULT '📖',
-                sort_order INTEGER DEFAULT 1
-            )
-        """)
+    # 6. knowledge_categories
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS knowledge_categories (
+            category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_name TEXT NOT NULL,
+            icon TEXT DEFAULT '📖',
+            sort_order INTEGER DEFAULT 1
+        )
+    """)
 
-        # 7. knowledge_base
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS knowledge_base (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category_id INTEGER NOT NULL,
-                subcategory TEXT NOT NULL,
-                keyword TEXT NOT NULL,
-                official_term TEXT DEFAULT '',
-                content TEXT NOT NULL,
-                doc_name TEXT NOT NULL,
-                page INTEGER DEFAULT 1,
-                url TEXT NOT NULL,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 7. knowledge_base
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS knowledge_base (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            subcategory TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            official_term TEXT DEFAULT '',
+            content TEXT NOT NULL,
+            doc_name TEXT NOT NULL,
+            page INTEGER DEFAULT 1,
+            url TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 8. synonym_dictionary
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS synonym_dictionary (
-                synonym_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category_id INTEGER,
-                user_keyword TEXT NOT NULL,
-                official_term TEXT NOT NULL
-            )
-        """)
+    # 8. synonym_dictionary
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS synonym_dictionary (
+            synonym_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER,
+            user_keyword TEXT NOT NULL,
+            official_term TEXT NOT NULL
+        )
+    """)
 
-        # 9. audit_logs
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                table_name TEXT NOT NULL,
-                record_id TEXT NOT NULL,
-                action TEXT NOT NULL,
-                changed_by TEXT NOT NULL,
-                changed_by_role TEXT,
-                ip_address TEXT,
-                before_json TEXT,
-                after_json TEXT,
-                changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 9. audit_logs
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT NOT NULL,
+            record_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            changed_by TEXT NOT NULL,
+            changed_by_role TEXT,
+            ip_address TEXT,
+            before_json TEXT,
+            after_json TEXT,
+            changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 10. search_logs
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS search_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                query TEXT NOT NULL,
-                matched INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 10. search_logs
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS search_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            matched INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 11. unmatched_queries
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS unmatched_queries (
-                query_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                query_text TEXT UNIQUE NOT NULL,
-                search_count INTEGER NOT NULL DEFAULT 1,
-                status TEXT NOT NULL DEFAULT '待處理',
-                resolved_term TEXT,
-                first_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 11. unmatched_queries
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS unmatched_queries (
+            query_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query_text TEXT UNIQUE NOT NULL,
+            search_count INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT '待處理',
+            resolved_term TEXT,
+            first_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 12. visitor_logs
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS visitor_logs (
-                log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                visitor_name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                school_from TEXT NOT NULL,
-                purpose TEXT NOT NULL,
-                target_dept TEXT DEFAULT '資訊管理科（五專）',
-                visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ip_address TEXT DEFAULT '127.0.0.1'
-            )
-        """)
+    # 12. visitor_logs
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS visitor_logs (
+            log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visitor_name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            school_from TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            target_dept TEXT DEFAULT '資訊管理科（五專）',
+            visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT DEFAULT '127.0.0.1'
+        )
+    """)
 
-        # 13. student_credits
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS student_credits (
-                credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT NOT NULL,
-                course_id TEXT NOT NULL,
-                semester TEXT NOT NULL,
-                score REAL,
-                is_passed INTEGER NOT NULL
-            )
-        """)
+    # 13. student_credits
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS student_credits (
+            credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            course_id TEXT NOT NULL,
+            semester TEXT NOT NULL,
+            score REAL,
+            is_passed INTEGER NOT NULL
+        )
+    """)
 
-        # 14. attendance_records
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS attendance_records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT NOT NULL,
-                date TEXT NOT NULL,
-                course_name TEXT NOT NULL,
-                type TEXT NOT NULL,
-                notified INTEGER NOT NULL DEFAULT 0,
-                hours REAL,
-                exam_policy TEXT NOT NULL DEFAULT 'ordinary'
-            )
-        """)
+    # 14. attendance_records
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS attendance_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            course_name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            notified INTEGER NOT NULL DEFAULT 0,
+            hours REAL,
+            exam_policy TEXT NOT NULL DEFAULT 'ordinary'
+        )
+    """)
 
-        # 15. student_records
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS student_records (
-                record_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                item TEXT NOT NULL,
-                count INTEGER NOT NULL DEFAULT 1,
-                reason TEXT,
-                semester TEXT NOT NULL,
-                record_date TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 15. student_records
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS student_records (
+            record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            item TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 1,
+            reason TEXT,
+            semester TEXT NOT NULL,
+            record_date TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 16. checklist_items (行政申辦資訊)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS checklist_items (
-                item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category_name TEXT NOT NULL,
-                business_name TEXT NOT NULL,
-                office_location TEXT DEFAULT '',
-                office_hours TEXT DEFAULT '週一至週五 08:30-17:00',
-                contact_phone TEXT DEFAULT '',
-                required_docs TEXT DEFAULT '',
-                steps_json TEXT DEFAULT '[]',
-                apply_period TEXT DEFAULT '',
-                form_download_url TEXT DEFAULT '#',
-                system_url TEXT DEFAULT ''
-            )
-        """)
+    # 16. checklist_items (行政申辦資訊)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS checklist_items (
+            item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER DEFAULT 1,
+            category_name TEXT NOT NULL,
+            business_name TEXT NOT NULL,
+            office_location TEXT DEFAULT '',
+            office_hours TEXT DEFAULT '週一至週五 08:30-17:00',
+            contact_phone TEXT DEFAULT '',
+            required_docs TEXT DEFAULT '',
+            steps_json TEXT DEFAULT '[]',
+            apply_period TEXT DEFAULT '',
+            form_download_url TEXT DEFAULT '#',
+            system_url TEXT DEFAULT '',
+            deadline_week_info TEXT DEFAULT '',
+            related_kb_id INTEGER,
+            audience TEXT DEFAULT '學生'
+        )
+    """)
+    for alter_sql in (
+        "ALTER TABLE checklist_items ADD COLUMN category_id INTEGER DEFAULT 1",
+        "ALTER TABLE checklist_items ADD COLUMN system_url TEXT DEFAULT ''",
+        "ALTER TABLE checklist_items ADD COLUMN deadline_week_info TEXT DEFAULT ''",
+        "ALTER TABLE checklist_items ADD COLUMN related_kb_id INTEGER",
+        "ALTER TABLE checklist_items ADD COLUMN audience TEXT DEFAULT '學生'",
+    ):
+        try:
+            cur.execute(alter_sql)
+        except Exception:
+            pass
 
-        # 17. deadlines (重要日程與期限)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS deadlines (
-                deadline_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                category TEXT DEFAULT '教務處',
-                week_label TEXT DEFAULT '本學期',
-                start_date TEXT,
-                end_date TEXT NOT NULL,
-                status_badge TEXT DEFAULT '進行中',
-                description TEXT DEFAULT '',
-                related_system_url TEXT DEFAULT '',
-                applies_to_dept TEXT,
-                applies_to_role TEXT DEFAULT 'all'
-            )
-        """)
+    # 17. deadlines (重要日程與期限)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS deadlines (
+            deadline_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            category TEXT DEFAULT '教務處',
+            week_label TEXT DEFAULT '本學期',
+            semester_week INTEGER DEFAULT 1,
+            start_date TEXT,
+            end_date TEXT NOT NULL,
+            status_badge TEXT DEFAULT '進行中',
+            description TEXT DEFAULT '',
+            related_system_url TEXT DEFAULT '',
+            applies_to_dept TEXT,
+            applies_to_role TEXT DEFAULT 'all'
+        )
+    """)
+    try:
+        cur.execute("ALTER TABLE deadlines ADD COLUMN semester_week INTEGER DEFAULT 1")
+    except Exception:
+        pass
 
-        # 18. academic_calendar (學期校曆事項)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS academic_calendar (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_name TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                category TEXT DEFAULT '教務',
-                related_checklist_id INTEGER,
-                owner_key TEXT,
-                note TEXT,
-                source TEXT
-            )
-        """)
+    # 18. academic_calendar (學期校曆事項)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS academic_calendar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_name TEXT NOT NULL,
+            start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,
+            category TEXT DEFAULT '教務',
+            related_checklist_id INTEGER,
+            owner_key TEXT,
+            note TEXT,
+            source TEXT
+        )
+    """)
 
-        # 19. search_feedback (搜尋滿意度回饋)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS search_feedback (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                query TEXT NOT NULL,
-                kb_id INTEGER,
-                helpful INTEGER NOT NULL,
-                comment TEXT DEFAULT '',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 19. search_feedback (搜尋滿意度回饋)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS search_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            kb_id INTEGER,
+            helpful INTEGER NOT NULL,
+            comment TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        # 20. anniversary_events & anniversary_wishes (校慶跑馬燈公告與祝福)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS anniversary_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                link_url TEXT DEFAULT '',
-                allow_wishes INTEGER DEFAULT 1,
-                is_active INTEGER DEFAULT 1,
-                sort_order INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS anniversary_wishes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_id INTEGER,
-                nickname TEXT DEFAULT '匿名同學',
-                message TEXT NOT NULL,
-                is_approved INTEGER DEFAULT 1,
-                ip_hash TEXT DEFAULT '',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    # 20. anniversary_events & anniversary_wishes (校慶跑馬燈公告與祝福)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS anniversary_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL DEFAULT '康寧大學校慶',
+            content TEXT NOT NULL DEFAULT '歡迎全校師生共襄盛舉',
+            name_zh TEXT DEFAULT '康寧大學校慶',
+            name_en TEXT DEFAULT 'UKN Anniversary Celebration',
+            name_ja TEXT DEFAULT '康寧大学 創立記念祭',
+            start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,
+            announce_days INTEGER DEFAULT 30,
+            require_approval INTEGER DEFAULT 1,
+            is_enabled INTEGER DEFAULT 1,
+            link_url TEXT DEFAULT '',
+            allow_wishes INTEGER DEFAULT 1,
+            is_active INTEGER DEFAULT 1,
+            sort_order INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    for alter_sql in (
+        "ALTER TABLE anniversary_events ADD COLUMN title TEXT DEFAULT '康寧大學校慶'",
+        "ALTER TABLE anniversary_events ADD COLUMN content TEXT DEFAULT '歡迎全校師生共襄盛舉'",
+        "ALTER TABLE anniversary_events ADD COLUMN name_zh TEXT DEFAULT ''",
+        "ALTER TABLE anniversary_events ADD COLUMN name_en TEXT DEFAULT ''",
+        "ALTER TABLE anniversary_events ADD COLUMN name_ja TEXT DEFAULT ''",
+        "ALTER TABLE anniversary_events ADD COLUMN announce_days INTEGER DEFAULT 30",
+        "ALTER TABLE anniversary_events ADD COLUMN require_approval INTEGER DEFAULT 1",
+        "ALTER TABLE anniversary_events ADD COLUMN is_enabled INTEGER DEFAULT 1",
+        "ALTER TABLE anniversary_events ADD COLUMN link_url TEXT DEFAULT ''",
+        "ALTER TABLE anniversary_events ADD COLUMN allow_wishes INTEGER DEFAULT 1",
+        "ALTER TABLE anniversary_events ADD COLUMN is_active INTEGER DEFAULT 1",
+        "ALTER TABLE anniversary_events ADD COLUMN sort_order INTEGER DEFAULT 1",
+    ):
+        try:
+            cur.execute(alter_sql)
+        except Exception:
+            pass
 
-        conn.commit()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS anniversary_wishes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER,
+            nickname TEXT DEFAULT '匿名同學',
+            message TEXT NOT NULL,
+            lang TEXT DEFAULT 'zh',
+            status TEXT DEFAULT '待審核',
+            is_approved INTEGER DEFAULT 1,
+            ip_hash TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    for alter_sql in (
+        "ALTER TABLE anniversary_wishes ADD COLUMN nickname TEXT DEFAULT '匿名同學'",
+        "ALTER TABLE anniversary_wishes ADD COLUMN lang TEXT DEFAULT 'zh'",
+        "ALTER TABLE anniversary_wishes ADD COLUMN status TEXT DEFAULT '待審核'",
+        "ALTER TABLE anniversary_wishes ADD COLUMN is_approved INTEGER DEFAULT 1",
+        "ALTER TABLE anniversary_wishes ADD COLUMN ip_hash TEXT DEFAULT ''",
+    ):
+        try:
+            cur.execute(alter_sql)
+        except Exception:
+            pass
 
-        # 檢查是否需要載入種子資料
-        cur.execute("SELECT COUNT(*) AS c FROM departments")
+    conn.commit()
+
+    # 檢查是否需要載入種子資料
+    cur.execute("SELECT COUNT(*) AS c FROM departments")
+    if cur.fetchone()["c"] == 0:
+        _seed_sqlite_data(cur, conn)
+    else:
+        _seed_missing_sqlite_tables(cur, conn)
+
+def _seed_missing_sqlite_tables(cur, conn):
+    """若已有主要資料表但缺少部分輔助表資料，自動補齊種子資料"""
+    try:
+        cur.execute("SELECT COUNT(*) AS c FROM checklist_items")
         if cur.fetchone()["c"] == 0:
-            _seed_sqlite_data(cur, conn)
+            checklist_data = [
+                (1, 1, '課務組', '課程停修申請', '["至校務資訊系統登入『停修申請表』", "列印紙本停修申請單", "親自送請任課教師簽章同意", "送請班級導師及科主任簽章", "於第12週五前送交教務處課務組核備"]', '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
+                (2, 2, '生輔組', '學生請假申請 (病假/事假)', '["登入學生資訊系統填寫請假單", "上傳就醫證明或相關佐證文件圖檔", "送出後通知導師進行線上簽核", "請假超過3日由生輔組組長複核", "系統顯示審核通過即完成登錄"]', '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
+                (3, 3, '通識中心', '外語證照免修與學分抵免', '["填寫通識外語抵免申請表", "備妥多益/英檢/雅思成績單正本及影本各一份", "送交通識教育中心辦公室查驗正本", "教務處課務組複審學分折抵", "次學期初於歷年成績單確認抵免註記"]', '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
+                (4, 1, '註冊組', '學士班畢業學分資格預審', '["登入畢業審查系統列印學分檢核表", "核對科專業必修、選修與通識學分缺口", "確認英文畢業門檻與專題通過證明", "至科辦公室請科主任初審簽章", "送交教務處註冊組進行畢業資格決審"]', '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form', 'http://203.71.63.13/academic/', '大四第 8-16 週 (進行中)', 4, '學生'),
+                (5, 3, '研發處', '專業證照與競賽獲獎獎勵金申請', '["登入研發處證照獎勵申請平台", "填寫證照/競賽名稱、證書字號與發證單位", "上傳證書正反面與郵局存摺封面圖檔", "列印紙本印領清冊並親筆簽名", "送交研發處實習就業組審核並撥款"]', '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
+            ]
+            cur.executemany("INSERT OR REPLACE INTO checklist_items (item_id, category_id, category_name, business_name, steps_json, required_docs, office_hours, office_location, contact_phone, form_download_url, system_url, deadline_week_info, related_kb_id, audience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", checklist_data)
+    except Exception:
+        pass
 
-        conn.close()
+    try:
+        cur.execute("SELECT COUNT(*) AS c FROM deadlines")
+        if cur.fetchone()["c"] == 0:
+            deadlines_data = [
+                (1, '115-1 學期課程停修申請', '教務處課務組', 11, '2026-10-01', '2026-10-18', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '學期第 10-12 週開放停修申請，每人以 2 科為限，須完成導師與主任簽章。', '進行中 (剩 3 天)'),
+                (2, '期中預警評量與導師學習輔導訪談', '學務處/教務處', 11, '2026-10-05', '2026-10-20', '學生,老師,家長', 'CS', 'http://203.71.63.13/academic/', '期中成績不及格達 1/2 者列入預警，導師將安排個別學習輔導與座談。', '進行中 (剩 5 天)'),
+                (3, '大四應屆畢業生學分資格預審', '教務處註冊組', 11, '2026-09-15', '2026-11-30', '學生', 'CS', 'http://203.71.63.13/academic/', '大四學生請至註冊組核對必選修、通識與外語門檻缺口。', '進行中 (剩 35 天)'),
+                (4, '共同外語與證照學分抵免申請', '通識教育中心', 3, '2026-09-01', '2026-09-15', '學生', None, 'http://203.71.63.13/academic/', '大一共同外語抵免申請已截止，逾期者請於下學期初辦理。', '已截止'),
+                (5, '暑期重補修意願登記與開班調查', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '先修科目不及格需重修者，可預先登記暑期課程開班意願。', '尚未開放')
+            ]
+            cur.executemany("INSERT OR REPLACE INTO deadlines (deadline_id, title, category, semester_week, start_date, end_date, applies_to_role, applies_to_dept, related_system_url, description, status_badge) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", deadlines_data)
+    except Exception:
+        pass
+
+    try:
+        cur.execute("SELECT COUNT(*) AS c FROM academic_calendar")
+        if cur.fetchone()["c"] == 0:
+            calendar_data = [
+                (1, '加退選', '2026-09-14', '2026-09-25', '教務', None, None, None, None),
+                (2, '學雜費繳費期限', '2026-09-01', '2026-09-30', '繳費', None, None, None, None),
+                (3, '獎助學金申請期限', '2026-09-21', '2026-10-16', '獎助', None, None, None, None),
+                (4, '停修申請', '2026-10-01', '2026-10-16', '教務', 1, None, None, None),
+                (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None, None, None, None)
+            ]
+            cur.executemany("INSERT OR REPLACE INTO academic_calendar (id, event_name, start_date, end_date, category, related_checklist_id, owner_key, note, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", calendar_data)
+    except Exception:
+        pass
+
+    try:
+        cur.execute("SELECT COUNT(*) AS c FROM anniversary_events")
+        if cur.fetchone()["c"] == 0:
+            anniversary_data = [
+                (1, '康寧大學校慶', 'UKN Anniversary Celebration', '康寧大学 創立記念祭', '2026-11-01', '2026-11-01', 30, 1, 1, '康寧大學校慶', '歡迎全校師生共襄盛舉', '', 1, 1, 1)
+            ]
+            cur.executemany("INSERT OR REPLACE INTO anniversary_events (id, name_zh, name_en, name_ja, start_date, end_date, announce_days, require_approval, is_enabled, title, content, link_url, allow_wishes, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", anniversary_data)
+    except Exception:
+        pass
+
+    conn.commit()
 
 def _seed_sqlite_data(cur, conn):
     """填入康寧大學完整初始資料"""
@@ -685,11 +814,47 @@ def _seed_sqlite_data(cur, conn):
 
     # 15. audit_logs
     audit_init_data = [
-        (1, 'departments', 'CS', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'dept_name': '資訊管理科（五專）'}), '2026-10-22 10:00:00'),
-        (2, 'course_map', 'CS101', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'course_id': 'CS101', 'course_name': '計算機概論', 'credits': 3}), '2026-10-22 10:05:00'),
-        (3, 'graduation_requirements', '1', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'total_credits_req': 128}), '2026-10-22 10:10:00')
+        (1, 'departments', 'CS', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'dept_name': '資訊管理科（五專）'}, ensure_ascii=False), '2026-10-22 10:00:00'),
+        (2, 'course_map', 'CS101', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'course_id': 'CS101', 'course_name': '計算機概論', 'credits': 3}, ensure_ascii=False), '2026-10-22 10:05:00'),
+        (3, 'graduation_requirements', '1', 'INSERT', '系統超級管理員', '系統管理員', '127.0.0.1', None, json.dumps({'dept_id': 'CS', 'total_credits_req': 128}, ensure_ascii=False), '2026-10-22 10:10:00')
     ]
     cur.executemany("INSERT OR REPLACE INTO audit_logs (log_id, table_name, record_id, action, changed_by, changed_by_role, ip_address, before_json, after_json, changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", audit_init_data)
+
+    # 16. checklist_items
+    checklist_data = [
+        (1, 1, '課務組', '課程停修申請', '["至校務資訊系統登入『停修申請表』", "列印紙本停修申請單", "親自送請任課教師簽章同意", "送請班級導師及科主任簽章", "於第12週五前送交教務處課務組核備"]', '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
+        (2, 2, '生輔組', '學生請假申請 (病假/事假)', '["登入學生資訊系統填寫請假單", "上傳就醫證明或相關佐證文件圖檔", "送出後通知導師進行線上簽核", "請假超過3日由生輔組組長複核", "系統顯示審核通過即完成登錄"]', '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
+        (3, 3, '通識中心', '外語證照免修與學分抵免', '["填寫通識外語抵免申請表", "備妥多益/英檢/雅思成績單正本及影本各一份", "送交通識教育中心辦公室查驗正本", "教務處課務組複審學分折抵", "次學期初於歷年成績單確認抵免註記"]', '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
+        (4, 1, '註冊組', '學士班畢業學分資格預審', '["登入畢業審查系統列印學分檢核表", "核對科專業必修、選修與通識學分缺口", "確認英文畢業門檻與專題通過證明", "至科辦公室請科主任初審簽章", "送交教務處註冊組進行畢業資格決審"]', '歷年成績單正本、畢業學分預審表、外語通過證明', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A202 (註冊組)', '02-2632-1181 分機 321, 322', '/forms/graduation_audit_form', 'http://203.71.63.13/academic/', '大四第 8-16 週 (進行中)', 4, '學生'),
+        (5, 3, '研發處', '專業證照與競賽獲獎獎勵金申請', '["登入研發處證照獎勵申請平台", "填寫證照/競賽名稱、證書字號與發證單位", "上傳證書正反面與郵局存摺封面圖檔", "列印紙本印領清冊並親筆簽名", "送交研發處實習就業組審核並撥款"]', '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
+    ]
+    cur.executemany("INSERT OR REPLACE INTO checklist_items (item_id, category_id, category_name, business_name, steps_json, required_docs, office_hours, office_location, contact_phone, form_download_url, system_url, deadline_week_info, related_kb_id, audience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", checklist_data)
+
+    # 17. deadlines
+    deadlines_data = [
+        (1, '115-1 學期課程停修申請', '教務處課務組', 11, '2026-10-01', '2026-10-18', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '學期第 10-12 週開放停修申請，每人以 2 科為限，須完成導師與主任簽章。', '進行中 (剩 3 天)'),
+        (2, '期中預警評量與導師學習輔導訪談', '學務處/教務處', 11, '2026-10-05', '2026-10-20', '學生,老師,家長', 'CS', 'http://203.71.63.13/academic/', '期中成績不及格達 1/2 者列入預警，導師將安排個別學習輔導與座談。', '進行中 (剩 5 天)'),
+        (3, '大四應屆畢業生學分資格預審', '教務處註冊組', 11, '2026-09-15', '2026-11-30', '學生', 'CS', 'http://203.71.63.13/academic/', '大四學生請至註冊組核對必選修、通識與外語門檻缺口。', '進行中 (剩 35 天)'),
+        (4, '共同外語與證照學分抵免申請', '通識教育中心', 3, '2026-09-01', '2026-09-15', '學生', None, 'http://203.71.63.13/academic/', '大一共同外語抵免申請已截止，逾期者請於下學期初辦理。', '已截止'),
+        (5, '暑期重補修意願登記與開班調查', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '先修科目不及格需重修者，可預先登記暑期課程開班意願。', '尚未開放')
+    ]
+    cur.executemany("INSERT OR REPLACE INTO deadlines (deadline_id, title, category, semester_week, start_date, end_date, applies_to_role, applies_to_dept, related_system_url, description, status_badge) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", deadlines_data)
+
+    # 18. academic_calendar
+    calendar_data = [
+        (1, '加退選', '2026-09-14', '2026-09-25', '教務', None, None, None, None),
+        (2, '學雜費繳費期限', '2026-09-01', '2026-09-30', '繳費', None, None, None, None),
+        (3, '獎助學金申請期限', '2026-09-21', '2026-10-16', '獎助', None, None, None, None),
+        (4, '停修申請', '2026-10-01', '2026-10-16', '教務', 1, None, None, None),
+        (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None, None, None, None)
+    ]
+    cur.executemany("INSERT OR REPLACE INTO academic_calendar (id, event_name, start_date, end_date, category, related_checklist_id, owner_key, note, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", calendar_data)
+
+    # 19. anniversary_events
+    anniversary_data = [
+        (1, '康寧大學校慶', 'UKN Anniversary Celebration', '康寧大学 創立記念祭', '2026-11-01', '2026-11-01', 30, 1, 1, '康寧大學校慶', '歡迎全校師生共襄盛舉', '', 1, 1, 1)
+    ]
+    cur.executemany("INSERT OR REPLACE INTO anniversary_events (id, name_zh, name_en, name_ja, start_date, end_date, announce_days, require_approval, is_enabled, title, content, link_url, allow_wishes, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", anniversary_data)
 
     conn.commit()
 
@@ -720,6 +885,8 @@ def init_mysql_schema():
             cur.execute("ALTER TABLE users ADD COLUMN permissions VARCHAR(255) NOT NULL DEFAULT '查看,建立,修改'")
         if "is_active" not in cols:
             cur.execute("ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1")
+        if "default_password" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN default_password VARCHAR(50) NOT NULL DEFAULT '123456'")
 
 
         mysql_conn.commit()
@@ -734,5 +901,12 @@ def init_mysql_schema():
 
 
 # 模組載入時自動初始化 SQLite 與 MySQL 資料表
-init_sqlite_schema()
-init_mysql_schema()
+try:
+    init_sqlite_schema()
+except Exception as e:
+    print(f"⚠️ SQLite 初始化警告: {e}")
+
+try:
+    init_mysql_schema()
+except Exception as e:
+    print(f"⚠️ MySQL 初始化警告: {e}")

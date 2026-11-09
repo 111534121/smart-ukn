@@ -141,13 +141,28 @@ function isCurrentSysAdmin() {
 
 function applyRolePermissionUI() {
     const idBadge = document.getElementById('adminIdentityBadge');
-    const officeText = currentAdminUser?.office ? ` · ${currentAdminUser.office}` : '';
     if (idBadge) {
-        idBadge.textContent = currentAdminUser
-            ? `${currentAdminUser.full_name} (${currentAdminUser.role}${officeText})`
-            : '尚未登入管理帳號';
+        if (!currentAdminUser) {
+            idBadge.textContent = '尚未登入管理帳號';
+        } else if (isCurrentSysAdmin()) {
+            // 系統管理員代表全校系統總後台，不需多餘的處室或重複身分標籤 (移除多餘的「(管理員 · 圖書資訊中心)」)
+            idBadge.textContent = currentAdminUser.full_name || '系統管理員';
+        } else {
+            const officeText = currentAdminUser.office ? ` · ${currentAdminUser.office}` : '';
+            idBadge.textContent = `${currentAdminUser.full_name} (${currentAdminUser.role}${officeText})`;
+        }
         idBadge.className = 'font-bold text-ukn-900';
     }
+}
+
+async function handleAdminLogout() {
+    if (!confirm('確定要登出管理系統並返回登入頁面嗎？')) return;
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+        console.warn('登出 API 呼叫失敗:', e);
+    }
+    window.location.href = '/login';
 }
 
 async function switchAdminRoleAccount(targetRole = '系統管理員') {
@@ -289,6 +304,11 @@ async function loadUsers() {
                 ? `<button disabled title="防呆保護：不可刪除主管理員或自己目前登入的帳號" class="border border-slate-200 text-slate-300 bg-slate-50 px-2 py-1 rounded text-xs font-semibold cursor-not-allowed">刪除</button>`
                 : `<button onclick="deleteUser(${u.user_id}, '${escapeHtml(u.username)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs font-semibold">刪除</button>`;
 
+            const defPwd = u.default_password || ((u.role === '系統管理員' || u.role === '管理員') ? 'admin123' : '123456');
+            const pwdStatusHtml = (defPwd === '123456' || defPwd === 'admin123')
+                ? `<span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-xs font-mono font-bold" title="系統預設密碼：${defPwd}">🔑 預設 ${defPwd}</span>`
+                : `<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-xs" title="使用者已自訂新密碼 (安全雜湊保護)">🛡️ 自訂密碼</span>`;
+
             return `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${isActive ? '' : 'opacity-60 bg-rose-50/30'}">
                     <td class="p-3 font-mono text-slate-500 whitespace-nowrap">${u.user_id}</td>
@@ -306,6 +326,7 @@ async function loadUsers() {
                             ${officeHtml}
                         </div>
                     </td>
+                    <td class="p-3 whitespace-nowrap">${pwdStatusHtml}</td>
                     <td class="p-3 text-xs whitespace-nowrap">
                         <div class="flex items-center gap-1">
                             ${permsBadges}${dormBadge}
@@ -315,6 +336,7 @@ async function loadUsers() {
                     <td class="p-3 text-xs text-slate-400 font-mono whitespace-nowrap">${escapeHtml(String(u.created_at || '').substring(0, 16))}</td>
                     <td class="p-3 text-center space-x-1 whitespace-nowrap">
                         <button onclick="openUserModal('edit', ${u.user_id})" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
+                        <button onclick="openCredentialQueryForUser('${escapeHtml(u.username)}')" class="border border-indigo-300 text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded text-xs font-semibold" title="查詢該帳號之密碼與設定狀態">帳密</button>
                         ${toggleBtn}
                         ${deleteBtn}
                     </td>
@@ -388,7 +410,6 @@ function openUserModal(mode, id = null) {
     }
     const modal = document.getElementById('userModal');
     if (!modal) return;
-    if (typeof clearFieldErrors === 'function') clearFieldErrors(['mUsername', 'mStudentId']);
     const title = document.getElementById('userModalTitle');
     document.getElementById('userForm').reset();
     document.getElementById('mUserId').value = '';
@@ -452,10 +473,14 @@ async function saveUser(e) {
     const studentId = document.getElementById('mStudentId').value.trim().toUpperCase() || null;
     const password = document.getElementById('mPassword').value.trim();
 
-    if (typeof clearFieldErrors === 'function') clearFieldErrors(['mUsername', 'mStudentId']);
+    const validRoles = ['系統管理員', '內容管理人員', '處室承辦', '科助', '住宿管理員', '教職員', '老師', '學生', '家長'];
+    if (!role || !validRoles.includes(role)) {
+        showAdminToast('防呆攔截：請選擇合法的身分角色（不可為空白或非法角色）', 'error');
+        return;
+    }
+
     if (!/^[A-Za-z0-9_.\-]{3,50}$/.test(username)) {
         showAdminToast('防呆攔截：帳號格式不正確，僅限 3~50 碼英數字、底線(_)、點(.)或連字號(-)', 'error');
-        if (typeof setFieldError === 'function') setFieldError('mUsername', '僅限 3~50 碼英數字、底線(_)、點(.)或連字號(-)');
         return;
     }
     if (!fullName || fullName.length > 50) {
@@ -468,13 +493,11 @@ async function saveUser(e) {
     }
     if ((role === '學生' || role === '家長') && !studentId) {
         showAdminToast(`防呆攔截：身分為「${role}」時，必須填寫綁定學號（如 S112001）！`, 'error');
-        if (typeof setFieldError === 'function') setFieldError('mStudentId', `身分為「${role}」時必須填寫綁定學號`);
         document.getElementById('mStudentId')?.focus();
         return;
     }
     if (studentId && !/^[A-Za-z0-9_\-]{3,20}$/.test(studentId)) {
         showAdminToast('防呆攔截：學號格式不正確，僅限 3~20 碼英數字（如 S112001）', 'error');
-        if (typeof setFieldError === 'function') setFieldError('mStudentId', '僅限 3~20 碼英數字（如 S112001）');
         return;
     }
 
@@ -545,6 +568,145 @@ async function deleteUser(id, username) {
         loadUsers();
         refreshDbStatus();
     } catch (e) { }
+}
+
+// ==========================================
+// 2b. 帳密查詢與密碼管理功能 (Credentials Query & Password Reset)
+// ==========================================
+function openCredentialQueryModal() {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：內容管理人員不能使用帳密查詢功能，此功能僅限「系統管理員」操作', 'error');
+        return;
+    }
+    const modal = document.getElementById('credentialQueryModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    searchCredentials();
+}
+
+function openCredentialQueryForUser(username) {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：此功能僅限「系統管理員」操作', 'error');
+        return;
+    }
+    const modal = document.getElementById('credentialQueryModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    const kwInput = document.getElementById('credSearchKeyword');
+    if (kwInput) kwInput.value = username;
+    const roleSelect = document.getElementById('credFilterRole');
+    if (roleSelect) roleSelect.value = '';
+    searchCredentials();
+}
+
+function closeCredentialQueryModal() {
+    document.getElementById('credentialQueryModal')?.classList.add('hidden');
+}
+
+async function searchCredentials() {
+    const tbody = document.getElementById('credentialsTableBody');
+    if (!tbody) return;
+
+    if (!isCurrentSysAdmin()) {
+        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-rose-600 font-semibold">🔒 權限不足：僅限系統管理員可查詢帳密。</td></tr>';
+        return;
+    }
+
+    const role = document.getElementById('credFilterRole')?.value || '';
+    const search = document.getElementById('credSearchKeyword')?.value.trim() || '';
+
+    tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">正在查詢帳密資料...</td></tr>';
+    try {
+        const params = new URLSearchParams();
+        if (role) params.set('role', role);
+        if (search) params.set('search', search);
+
+        const res = await adminFetch(`/api/admin/credentials/query?${params.toString()}`);
+        const list = res.data || [];
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">查無符合條件的帳號資料</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(u => {
+            const isDefault = u.is_default_password;
+            const pwdBadge = isDefault
+                ? `<span class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.5 rounded font-mono font-bold border border-emerald-300">🔑 ${escapeHtml(u.password_status)}</span>`
+                : `<span class="bg-sky-100 text-sky-800 text-[11px] px-2 py-0.5 rounded font-semibold border border-sky-300">🛡️ ${escapeHtml(u.password_status)}</span>`;
+
+            const isActive = u.is_active === 1;
+            const activeBadge = isActive
+                ? '<span class="text-emerald-700 font-bold">啟用中</span>'
+                : '<span class="text-rose-600 font-bold">已停用</span>';
+
+            const roleColors = {
+                '系統管理員': 'bg-rose-100 text-rose-800 border-rose-300',
+                '處室承辦': 'bg-amber-100 text-amber-800 border-amber-300',
+                '科助': 'bg-amber-100 text-amber-800 border-amber-300',
+                '住宿管理員': 'bg-purple-100 text-purple-800 border-purple-300',
+                '老師': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                '學生': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                '家長': 'bg-sky-100 text-sky-800 border-sky-300'
+            };
+            const roleBadge = `<span class="px-2 py-0.5 rounded text-[11px] border font-semibold ${roleColors[u.role_display] || 'bg-slate-100 text-slate-700'}">${escapeHtml(u.role_display)}</span>`;
+
+            const extra = u.student_id
+                ? `<span class="font-mono text-emerald-700">${escapeHtml(u.student_id)}${u.class_name ? ` (${escapeHtml(u.class_name)})` : ''}</span>`
+                : (u.office ? `<span class="text-slate-600">${escapeHtml(u.office)}</span>` : (u.advised_class ? `導師：${escapeHtml(u.advised_class)}` : '—'));
+
+            return `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-2.5 font-mono text-slate-400">${u.user_id}</td>
+                    <td class="p-2.5 font-bold font-mono text-slate-900">${escapeHtml(u.username)}</td>
+                    <td class="p-2.5 text-slate-800 font-medium">${escapeHtml(u.full_name)}</td>
+                    <td class="p-2.5">${roleBadge}</td>
+                    <td class="p-2.5 text-xs">${extra}</td>
+                    <td class="p-2.5">${pwdBadge}</td>
+                    <td class="p-2.5 text-xs">${activeBadge}</td>
+                    <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
+                        <button type="button" onclick="quickResetDefaultPassword(${u.user_id}, '${escapeHtml(u.username)}')"
+                            class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-semibold transition" title="還原為系統預設密碼 (123456 / admin123)">還原預設</button>
+                        <button type="button" onclick="promptCustomPassword(${u.user_id}, '${escapeHtml(u.username)}')"
+                            class="bg-indigo-700 hover:bg-indigo-800 text-white px-2 py-1 rounded text-[11px] font-semibold transition" title="管理者為該帳號指定新密碼">設新密碼</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-rose-600">查詢失敗：${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+async function quickResetDefaultPassword(userId, username) {
+    if (!confirm(`確定要將使用者「${username}」的密碼重設為系統預設密碼嗎？\n（一般師生預設密碼為 123456；系統管理員為 admin123）`)) return;
+    try {
+        const res = await adminFetch(`/api/admin/users/${userId}/reset-password`, {
+            method: 'POST',
+            body: JSON.stringify({ mode: 'default' })
+        });
+        showAdminToast(res.message || `使用者「${username}」密碼已重設為預設密碼`, 'success');
+        searchCredentials();
+        loadUsers();
+    } catch (e) {}
+}
+
+async function promptCustomPassword(userId, username) {
+    const newPwd = prompt(`請輸入為使用者「${username}」設定的新密碼（長度需 8～100 字元）：`);
+    if (newPwd === null) return;
+    const cleanPwd = newPwd.trim();
+    if (!cleanPwd || cleanPwd.length < 8 || cleanPwd.length > 100) {
+        showAdminToast('防呆攔截：新密碼長度須為 8～100 個字元！', 'error');
+        return;
+    }
+    try {
+        const res = await adminFetch(`/api/admin/users/${userId}/reset-password`, {
+            method: 'POST',
+            body: JSON.stringify({ mode: 'custom', new_password: cleanPwd })
+        });
+        showAdminToast(res.message || `使用者「${username}」新密碼已設定`, 'success');
+        searchCredentials();
+        loadUsers();
+    } catch (e) {}
 }
 
 // ==========================================
@@ -1793,9 +1955,6 @@ async function loadAllCoreAdminData() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllCoreAdminData();
-    // 帳號/學號類欄位擋中文輸入 (static/js/field-validate.js)
-    ['mUsername', 'mStudentId', 'filterCreditStudentId', 'filterAttStudentId', 'filterRecStudentId']
-        .forEach(id => typeof restrictAccountInput === 'function' && restrictAccountInput(id));
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             [

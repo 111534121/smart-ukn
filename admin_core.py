@@ -25,7 +25,7 @@ import json
 from datetime import datetime
 from functools import wraps
 from flask import Blueprint, jsonify, request, session, Response
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import admin_db
 
@@ -34,11 +34,14 @@ bp = Blueprint("admin_core", __name__)
 SYS_ADMIN_ROLES = ("系統管理員", "管理員")
 CONTENT_MANAGER_ROLES = ("內容管理人員",)
 ALL_ADMIN_ROLES = SYS_ADMIN_ROLES + CONTENT_MANAGER_ROLES
+VALID_USER_ROLES = (
+    "系統管理員", "管理員", "內容管理人員", "處室承辦", "科助", "住宿管理員", "教職員", "老師", "學生", "家長"
+)
 
 
 def _default_permissions_for_role(role):
     if role in SYS_ADMIN_ROLES:
-        return "查看,建立,修改,帳號管理,權限設定"
+        return "查看,建立,修改,帳號管理,權限設定,系統檢測"
     if role in CONTENT_MANAGER_ROLES:
         return "查看,建立,修改"
     return "查看"
@@ -51,14 +54,14 @@ def _sanitize_permissions(role, perms_raw):
         perms = [p.strip() for p in perms_raw.split(",") if p.strip()]
     else:
         perms = _default_permissions_for_role(role).split(",")
-    # 內容管理人員絕對不可擁有帳號管理或權限設定
+    # 內容管理人員與非系統管理員絕對不可擁有帳號管理、權限設定或系統檢測
     if role not in SYS_ADMIN_ROLES:
-        perms = [p for p in perms if p not in ("帳號管理", "權限設定")]
+        perms = [p for p in perms if p not in ("帳號管理", "權限設定", "系統檢測")]
     if not perms:
         perms = ["查看"]
     # 去重並維持固定順序
     ordered = []
-    for p in ("查看", "建立", "修改", "帳號管理", "權限設定"):
+    for p in ("查看", "建立", "修改", "帳號管理", "權限設定", "系統檢測"):
         if p in perms and p not in ordered:
             ordered.append(p)
     for p in perms:
@@ -196,7 +199,7 @@ def list_users():
     sql = """
         SELECT u.user_id, u.username, u.role, u.student_id, u.full_name,
                u.advised_class, u.can_manage_dorm, u.office, u.permissions,
-               u.is_active, u.created_at,
+               u.is_active, u.created_at, u.default_password,
                s.class_name, s.dept_id
         FROM users u
         LEFT JOIN students s ON u.student_id = s.student_id
@@ -222,6 +225,7 @@ def list_users():
     for u in users:
         u["is_active"] = 1 if u.get("is_active") is None else int(u.get("is_active"))
         u["office"] = u.get("office") or ""
+        u["default_password"] = u.get("default_password") or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456")
         u["permissions"] = _sanitize_permissions(u.get("role"), u.get("permissions"))
         # 對齊角色顯示名稱：管理員 -> 系統管理員
         u["role_display"] = "系統管理員" if u.get("role") in SYS_ADMIN_ROLES else u.get("role")
@@ -234,14 +238,8 @@ def create_user():
     data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
-    role = (data.get("role") or "處室承辦").strip()
+    role_raw = data.get("role")
     full_name = (data.get("full_name") or "").strip()
-    office = (data.get("office") or "").strip()[:100]
-    permissions = _sanitize_permissions(role, data.get("permissions"))
-    is_active = 0 if data.get("is_active") in (0, "0", False, "false") else 1
-    student_id = (str(data.get("student_id")).strip().upper() or None) if data.get("student_id") is not None else None
-    advised_class = (str(data.get("advised_class")).strip() or None) if data.get("advised_class") is not None else None
-    can_manage_dorm = 1 if data.get("can_manage_dorm") else 0
 
     if not username or not full_name:
         return jsonify({"status": "error", "message": "帳號名稱與姓名為必填欄位"}), 400
@@ -250,17 +248,35 @@ def create_user():
     if len(full_name) > 50:
         return jsonify({"status": "error", "message": "姓名長度不可超過 50 字元"}), 400
 
-    allowed_roles = ("系統管理員", "管理員", "處室承辦", "內容管理人員", "科助", "住宿管理員", "教職員", "老師", "學生", "家長", "訪客")
-    if role not in allowed_roles:
-        return jsonify({"status": "error", "message": f"不支援的角色類型：{role}"}), 400
+    # 防呆：嚴格檢查身分角色，非空且必須為系統合法角色，拒絕非法角色
+    if not role_raw or not str(role_raw).strip():
+        return jsonify({"status": "error", "message": "身分角色為必填欄位，請選擇合法的身分角色"}), 400
+    role = str(role_raw).strip()
+    if role not in VALID_USER_ROLES:
+        return jsonify({
+            "status": "error",
+            "message": f"不支援或非法的身分角色類型：{role}。合法角色為：系統管理員、內容管理人員、處室承辦、科助、住宿管理員、教職員、老師、學生、家長"
+        }), 400
 
-    if role in ("學生", "家長") and not student_id:
-        return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
-    if student_id and not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
-        return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+    office = (data.get("office") or "").strip()[:100]
+    permissions = _sanitize_permissions(role, data.get("permissions"))
+    is_active = 0 if data.get("is_active") in (0, "0", False, "false") else 1
+    
+    # 角色特定防呆：學生與家長強制綁定學號，其餘身分不帶學號
+    if role in ("學生", "家長"):
+        student_id = (str(data.get("student_id")).strip().upper() or None) if data.get("student_id") is not None else None
+        if not student_id:
+            return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
+        if not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
+            return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+    else:
+        student_id = None
+
+    advised_class = (str(data.get("advised_class")).strip() or None) if data.get("advised_class") is not None and role == "老師" else None
+    can_manage_dorm = 1 if (data.get("can_manage_dorm") or role == "住宿管理員") else 0
 
     if not password or len(password) < 8 or len(password) > 100:
-        return jsonify({"status": "error", "message": "請輸入 8～100 字元的密碼"}), 400
+        return jsonify({"status": "error", "message": "密碼為必填欄位，長度須為 8～100 字元"}), 400
 
     # 檢查帳號重疊 (大小寫不敏感)
     existing = admin_db.query_one("SELECT user_id FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
@@ -277,9 +293,9 @@ def create_user():
 
     pw_hash = generate_password_hash(password)
     res = admin_db.execute_db("""
-        INSERT INTO users (username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (username, pw_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active))
+        INSERT INTO users (username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active, default_password)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (username, pw_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions, is_active, password))
 
     new_id = res.get("lastrowid") or username
     actor_name, actor_role, actor_ip = _get_current_actor()
@@ -316,16 +332,25 @@ def update_user(user_id):
     if not before:
         return jsonify({"status": "error", "message": "找不到該使用者帳號"}), 404
 
-    role = (data.get("role") or before["role"]).strip()
+    if "role" in data:
+        role_raw = data.get("role")
+        if not role_raw or not str(role_raw).strip():
+            return jsonify({"status": "error", "message": "身分角色不可為空白"}), 400
+        role_clean = str(role_raw).strip()
+        if role_clean not in VALID_USER_ROLES:
+            return jsonify({
+                "status": "error",
+                "message": f"不支援或非法的身分角色類型：{role_clean}。合法角色為：系統管理員、內容管理人員、處室承辦、科助、住宿管理員、教職員、老師、學生、家長"
+            }), 400
+        role = role_clean
+    else:
+        role = before["role"]
+
     full_name = (data.get("full_name") if data.get("full_name") is not None else before["full_name"]).strip()
     if not full_name:
         return jsonify({"status": "error", "message": "姓名不可為空白"}), 400
     if len(full_name) > 50:
         return jsonify({"status": "error", "message": "姓名長度不可超過 50 字元"}), 400
-
-    allowed_roles = ("系統管理員", "管理員", "處室承辦", "內容管理人員", "科助", "住宿管理員", "教職員", "老師", "學生", "家長", "訪客")
-    if role not in allowed_roles:
-        return jsonify({"status": "error", "message": f"不支援的角色類型：{role}"}), 400
 
     office = (data.get("office") if data.get("office") is not None else (before.get("office") or "")).strip()[:100]
     raw_perms = data.get("permissions") if data.get("permissions") is not None else before.get("permissions")
@@ -342,7 +367,7 @@ def update_user(user_id):
     if (is_self or is_root_admin) and is_active == 0:
         return jsonify({"status": "error", "message": "防呆保護：不可停用主管理員或目前正在使用的管理員帳號"}), 400
 
-    # 防呆 2：不可將主管理員 admin 或目前登入中的管理員降權為非管理員
+    # 防呆 2：不可將主管理員 admin 或目前登入中的管理員降權為非系統管理員角色
     if (is_self or is_root_admin) and role not in SYS_ADMIN_ROLES:
         return jsonify({"status": "error", "message": "防呆保護：不可將主管理員或目前登入中的管理員降權為其他角色"}), 400
 
@@ -355,14 +380,17 @@ def update_user(user_id):
         if not active_admins or active_admins["c"] == 0:
             return jsonify({"status": "error", "message": "防呆保護：系統至少須保留一位啟用中的「系統管理員」"}), 400
 
-    student_id = (str(data.get("student_id")).strip().upper() or None) if "student_id" in data and data.get("student_id") is not None else (before["student_id"] if "student_id" not in data else None)
-    advised_class = (str(data.get("advised_class")).strip() or None) if "advised_class" in data and data.get("advised_class") is not None else (before["advised_class"] if "advised_class" not in data else None)
-    can_manage_dorm = 1 if data.get("can_manage_dorm") else (int(before.get("can_manage_dorm") or 0) if "can_manage_dorm" not in data else 0)
+    if role in ("學生", "家長"):
+        student_id = (str(data.get("student_id")).strip().upper() or None) if "student_id" in data and data.get("student_id") is not None else (before["student_id"] if "student_id" not in data else None)
+        if not student_id:
+            return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
+        if not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
+            return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+    else:
+        student_id = None
 
-    if role in ("學生", "家長") and not student_id:
-        return jsonify({"status": "error", "message": f"「{role}」角色必須填寫綁定學號（例如 S112001）"}), 400
-    if student_id and not re.match(r"^[A-Za-z0-9_\-]{3,20}$", student_id):
-        return jsonify({"status": "error", "message": "學號格式不正確：請輸入 3～20 字元的英數字"}), 400
+    advised_class = (str(data.get("advised_class")).strip() or None) if "advised_class" in data and data.get("advised_class") is not None and role == "老師" else (before["advised_class"] if "advised_class" not in data and role == "老師" else None)
+    can_manage_dorm = 1 if (data.get("can_manage_dorm") or role == "住宿管理員") else (int(before.get("can_manage_dorm") or 0) if "can_manage_dorm" not in data else 0)
 
     if student_id:
         stu = admin_db.query_one("SELECT student_id FROM students WHERE student_id = %s", (student_id,))
@@ -448,6 +476,203 @@ def delete_user(user_id):
         pass
 
     return jsonify({"status": "success", "message": f"使用者「{before['username']}」已成功刪除"}), 200
+
+# -------------------------------------------------------------------------
+# 1b. 帳密查詢與密碼管理功能（僅限系統管理員）
+# -------------------------------------------------------------------------
+@bp.route("/api/admin/credentials/query", methods=["GET"])
+@sys_admin_required
+def query_user_credentials():
+    """管理員專用帳密查詢功能：查詢帳號、身分、學號、處室及密碼設定狀態（支援預設密碼識別）。"""
+    search = request.args.get("search", "").strip()
+    role_filter = request.args.get("role", "").strip()
+    status_filter = request.args.get("is_active", "").strip()
+
+    sql = """
+        SELECT u.user_id, u.username, u.password_hash, u.role, u.student_id, u.full_name,
+               u.advised_class, u.can_manage_dorm, u.office, u.permissions,
+               u.is_active, u.created_at, u.default_password,
+               s.class_name, s.dept_id
+        FROM users u
+        LEFT JOIN students s ON u.student_id = s.student_id
+        WHERE 1=1
+    """
+    params = []
+    if role_filter:
+        if role_filter in SYS_ADMIN_ROLES:
+            sql += " AND u.role IN ('系統管理員', '管理員')"
+        else:
+            sql += " AND u.role = %s"
+            params.append(role_filter)
+    if status_filter in ("0", "1"):
+        sql += " AND COALESCE(u.is_active, 1) = %s"
+        params.append(int(status_filter))
+    if search:
+        sql += " AND (u.username LIKE %s OR u.full_name LIKE %s OR COALESCE(u.student_id, '') LIKE %s OR COALESCE(u.office, '') LIKE %s OR COALESCE(s.class_name, '') LIKE %s)"
+        kw = f"%{search}%"
+        params.extend([kw, kw, kw, kw, kw])
+
+    sql += " ORDER BY u.user_id DESC"
+    users = admin_db.query_db(sql, tuple(params))
+
+    result = []
+    for u in users:
+        pw_hash = u.get("password_hash") or ""
+        def_pwd = u.get("default_password")
+        if pw_hash and def_pwd and (pw_hash == def_pwd or (pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, def_pwd))):
+            pw_status = f"預設密碼 ({def_pwd})"
+            is_default = True
+            suggested_pwd = def_pwd
+        elif pw_hash == "123456" or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "123456")):
+            pw_status = "預設密碼 (123456)"
+            is_default = True
+            suggested_pwd = "123456"
+        elif pw_hash in ("admin123", "12345678", "888888") or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "admin123")):
+            pw_status = f"預設密碼 ({pw_hash if pw_hash in ('admin123', '12345678', '888888') else 'admin123'})"
+            is_default = True
+            suggested_pwd = pw_hash if pw_hash in ("admin123", "12345678", "888888") else "admin123"
+        elif pw_hash:
+            pw_status = f"純數字密碼 ({pw_hash})" if pw_hash.isdigit() else "已自訂密碼 (加密雜湊保護)"
+            is_default = False
+            suggested_pwd = pw_hash if pw_hash.isdigit() else None
+        else:
+            pw_status = "未設定密碼"
+            is_default = False
+            suggested_pwd = None
+
+        role_disp = "系統管理員" if u.get("role") in SYS_ADMIN_ROLES else u.get("role")
+        result.append({
+            "user_id": u["user_id"],
+            "username": u["username"],
+            "full_name": u["full_name"],
+            "role": u["role"],
+            "role_display": role_disp,
+            "student_id": u.get("student_id") or "",
+            "class_name": u.get("class_name") or "",
+            "advised_class": u.get("advised_class") or "",
+            "office": u.get("office") or "",
+            "is_active": 1 if u.get("is_active") is None else int(u.get("is_active")),
+            "default_password": u.get("default_password") or suggested_pwd or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456"),
+            "password_status": pw_status,
+            "is_default_password": is_default,
+            "suggested_password": suggested_pwd,
+            "created_at": str(u.get("created_at") or "")[:19]
+        })
+
+    return jsonify({"status": "success", "data": result, "total": len(result)}), 200
+
+@bp.route("/api/admin/users/<int:user_id>/reset-password", methods=["POST"])
+@sys_admin_required
+def reset_user_password(user_id):
+    """管理員重設使用者密碼：可選擇一鍵還原預設密碼 (123456 / admin123) 或指定新密碼。"""
+    data = request.get_json(silent=True) or {}
+    custom_pwd = (data.get("new_password") or "").strip()
+    mode = data.get("mode", "custom" if custom_pwd else "default")
+
+    target = admin_db.query_one("SELECT user_id, username, role, full_name, is_active FROM users WHERE user_id = %s", (user_id,))
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該使用者帳號"}), 404
+
+    if mode == "custom":
+        if not custom_pwd:
+            return jsonify({"status": "error", "message": "請輸入欲設定的新密碼"}), 400
+        if len(custom_pwd) < 8 or len(custom_pwd) > 100:
+            return jsonify({"status": "error", "message": "新密碼長度須介於 8～100 字元之間"}), 400
+        new_pwd = custom_pwd
+    else:
+        if target["role"] in SYS_ADMIN_ROLES:
+            new_pwd = "admin123"
+        else:
+            new_pwd = "123456"
+
+    new_hash = generate_password_hash(new_pwd)
+    admin_db.execute_db("UPDATE users SET password_hash = %s, default_password = %s WHERE user_id = %s", (new_hash, new_pwd, user_id))
+
+    try:
+        from app import DEMO_USERS
+        for u in DEMO_USERS:
+            if u.get("username") == target["username"]:
+                u["password_hash"] = new_hash
+                break
+    except Exception:
+        pass
+
+    actor_name, actor_role, actor_ip = _get_current_actor()
+    admin_db.log_audit_trail(
+        "users", user_id, "重設密碼",
+        {"user_id": user_id, "username": target["username"], "full_name": target["full_name"]},
+        {"user_id": user_id, "username": target["username"], "reset_mode": mode},
+        actor_name, actor_role, actor_ip
+    )
+
+    return jsonify({
+        "status": "success",
+        "message": f"使用者「{target['username']}」密碼已成功重設為：{new_pwd}",
+        "username": target["username"],
+        "new_password": new_pwd,
+        "is_default": (mode != "custom")
+    }), 200
+
+@bp.route("/api/admin/users/<int:user_id>/credential-info", methods=["GET"])
+@sys_admin_required
+def get_user_credential_info(user_id):
+    """查詢單一使用者之帳密資訊詳情"""
+    u = admin_db.query_one("""
+        SELECT u.user_id, u.username, u.password_hash, u.role, u.student_id, u.full_name,
+               u.advised_class, u.can_manage_dorm, u.office, u.permissions,
+               u.is_active, u.created_at, u.default_password,
+               s.class_name, s.dept_id
+        FROM users u
+        LEFT JOIN students s ON u.student_id = s.student_id
+        WHERE u.user_id = %s
+    """, (user_id,))
+    if not u:
+        return jsonify({"status": "error", "message": "找不到該使用者帳號"}), 404
+
+    pw_hash = u.get("password_hash") or ""
+    def_pwd = u.get("default_password")
+    if pw_hash and def_pwd and (pw_hash == def_pwd or (pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, def_pwd))):
+        pw_status = f"初始預設密碼 ({def_pwd})"
+        is_default = True
+        suggested_pwd = def_pwd
+    elif pw_hash == "123456" or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "123456")):
+        pw_status = "預設密碼 (123456)"
+        is_default = True
+        suggested_pwd = "123456"
+    elif pw_hash in ("admin123", "12345678", "888888") or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "admin123")):
+        pw_status = f"預設密碼 ({pw_hash if pw_hash in ('admin123', '12345678', '888888') else 'admin123'})"
+        is_default = True
+        suggested_pwd = pw_hash if pw_hash in ("admin123", "12345678", "888888") else "admin123"
+    elif pw_hash:
+        pw_status = f"純數字密碼 ({pw_hash})" if pw_hash.isdigit() else "已自訂密碼 (加密雜湊保護)"
+        is_default = False
+        suggested_pwd = pw_hash if pw_hash.isdigit() else None
+    else:
+        pw_status = "未設定密碼"
+        is_default = False
+        suggested_pwd = None
+
+    role_disp = "系統管理員" if u.get("role") in SYS_ADMIN_ROLES else u.get("role")
+    return jsonify({
+        "status": "success",
+        "data": {
+            "user_id": u["user_id"],
+            "username": u["username"],
+            "full_name": u["full_name"],
+            "role": u["role"],
+            "role_display": role_disp,
+            "student_id": u.get("student_id") or "",
+            "class_name": u.get("class_name") or "",
+            "advised_class": u.get("advised_class") or "",
+            "office": u.get("office") or "",
+            "is_active": 1 if u.get("is_active") is None else int(u.get("is_active")),
+            "default_password": u.get("default_password") or suggested_pwd or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456"),
+            "password_status": pw_status,
+            "is_default_password": is_default,
+            "suggested_password": suggested_pwd,
+            "created_at": str(u.get("created_at") or "")[:19]
+        }
+    }), 200
 
 # -------------------------------------------------------------------------
 # 2. departments（科系與學院架構）

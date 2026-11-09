@@ -295,7 +295,7 @@ def my_bookings():
         from .admin_cases import is_dorm_staff
         if is_dorm_staff(u):
             return error("住宿管理帳號不能查看全校教室借用", 403)
-    if request.args.get("scope") == "all" and u["role"] in ("管理員", "教職員"):
+    if request.args.get("scope") == "all" and u["role"] in ("管理員", "系統管理員", "教職員"):
         items = bookings()
     else:
         items = [b for b in bookings() if b["applicant_key"] == user_key()]
@@ -314,7 +314,7 @@ def update_booking(booking_id):
         before = {"room_name": bk.get("room_name"), "date": bk.get("date"), "applicant": bk.get("applicant"), "status": bk.get("status")}
         if action == "cancel" and bk["applicant_key"] == user_key():
             patch = {"status": "已取消"}
-        elif action in ("approve", "reject") and u["role"] in ("管理員", "教職員"):
+        elif action in ("approve", "reject") and u["role"] in ("管理員", "系統管理員", "教職員"):
             from .admin_cases import is_dorm_staff
             if is_dorm_staff(u):
                 return error("住宿管理帳號不能審核教室借用", 403)

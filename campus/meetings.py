@@ -57,7 +57,7 @@ def _people():
     """{成員代碼: {name, desc}}：學生用學號、其他身分用 user:帳號"""
     people = {s["student_id"]: {"name": s["full_name"], "desc": f"{s.get('class_name') or ''} {s['student_id']}".strip()}
               for s in all_students()}
-    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('老師', '教職員', '管理員')")
+    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('老師', '教職員', '管理員', '系統管理員')")
     for u in rows if rows is not None else [u for u in deps.users if u["role"] in STAFF_ROLES]:
         people[f"user:{u['username']}"] = {"name": u["full_name"], "desc": u["role"]}
     return people
@@ -66,7 +66,7 @@ def _people():
 # 【功能：線上會議】誰可以邀請哪些班：老師 = 自己任教 + 導師班，教職員 / 管理員 = 全部，學生不能整班邀請
 def invitable_classes(u):
     """老師：課表上自己教的班 + 導師班；教職員、管理員：全部班級；學生：不能整班邀請"""
-    if u["role"] in ("教職員", "管理員"):
+    if u["role"] in ("教職員", "管理員", "系統管理員"):
         return sorted({s["class_name"] for s in all_students() if s.get("class_name")})
     if u["role"] == "老師":
         name = _plain_name(u["full_name"])

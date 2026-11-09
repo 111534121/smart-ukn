@@ -256,7 +256,7 @@ DORM_NEXT_ACTION = {
 def can_manage_dorm(user):
     """只有資料庫裡真的查到這個帳號、且角色不符時才否決；查無此帳號 (例如 dorm_demo 這類示範
     帳號沒有寫進 MySQL users 表) 就相信登入當下 session 已經確認過的角色/旗標，不要連帶判定沒有權限"""
-    if user.get("role") == "管理員": return True
+    if user.get("role") in ("管理員", "系統管理員"): return True
     if user.get("role") == "住宿管理員":
         rows = deps.fetch_db_rows("SELECT role FROM users WHERE username=%s", (user.get("username"),))
         return rows[0]["role"] == "住宿管理員" if rows else True

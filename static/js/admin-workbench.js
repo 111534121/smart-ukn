@@ -247,5 +247,10 @@
             message('處室分工已儲存'); await init();
         });
     });
+    window.workbenchLogout = async function() {
+        if (!confirm('確定要登出並返回登入頁面嗎？')) return;
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(e){}
+        window.location.href = '/login';
+    };
     init().catch(e => { $('caseList').textContent = '無法讀取案件，請確認登入身分後重試。'; message(e.message, true); });
 })();

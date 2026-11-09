@@ -1290,14 +1290,13 @@ function eventCardHtml(e) {
 function toggleEventRegister(id) {
     eventsOpenRegisterId = eventsOpenRegisterId === id ? null : id;
     renderEventsList();
-    if (eventsOpenRegisterId !== null) restrictAccountInput('eventRegStudentId');
 }
 
 function eventRegisterFormHtml(e) {
     const u = currentUser;
     return `
         <form onsubmit="submitEventRegister(event, ${e.id})" class="rounded border border-ukn-200 bg-ukn-50 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <div><label class="block text-xs font-semibold text-slate-600 mb-1">學號 *</label><input id="eventRegStudentId" name="student_id" required maxlength="20" value="${esc(u.student_id || '')}" class="w-full border border-slate-300 rounded px-3 py-2"><p id="eventRegStudentId-err" class="field-error-text"></p></div>
+            <div><label class="block text-xs font-semibold text-slate-600 mb-1">學號 *</label><input name="student_id" required maxlength="20" value="${esc(u.student_id || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">姓名 *</label><input name="full_name" required maxlength="50" value="${esc(u.full_name || '')}" class="w-full border border-slate-300 rounded px-3 py-2"></div>
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">Email *</label><input type="email" name="email" required maxlength="100" class="w-full border border-slate-300 rounded px-3 py-2"></div>
             <div><label class="block text-xs font-semibold text-slate-600 mb-1">聯絡電話</label><input name="phone" maxlength="30" class="w-full border border-slate-300 rounded px-3 py-2"></div>
@@ -1313,16 +1312,12 @@ function eventRegisterFormHtml(e) {
 async function submitEventRegister(event, id) {
     event.preventDefault();
     const f = Object.fromEntries(new FormData(event.target));
-    clearFieldError('eventRegStudentId');
     try {
         const r = await api(`/api/campus/events/${id}/register`, { method: 'POST', json: f });
         toast(r.message, r.data.notified === false ? 'error' : 'ok');
         eventsOpenRegisterId = null;
         loadEvents();
-    } catch (e) {
-        toast(e.message, 'error');
-        if (e.message.includes('學號')) setFieldError('eventRegStudentId', e.message);
-    }
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 function renderMyEvents() {

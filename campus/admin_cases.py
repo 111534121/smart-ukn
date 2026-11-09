@@ -29,7 +29,7 @@ def stamp():
 
 
 def accounts():
-    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('教職員','管理員','處室承辦','科助','住宿管理員')")
+    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('教職員','管理員','系統管理員','處室承辦','科助','住宿管理員')")
     source = rows if rows is not None else deps.users
     return [{k: u.get(k, '') for k in ('username', 'full_name', 'role')}
             for u in source if u['role'] in WORK_ROLES]
@@ -68,7 +68,7 @@ def owns(item, user=None):
 
 def can_manage(item, user=None):
     u = user or current_user()
-    return u['role'] == '管理員' or (u['role'] in WORK_ROLES and
+    return u['role'] in ('管理員', '系統管理員') or (u['role'] in WORK_ROLES and
         catalog.canonical(assignments().get(u['username'])) == catalog.canonical(item['office']))
 
 
@@ -186,7 +186,7 @@ def page():
 def config():
     u = current_user()
     if request.method == 'PUT':
-        if u['role'] != '管理員':
+        if u['role'] not in ('管理員', '系統管理員'):
             return error('僅管理員可設定處室分工', 403)
         data = request.get_json(silent=True)
         with store.lock:
@@ -227,14 +227,14 @@ def config():
         members = {k: catalog.canonical(v) for k, v in assignments().items()}
         configured = deepcopy(workflows())
     people = accounts() if u['role'] in WORK_ROLES else []
-    if u['role'] in WORK_ROLES and u['role'] != '管理員':
+    if u['role'] in WORK_ROLES and u['role'] not in ('管理員', '系統管理員'):
         people = [a for a in people if members.get(a['username']) == members.get(u['username'])
                   and members.get(u['username'])]
     return ok(offices=list(offices()), kinds={k: v['office'] for k, v in configured.items()}, workflows=configured,
               source=catalog.SOURCE, demo_accounts=catalog.demo_accounts(), office=members.get(u['username']),
-              assistant_departments=deepcopy(store.data.get('admin_assistant_departments', {})) if u['role']=='管理員' else {},
+              assistant_departments=deepcopy(store.data.get('admin_assistant_departments', {})) if u['role'] in ('管理員', '系統管理員') else {},
               departments=deps.departments,
-              members=members if u['role'] == '管理員' else {a['username']: members.get(a['username']) for a in people},
+              members=members if u['role'] in ('管理員', '系統管理員') else {a['username']: members.get(a['username']) for a in people},
               accounts=people)
 
 
@@ -413,7 +413,7 @@ def download(case_id, file_id):
 def assistant_students():
     from .common import all_students
     u = current_user()
-    code = (request.args.get('dept_id') if u['role'] == '管理員'
+    code = (request.args.get('dept_id') if u['role'] in ('管理員', '系統管理員')
             else store.data.get('admin_assistant_departments', {}).get(u['username']))
     if not code or code not in {d['dept_id'] for d in deps.departments}:
         return error('此科助帳號尚未設定所屬科系', 403)
