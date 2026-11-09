@@ -321,7 +321,7 @@ def init_database():
               `school_from` varchar(100) NOT NULL,
               `purpose` varchar(100) NOT NULL,
               `target_dept` varchar(100) DEFAULT '資訊管理科（五專）',
-              `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生 或 未來家長',
+              `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生／未來家長／一般訪客',
               `visited_at` timestamp NOT NULL DEFAULT current_timestamp(),
               `ip_address` varchar(50) DEFAULT '127.0.0.1',
               PRIMARY KEY (`log_id`)
@@ -334,7 +334,7 @@ def init_database():
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'visitor_logs' AND COLUMN_NAME = 'visitor_type'
         """)
         if cursor.fetchone()[0] == 0:
-            cursor.execute("ALTER TABLE `visitor_logs` ADD COLUMN `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生 或 未來家長'")
+            cursor.execute("ALTER TABLE `visitor_logs` ADD COLUMN `visitor_type` varchar(20) NOT NULL DEFAULT '未來學生' COMMENT '未來學生／未來家長／一般訪客'")
             print("✅ visitor_logs 已新增 visitor_type 欄位")
 
         # 18. 建立跨系統期限雷達表 deadlines (功能 2: 校曆連動雷達)
@@ -976,6 +976,15 @@ def init_database():
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE `event_registrations` ADD COLUMN `{column}` {definition}")
                 print(f"✅ event_registrations 已新增 {column} 欄位")
+
+        # 補上「生源學校」欄位 (訪客免登入報名時帶入，供招生端統計用；舊資料庫在這欄位加進來之前就已經建表)
+        cursor.execute("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_registrations' AND COLUMN_NAME = 'school_from'
+        """)
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("ALTER TABLE `event_registrations` ADD COLUMN `school_from` varchar(100) DEFAULT NULL AFTER `note`")
+            print("✅ event_registrations 已新增 school_from 欄位")
 
         # 補上「活動效益/加分說明」欄位 (舊資料庫在這欄位加進來之前就已經建表)
         cursor.execute("""

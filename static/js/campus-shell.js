@@ -226,7 +226,11 @@ function tabFromHash() {
     const key = decodeURIComponent(location.hash.replace('#', ''));
     return featureByKey(key)?.tab || HOME_TAB;
 }
-window.addEventListener('hashchange', () => switchTab(tabFromHash(), { updateHash: false }));
+function maybeScrollToAnnouncements() {
+    if (decodeURIComponent(location.hash.replace('#', '')) !== 'announcements') return;
+    setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+}
+window.addEventListener('hashchange', () => { switchTab(tabFromHash(), { updateHash: false }); maybeScrollToAnnouncements(); });
 
 // ---------- 首頁：主視覺輪播 ----------
 
@@ -688,6 +692,7 @@ function campusInit() {
     renderVisitorWelcome();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
     switchTab(tabFromHash(), { updateHash: false });
+    maybeScrollToAnnouncements();
 }
 
 // ---------- 我的導師班：總覽、出缺勤、學業預警、關懷紀錄、學分與證照 共用上方分頁列 ----------
@@ -725,6 +730,13 @@ const VISITOR_WELCOME_CONTENT = {
             { title: '☎️ 聯絡窗口', text: '對入學、獎助學金或宿舍有疑問，都可以直接致電學校詢問相關承辦單位。' },
         ],
     },
+    '一般訪客': {
+        subtitle: '瀏覽科系介紹、常見問題，報名活動或預約參觀再留聯絡資料就好',
+        cards: [
+            { title: '🏫 認識康寧大學', text: '點下面「看看本校有哪些科系」瀏覽各科系簡介；想參加體驗營等校園活動可到「活動報名」分頁直接報名。' },
+            { title: '📅 預約校園參觀', text: '想實際走訪校園，可以在下面填單預約，不用先註冊帳號。' },
+        ],
+    },
 };
 
 function deptCardHtml(d) {
@@ -740,10 +752,13 @@ function deptCardHtml(d) {
 async function renderVisitorWelcome() {
     const section = document.getElementById('visitorWelcome');
     if (!section) return;
-    if (currentUser.role !== '訪客' || !currentUser.visitor_type) { section.classList.add('hidden'); return; }
-    const content = VISITOR_WELCOME_CONTENT[currentUser.visitor_type] || VISITOR_WELCOME_CONTENT['未來學生'];
-    const name = currentUser.visitor_name || currentUser.full_name || '';
-    document.getElementById('visitorWelcomeTitle').textContent = `歡迎，${name}！${content.subtitle}`;
+    // 公開資訊 (科系介紹/常見問題/預約參觀) 不需要登入就看得到：連完全沒走過訪客登記的匿名訪客 (role 一樣是 '訪客') 也顯示，
+    // 只是還沒登記的人沒有 visitor_type，就用「一般訪客」這組通用文案，不用等填完表單才看得到
+    if (currentUser.role !== '訪客') { section.classList.add('hidden'); return; }
+    const content = VISITOR_WELCOME_CONTENT[currentUser.visitor_type] || VISITOR_WELCOME_CONTENT['一般訪客'];
+    const name = currentUser.visitor_type ? (currentUser.visitor_name || currentUser.full_name || '') : '';
+    document.getElementById('visitorWelcomeTitle').textContent = name
+        ? `歡迎，${name}！${content.subtitle}` : `歡迎蒞臨康寧大學！${content.subtitle}`;
     document.getElementById('visitorWelcomeDept').textContent = currentUser.dept_name
         ? `您登記時填寫感興趣的科系：${currentUser.dept_name}` : '';
 

@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS event_registrations (
  phone varchar(30) DEFAULT NULL,
  age int NOT NULL,
  note varchar(200) DEFAULT NULL,
+ school_from varchar(100) DEFAULT NULL COMMENT '生源學校 (訪客報名時帶入，供招生端統計用)',
  status varchar(10) NOT NULL DEFAULT '已報名',
  checkin_code varchar(64) NOT NULL,
  registered_by_key varchar(100) DEFAULT NULL,
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 
 EVENT_FIELDS = ('title', 'description', 'image_url', 'benefit', 'eligibility', 'location', 'event_date', 'event_time',
                  'registration_deadline', 'capacity', 'cancelled', 'created_by', 'created_at')
-REG_FIELDS = ('event_id', 'student_id', 'full_name', 'email', 'phone', 'age', 'note', 'status',
+REG_FIELDS = ('event_id', 'student_id', 'full_name', 'email', 'phone', 'age', 'note', 'school_from', 'status',
               'checkin_code', 'registered_by_key', 'registered_by_role', 'created_at', 'cancelled_at',
               'checked_in', 'checked_in_at', 'reminded', 'notified', 'notified_at',
               'rating', 'feedback_comment', 'feedback_at')
@@ -98,6 +99,7 @@ def _decode_registration(row):
     item['notified'] = bool(item['notified'])
     item['phone'] = item.get('phone') or ''
     item['note'] = item.get('note') or ''
+    item['school_from'] = item.get('school_from') or ''
     return item
 
 

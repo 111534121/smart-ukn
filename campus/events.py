@@ -144,8 +144,8 @@ def _record_notified(reg_id, sent):
 # ---------- 活動本身 (查詢/建立/編輯/取消活動)：建立與編輯限教職員/管理員 ----------
 
 @bp.route("/api/campus/events", methods=["GET"])
-@require()
 def list_events():
+    """不需要登入即可瀏覽 (體驗營等活動要讓還沒登記的訪客也看得到)；報名/管理動作仍各自檢查身分"""
     u = current_user()
     q = (request.args.get("q") or "").strip()
     location = (request.args.get("location") or "").strip()
@@ -154,7 +154,7 @@ def list_events():
     open_only = request.args.get("open_only") == "1"
 
     items = db.all_events()
-    if u["role"] not in STAFF_ROLES:
+    if not u or u["role"] not in STAFF_ROLES:
         items = [e for e in items if not e.get("cancelled")]
     if q:
         items = [e for e in items if q in e["title"] or q in e.get("description", "")]
@@ -195,15 +195,16 @@ def my_registrations():
 
 
 @bp.route("/api/campus/events/<int:event_id>", methods=["GET"])
-@require()
 def get_event(event_id):
+    """不需要登入即可瀏覽，理由同 list_events"""
     ev = db.get_event(event_id)
     if not ev:
         return error("找不到該活動", 404)
     all_regs = db.all_registrations()
     view = event_view(ev, all_regs)
+    key = user_key()
     view["my_registration"] = next(
-        (r for r in all_regs if r["event_id"] == event_id and r["registered_by_key"] == user_key()
+        (r for r in all_regs if r["event_id"] == event_id and key and r["registered_by_key"] == key
          and r["status"] != "已取消"), None)
     return ok(data=view)
 
@@ -312,7 +313,7 @@ def _add_registration(event_id, fields, registered_by_key, registered_by_role, b
         confirmed = sum(1 for r in items if r["event_id"] == event_id and r["status"] == "已報名")
         status = "已報名" if confirmed < ev["capacity"] else "候補中"
         item = db.insert_registration({
-            "event_id": event_id, **fields,
+            "event_id": event_id, "school_from": fields.get("school_from") or None, **fields,
             "status": status, "checkin_code": uuid.uuid4().hex,
             "registered_by_key": registered_by_key, "registered_by_role": registered_by_role,
             "created_at": now_str(), "cancelled_at": None,
@@ -331,6 +332,9 @@ def register_event(event_id):
     fields, err = clean_registration(data)
     if err:
         return error(err)
+    if u["role"] == "訪客":
+        # 生源學校不用再填一次表單：直接沿用訪客登記 (/api/visitor/register) 時留下的學校，供招生端統計
+        fields["school_from"] = u.get("class_name") or ""
     item, status, err_resp = _add_registration(event_id, fields, user_key(), u["role"])
     if err_resp:
         return err_resp
@@ -521,7 +525,13 @@ def list_registrations(event_id):
         return error("找不到該活動", 404)
     all_regs = db.all_registrations()
     items = sorted((r for r in all_regs if r["event_id"] == event_id), key=lambda r: r["id"])
-    return ok(data=items, event=event_view(ev, all_regs))
+    by_school = {}
+    for r in items:
+        school = r.get("school_from")
+        if school and r["status"] != "已取消":
+            by_school[school] = by_school.get(school, 0) + 1
+    return ok(data=items, event=event_view(ev, all_regs),
+              by_school=sorted(by_school.items(), key=lambda kv: -kv[1]))
 
 
 # ---------- 活動前一天提醒信 (教職員/管理員手動觸發批次寄送) ----------

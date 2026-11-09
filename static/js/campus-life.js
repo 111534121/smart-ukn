@@ -545,7 +545,7 @@ function selectBuilding(code) {
     renderMap(`
         <div class="rounded border border-accent-500/40 bg-accent-50 p-3"><div class="font-bold text-slate-900">${esc(x.name)}（${x.code} 棟，${x.floors} 層）</div><div class="text-xs text-slate-600 mt-1">${esc(x.desc)}</div></div>
         ${offices.length ? `<div><div class="text-xs font-bold text-slate-600 mb-1">處室</div>${offices.map(o => `<div class="text-sm">${esc(o.name)}<span class="text-xs text-slate-500"> · ${esc(o.location)} · ${esc(o.phone)}</span></div>`).join('')}</div>` : ''}
-        ${rooms.length ? `<div><div class="text-xs font-bold text-slate-600 mb-1">教室</div>${rooms.map(r => `<div class="text-sm">${esc(r.name)}<span class="text-xs text-slate-500"> · ${r.floor}F</span></div>`).join('')}</div>` : ''}
+        ${rooms.length ? `<div><div class="text-xs font-bold text-slate-600 mb-1">教室</div>${rooms.map(r => `<div class="text-sm">${esc(r.name)}<span class="text-xs text-slate-500"> · ${r.floor}F${r.desc ? ` · ${esc(r.desc)}` : ''}</span></div>`).join('')}</div>` : ''}
         ${teachers.length ? `<div><div class="text-xs font-bold text-slate-600 mb-1">老師研究室</div>${teachers.map(t => `<div class="text-sm">${esc(t.name)} 老師<span class="text-xs text-slate-500"> · ${esc(t.office)}</span></div>`).join('')}</div>` : ''}`);
 }
 
@@ -992,13 +992,8 @@ let eventsFeedbackOpenId = null; // 目前展開「活動回饋」表單的活�
 let eventsCancelConfirm = null;  // {eventId, regId} 目前正在確認要不要取消
 
 async function loadEvents() {
+    // 活動列表不用登入就能看 (體驗營要讓還沒登記的訪客也看得到)；只有「我的報名」跟實際送出報名才需要身分
     const body = document.getElementById('eventsBody');
-    const mineBody = document.getElementById('myEventsBody');
-    if (!isLoggedIn()) {
-        body.innerHTML = loginPrompt('登入後即可報名校園活動。');
-        mineBody.innerHTML = '';
-        return;
-    }
     const q = document.getElementById('eventsSearch').value.trim();
     const openOnly = document.getElementById('eventsOpenOnly').checked;
     const params = new URLSearchParams();
@@ -1006,15 +1001,33 @@ async function loadEvents() {
     if (openOnly) params.set('open_only', '1');
     document.getElementById('eventsCreateBtn').classList.toggle('hidden', !['管理員', '教職員', '老師'].includes(currentUser.role));
     try {
-        const [listRes, mineRes] = await Promise.all([
-            api(`/api/campus/events?${params.toString()}`),
-            api('/api/campus/events/mine'),
-        ]);
+        const listRes = await api(`/api/campus/events?${params.toString()}`);
         eventsList = listRes.data;
-        myEventsList = mineRes.data;
+        // currentUser.username 才代表真的有 session (含訪客登記後的免密碼 session)；isLoggedIn() 會把訪客也算未登入，這裡不能用
+        myEventsList = currentUser.username ? (await api('/api/campus/events/mine')).data : [];
         renderEventsList();
         renderMyEvents();
+        maybeAutoOpenPendingEventRegister();
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+// 完全沒有 session 時點「我要報名」：記住要報哪場活動，導去訪客登記 (免密碼)，登記完成會自動帶回來這裡並展開報名表單
+function goRegisterEventAsVisitor(id) {
+    sessionStorage.setItem('pendingEventRegisterId', String(id));
+    location.href = '/login.html?returnTo=' + encodeURIComponent('/#tab-events');
+}
+
+function maybeAutoOpenPendingEventRegister() {
+    const pendingId = sessionStorage.getItem('pendingEventRegisterId');
+    if (!pendingId) return;
+    sessionStorage.removeItem('pendingEventRegisterId');
+    if (!currentUser.username) return;
+    const id = Number(pendingId);
+    if (eventsList.some(e => e.id === id)) {
+        eventsOpenRegisterId = id;
+        renderEventsList();
+        restrictAccountInput('eventRegStudentId');
+    }
 }
 
 function eventFormFieldsHtml(e) {
@@ -1083,8 +1096,23 @@ async function openEventRegistrationsModal(id, title) {
     try {
         const r = await api(`/api/campus/events/${id}/registrations`);
         const items = r.data;
+        const bySchool = r.by_school || [];
+        const schoolStatsHtml = bySchool.length ? `
+            <div class="rounded border border-slate-200 p-3 text-xs">
+                <div class="font-bold text-slate-700 mb-1.5">生源學校統計</div>
+                <div class="flex flex-wrap gap-1.5">${bySchool.map(([school, n]) =>
+                    `<span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">${esc(school)} <b>${n}</b></span>`).join('')}</div>
+            </div>` : '';
+        const checkinHtml = `
+            <form onsubmit="submitEventCheckin(event, ${id})" class="rounded border border-ukn-200 bg-ukn-50 p-3 flex flex-wrap items-end gap-2 text-sm">
+                <div class="flex-1 min-w-[160px]"><label class="block text-xs font-semibold text-slate-600 mb-1">核票／簽到（貼上或掃描簽到代碼）</label>
+                    <input id="eventCheckinCode" name="code" required placeholder="簽到代碼" class="w-full border border-slate-300 rounded px-3 py-2"></div>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">核對簽到</button>
+                <span id="eventCheckinResult" class="text-xs w-full"></span>
+            </form>`;
+        const groupImportHtml = eventGroupImportHtml(id, title);
         if (!items.length) {
-            openModal(`${title}－報名名單`, '<div class="text-sm text-slate-500">目前還沒有人報名。</div>', true);
+            openModal(`${title}－報名名單`, `${checkinHtml}${groupImportHtml}<div class="text-sm text-slate-500">目前還沒有人報名。</div>`, true);
             return;
         }
         const rowsHtml = items.map(x => `
@@ -1093,23 +1121,129 @@ async function openEventRegistrationsModal(id, title) {
                 <td class="py-1.5 pr-3">${esc(x.full_name)}</td>
                 <td class="py-1.5 pr-3">${esc(x.email)}</td>
                 <td class="py-1.5 pr-3">${esc(x.phone || '-')}</td>
+                <td class="py-1.5 pr-3">${esc(x.school_from || '-')}</td>
                 <td class="py-1.5 pr-3">${statusBadge(x.status, statusTone[x.status] || 'gray')}</td>
                 <td class="py-1.5">${x.status === '已取消' ? '-' : (x.checked_in ? statusBadge('已簽到', 'green') : statusBadge('未簽到', 'gray'))}</td>
             </tr>`).join('');
         openModal(`${title}－報名名單（共 ${items.length} 筆）`, `
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead><tr class="border-b border-slate-200 text-xs text-slate-500">
-                        <th class="py-1.5 pr-3 font-semibold">學號</th><th class="py-1.5 pr-3 font-semibold">姓名</th>
-                        <th class="py-1.5 pr-3 font-semibold">Email</th><th class="py-1.5 pr-3 font-semibold">電話</th>
-                        <th class="py-1.5 pr-3 font-semibold">狀態</th><th class="py-1.5 font-semibold">簽到</th>
-                    </tr></thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
+            <div class="space-y-3">
+                ${schoolStatsHtml}
+                ${checkinHtml}
+                ${groupImportHtml}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead><tr class="border-b border-slate-200 text-xs text-slate-500">
+                            <th class="py-1.5 pr-3 font-semibold">學號</th><th class="py-1.5 pr-3 font-semibold">姓名</th>
+                            <th class="py-1.5 pr-3 font-semibold">Email</th><th class="py-1.5 pr-3 font-semibold">電話</th>
+                            <th class="py-1.5 pr-3 font-semibold">生源學校</th>
+                            <th class="py-1.5 pr-3 font-semibold">狀態</th><th class="py-1.5 font-semibold">簽到</th>
+                        </tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
             </div>`, true);
     } catch (e) {
         openModal(`${title}－報名名單`, `<div class="text-sm text-rose-700">${esc(e.message)}</div>`, true);
     }
+}
+
+async function submitEventCheckin(event, id) {
+    event.preventDefault();
+    const code = document.getElementById('eventCheckinCode').value.trim();
+    const resultEl = document.getElementById('eventCheckinResult');
+    try {
+        const r = await api(`/api/campus/events/${id}/checkin`, { method: 'POST', json: { checkin_code: code } });
+        resultEl.textContent = `✅ ${r.message}`;
+        resultEl.className = 'text-xs w-full text-green-700 font-semibold';
+        document.getElementById('eventCheckinCode').value = '';
+    } catch (e) {
+        resultEl.textContent = `⚠ ${e.message}`;
+        resultEl.className = 'text-xs w-full text-rose-700 font-semibold';
+    }
+}
+
+// ---------- 團體名單匯入 (教職員/管理員)：貼上多人名單 → 預覽 → 逐筆送進既有的代登記 API，
+// 容量/候補/格式驗證都沿用 /registrations 既有邏輯，不另外重寫一份 ----------
+let eventGroupPreview = [];
+
+function eventGroupImportHtml(id, title) {
+    return `
+        <details class="rounded border border-slate-200 p-3 text-sm">
+            <summary class="font-bold text-slate-700 cursor-pointer">團體報名（貼上名單）</summary>
+            <div class="mt-2 space-y-2">
+                <p class="text-xs text-slate-500">每行一人，用逗號分隔：姓名,Email,電話(選填),年齡,學號(選填，沒有就自動產生)</p>
+                <textarea id="eventGroupText" rows="4" placeholder="王小明,wang@example.com,0912345678,18&#10;林小美,lin@example.com,,17" class="w-full border border-slate-300 rounded px-3 py-2 text-xs font-mono"></textarea>
+                <div class="flex gap-2">
+                    <button type="button" onclick="previewEventGroupImport()" class="text-sm border border-ukn-700 text-ukn-700 rounded px-3 py-1.5 font-semibold">預覽</button>
+                    <button type="button" id="eventGroupSubmitBtn" onclick="submitEventGroupImport(${id}, '${esc(title)}')" class="hidden text-sm bg-ukn-800 hover:bg-ukn-900 text-white rounded px-3 py-1.5 font-semibold">確認送出</button>
+                </div>
+                <div id="eventGroupPreviewBody"></div>
+            </div>
+        </details>`;
+}
+
+function parseEventGroupLines(text) {
+    return text.split('\n').map(line => line.trim()).filter(Boolean).map((line, i) => {
+        const [full_name = '', email = '', phone = '', age = '', student_id = ''] = line.split(',').map(s => s.trim());
+        const errs = [];
+        if (!full_name) errs.push('缺姓名');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.push('Email 格式錯誤');
+        if (phone && phone.replace(/\D/g, '').length < 7) errs.push('電話格式錯誤');
+        const ageNum = Number(age);
+        if (!age || !Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) errs.push('年齡需為 1-120');
+        return { student_id: student_id || `GROUP-${Date.now().toString(36)}-${i}`, full_name, email, phone, age: ageNum, note: '團體報名匯入', errs };
+    });
+}
+
+function previewEventGroupImport() {
+    eventGroupPreview = parseEventGroupLines(document.getElementById('eventGroupText').value);
+    renderEventGroupPreview();
+}
+
+function eventGroupResultLabel(p) {
+    if (p.status === 'ok') return '<span class="text-green-700">✅ 成功</span>';
+    if (p.status === 'waitlist') return '<span class="text-amber-700">候補</span>';
+    if (p.status === 'fail') return `<span class="text-rose-700">❌ ${esc(p.failMsg || '失敗')}</span>`;
+    return p.errs.length ? `<span class="text-rose-700">${esc(p.errs.join('、'))}</span>` : '待送出';
+}
+
+function renderEventGroupPreview() {
+    const body = document.getElementById('eventGroupPreviewBody');
+    const btn = document.getElementById('eventGroupSubmitBtn');
+    if (!eventGroupPreview.length) { body.innerHTML = ''; btn.classList.add('hidden'); return; }
+    body.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-xs text-left">
+        <thead><tr class="text-slate-500"><th class="py-1 pr-2">姓名</th><th class="py-1 pr-2">Email</th><th class="py-1 pr-2">電話</th><th class="py-1 pr-2">年齡</th><th class="py-1 pr-2">結果</th></tr></thead>
+        <tbody>${eventGroupPreview.map(p => `
+            <tr class="border-b border-slate-100 ${p.errs.length && !p.status ? 'bg-rose-50' : ''}">
+                <td class="py-1 pr-2">${esc(p.full_name || '-')}</td>
+                <td class="py-1 pr-2">${esc(p.email || '-')}</td>
+                <td class="py-1 pr-2">${esc(p.phone || '-')}</td>
+                <td class="py-1 pr-2">${esc(String(p.age || '-'))}</td>
+                <td class="py-1 pr-2">${eventGroupResultLabel(p)}</td>
+            </tr>`).join('')}</tbody></table></div>`;
+    btn.classList.toggle('hidden', !eventGroupPreview.some(p => !p.errs.length && !p.status));
+}
+
+async function submitEventGroupImport(id, title) {
+    const btn = document.getElementById('eventGroupSubmitBtn');
+    btn.disabled = true;
+    for (const p of eventGroupPreview) {
+        if (p.errs.length || p.status) continue;
+        try {
+            const r = await api(`/api/campus/events/${id}/registrations`, { method: 'POST', json: {
+                student_id: p.student_id, full_name: p.full_name, email: p.email, phone: p.phone, age: p.age, note: p.note,
+            } });
+            p.status = (r.data && r.data.status === '候補中') ? 'waitlist' : 'ok';
+        } catch (e) {
+            p.status = 'fail';
+            p.failMsg = e.message;
+        }
+        renderEventGroupPreview();
+    }
+    btn.disabled = false;
+    toast('團體報名已送出，請檢查每一行的結果');
+    loadEvents();
+    openEventRegistrationsModal(id, title);
 }
 
 function renderEventsList() {
@@ -1125,7 +1259,11 @@ function eventCardHtml(e) {
     if (e.cancelled) actionHtml = statusBadge('活動已取消', 'red');
     else if (myReg) actionHtml = statusBadge(myReg.status === '候補中' ? '已候補' : '已報名', myReg.status === '候補中' ? 'amber' : 'green');
     else if (!e.can_register) actionHtml = statusBadge(e.event_over ? '活動已結束' : '報名已截止', 'gray');
-    else if (eventsOpenRegisterId !== e.id) actionHtml = `<button type="button" onclick="toggleEventRegister(${e.id})" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">${e.is_full ? '我要候補' : '我要報名'}</button>`;
+    else if (eventsOpenRegisterId !== e.id) {
+        const label = e.is_full ? '我要候補' : '我要報名';
+        const onclick = currentUser.username ? `toggleEventRegister(${e.id})` : `goRegisterEventAsVisitor(${e.id})`;
+        actionHtml = `<button type="button" onclick="${onclick}" class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-2">${label}</button>`;
+    }
     else actionHtml = '';
     return `
         <div class="rounded border border-slate-200 p-4 space-y-3">
@@ -1136,7 +1274,10 @@ function eventCardHtml(e) {
                         ${e.eligibility ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">👥 ${esc(e.eligibility)}</span>` : ''}
                         ${e.benefit ? `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🏅 ${esc(e.benefit)}</span>` : ''}
                     </div>
-                    <div class="text-xs text-slate-500 mt-0.5">📅 ${esc(e.event_date)} ${esc(e.event_time || '')} · 📍 ${esc(e.location)}</div>
+                    <div class="text-xs text-slate-500 mt-0.5">📅 ${esc(e.event_date)} ${esc(e.event_time || '')} · 📍 ${esc(e.location)}
+                        <button type="button" onclick="showOnMap('${esc(e.location)}')" class="text-ukn-700 hover:underline font-semibold ml-1">看地圖</button>
+                        · <button type="button" onclick="switchTab('tab-traffic')" class="text-ukn-700 hover:underline font-semibold">交通指引</button>
+                    </div>
                     ${e.description ? `<p class="text-sm text-slate-600 mt-2 whitespace-pre-line">${esc(e.description)}</p>` : ''}
                     <div class="text-[11px] text-slate-400 mt-1">報名截止 ${esc(e.registration_deadline)} · 名額 ${e.registered_count}/${e.capacity}${e.waitlist_count ? `（候補 ${e.waitlist_count} 人）` : ''}</div>
                 </div>

@@ -1044,7 +1044,7 @@ def register_visitor():
     school = str(data.get("school_from", "")).strip()[:100]
     purpose = str(data.get("purpose", "")).strip()[:100]
     target_dept = str(data.get("target_dept", "")).strip()[:100] or "資訊管理科（五專）"
-    visitor_type = data.get("visitor_type") if data.get("visitor_type") in ("未來學生", "未來家長") else "未來學生"
+    visitor_type = data.get("visitor_type") if data.get("visitor_type") in ("未來學生", "未來家長", "一般訪客") else "未來學生"
     ip = request.remote_addr or "127.0.0.1"
 
     if not vname or not phone or not school or not purpose:

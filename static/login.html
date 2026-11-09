@@ -181,7 +181,7 @@
 
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5 text-xs sm:text-sm">您的身分 *</label>
-                    <div class="grid grid-cols-2 gap-2" id="visitorTypeGroup">
+                    <div class="grid grid-cols-3 gap-2" id="visitorTypeGroup">
                         <button type="button" data-type="未來學生" onclick="selectVisitorType('未來學生')"
                             class="visitor-type-btn py-2 rounded border-2 border-amber-500 bg-amber-50 text-amber-950 font-bold text-xs transition flex items-center justify-center gap-1.5">
                             <span>未來學生</span>
@@ -189,6 +189,10 @@
                         <button type="button" data-type="未來家長" onclick="selectVisitorType('未來家長')"
                             class="visitor-type-btn py-2 rounded border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
                             <span>未來家長</span>
+                        </button>
+                        <button type="button" data-type="一般訪客" onclick="selectVisitorType('一般訪客')"
+                            class="visitor-type-btn py-2 rounded border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
+                            <span>一般訪客</span>
                         </button>
                     </div>
                 </div>
@@ -272,6 +276,11 @@
     <script src="/js/field-validate.js"></script>
     <script>
         let selectedVisitorType = '未來學生';
+        function safeReturnTo() {
+            // 只接受站內相對路徑 (例如活動報名點「我要報名」被導來登記時帶的 ?returnTo=/#tab-events)，避免被拿來做開放式重導向
+            const v = new URLSearchParams(location.search).get('returnTo') || '';
+            return (v.startsWith('/') && !v.startsWith('//')) ? v : '/';
+        }
 
         function selectVisitorType(type) {
             selectedVisitorType = type;
@@ -377,7 +386,7 @@
                 const data = await res.json();
 
                 if (res.ok && data.status === 'success') {
-                    window.location.href = '/';
+                    window.location.href = safeReturnTo();
                 } else {
                     errBox.textContent = data.message || '登記失敗，請檢查有沒有漏填';
                     errBox.classList.remove('hidden');

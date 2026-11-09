@@ -45,19 +45,19 @@ GATE = {"name": "大門 (康寧路三段十五巷)", "x": 2, "y": 40}
 
 ROOMS = [
 
-    {"room_id": "A301", "building": "A", "floor": 3, "name": "A301 普通教室", "capacity": 60, "equipment": ["投影機", "麥克風"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A302", "building": "A", "floor": 3, "name": "A302 普通教室", "capacity": 50, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A303", "building": "A", "floor": 3, "name": "A303 普通教室", "capacity": 45, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A305", "building": "A", "floor": 3, "name": "A305 電腦教室", "capacity": 48, "equipment": ["電腦 48 台", "廣播教學系統"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True},
-    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課務組", "apply_at": "行政大樓 2 樓 A201 課務組", "rentable": True},
-    {"room_id": "D201", "building": "D", "floor": 2, "name": "資圖 D201 討論室", "capacity": 8, "equipment": ["白板", "大螢幕"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
-    {"room_id": "D202", "building": "D", "floor": 2, "name": "資圖 D202 討論室", "capacity": 8, "equipment": ["白板"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
-    {"room_id": "D301", "building": "D", "floor": 3, "name": "資圖 D301 多媒體室", "capacity": 30, "equipment": ["投影機", "錄影設備"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True},
-    {"room_id": "B101", "building": "B", "floor": 1, "name": "B101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True},
-    {"room_id": "B102", "building": "B", "floor": 1, "name": "B102 語言教室", "capacity": 40, "equipment": ["語言教學系統"], "managed_by": "應外科", "apply_at": "第二教學大樓 1 樓應外科辦", "rentable": False},
-    {"room_id": "B201", "building": "B", "floor": 2, "name": "B201 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True},
-    {"room_id": "B301", "building": "B", "floor": 3, "name": "B301 護理教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False},
-    {"room_id": "B302", "building": "B", "floor": 3, "name": "B302 技術教室", "capacity": 30, "equipment": ["模擬病床"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False},
+    {"room_id": "A301", "building": "A", "floor": 3, "name": "A301 普通教室", "capacity": 60, "equipment": ["投影機", "麥克風"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True, "desc": "一般授課教室，可借用辦講座或小型活動"},
+    {"room_id": "A302", "building": "A", "floor": 3, "name": "A302 普通教室", "capacity": 50, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True, "desc": "一般授課教室"},
+    {"room_id": "A303", "building": "A", "floor": 3, "name": "A303 普通教室", "capacity": 45, "equipment": ["投影機"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True, "desc": "一般授課教室"},
+    {"room_id": "A305", "building": "A", "floor": 3, "name": "A305 電腦教室", "capacity": 48, "equipment": ["電腦 48 台", "廣播教學系統"], "managed_by": "資管科辦公室", "apply_at": "第一教學大樓 3 樓 A310 科辦", "rentable": True, "desc": "資訊相關課程與體驗營上機教室"},
+    {"room_id": "A402", "building": "A", "floor": 4, "name": "A402 階梯教室", "capacity": 120, "equipment": ["投影機", "音響"], "managed_by": "教務處課務組", "apply_at": "行政大樓 2 樓 A201 課務組", "rentable": True, "desc": "大型階梯教室，適合講座、說明會與體驗營開幕"},
+    {"room_id": "D201", "building": "D", "floor": 2, "name": "資圖 D201 討論室", "capacity": 8, "equipment": ["白板", "大螢幕"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True, "desc": "小型討論室，適合分組報告"},
+    {"room_id": "D202", "building": "D", "floor": 2, "name": "資圖 D202 討論室", "capacity": 8, "equipment": ["白板"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True, "desc": "小型討論室"},
+    {"room_id": "D301", "building": "D", "floor": 3, "name": "資圖 D301 多媒體室", "capacity": 30, "equipment": ["投影機", "錄影設備"], "managed_by": "圖資中心", "apply_at": "圖書館 1 樓服務台", "rentable": True, "desc": "多媒體製作與放映空間"},
+    {"room_id": "B101", "building": "B", "floor": 1, "name": "B101 通識教室", "capacity": 80, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True, "desc": "通識課程教室，可借用辦大型活動"},
+    {"room_id": "B102", "building": "B", "floor": 1, "name": "B102 語言教室", "capacity": 40, "equipment": ["語言教學系統"], "managed_by": "應外科", "apply_at": "第二教學大樓 1 樓應外科辦", "rentable": False, "desc": "語言教學專用教室"},
+    {"room_id": "B201", "building": "B", "floor": 2, "name": "B201 通識教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "通識教育中心", "apply_at": "第二教學大樓 3 樓 B305", "rentable": True, "desc": "通識課程教室"},
+    {"room_id": "B301", "building": "B", "floor": 3, "name": "B301 護理教室", "capacity": 60, "equipment": ["投影機"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False, "desc": "護理科專用教室"},
+    {"room_id": "B302", "building": "B", "floor": 3, "name": "B302 技術教室", "capacity": 30, "equipment": ["模擬病床"], "managed_by": "護理科", "apply_at": "第二教學大樓 3 樓護理科辦", "rentable": False, "desc": "護理技術實習教室，有模擬病床設備"},
 
 ]
 

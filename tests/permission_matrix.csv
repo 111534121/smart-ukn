@@ -8,7 +8,7 @@ GET,/admin,/admin,,後台頁面,OK,OK,OK,OK,OK,OK,OK,頁面本身公開，資料
 POST,/api/auth/login,/api/auth/login,,登入,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/auth/logout,/api/auth/logout,,登出,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/auth/me,/api/auth/me,,目前登入者,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/visitor/register,/api/visitor/register,,訪客登記,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/visitor/register,/api/visitor/register,,訪客登記,OK,OK,OK,OK,OK,OK,OK,visitor_type 可填未來學生/未來家長/一般訪客
 GET,/api/calendar/current-week,/api/calendar/current-week,,本週校曆,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/deadlines,/api/deadlines,,期限列表,OK,OK,OK,OK,OK,OK,OK,?role= 預覽僅教職員/管理員有效
 POST,/api/deadlines,/api/deadlines,,新增期限,401,403,403,403,403,OK,OK,
@@ -228,9 +228,9 @@ POST,/api/campus/admin-cases,/api/campus/admin-cases,,依流程適用身分送�
 GET,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,案件內容,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 POST,/api/campus/admin-cases/<int:case_id>,/api/campus/admin-cases/99999,,分派補件與重送,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
 GET,/api/campus/admin-cases/<int:case_id>/files/<file_id>,/api/campus/admin-cases/99999/files/missing,,私有案件附件,401,403,OK,403,403,OK,OK,案件可見範圍另由 test_admin_cases.py 驗證
-GET,/api/campus/events,/api/campus/events,,活動列表,401,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/events,/api/campus/events,,活動列表,OK,OK,OK,OK,OK,OK,OK,不需登入即可瀏覽 (體驗營等活動開放訪客查看)
 GET,/api/campus/events/mine,/api/campus/events/mine,,我的活動報名,401,OK,OK,OK,OK,OK,OK,
-GET,/api/campus/events/<int:event_id>,/api/campus/events/999999,,活動詳情,401,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/events/<int:event_id>,/api/campus/events/999999,,活動詳情,OK,OK,OK,OK,OK,OK,OK,不需登入即可瀏覽，查無活動回 404
 POST,/api/campus/events,/api/campus/events,,新增活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可建立活動
 PUT,/api/campus/events/<int:event_id>,/api/campus/events/999999,,編輯活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可編輯
 DELETE,/api/campus/events/<int:event_id>,/api/campus/events/999999,,取消活動,401,403,403,403,OK,OK,OK,僅老師/教職員/管理員可取消整場活動

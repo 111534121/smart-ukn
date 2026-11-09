@@ -1,6 +1,8 @@
 """活動報名：建立活動、報名/候補/自動遞補、取消報名的身分防呆、簽到、提醒信、滿意度評分。"""
 import datetime
 
+import app as app_module
+
 
 def _today():
     return datetime.date.today().isoformat()
@@ -532,6 +534,93 @@ def test_cannot_cancel_already_cancelled_event(client, login):
     client.delete(f"/api/campus/events/{event_id}")
     res = client.delete(f"/api/campus/events/{event_id}")
     assert res.status_code == 400
+
+
+def test_anonymous_can_browse_events_but_not_see_own_registrations(client, login):
+    """體驗營要讓完全沒登入的訪客也看得到活動列表/詳情；/mine 跟報名動作仍然需要 session"""
+    event_id = _create_event(client, login)
+    anon = app_module.app.test_client()
+    res = anon.get("/api/campus/events")
+    assert res.status_code == 200
+    assert any(e["id"] == event_id for e in res.get_json()["data"])
+
+    res = anon.get(f"/api/campus/events/{event_id}")
+    assert res.status_code == 200, res.get_json()
+
+    assert anon.get("/api/campus/events/mine").status_code == 401
+    assert anon.post(f"/api/campus/events/{event_id}/register", json={
+        "student_id": "x", "full_name": "x", "email": "x@example.com", "age": 18,
+    }).status_code == 401
+
+
+def test_anonymous_gets_404_not_401_for_missing_event(client):
+    anon = app_module.app.test_client()
+    res = anon.get("/api/campus/events/999999")
+    assert res.status_code == 404
+
+
+def test_visitor_registration_then_event_registration_without_login(client, login):
+    """免登入報名的實際路徑：訪客先走 /api/visitor/register (免密碼) 取得 session，再直接報名活動"""
+    event_id = _create_event(client, login)
+    anon = app_module.app.test_client()
+    res = anon.post("/api/visitor/register", json={
+        "visitor_name": "王小明", "phone": "0912345678", "school_from": "測試高中", "purpose": "體驗營",
+    })
+    assert res.status_code == 201, res.get_json()
+
+    res = anon.post(f"/api/campus/events/{event_id}/register", json={
+        "student_id": "visitor-test", "full_name": "王小明", "email": "visitor@example.com", "age": 18,
+    })
+    assert res.status_code == 200, res.get_json()
+
+
+def test_visitor_registration_school_from_recorded_and_in_stats(client, login):
+    """訪客報名不用再填一次生源學校：沿用 /api/visitor/register 留下的學校，後台報名名單要看得到統計"""
+    event_id = _create_event(client, login)
+    anon = app_module.app.test_client()
+    anon.post("/api/visitor/register", json={
+        "visitor_name": "林小美", "phone": "0922333444", "school_from": "測試高中", "purpose": "體驗營",
+    })
+    res = anon.post(f"/api/campus/events/{event_id}/register", json={
+        "student_id": "visitor-school-test", "full_name": "林小美", "email": "lin@example.com", "age": 17,
+    })
+    assert res.status_code == 200, res.get_json()
+    assert res.get_json()["data"]["school_from"] == "測試高中"
+
+    login("staff1")
+    res = client.get(f"/api/campus/events/{event_id}/registrations")
+    assert res.status_code == 200
+    body = res.get_json()
+    assert ["測試高中", 1] in body["by_school"]
+    row = next(r for r in body["data"] if r["student_id"] == "VISITOR-SCHOOL-TEST")
+    assert row["school_from"] == "測試高中"
+
+
+def test_student_registration_has_empty_school_from(client, login):
+    """學生自己報名(非訪客)不該帶入任何生源學校，欄位維持空字串"""
+    event_id = _create_event(client, login)
+    res = _register(client, login, event_id, "student1", "S112001")
+    assert res.status_code == 200, res.get_json()
+    login("staff1")
+    row = client.get(f"/api/campus/events/{event_id}/registrations").get_json()["data"][0]
+    assert row["school_from"] == ""
+
+
+def test_staff_group_import_uses_existing_registration_endpoint(client, login):
+    """團體報名沿用既有的教職員代登記 API，連續呼叫多次要能各自成功並各自拿到不同簽到碼"""
+    event_id = _create_event(client, login, capacity=1)
+    login("staff1")
+    r1 = client.post(f"/api/campus/events/{event_id}/registrations", json={
+        "student_id": "GROUP-1", "full_name": "學生一", "email": "g1@example.com", "age": 18,
+    })
+    assert r1.status_code == 200, r1.get_json()
+    assert r1.get_json()["data"]["status"] == "已報名"
+    r2 = client.post(f"/api/campus/events/{event_id}/registrations", json={
+        "student_id": "GROUP-2", "full_name": "學生二", "email": "g2@example.com", "age": 18,
+    })
+    assert r2.status_code == 200, r2.get_json()
+    assert r2.get_json()["data"]["status"] == "候補中"  # 名額只有 1，第二筆自動轉候補
+    assert r1.get_json()["data"]["checkin_code"] != r2.get_json()["data"]["checkin_code"]
 
 
 def test_non_staff_cannot_cancel_event(client, login):

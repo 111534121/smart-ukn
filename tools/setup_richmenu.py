@@ -20,8 +20,11 @@
     LINE_CHANNEL_ACCESS_TOKEN  必填，只能放在伺服器環境變數，不要寫進程式或提交到 Git
     LINE_LIFF_ID                「設定常用功能」那一格要連去的 LIFF ID (預設用已知的
                                  2012266647-el203x6g)
-    LINE_DEMO_HOME_URL           圖文選單裡「demo 首頁」那幾格要連去的網址
+    LINE_DEMO_HOME_URL           圖文選單裡還沒換成自己網站的項目用的退路網址
     LINE_STUDENT_SCHEDULE_URL    「課表查詢」要連去的網址 (line-student.html 的完整網址)
+    PUBLIC_SITE_URL / RENDER_EXTERNAL_URL  自己網站的公開網址 (跟 public_portal.py 共用這組)；
+                                 有設定的話「活動報名」「最新公告」會直接連到自己網站對應分頁，
+                                 本機測試時可以先設成目前的 ngrok 網址
 """
 import argparse
 import json
@@ -75,6 +78,11 @@ def build_menus():
     schedule_url = f"https://liff.line.me/{schedule_liff_id}" if schedule_liff_id else os.getenv("LINE_STUDENT_SCHEDULE_URL", demo_home)
     favorites_liff_id = os.getenv("LINE_LIFF_ID_FAVORITES", "")
     favorites_url = f"https://liff.line.me/{favorites_liff_id}" if favorites_liff_id else demo_home
+    # 「活動報名」「最新公告」是我們自己網站的分頁，不是 demo_home (隊友的示範網站)；
+    # PUBLIC_SITE_URL/RENDER_EXTERNAL_URL 還沒設定時才退回 demo_home
+    own_site = (os.getenv("PUBLIC_SITE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
+    events_url = f"{own_site}/#events" if own_site else demo_home
+    announcements_url = f"{own_site}/#announcements" if own_site else demo_home
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",
@@ -93,8 +101,8 @@ def build_menus():
         "areas": [
             area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
             grid_cell(0, 0, uri_action("課表查詢", schedule_url)),
-            grid_cell(0, 1, uri_action("活動報名", demo_home)),
-            grid_cell(0, 2, uri_action("最新公告", demo_home)),
+            grid_cell(0, 1, uri_action("活動報名", events_url)),
+            grid_cell(0, 2, uri_action("最新公告", announcements_url)),
             grid_cell(1, 0, uri_action("AI 客服", demo_home)),
             grid_cell(1, 1, uri_action("我的常用功能", favorites_url)),
             grid_cell(1, 2, uri_action("設定常用功能", f"https://liff.line.me/{liff_id}")),
@@ -111,7 +119,7 @@ def build_menus():
             grid_cell(0, 1, message_action("交通資訊", "交通資訊")),
             grid_cell(0, 2, message_action("聯絡我們", "聯絡我們")),
             grid_cell(1, 0, message_action("校園行事曆", "行事曆")),
-            grid_cell(1, 1, uri_action("最新公告", demo_home)),
+            grid_cell(1, 1, uri_action("最新公告", announcements_url)),
             grid_cell(1, 2, uri_action("AI 客服", demo_home)),
         ],
     }

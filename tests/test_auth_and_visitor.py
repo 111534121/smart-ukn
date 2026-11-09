@@ -75,6 +75,17 @@ def test_visitor_register_defaults_to_prospective_student(client):
     assert user["visitor_type"] == "未來學生"
 
 
+def test_visitor_register_accepts_general_visitor_type(client):
+    """第三種身分「一般訪客」(不是準新生也不是未來家長，例如單純校外人士) 要能登記成功"""
+    res = client.post("/api/visitor/register", json={
+        "visitor_name": "純參觀", "phone": "0933222111", "school_from": "無", "purpose": "校園參觀",
+        "visitor_type": "一般訪客",
+    })
+    assert res.status_code == 201
+    user = client.get("/api/auth/me").get_json()["user"]
+    assert user["visitor_type"] == "一般訪客"
+
+
 def test_anonymous_user_has_no_visitor_type(client):
     """沒登記過的使用者 (純瀏覽) 不應該被當成已登記的訪客顯示客製化首頁內容"""
     data = client.get("/api/auth/me").get_json()
