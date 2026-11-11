@@ -62,6 +62,8 @@ def needs_retake(credit_records, courses):
         if course_id in passed:
             continue
         c = courses.get(course_id) or {}
+        if is_non_course(c.get("course_name")):
+            continue  # 班會、自習之類沒有學分的時段，就算成績表有列也不推薦重補修
         result.append({
             "course_id": course_id,
             "course_name": c.get("course_name") or course_id,
@@ -85,6 +87,15 @@ def is_free_time(row):
     return any(k in str(row.get("course_name") or "") for k in FREE_TIME_KEYWORDS)
 
 
+# 不是「一門課」的課表列：自習、班會、週會、社團活動。這些不能當成「有班別開這門課」拿來推薦
+NON_COURSE_KEYWORDS = FREE_TIME_KEYWORDS + ("週會", "社團活動")
+
+
+# 【功能：重補修推薦】排除條件：自習/班會/週會/社團不算開課班別，也不會被當成要重補修的科目
+def is_non_course(name):
+    return any(k in str(name or "") for k in NON_COURSE_KEYWORDS)
+
+
 def my_schedule(schedule_rows, class_name, student_id):
     """學生既有課表 = 本班的課 + 個人加選 (重補修) 的課"""
     return [r for r in schedule_rows
@@ -96,6 +107,8 @@ def sections_of(schedule_rows, course_name):
     """當學期所有開這門課的班別：{班級: [時段, ...]}；個人加選的列不算開課班別"""
     key = normalize_name(course_name)
     sections = {}
+    if is_non_course(course_name):
+        return sections
     for r in schedule_rows:
         if r.get("class_name") and normalize_name(r.get("course_name")) == key:
             sections.setdefault(r["class_name"], []).append(r)

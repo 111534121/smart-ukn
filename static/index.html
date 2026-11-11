@@ -1912,6 +1912,15 @@
                 <div id="scholarshipMatchBody" class="space-y-3"></div>
             </section>
 
+            <!-- 獎助學金線上申請 (scholarship_apply 套件)：學生看自己的送件進度；教職員/管理員在這裡審核、核准後蓋電子章 -->
+            <section id="scholarshipAppsSection" class="hidden bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 id="scholarshipAppsTitle" class="ukn-title text-xl font-bold text-slate-900">📎 我的獎助學金申請</h2>
+                    <p id="scholarshipAppsHint" class="text-xs sm:text-sm text-slate-500 mt-1">上傳的文件只有你、家長與承辦人員看得到；核准後可下載有電子章的核定通知。</p>
+                </div>
+                <div id="scholarshipAppsBody" class="space-y-3"></div>
+            </section>
+
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
                     <h2 class="ukn-title text-xl font-bold text-slate-900">我可以申請哪些獎助學金</h2>
@@ -3653,6 +3662,14 @@
                     });
                 }
             }
+            // 重補修推薦 (retake.js)：一科一則，id 帶狀態，狀態改變 (例如有班可選了) 會變成新的未讀
+            (notifSources.retake || []).forEach(r => {
+                const blocked = r.status === 'prereq_blocked' || r.status === 'all_conflict';
+                list.push({
+                    id: r.key, level: blocked ? 'warning' : 'info', icon: '🔁',
+                    title: r.title, desc: r.body, time: '本學期', tab: 'tab-retake', url: r.link
+                });
+            });
             // 線上會議 (meetings.js 每 2 分鐘更新)：別人邀請我、還沒結束的會議；快開始時 id 改變再提醒一次
             const meet = notifSources.meetings;
             if (meet) {
@@ -3747,6 +3764,8 @@
             saveReadNotifIds(readIds);
             renderNotifications();
             closeNotificationMenu();
+            // 帶查詢字串的通知 (例如重補修 /?retake=課程代碼#retake)：先換網址，分頁載入時才知道要捲到哪一科
+            if (notif.url) history.replaceState(null, '', notif.url);
             if (notif.tab) {
                 switchTab(notif.tab);
             } else if (notif.anchor) {
@@ -4581,15 +4600,15 @@
     <script src="/js/campus-shell.js?v=20261104-line"></script>
     <script src="/js/home-portal.js?v=50"></script>
     <script src="/js/campus-access.js?v=48"></script>
-    <script src="/js/campus-features.js?v=20261029-meet"></script>
-    <script src="/js/campus-life.js?v=20261029"></script>
+    <script src="/js/campus-features.js?v=20261109"></script>
+    <script src="/js/campus-life.js?v=20261109"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js?v=20261029"></script>
     <script src="/js/self-review.js"></script>
     <script src="/js/reports.js"></script>
     <script src="/js/applications.js"></script>
     <script src="/js/conduct.js"></script>
-    <script src="/js/retake.js?v=20261029"></script>
+    <script src="/js/retake.js?v=20261109"></script>
     <script src="/js/forms-finder.js?v=20261029"></script>
     <script src="/js/meetings.js?v=20261029b"></script>
     <script src="/js/assistant.js"></script>

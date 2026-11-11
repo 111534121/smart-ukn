@@ -129,4 +129,14 @@ function rtFocusFromLink() {
     setTimeout(() => card.classList.remove('ring-4', 'ring-ukn-300'), 3000);
 }
 
+// 【功能：重補修推薦】通知中心：登入後抓一次推薦結果，把需要處理的科目交給 index.html 的 buildNotifications
+async function loadRetakeNotifications() {
+    if (typeof notifSources === 'undefined' || !['學生', '家長'].includes(currentUser?.role)) return;
+    try {
+        notifSources.retake = (await api('/api/student/retake-recommendations')).notifications || [];
+        if (typeof renderNotifications === 'function') renderNotifications();
+    } catch (e) { /* 查不到成績或離線時就不顯示 */ }
+}
+setTimeout(loadRetakeNotifications, 2500);
+
 tabLoaders['tab-retake'] = loadRetake;

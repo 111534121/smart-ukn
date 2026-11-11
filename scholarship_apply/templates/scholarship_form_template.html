@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ sch.name }} 申請表{% if sample %}（填寫範例）{% endif %}</title>
+<style>
+  body { font-family: "Noto Serif TC", "PMingLiU", serif; background: #f1f5f9; color: #0f172a; margin: 0; padding: 24px 16px; }
+  .paper { max-width: 760px; margin: 0 auto; background: #fff; padding: 40px 48px; border: 1px solid #cbd5e1; position: relative; overflow: hidden; }
+  h1 { text-align: center; font-size: 24px; letter-spacing: .2em; margin: 0 0 4px; }
+  .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; position: relative; z-index: 1; }
+  th, td { border: 1px solid #64748b; padding: 9px 10px; text-align: left; vertical-align: top; }
+  th { width: 22%; background: #f8fafc; white-space: nowrap; }
+  td.fill { height: 22px; }
+  .hint { display: block; color: #64748b; font-size: 11px; margin-top: 2px; }
+  .ex { color: #1d4ed8; font-family: "DFKai-SB", "BiauKai", "KaiTi", cursive; font-size: 16px; }
+  .section { margin: 18px 0 6px; font-weight: 700; font-size: 15px; }
+  .check { font-size: 14px; line-height: 2; }
+  .box { display: inline-block; width: 13px; height: 13px; border: 1px solid #334155; margin-right: 6px; vertical-align: -1px; text-align: center; line-height: 12px; font-size: 12px; }
+  .seal-cell { height: 96px; position: relative; }
+  .seal { width: 84px; height: 84px; position: absolute; right: 14px; top: 6px; }
+  .office { background: #f8fafc; }
+  .office td { color: #475569; font-size: 13px; }
+  .notes { font-size: 12px; color: #334155; line-height: 1.9; margin-top: 18px; border-top: 1px dashed #94a3b8; padding-top: 10px; }
+  .watermark { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 2; }
+  .watermark span { transform: rotate(-30deg); font-size: 110px; font-weight: 700; color: rgba(200, 30, 30, .10); letter-spacing: .3em; white-space: nowrap; }
+  .actions { max-width: 760px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; font-size: 14px; }
+  .actions a { color: #1e3a8a; }
+  .actions button { font-size: 14px; padding: 6px 16px; cursor: pointer; }
+  .banner { max-width: 760px; margin: 0 auto 12px; background: #fef3c7; border: 1px solid #f59e0b; color: #78350f; padding: 8px 12px; font-size: 13px; }
+  @media (max-width: 600px) { .paper { padding: 24px 14px; } h1 { font-size: 19px; } th { white-space: normal; } .watermark span { font-size: 64px; } }
+  @media print { body { background: #fff; padding: 0; } .actions, .banner { display: none; } .paper { border: 0; } }
+</style>
+</head>
+<body>
+<div class="actions">
+  <div>
+    {% if sample %}<a href="?mode=blank">← 下載空白申請表</a>{% else %}<a href="?mode=sample">看填寫範例（含示範印章）→</a>{% endif %}
+  </div>
+  <button onclick="window.print()">列印 / 存成 PDF</button>
+</div>
+{% if sample %}
+<div class="banner">這是<strong>填寫範例</strong>：藍色字是示範內容，紅色印章是「示範章」，僅供參考，不能拿來送件。請改用空白申請表，填上自己的資料並蓋本人印章。</div>
+{% endif %}
+<div class="paper">
+  {% if sample %}<div class="watermark" aria-hidden="true"><span>填寫範例</span></div>{% endif %}
+  <h1>康寧大學獎助學金申請表</h1>
+  <div class="sub">申請項目：{{ sch.name }}{% if sch.provider %}（{{ sch.provider }}）{% endif %}{% if sch.amount %} · 金額 {{ sch.amount }} 元{% endif %} · 申請截止 {{ sch.deadline }}</div>
+
+  {% macro val(key, example, hint="") -%}
+    {%- if sample -%}<span class="ex">{{ example }}</span>
+    {%- elif student.get(key) -%}{{ student.get(key) }}
+    {%- endif -%}
+    {%- if hint %}<span class="hint">{{ hint }}</span>{% endif -%}
+  {%- endmacro %}
+
+  <div class="section">一、申請人基本資料</div>
+  <table>
+    <tr><th>姓名</th><td class="fill">{{ val("full_name", student.full_name, "與身分證上的姓名相同") }}</td>
+        <th>學號</th><td class="fill">{{ val("student_id", student.student_id) }}</td></tr>
+    <tr><th>科系 / 班級</th><td class="fill" colspan="3">{{ val("class_name", student.class_name, "寫完整班級名稱，例如「資管系二年甲班」") }}</td></tr>
+    <tr><th>聯絡電話</th><td class="fill">{{ val("phone", student.phone, "手機，審核有問題時聯絡你") }}</td>
+        <th>Email</th><td class="fill">{{ val("email", student.email, "建議用學校信箱") }}</td></tr>
+    <tr><th>通訊地址</th><td class="fill" colspan="3">{{ val("address", student.address, "含郵遞區號或完整路名門牌") }}</td></tr>
+  </table>
+
+  <div class="section">二、申請條件（請勾選符合的項目）</div>
+  <table>
+    {% if sch.min_grade or sch.max_grade %}<tr><th>年級</th><td>{% if sample %}<span class="box">✓</span>{% else %}<span class="box"></span>{% endif %}{% if sch.min_grade and sch.max_grade %}{{ sch.min_grade }}～{{ sch.max_grade }} 年級{% elif sch.min_grade %}{{ sch.min_grade }} 年級以上{% else %}{{ sch.max_grade }} 年級以下{% endif %}在學學生</td></tr>{% endif %}
+    {% if sch.min_gpa is not none %}<tr><th>學業成績</th><td>{% if sample %}<span class="box">✓</span>前學期 GPA <span class="ex">3.72</span>{% else %}<span class="box"></span>前學期 GPA ＿＿＿＿{% endif %}（需 {{ sch.min_gpa }} 以上）</td></tr>{% endif %}
+    {% if sch.min_conduct is not none %}<tr><th>操行成績</th><td>{% if sample %}<span class="box">✓</span>前學期操行 <span class="ex">86</span> 分{% else %}<span class="box"></span>前學期操行 ＿＿＿ 分{% endif %}（需 {{ sch.min_conduct|int }} 分以上）</td></tr>{% endif %}
+    {% if sch.no_fail_required %}<tr><th>不及格科目</th><td>{% if sample %}<span class="box">✓</span>{% else %}<span class="box"></span>{% endif %}前學期無不及格科目</td></tr>{% endif %}
+    {% if sch.identity_required %}<tr><th>身分別</th><td>{% for x in sch.identity_required.split(",") if x.strip() %}<span style="margin-right:14px">{% if sample and loop.first %}<span class="box">✓</span>{% else %}<span class="box"></span>{% endif %}{{ x.strip() }}</span>{% endfor %}</td></tr>{% endif %}
+    {% if sch.departments %}<tr><th>適用科系</th><td>{{ sch.departments }}</td></tr>{% endif %}
+    <tr><th>申請理由</th><td style="height:84px">{% if sample %}<span class="ex">家中經濟負擔較重，課餘在校內工讀；前學期成績維持班上前 10%，希望獲得獎助以專心課業。</span>{% endif %}<span class="hint">100～300 字，說明家庭狀況、學習表現或專題成果</span></td></tr>
+  </table>
+
+  <div class="section">三、檢附文件（請勾選）</div>
+  <div class="check">
+    {% for d in docs %}<div><span class="box">{% if sample %}✓{% endif %}</span>{{ d }}</div>{% endfor %}
+  </div>
+  <div class="hint">線上申請時上傳：PDF、JPG、PNG，每個檔案 {{ limits.max_mb }} MB 以內、最多 {{ limits.max_files }} 個、合計 {{ limits.max_total_mb }} MB 以內。本表填好、簽章後掃描成 PDF 一起上傳。</div>
+
+  <div class="section">四、申請人簽章</div>
+  <table>
+    <tr><th>申請人簽名蓋章</th>
+        <td class="seal-cell">
+          {% if sample %}
+          <span class="ex">王小明</span><span class="hint">親筆簽名，並在右側蓋本人印章（私章）</span>
+          <!-- 示範章：方形私章，左下標「示範」 -->
+          <svg class="seal" viewBox="0 0 100 100" role="img" aria-label="示範章（僅供參考）">
+            <rect x="6" y="6" width="88" height="88" rx="6" fill="none" stroke="#c81e1e" stroke-width="5"/>
+            <text x="68" y="44" fill="#c81e1e" font-size="30" font-weight="700" text-anchor="middle">王</text>
+            <text x="68" y="78" fill="#c81e1e" font-size="30" font-weight="700" text-anchor="middle">小</text>
+            <text x="32" y="44" fill="#c81e1e" font-size="30" font-weight="700" text-anchor="middle">明</text>
+            <text x="32" y="78" fill="#c81e1e" font-size="30" font-weight="700" text-anchor="middle">印</text>
+          </svg>
+          <span style="position:absolute;right:20px;bottom:2px;font-size:11px;color:#c81e1e;font-weight:700">示範章・僅供參考</span>
+          {% else %}<span class="hint">親筆簽名，並蓋本人印章（私章）</span>{% endif %}
+        </td>
+        <th>填表日期</th><td>{% if sample %}<span class="ex">2026 年 11 月 11 日</span>{% else %}　　　年　　月　　日{% endif %}</td></tr>
+    <tr><th>家長 / 監護人<br>簽名蓋章</th><td colspan="3" style="height:56px"><span class="hint">未滿 18 歲者必填</span></td></tr>
+  </table>
+
+  <div class="section">五、審核欄（申請人免填）</div>
+  <table class="office">
+    <tr><th>承辦單位</th><td>{{ office }}</td></tr>
+    <tr><th>審核結果 / 核定章</th><td style="height:56px">由承辦人員審核文件，<strong>核准後</strong>系統才會產生「核定通知」並蓋上電子章（含核定字號與驗證碼）；審核中或退回的申請不會有電子章。請勿自行在此欄蓋章。</td></tr>
+  </table>
+
+  <div class="notes">
+    填寫說明：<br>
+    1. 用黑色或藍色原子筆填寫，字跡清楚；塗改處請在旁邊簽名或蓋章。<br>
+    2. 申請條件依系統比對結果為準；成績、操行以學校登錄資料為準，與本表不符時以學校資料為準。<br>
+    3. 線上申請：登入系統 →「獎助學金」→ 在「符合資格」的項目按「在系統線上申請」，上傳本表與證明文件。<br>
+    4. 核定通知上的電子章可用驗證碼在系統查驗真偽。
+  </div>
+</div>
+</body>
+</html>

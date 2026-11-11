@@ -10,7 +10,7 @@ FEATURES = [
     ('auth', '登入與身分驗證', '系統', '/api/auth|/api/visitor/register', '驗證帳密與身分，建立登入工作階段。'),
     ('dashboard', '學生首頁與請假', '學習', '/api/student/dashboard|/api/student/announcements|/api/student/leave-requests|/api/leave-requests', '整合學習資訊，送出請假並由有權限的人員審核。'),
     ('course', '修業進度與擋修', '學習', '/api/courses|/api/student/courses', '比對已修科目與先修規則，計算修業進度與擋修影響。'),
-    ('retake', '重補修推薦', '學習', '/api/student/retake-recommendations', '比對未通過科目與開課班別，排除課表衝突並提供修課建議。'),
+    ('retake', '重補修推薦', '學習', '/api/student/retake-recommendations|/api/admin/notify/retake', '比對未通過科目與開課班別，排除課表衝突並提供修課建議。'),
     ('plan', '選課檢查', '學習', '/api/campus/course-plan', '讀取開課資料，檢查所選課程的限制與衝突。'),
     ('graduation', '畢業門檻', '學習', '/api/student/graduation|/api/teacher/class-summary', '彙整學分與證照，計算畢業門檻達成情形。'),
     ('attendance', '班級與個人出缺勤', '導師班', '/api/teacher/class-attendance|/api/student/attendance|/api/admin/attendance', '讀取出缺勤紀錄，依規則計算提醒並處理通知。'),
@@ -24,7 +24,7 @@ FEATURES = [
     ('rules', '智慧校規與搜尋', '校務', '/api/search|/api/feedback|/api/rules|/api/categories|/api/synonyms|/api/campus/rules', '接收關鍵字，比對規章與同義詞，回傳結果並記錄回饋。'),
     ('checklist', '行政申請流程', '校務', '/api/checklists|/api/checklist|/api/student/my-applications|/api/campus/checklist-docs|/api/campus/forms', '讀取申請步驟與應備文件，保存個人的勾選進度；表單可隨時查詢並加入常用。'),
     ('calendar', '行事曆與期限提醒', '校務', '/api/calendar|/api/academic-calendar|/api/deadlines|/api/school-calendar|/api/admin/school-calendar|/api/campus/calendar|/api/campus/my-events', '整合校曆、申辦期限與個人行程，依日期回傳事件。'),
-    ('scholarship', '獎助學金檢核', '校務', '/api/scholarships|/api/admin/notify/scholarship-warning', '比對獎助學金條件與學生資料，回傳符合情況或發出提醒。'),
+    ('scholarship', '獎助學金檢核', '校務', '/api/scholarships|/api/admin/notify/scholarship-warning|/api/admin/scholarship-applications', '比對獎助學金條件與學生資料，回傳符合情況或發出提醒。'),
     ('services', '宿舍與總務申請', '校務', '/api/campus/dorm|/api/campus/reimburse|/api/campus/services', '檢查申請內容與權限，記錄送件及審核進度。'),
     ('reports', '報表與文件下載', '校務', '/api/campus/reports', '依報表種類與查詢條件整理資料，提供檢視或下載。'),
     ('rent', '教室與櫃子租借', '校園生活', '/api/campus/rooms|/api/campus/lockers|/api/campus/bookings', '查詢空間與時段，檢查借用限制後保存預約。'),
@@ -46,7 +46,7 @@ FEATURES = [
 def build():
     modules = {}
     paths = [ROOT / 'app.py', ROOT / 'public_portal.py', ROOT / 'admin_core.py']
-    for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap', 'retake'):
+    for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap', 'retake', 'scholarship_apply'):
         paths.extend((ROOT / directory).glob('*.py'))
     for path in sorted(paths):
         source = path.read_text(encoding='utf-8-sig')

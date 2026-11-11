@@ -11,7 +11,7 @@ function campusFeaturesInit() {
         'tab-calendar': () => calendarShift(0),
         'tab-plan': loadPlan,
         'tab-certs': loadCerts,
-        'tab-scholarship': () => { loadScholarshipMatch(); loadScholarships(); },
+        'tab-scholarship': () => { loadScholarshipMatch(); loadScholarships(); loadScholarshipApps(); },
         'tab-services': () => { loadDorm(); loadAffairs(); },
         'tab-rent': () => {
             loadRooms();

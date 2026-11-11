@@ -3308,6 +3308,10 @@ def update_or_delete_quick_link(link_id):
 # ==========================================
 
 SCHOLARSHIP_URGENT_DAYS = 7
+# 「差一點就符合」的範圍：GPA 差 0.3 以內、操行差 3 分以內、前學期只有 1 科不及格
+SCHOLARSHIP_NEAR_GPA = 0.3
+SCHOLARSHIP_NEAR_CONDUCT = 3
+SCHOLARSHIP_NEAR_FAILS = 1
 
 def _num(value):
     """DECIMAL / 字串轉 float，None 保持 None"""
@@ -3404,11 +3408,13 @@ def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_pers
     """逐項比對條件；redact_personal=True (家長) 時個人條件不回傳具體數值"""
     checks = []
 
-    def add(item, passed, reason, hard, personal):
+    def add(item, passed, reason, hard, personal, near=False):
         checks.append({
             "item": item,
             "passed": passed,
             "hard": hard,
+            # 沒過但只差一點 (見 SCHOLARSHIP_NEAR_*)；全部沒過的條件都 near 才算「差一點就符合」
+            "near": bool(near) and not passed,
             # 家長只看得到符合／不符合；個人條件的詳細原因 (含數值) 不回傳
             "reason": None if passed or (personal and redact_personal) else reason
         })
@@ -3430,25 +3436,34 @@ def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_pers
 
     if sch.get("min_gpa") is not None:
         gpa = profile.get("gpa")
-        add("GPA", gpa is not None and gpa >= sch["min_gpa"],
-            f"GPA 需 {_fmt(sch['min_gpa'])}，你目前 {gpa if gpa is not None else '無資料'}", False, True)
+        gap = round(sch["min_gpa"] - gpa, 2) if gpa is not None else None
+        add("GPA", gpa is not None and gap <= 0,
+            f"GPA 需 {_fmt(sch['min_gpa'])}，你目前 {gpa if gpa is not None else '無資料'}"
+            + (f"，還差 {gap}" if gap and gap > 0 else ""),
+            False, True, near=gap is not None and gap <= SCHOLARSHIP_NEAR_GPA)
 
     if sch.get("min_conduct") is not None:
         conduct = profile.get("conduct_score")
-        add("操行成績", conduct is not None and conduct >= sch["min_conduct"],
-            f"操行成績需 {_fmt(sch['min_conduct'])} 分，你目前 {_fmt(conduct) if conduct is not None else '無資料'} 分", False, True)
+        gap = round(sch["min_conduct"] - conduct, 2) if conduct is not None else None
+        add("操行成績", conduct is not None and gap <= 0,
+            f"操行成績需 {_fmt(sch['min_conduct'])} 分，你目前 {_fmt(conduct) if conduct is not None else '無資料'} 分"
+            + (f"，還差 {_fmt(gap)} 分" if gap and gap > 0 else ""),
+            False, True, near=gap is not None and gap <= SCHOLARSHIP_NEAR_CONDUCT)
 
     if sch.get("no_fail_required"):
         semester, fails = fail_info
-        add("前學期無不及格", fails == 0, f"需前學期無不及格科目，你在 {semester} 學期有 {fails} 科不及格", False, True)
+        add("前學期無不及格", fails == 0, f"需前學期無不及格科目，你在 {semester} 學期有 {fails} 科不及格", False, True,
+            near=fails <= SCHOLARSHIP_NEAR_FAILS)
 
     failed = [c for c in checks if not c["passed"]]
     if not failed:
         status = "符合"
-    elif any(c["hard"] for c in failed):
-        status = "不符合"
-    else:
+    elif all(not c["hard"] and c["near"] for c in failed):
+        # 差一點就符合：身分、年級、科系都對，沒過的成績條件每一項都只差一點
         status = "部分符合"
+    else:
+        # 硬性條件不符，或成績差距太大 (例如 GPA 需 3.5 只有 2.0)，都不算「差一點」
+        status = "不符合"
 
     days_left = (datetime.strptime(sch["deadline"], "%Y-%m-%d").date() - today).days
     return {
@@ -3462,6 +3477,8 @@ def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_pers
         "apply_url": sch.get("apply_url"),
         "announcement_url": sch.get("announcement_url"),
         "description": sch.get("description"),
+        # 線上申請要上傳的文件 (scholarship_apply 套件依身分、成績條件產生)
+        "required_docs": scholarship_apply.required_docs(sch),
         "status": status,
         "checks": [{k: c[k] for k in ("item", "passed", "reason")} for c in checks],
         # 不符合的條件；家長看不到個人條件的原因時以「XX：不符合」表示
@@ -4655,7 +4672,43 @@ retake.init_app(app, SimpleNamespace(
     load_schedule=lambda: fetch_db_rows("SELECT * FROM class_schedule") or dashboard_demo.DEMO_CLASS_SCHEDULE,
     load_student=_load_student_info,
     current_semester=lambda: term_of(datetime.now().date().isoformat()),
+    list_students=list_students,
+    get_mailer=get_mailer,
+    campus_email=campus_email,
+    already_notified=already_notified,
+    mark_notified=mark_notified,
 ))
+
+# 獎助學金線上申請 (scholarship_apply 套件)：上傳證明文件 → 生輔組審核 → 核准蓋電子章
+import scholarship_apply
+
+def scholarship_match_for(student_id):
+    """{獎學金 id: 比對結果}；送件時後端重新比對一次，不信任前端傳來的資格"""
+    today = datetime.now().date()
+    profile = load_scholarship_profile(student_id, today)
+    if not profile:
+        return {}
+    fail_info, dept_names = latest_semester_fails(student_id), department_names()
+    return {s["id"]: evaluate_scholarship(s, profile, fail_info, dept_names, today, False) for s in load_scholarships()}
+
+scholarship_apply.init_app(app, SimpleNamespace(
+    fetch_db_rows=fetch_db_rows,
+    db_execute=db_execute,
+    write_audit_log=write_audit_log,
+    match_for=scholarship_match_for,
+    load_scholarships=load_scholarships,
+    load_student=_load_student_info,
+    notify_student=lambda sid, subject: _notify_scholarship_result(sid, subject),
+    upload_dir=os.getenv("SCHOLARSHIP_UPLOAD_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "scholarship_uploads")),
+))
+
+def _notify_scholarship_result(student_id, subject):
+    """通知信只說有結果，不含文件內容；寄送失敗不影響審核"""
+    try:
+        get_mailer().send(campus_email(student_id), subject, "您的獎助學金申請已有審核結果，請登入系統「獎助學金」頁面查看；核准者可下載電子章核定通知。")
+        return True
+    except Exception:
+        return False
 
 # 功能對照表 /admin/feature-map (devmap 套件)：學生功能 → API → 程式碼行號 → XAMPP 資料表
 import devmap

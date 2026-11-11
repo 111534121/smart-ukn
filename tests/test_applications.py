@@ -73,6 +73,53 @@ def test_full_approval_flow_with_roles(client, login, offline_db):
     assert offline_db, "完成時要通知學生"
 
 
+def test_approve_stamps_and_forwards_to_next_reviewer(client, login):
+    login("student2")
+    app_id = submit(client).get_json()["data"]["id"]
+    client.post("/api/auth/logout")
+    login("teacher1")
+    res = client.post(f"/api/applications/{app_id}/review", json={"action": "approve", "note": "同意"}).get_json()
+    assert "已蓋章" in res["message"] and "送交下一關「導師簽核」" in res["message"]
+    stamp = res["data"]["history"][-1]["stamp"]
+    assert stamp["name"] == "任課教師簽核" and stamp["by"] == "彭賓鈺 老師" and len(stamp["code"]) == 12
+    assert res["data"]["stamp_count"] == 1 and res["data"]["next_stage"] == "科主任簽核"
+    assert "等待導師班老師蓋章" in res["data"]["summary"]
+
+    html = client.get(f"/applications/{app_id}/signed").get_data(as_text=True)
+    assert stamp["code"] in html and "待蓋章" in html and "跟不上進度" in html
+
+    client.post("/api/auth/logout")
+    check = client.get(f"/api/applications/stamp/{stamp['code'].lower()}").get_json()  # 不用登入
+    assert check["valid"] and check["stage"] == "任課教師簽核" and "○" in check["student_name"]
+
+    # 蓋章後申請內容被改 → 章失效
+    target = next(a for a in applications.DEMO_APPLICATIONS if a["id"] == app_id)
+    target["fields"]["reason"] = "被偷改"
+    assert not client.get(f"/api/applications/stamp/{stamp['code']}").get_json()["valid"]
+
+
+def test_reject_does_not_stamp(client, login):
+    login("student2")
+    app_id = submit(client).get_json()["data"]["id"]
+    client.post("/api/auth/logout")
+    login("staff1")
+    res = client.post(f"/api/applications/{app_id}/review", json={"action": "reject", "note": "缺附件"}).get_json()
+    assert "stamp" not in res["data"]["history"][-1] and res["data"]["stamp_count"] == 0
+
+
+def test_signed_form_access(client, login):
+    assert client.get("/applications/1/signed").status_code == 401
+    login("student2")  # 申請 1 是王小明的
+    assert client.get("/applications/1/signed").status_code == 404
+    client.post("/api/auth/logout")
+    login("student1")
+    html = client.get("/applications/1/signed").get_data(as_text=True)
+    assert "系統加上電子章前核准" in html  # 舊的示範資料核准時沒有章
+    client.post("/api/auth/logout")
+    login("parent1")
+    assert client.get("/applications/1/signed").status_code == 200
+
+
 def test_teacher_cannot_review_other_class(client, login):
     applications.DEMO_APPLICATIONS.append({**copy.deepcopy(applications.DEMO_APPLICATIONS[0]), "id": 99, "student_id": "S112004"})
     login("teacher1")  # S112004 是資管四孝，不是 teacher1 的導師班

@@ -1391,6 +1391,23 @@
                     <div id="scholarWarnResult"
                         class="hidden rounded border border-slate-200 bg-white p-4 text-xs sm:text-sm text-slate-700 whitespace-pre-line">
                     </div>
+                    <!-- 重補修推薦推播 (retake 套件 /api/admin/notify/retake)：先預覽會通知誰，再寄送 -->
+                    <div
+                        class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
+                        <div class="space-y-1">
+                            <p><strong>重補修推薦推播</strong>：讀取全校學生的不及格科目與本學期課表，算出每科的推薦結果（擋修／有班可選／全部衝堂／未開課），寄信請學生登入查看。</p>
+                            <p class="text-slate-500">自習、班會、週會、社團不算開課班別；已在課表的科目不通知。同一科同一狀態只寄一次，狀態改變才會再寄。</p>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="sendRetakeNotifications(true)" id="btnRetakePreview"
+                                class="border border-ukn-800 text-ukn-800 hover:bg-ukn-50 px-4 py-2 rounded font-semibold transition whitespace-nowrap disabled:opacity-50">預覽名單</button>
+                            <button onclick="sendRetakeNotifications(false)" id="btnRetakeSend"
+                                class="bg-ukn-800 hover:bg-ukn-900 text-white px-4 py-2 rounded font-semibold transition whitespace-nowrap disabled:opacity-50">寄送通知</button>
+                        </div>
+                    </div>
+                    <div id="retakeNotifyResult"
+                        class="hidden rounded border border-slate-200 bg-white p-4 text-xs sm:text-sm text-slate-700 whitespace-pre-line">
+                    </div>
                 </div>
 
                 <!-- 分頁 7: 學期校曆事項 (首頁「本週可辦」橫幅) -->
@@ -3832,7 +3849,7 @@
             }
         }
     </script>
-    <script src="/js/admin-core.js?v=20261022"></script>
+    <script src="/js/admin-core.js?v=20261109"></script>
 </body>
 
 </html>

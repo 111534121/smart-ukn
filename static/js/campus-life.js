@@ -29,6 +29,11 @@ async function loadScholarshipMatch() {
                 <div class="text-xs text-slate-500">${esc(s.provider || '')} ${s.amount ? '· ' + esc(s.amount) : ''}</div>
                 ${s.missing && s.missing.length ? `<div class="text-xs text-slate-600">${s.missing.map(esc).join('、')}</div>` : ''}
                 ${r.can_apply && s.apply_url ? `<a href="${esc(s.apply_url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs bg-ukn-800 hover:bg-ukn-900 text-white rounded px-3 py-1.5">前往申請 ↗</a>` : ''}
+                ${s.status !== '不符合' ? `<div class="flex flex-wrap gap-x-3 text-xs">
+                    <a href="/scholarship/${Number(s.id)}/form-template" target="_blank" rel="noopener" class="text-ukn-700 hover:underline">📄 下載申請表範本</a>
+                    <a href="/scholarship/${Number(s.id)}/form-template?mode=sample" target="_blank" rel="noopener" class="text-ukn-700 hover:underline">看填寫範例（含示範印章）</a>
+                </div>` : ''}
+                ${r.can_apply && s.status === '符合' ? schApplyForm(s) : ''}
             </div>`;
 
         const section_html = (title, items, emptyText) => `
@@ -44,6 +49,111 @@ async function loadScholarshipMatch() {
         section.classList.add('hidden');
         console.error(e);
     }
+}
+
+// ---------- 線上申請：上傳文件 → 審核 → 電子章核定通知 (scholarship_apply 套件) ----------
+
+const SCH_MAX_MB = 5, SCH_MAX_FILES = 5, SCH_MAX_TOTAL_MB = 15;
+const SCH_STATUS_TONE = { '審核中': 'blue', '已核准': 'green', '已退回': 'red', '已撤回': 'gray' };
+const schSize = b => b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+
+function schApplyForm(s) {
+    return `
+        <details class="rounded border border-ukn-200 bg-ukn-50/40">
+            <summary class="cursor-pointer select-none px-3 py-1.5 text-xs font-bold text-ukn-800">📎 在系統線上申請（上傳證明文件）</summary>
+            <form onsubmit="submitScholarshipApply(event, ${Number(s.id)})" class="p-3 space-y-2 text-xs">
+                <div class="text-slate-600">需要檢附：${(s.required_docs || []).map(esc).join('、')}</div>
+                <input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="block w-full text-xs">
+                <div class="text-[11px] text-slate-500">PDF、JPG、PNG，每個檔案 ${SCH_MAX_MB} MB 以內，最多 ${SCH_MAX_FILES} 個，合計 ${SCH_MAX_TOTAL_MB} MB 以內</div>
+                <input name="note" maxlength="300" placeholder="備註（選填）" class="w-full border border-slate-300 rounded px-2 py-1.5">
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-3 py-1.5">送出申請</button>
+            </form>
+        </details>`;
+}
+
+async function submitScholarshipApply(e, schId) {
+    e.preventDefault();
+    const form = e.target;
+    const files = [...form.files.files];
+    // 先在瀏覽器擋一次，免得等上傳完才知道太大；後端還會再檢查
+    if (files.length > SCH_MAX_FILES) return toast(`最多上傳 ${SCH_MAX_FILES} 個檔案`, 'error');
+    const big = files.find(f => f.size > SCH_MAX_MB * 1048576);
+    if (big) return toast(`「${big.name}」超過 ${SCH_MAX_MB} MB（目前 ${schSize(big.size)}），請壓縮後再上傳`, 'error');
+    const total = files.reduce((n, f) => n + f.size, 0);
+    if (total > SCH_MAX_TOTAL_MB * 1048576) return toast(`檔案合計超過 ${SCH_MAX_TOTAL_MB} MB（目前 ${schSize(total)}），請壓縮或分開送件`, 'error');
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = '上傳中…';
+    try {
+        const r = await api(`/api/scholarships/${schId}/apply`, { method: 'POST', body: new FormData(form) });
+        toast(r.message);
+        form.closest('details').open = false;
+        form.reset();
+        loadScholarshipApps();
+    } catch (err) { toast(err.message, 'error'); }
+    btn.disabled = false;
+    btn.textContent = '送出申請';
+}
+
+function schAppCard(a, staff) {
+    const files = a.files.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="block text-ukn-700 hover:underline">📄 ${esc(f.name)} <span class="text-slate-400">${schSize(f.size)}</span></a>`).join('');
+    const stamp = a.stamp ? `<div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-2.5 py-1.5">🔴 已蓋電子章：${esc(a.stamp.no)} · 驗證碼 <span class="font-mono">${esc(a.stamp.code)}</span></div>` : '';
+    const actions = staff && a.status === '審核中' ? `
+        <div class="flex flex-wrap gap-2 pt-1">
+            <input id="schReviewNote${a.id}" maxlength="200" placeholder="審核意見（退回必填）" class="flex-1 min-w-[12rem] border border-slate-300 rounded px-2 py-1.5 text-xs">
+            <button onclick="reviewScholarshipApp(${a.id}, 'approve')" class="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded px-3 py-1.5">核准並蓋章</button>
+            <button onclick="reviewScholarshipApp(${a.id}, 'reject')" class="text-xs bg-rose-700 hover:bg-rose-800 text-white font-bold rounded px-3 py-1.5">退回</button>
+        </div>` : '';
+    return `
+        <div class="rounded border border-slate-200 p-3 space-y-2">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                    <div class="font-bold text-sm text-slate-900">${esc(a.scholarship_name)}</div>
+                    <div class="text-[11px] text-slate-500">${staff ? `${esc(a.student_id)} ${esc(a.student_name)} ${esc(a.class_name)} · ` : ''}送出 ${esc(a.submitted_at.slice(0, 16))}</div>
+                </div>
+                ${statusBadge(a.status, SCH_STATUS_TONE[a.status] || 'gray')}
+            </div>
+            <div class="text-xs space-y-0.5">${files}</div>
+            ${a.note ? `<div class="text-xs text-slate-600">學生備註：${esc(a.note)}</div>` : ''}
+            ${a.review_note ? `<div class="text-xs ${a.status === '已退回' ? 'text-rose-700' : 'text-slate-600'}">審核意見：${esc(a.review_note)}（${esc(a.reviewer)}）</div>` : ''}
+            ${stamp}
+            <div class="flex flex-wrap gap-2">
+                ${a.certificate_url ? `<a href="${esc(a.certificate_url)}" target="_blank" rel="noopener" class="text-xs bg-ukn-800 hover:bg-ukn-900 text-white rounded px-3 py-1.5">下載核定通知（電子章）</a>` : ''}
+                ${!staff && a.status === '審核中' && currentUser.role === '學生' ? `<button onclick="withdrawScholarshipApp(${a.id})" class="text-xs border border-slate-300 hover:bg-slate-50 rounded px-3 py-1.5">撤回</button>` : ''}
+            </div>
+            ${actions}
+        </div>`;
+}
+
+// 學生/家長：自己的申請；教職員/管理員：待審核清單
+async function loadScholarshipApps() {
+    const section = document.getElementById('scholarshipAppsSection');
+    const body = document.getElementById('scholarshipAppsBody');
+    const staff = isStaff();
+    if (!isLoggedIn() || !(staff || ['學生', '家長'].includes(currentUser.role))) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+    if (staff) {
+        document.getElementById('scholarshipAppsTitle').textContent = '📎 獎助學金送件審核';
+        document.getElementById('scholarshipAppsHint').textContent = '確認文件無誤後按「核准並蓋章」，系統會產生核定字號與電子章驗證碼並通知學生；退回請寫原因。';
+    }
+    try {
+        const r = await api(staff ? '/api/admin/scholarship-applications' : '/api/scholarships/applications/mine');
+        body.innerHTML = r.data.length ? r.data.map(a => schAppCard(a, staff)).join('')
+            : `<div class="text-xs text-slate-400">${staff ? '目前沒有待審核的申請' : '還沒有送出申請；在上方「符合資格」的項目可以直接線上申請。'}</div>`;
+    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+async function reviewScholarshipApp(id, action) {
+    const note = document.getElementById(`schReviewNote${id}`)?.value || '';
+    if (action === 'approve' && !confirm('確定核准並蓋上電子章？核准後無法撤銷。')) return;
+    try { toast((await api(`/api/admin/scholarship-applications/${id}/review`, { json: { action, note } })).message); loadScholarshipApps(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function withdrawScholarshipApp(id) {
+    if (!confirm('確定撤回這張申請？')) return;
+    try { toast((await api(`/api/scholarships/applications/${id}/withdraw`, { json: {} })).message); loadScholarshipApps(); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function loadScholarships() {
