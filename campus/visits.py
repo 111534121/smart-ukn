@@ -4,7 +4,8 @@
 資料存取交給 campus/visits_store.py：有 MySQL 的 visit_bookings 表時走資料庫，
 連不上或還沒建表則退回 data/campus_store.json。
 """
-from datetime import date, datetime
+import re
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, request
 
@@ -16,6 +17,9 @@ bp = Blueprint("campus_visits", __name__)
 SLOTS = ("上午 09:30-11:00", "下午 14:00-15:30")
 MAX_PER_SLOT = 3  # 每個時段最多同時接待幾個團
 CLOSED_WEEKDAYS = (6, 7)  # 週六、週日不開放 (isoweekday)
+MAX_PARTY_SIZE = 40
+MAX_DAYS_AHEAD = 60
+PHONE_RE = re.compile(r"^[0-9+\-\s]+$")
 
 
 def bookings():
@@ -49,22 +53,31 @@ def visits_route():
             return error("日期格式須為 YYYY-MM-DD")
         if day < date.today():
             return error("不能預約過去的日期")
+        if day > date.today() + timedelta(days=MAX_DAYS_AHEAD):
+            return error(f"只能預約未來 {MAX_DAYS_AHEAD} 天內的日期")
         if day.isoweekday() in CLOSED_WEEKDAYS:
             return error("週末不開放校園參觀，請選平日")
         slot = data.get("slot")
         if slot not in SLOTS:
             return error("請選擇時段")
         try:
-            party_size = max(1, int(data.get("party_size", 1)))
+            party_size = int(data.get("party_size", 1))
         except (TypeError, ValueError):
-            party_size = 1
+            return error("人數須為數字")
+        if party_size < 1 or party_size > MAX_PARTY_SIZE:
+            return error(f"人數請填 1-{MAX_PARTY_SIZE} 之間的數字")
         contact_name = str(data.get("contact_name", "")).strip()[:50] or u.get("full_name", "")
         contact_phone = str(data.get("contact_phone", "")).strip()[:30]
-        if not contact_phone:
-            return error("請填寫聯絡電話")
+        digits = re.sub(r"\D", "", contact_phone)
+        if not contact_phone or not PHONE_RE.match(contact_phone) or not (8 <= len(digits) <= 15):
+            return error("電話格式不正確，請確認後重新輸入")
         note = str(data.get("note", "")).strip()[:300]
         with store.lock:
             items = bookings()
+            key = user_key()
+            if any(b["date"] == day.isoformat() and b["slot"] == slot and b["status"] != "已取消"
+                   and b["booked_by_key"] == key for b in items):
+                return error("您已經預約過這個時段了，請勿重複預約", 409)
             existing = sum(1 for b in items if b["date"] == day.isoformat() and b["slot"] == slot and b["status"] != "已取消")
             if existing >= MAX_PER_SLOT:
                 return error("這個時段預約已滿，請選其他時段", 409)

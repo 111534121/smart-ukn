@@ -75,6 +75,51 @@ def test_slot_capacity_is_enforced(client):
     assert afternoon["full"] is True and afternoon["booked"] == 3
 
 
+def test_cannot_book_same_slot_twice(client):
+    _register_visitor(client)
+    day = _next_weekday()
+    first = client.post("/api/campus/visits", json={
+        "date": day, "slot": "上午 09:30-11:00", "contact_phone": "0911000111",
+    })
+    assert first.status_code == 200, first.get_json()
+
+    dup = client.post("/api/campus/visits", json={
+        "date": day, "slot": "上午 09:30-11:00", "contact_phone": "0911000111",
+    })
+    assert dup.status_code == 409
+    assert "重複" in dup.get_json()["message"]
+
+
+def test_party_size_has_upper_bound(client):
+    _register_visitor(client)
+    day = _next_weekday()
+    res = client.post("/api/campus/visits", json={
+        "date": day, "slot": "上午 09:30-11:00", "contact_phone": "0911000111", "party_size": 9999,
+    })
+    assert res.status_code == 400
+    assert "人數" in res.get_json()["message"]
+
+
+def test_date_too_far_ahead_is_rejected(client):
+    _register_visitor(client)
+    day = _next_weekday(90)
+    res = client.post("/api/campus/visits", json={
+        "date": day, "slot": "上午 09:30-11:00", "contact_phone": "0911000111",
+    })
+    assert res.status_code == 400
+    assert "60 天" in res.get_json()["message"]
+
+
+def test_invalid_phone_format_is_rejected(client):
+    _register_visitor(client)
+    day = _next_weekday()
+    res = client.post("/api/campus/visits", json={
+        "date": day, "slot": "上午 09:30-11:00", "contact_phone": "abc",
+    })
+    assert res.status_code == 400
+    assert "電話" in res.get_json()["message"]
+
+
 def test_only_staff_can_confirm_visit(client, login):
     _register_visitor(client)
     day = _next_weekday()

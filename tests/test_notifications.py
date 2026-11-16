@@ -62,6 +62,21 @@ def test_notify_is_idempotent_until_state_changes(client, login, offline_db):
     assert len(offline_db) == first_count  # 沒有新寄出的信
 
 
+def test_notify_sends_to_every_parent_account(client, login, offline_db, monkeypatch):
+    """一個學生有爸爸、媽媽兩個家長帳號時，預警/獎學金通知要兩邊都寄，不能只寄給查到的第一位"""
+    extra_parent = {"user_id": 9001, "username": "parent1_dad", "password_hash": app_module._DEMO_PW_123456,
+                     "role": "家長", "student_id": "S112001", "full_name": "王大明爸爸 (小明家長二)"}
+    monkeypatch.setattr(app_module, "DEMO_USERS", app_module.DEMO_USERS + [extra_parent])
+
+    login("admin", "admin123")
+    res = client.post("/api/admin/notify/scholarship-warning")
+    assert res.status_code == 200
+
+    recipients = [addr for addr, _subject, _body in offline_db]
+    assert "parent1@stu.ukn.edu.tw" in recipients
+    assert "parent1_dad@stu.ukn.edu.tw" in recipients
+
+
 def test_consent_toggle_changes_future_notification(client, login, offline_db):
     """學生關掉家長預警授權之後，之前已經通知過的項目不會被追加通知家長 (歷史紀錄不受影響)，
     但之後學生重新開啟授權，且雙方有新的符合項目時，家長才會再收到信。這裡驗證：

@@ -802,8 +802,40 @@ async function renderVisitorWelcome() {
 
     document.getElementById('visitorWelcomeContact').textContent =
         '康寧大學總機 (02)2632-1181（可請總機轉接招生相關單位）｜114 臺北市內湖區康寧路三段75巷137號';
+    const dateInput = document.getElementById('visitDateInput');
+    if (dateInput) {
+        const today = new Date();
+        const max = new Date(today.getTime() + 60 * 86400000);
+        dateInput.min = today.toISOString().slice(0, 10);
+        dateInput.max = max.toISOString().slice(0, 10);
+    }
     section.classList.remove('hidden');
     loadVisitorVisits();
+}
+
+async function loadVisitSlotOptions() {
+    const dateInput = document.getElementById('visitDateInput');
+    const select = document.getElementById('visitSlotSelect');
+    const note = document.getElementById('visitDateNote');
+    if (!dateInput || !select) return;
+    const day = dateInput.value;
+    if (!day) { select.innerHTML = '<option value="">請先選日期</option>'; return; }
+    try {
+        const r = await api(`/api/campus/visits/slots?date=${encodeURIComponent(day)}`);
+        if (r.closed) {
+            select.innerHTML = '<option value="">當天不開放</option>';
+            select.disabled = true;
+            if (note) note.textContent = '平日才開放校園參觀，請重新選擇日期';
+            return;
+        }
+        select.disabled = false;
+        if (note) note.textContent = '';
+        select.innerHTML = '<option value="">請選擇</option>' + r.data.map(s =>
+            `<option value="${escapeHtml(s.slot)}" ${s.full ? 'disabled' : ''}>${escapeHtml(s.slot)}（${s.full ? '已額滿' : `剩 ${s.capacity - s.booked} 組`}）</option>`
+        ).join('');
+    } catch (e) {
+        select.innerHTML = '<option value="">請選擇</option><option>上午 09:30-11:00</option><option>下午 14:00-15:30</option>';
+    }
 }
 
 async function loadVisitorVisits() {

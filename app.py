@@ -3577,13 +3577,13 @@ def match_scholarships():
 NOTIFY_SCHOLARSHIP_SUBJECT = "【康寧大學】您有符合資格的獎助學金"
 NOTIFY_WARNING_SUBJECT = "【康寧大學】學業預警通知"
 
-def find_parent_account(student_id):
-    """該學生綁定的家長帳號 (username/full_name)；查無回傳 None"""
-    rows = fetch_db_rows("SELECT username, full_name FROM users WHERE role = '家長' AND student_id = %s LIMIT 1", (student_id,))
-    if rows:
-        return rows[0]
-    return next(({"username": u["username"], "full_name": u["full_name"]} for u in DEMO_USERS
-                 if u["role"] == "家長" and u.get("student_id") == student_id), None)
+def find_parent_accounts(student_id):
+    """該學生綁定的所有家長帳號 (username/full_name)；一個學生可能有爸爸、媽媽兩個帳號，查無回傳空清單"""
+    rows = fetch_db_rows("SELECT username, full_name FROM users WHERE role = '家長' AND student_id = %s", (student_id,))
+    if rows is not None:
+        return rows
+    return [{"username": u["username"], "full_name": u["full_name"]} for u in DEMO_USERS
+            if u["role"] == "家長" and u.get("student_id") == student_id]
 
 def already_notified(student_id, notify_type, ref_key, recipient_role):
     rows = fetch_db_rows(
@@ -3640,8 +3640,8 @@ def notify_scholarship_and_warning():
     for s in list_students():
         sid = s["student_id"]
         privacy = load_privacy_settings(sid)
-        parent = find_parent_account(sid)
-        consent_parent = bool(parent) and bool(privacy["parent_alert_consent"])
+        parents = find_parent_accounts(sid)
+        consent_parent = bool(parents) and bool(privacy["parent_alert_consent"])
 
         # ---- 獎學金符合資格比對 ----
         profile = load_scholarship_profile(sid, today)
@@ -3655,10 +3655,11 @@ def notify_scholarship_and_warning():
                     mailer, sid, campus_email(sid), eligible_ids, "scholarship", "student", NOTIFY_SCHOLARSHIP_SUBJECT,
                     "系統比對到您有 {n} 項新符合資格的獎助學金，請登入系統查看詳情並把握申請期限。", failed)
                 if consent_parent:
-                    sent["scholarship"]["parent"] += _notify_once(
-                        mailer, sid, campus_email(parent["username"]), eligible_ids, "scholarship", "parent", NOTIFY_SCHOLARSHIP_SUBJECT,
-                        "系統比對到您子女有 {n} 項新符合資格的獎助學金，建議提醒子女登入系統查看並把握申請期限。", failed)
-                elif parent and not privacy["parent_alert_consent"]:
+                    for parent in parents:
+                        sent["scholarship"]["parent"] += _notify_once(
+                            mailer, sid, campus_email(parent["username"]), eligible_ids, "scholarship", f"parent:{parent['username']}", NOTIFY_SCHOLARSHIP_SUBJECT,
+                            "系統比對到您子女有 {n} 項新符合資格的獎助學金，建議提醒子女登入系統查看並把握申請期限。", failed)
+                elif parents and not privacy["parent_alert_consent"]:
                     skipped_no_consent += 1
 
         # ---- 學業預警 ----
@@ -3669,10 +3670,11 @@ def notify_scholarship_and_warning():
                 mailer, sid, campus_email(sid), ref_keys, "early_warning", "student", NOTIFY_WARNING_SUBJECT,
                 "系統偵測到您本學期學業狀況出現警示，請登入系統查看詳情，並儘速與導師預約晤談。", failed)
             if consent_parent:
-                sent["early_warning"]["parent"] += _notify_once(
-                    mailer, sid, campus_email(parent["username"]), ref_keys, "early_warning", "parent", NOTIFY_WARNING_SUBJECT,
-                    "系統偵測到您子女本學期學業狀況出現警示，請登入系統查看詳情，或與導師聯繫了解狀況。", failed)
-            elif parent and not privacy["parent_alert_consent"]:
+                for parent in parents:
+                    sent["early_warning"]["parent"] += _notify_once(
+                        mailer, sid, campus_email(parent["username"]), ref_keys, "early_warning", f"parent:{parent['username']}", NOTIFY_WARNING_SUBJECT,
+                        "系統偵測到您子女本學期學業狀況出現警示，請登入系統查看詳情，或與導師聯繫了解狀況。", failed)
+            elif parents and not privacy["parent_alert_consent"]:
                 skipped_no_consent += 1
 
     total = sum(v for d in sent.values() for v in d.values())
