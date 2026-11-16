@@ -62,6 +62,8 @@ def needs_retake(credit_records, courses):
         if course_id in passed:
             continue
         c = courses.get(course_id) or {}
+        if is_non_course(c.get("course_name")):
+            continue  # 班會、自習之類沒有學分的時段，就算成績表有列也不推薦重補修
         result.append({
             "course_id": course_id,
             "course_name": c.get("course_name") or course_id,
@@ -76,13 +78,22 @@ def needs_retake(credit_records, courses):
     return result
 
 
-# 課表上「自習/班會」是空堂，可以拿來重補修；校部週會、社團活動 (週三下午) 不行
-FREE_TIME_KEYWORDS = ("自習", "班會")
+# 課表上「自習/班會/班週會」是空堂，可以拿來重補修；校部週會、社團活動 (週三下午) 不行
+FREE_TIME_KEYWORDS = ("自習", "班會", "班週會")
 
 
 # 【功能：重補修推薦】課表上的「自習/班會」算空堂，可以拿來重補修 (週三下午的校部週會、社團不算)
 def is_free_time(row):
     return any(k in str(row.get("course_name") or "") for k in FREE_TIME_KEYWORDS)
+
+
+# 不是「一門課」的課表列：自習、班會、週會、社團活動。這些不能當成「有班別開這門課」拿來推薦
+NON_COURSE_KEYWORDS = FREE_TIME_KEYWORDS + ("週會", "社團活動")
+
+
+# 【功能：重補修推薦】排除條件：自習/班會/週會/社團不算開課班別，也不會被當成要重補修的科目
+def is_non_course(name):
+    return any(k in str(name or "") for k in NON_COURSE_KEYWORDS)
 
 
 def my_schedule(schedule_rows, class_name, student_id):
@@ -96,6 +107,8 @@ def sections_of(schedule_rows, course_name):
     """當學期所有開這門課的班別：{班級: [時段, ...]}；個人加選的列不算開課班別"""
     key = normalize_name(course_name)
     sections = {}
+    if is_non_course(course_name):
+        return sections
     for r in schedule_rows:
         if r.get("class_name") and normalize_name(r.get("course_name")) == key:
             sections.setdefault(r["class_name"], []).append(r)
@@ -173,6 +186,11 @@ def recommend(failed, schedule_rows, class_name, student_id, courses=None, passe
 
         pre_id = (courses.get(course["course_id"]) or {}).get("prerequisite_id")
         blocked = bool(pre_id) and pre_id not in passed_ids
+        pre_name = ((courses.get(course["course_id"]) or {}).get("prerequisite_name")
+                    or (courses.get(pre_id) or {}).get("course_name") or pre_id) if pre_id else None
+        # 擋修檢查結果每一科都回傳，畫面先顯示「有沒有擋修」，再看班別
+        prereq = {"has_prerequisite": bool(pre_id), "course_id": pre_id, "course_name": pre_name,
+                  "passed": bool(pre_id) and not blocked, "blocked": blocked}
 
         if mine:
             status = ARRANGED
@@ -182,8 +200,6 @@ def recommend(failed, schedule_rows, class_name, student_id, courses=None, passe
         elif blocked:
             status = PREREQ_BLOCKED
             sections = []  # 還沒解除擋修，列班別也選不了
-            pre_course = courses.get(pre_id) or {}
-            pre_name = (courses.get(course["course_id"]) or {}).get("prerequisite_name") or pre_course.get("course_name") or pre_id
             message = f"⚠️ 這門課規定要先修過「{pre_name}」，你還沒通過，目前擋修、無法加選重補修班。請先處理先修科目，或洽課務組確認能不能專案加選。"
         elif not sections:
             status = NOT_OFFERED
@@ -203,7 +219,7 @@ def recommend(failed, schedule_rows, class_name, student_id, courses=None, passe
             message = (f"這學期有 {len(sections)} 個班別開課，但都跟你的課衝堂。"
                        "可以洽課務組詢問衝堂加選，或改在暑修、下學期修。")
         results.append({**course, "status": status, "status_label": STATUS_LABELS[status],
-                         "message": message, "sections": sections})
+                         "message": message, "sections": sections, "prereq": prereq})
     results.sort(key=lambda r: (STATUS_ORDER[r["status"]], not r["is_required"], r["course_name"]))
     return results
 

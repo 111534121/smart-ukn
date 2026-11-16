@@ -52,19 +52,33 @@ function rtCourseCard(c) {
                 </div>
                 <span class="shrink-0 text-xs font-bold rounded border px-2.5 py-1 ${tone.badge}">${escapeHtml(c.status_label)}</span>
             </div>
+            ${rtPrereqCheck(c.prereq)}
             <p class="text-sm text-slate-700">${escapeHtml(c.message)}</p>
             ${c.blocks.length ? `<p class="text-xs text-rose-700">這科沒過會擋修：${c.blocks.map(escapeHtml).join('、')}</p>` : ''}
-            ${c.sections.length ? `<div class="overflow-x-auto"><table class="w-full text-sm">
+            ${c.sections.length ? `<details class="rt-sections rounded border border-slate-200">
+                <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-ukn-800 hover:bg-slate-50">查看 ${c.sections.length} 個可選班別與衝堂比對</summary>
+                <div class="overflow-x-auto px-3 pb-2"><table class="w-full text-sm">
                 <thead><tr class="text-left text-[11px] text-slate-500 border-b border-slate-100">
                     <th class="py-1.5 pr-3 font-semibold">班別</th><th class="py-1.5 pr-3 font-semibold">上課時間</th>
                     <th class="py-1.5 pr-3 font-semibold">老師 / 教室</th><th class="py-1.5 font-semibold">跟你的課表</th></tr></thead>
-                <tbody>${c.sections.map(rtSectionRow).join('')}</tbody></table></div>` : ''}
+                <tbody>${c.sections.map(rtSectionRow).join('')}</tbody></table></div></details>` : ''}
         </article>`;
+}
+
+// 重補修不直接跳出結果：每一科先顯示擋修檢查，有擋修就提醒，沒有才看班別
+function rtPrereqCheck(p) {
+    if (!p || !p.has_prerequisite) {
+        return '<p class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2.5 py-1.5">✓ 擋修檢查：這門課沒有先修限制</p>';
+    }
+    if (p.blocked) {
+        return `<p class="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-300 rounded px-2.5 py-1.5">⚠️ 擋修檢查：要先修過「${escapeHtml(p.course_name)}」，你還沒通過，目前不能加選</p>`;
+    }
+    return `<p class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2.5 py-1.5">✓ 擋修檢查：先修「${escapeHtml(p.course_name)}」已通過，沒有擋修</p>`;
 }
 
 function rtSectionRow(sec) {
     const result = sec.ok
-        ? `<span class="text-emerald-700 font-semibold">不衝堂</span>${sec.extra_days ? `<span class="block text-[11px] text-slate-500">要多到校 ${sec.extra_days} 天</span>` : '<span class="block text-[11px] text-slate-500">那天本來就有課</span>'}${(sec.uses_free_time || []).length ? `<span class="block text-[11px] text-sky-700">用自習時段上課：${sec.uses_free_time.map(escapeHtml).join('、')}</span>` : ''}`
+        ? `<span class="text-emerald-700 font-semibold">不衝堂</span>${sec.extra_days ? `<span class="block text-[11px] text-slate-500">要多到校 ${sec.extra_days} 天</span>` : '<span class="block text-[11px] text-slate-500">那天本來就有課</span>'}${(sec.uses_free_time || []).length ? `<span class="block text-[11px] text-sky-700">用自習/班會時段上課：${sec.uses_free_time.map(escapeHtml).join('、')}</span>` : ''}`
         : `<span class="text-rose-700 font-semibold">衝堂</span>${sec.conflicts.map(x => `<span class="block text-[11px] text-rose-700">${escapeHtml(x.at)} 撞到「${escapeHtml(x.course_name)}」</span>`).join('')}`;
     return `
         <tr class="border-b border-slate-50 align-top ${sec.recommended ? 'bg-emerald-50/60' : ''}">
@@ -81,9 +95,21 @@ function rtFocusFromLink() {
     if (!courseId) return;
     const card = document.getElementById(`retake-${courseId}`);
     if (!card) return;
+    const details = card.querySelector('details.rt-sections');
+    if (details) details.open = true;
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     card.classList.add('ring-4', 'ring-ukn-300');
     setTimeout(() => card.classList.remove('ring-4', 'ring-ukn-300'), 3000);
 }
+
+// 【功能：重補修推薦】通知中心：登入後抓一次推薦結果，把需要處理的科目交給 index.html 的 buildNotifications
+async function loadRetakeNotifications() {
+    if (typeof notifSources === 'undefined' || !['學生', '家長'].includes(currentUser?.role)) return;
+    try {
+        notifSources.retake = (await api('/api/student/retake-recommendations')).notifications || [];
+        if (typeof renderNotifications === 'function') renderNotifications();
+    } catch (e) { /* 查不到成績或離線時就不顯示 */ }
+}
+setTimeout(loadRetakeNotifications, 2500);
 
 tabLoaders['tab-retake'] = loadRetake;

@@ -58,6 +58,7 @@ def test_official_text_in_three_languages():
     ("加我 www.spam", "url"),
     ("你是白痴", "blocked"),
     ("  生日\n快樂  ", None),
+    
 ])
 def test_clean_wish(text, code):
     assert logic.clean_wish(text)[1] == code

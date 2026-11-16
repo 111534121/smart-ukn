@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ tpl.title }} #{{ app.id }}（線上簽核）- 康寧大學</title>
+<style>
+    @page { size: A4; margin: 16mm 14mm; }
+    body { margin: 0; background: #e9edf3; color: #111; font-family: "Microsoft JhengHei", "Noto Sans TC", "PingFang TC", sans-serif; font-size: 11pt; }
+    .toolbar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: #003377; color: #fff; }
+    .toolbar .name { font-weight: 700; margin-right: auto; }
+    .toolbar button { font: inherit; font-size: 13px; color: #003377; background: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+    .sheet { max-width: 182mm; margin: 20px auto; padding: 14mm 14mm 12mm; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    h1 { text-align: center; font-size: 18pt; margin: 0 0 2px; letter-spacing: 2px; }
+    .sub { text-align: center; font-size: 10pt; color: #444; margin: 0 0 10px; }
+    .status { text-align: center; font-size: 10pt; margin: 0 0 12px; }
+    .status b { color: {{ '#067a46' if app.status == '已完成' else ('#c41d1d' if app.status == '已退回' else '#003377') }}; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #333; padding: 7px 8px; vertical-align: top; font-size: 10.5pt; }
+    th { width: 24%; background: #eef1f6; text-align: left; }
+    td.val { white-space: pre-wrap; word-break: break-word; }
+    .section { font-weight: 700; margin: 12px 0 4px; font-size: 10.5pt; }
+    .sign th { width: auto; text-align: center; font-size: 9.5pt; }
+    .sign td { height: 118px; text-align: center; vertical-align: middle; font-size: 9pt; color: #555; }
+    .seal { width: 92px; height: 92px; display: block; margin: 0 auto 2px; }
+    .wait { color: #003377; font-weight: 700; }
+    .note { font-size: 8.5pt; color: #333; margin-top: 2px; }
+    .verify { margin-top: 12px; font-size: 8.5pt; color: #444; border-top: 1px dashed #999; padding-top: 8px; line-height: 1.8; word-break: break-all; }
+    .foot { margin-top: 10px; font-size: 8.5pt; color: #666; display: flex; justify-content: space-between; }
+    @media (max-width: 640px) { .sheet { margin: 0; padding: 16px; box-shadow: none; } th { width: 34%; } .sign { display: block; overflow-x: auto; } }
+    @media print { body { background: #fff; } .toolbar { display: none; } .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span class="name">康寧大學 · {{ tpl.title }} #{{ app.id }}</span>
+    <button type="button" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+</div>
+<div class="sheet">
+    <h1>康寧大學 {{ tpl.title }}</h1>
+    <p class="sub">{% if tpl.office %}承辦單位：{{ tpl.office }}　｜　{% endif %}申請編號 #{{ app.id }}　｜　線上送出 {{ app.submitted_at }}</p>
+    <p class="status">目前狀態：<b>{{ app.status }}</b>　{{ app.summary }}</p>
+
+    <div class="section">一、申請人資料</div>
+    <table>
+        <tr><th>學號</th><td>{{ app.student_id }}</td><th>姓名</th><td>{{ student.full_name or '' }}</td></tr>
+        <tr><th>班級</th><td>{{ student.class_name or '' }}</td><th>聯絡電話</th><td>{{ app.fields.get('phone', '') }}</td></tr>
+    </table>
+
+    <div class="section">二、申請內容</div>
+    <table>
+        {% for label, value in fields %}<tr><th>{{ label }}</th><td class="val">{{ value }}</td></tr>{% endfor %}
+    </table>
+
+    <div class="section">三、簽核欄（線上依序蓋章）</div>
+    <table class="sign">
+        <tr><th>申請人</th>{% for i, s in signers %}<th>{{ s.name }}</th>{% endfor %}</tr>
+        <tr>
+            <td>{{ student.full_name or app.student_id }}<div class="note">{{ app.submitted_at }} 線上送出</div></td>
+            {% for i, s in signers %}
+            <td>
+                {% set st = stamps.get(i) %}
+                {% if st %}
+                <!-- 電子章：紅色圓章，上方是關卡名稱，中間審核人，下方日期與驗證碼前 6 碼 -->
+                <svg class="seal" viewBox="0 0 120 120" role="img" aria-label="{{ st.name }}電子章，{{ st.by }}">
+                    <circle cx="60" cy="60" r="55" fill="none" stroke="#c41d1d" stroke-width="4"/>
+                    <circle cx="60" cy="60" r="47" fill="none" stroke="#c41d1d" stroke-width="1.2"/>
+                    <text x="60" y="36" fill="#c41d1d" font-size="12" font-weight="700" text-anchor="middle">{{ st.name[:6] }}</text>
+                    <line x1="20" y1="44" x2="100" y2="44" stroke="#c41d1d" stroke-width="1"/>
+                    <text x="60" y="66" fill="#c41d1d" font-size="{{ 15 if st.by|length <= 5 else 11 }}" font-weight="700" text-anchor="middle">{{ st.by.replace(' 老師', '')[:8] }}</text>
+                    <line x1="20" y1="76" x2="100" y2="76" stroke="#c41d1d" stroke-width="1"/>
+                    <text x="60" y="90" fill="#c41d1d" font-size="10" text-anchor="middle">{{ st.at[:10] }}</text>
+                    <text x="60" y="102" fill="#c41d1d" font-size="8" text-anchor="middle" font-family="monospace">{{ st.code[:6] }}</text>
+                </svg>
+                {% if approved.get(i) and approved[i].note %}<div class="note">意見：{{ approved[i].note }}</div>{% endif %}
+                {% elif approved.get(i) %}
+                核准（{{ approved[i].by }}，{{ approved[i].at[:10] }}）<div class="note">系統加上電子章前核准，無章</div>
+                {% elif app.status == '審核中' and app.current_stage == i %}
+                <span class="wait">⏳ 待蓋章</span>
+                {% elif app.status == '已退回' and app.current_stage == i %}
+                <span style="color:#c41d1d;font-weight:700">退回</span>
+                {% else %}—{% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+
+    {% if stamps %}
+    <div class="verify">
+        電子章驗證碼：{% for i, s in signers %}{% if stamps.get(i) %}{{ s.name }} <b>{{ stamps[i].code }}</b>（{{ stamps[i].by }}，{{ stamps[i].at }}）　{% endif %}{% endfor %}<br>
+        查驗：/api/applications/stamp/&lt;驗證碼&gt;。驗證碼由申請內容、關卡與審核人產生，蓋章後申請內容被修改將無法通過查驗。本表由系統產生，無須另行用印。
+    </div>
+    {% endif %}
+    <div class="foot"><span>表單代碼：{{ app.form_code or '—' }}</span><span>Smart UKN 康寧大學智慧校園服務平台</span></div>
+</div>
+</body>
+</html>

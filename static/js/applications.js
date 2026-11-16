@@ -62,19 +62,20 @@ function appCard(app, { compact = false, review = false } = {}) {
                     ${fields.map(([k, v]) => `<dt class="text-slate-500">${escapeHtml(appFieldLabel(app, k))}</dt><dd class="text-slate-800 break-words">${escapeHtml(v)}</dd>`).join('')}
                 </dl>
                 <ol class="mt-3 border-l-2 border-slate-200 pl-3 space-y-1.5">
-                    ${app.history.map(h => `<li><span class="text-slate-400">${escapeHtml(h.at)}</span> ${escapeHtml(app.stages[h.stage]?.name || '')} · <b>${escapeHtml(h.action)}</b> · ${escapeHtml(h.by)}${h.note ? `：${escapeHtml(h.note)}` : ''}</li>`).join('')}
+                    ${app.history.map(h => `<li><span class="text-slate-400">${escapeHtml(h.at)}</span> ${escapeHtml(app.stages[h.stage]?.name || '')} · <b>${escapeHtml(h.action)}</b> · ${escapeHtml(h.by)}${h.note ? `：${escapeHtml(h.note)}` : ''}${h.stamp ? ` <span class="text-rose-700">🔴 已蓋章 <span class="font-mono">${escapeHtml(h.stamp.code)}</span></span>` : ''}</li>`).join('')}
                 </ol>
             </details>`}
             <div class="flex flex-wrap gap-2">
                 ${app.can_withdraw && !review ? `<button type="button" onclick="withdrawOnlineApp(${Number(app.id)})" class="text-xs border border-slate-300 rounded px-2.5 py-1 hover:border-rose-400 text-slate-600">撤回申請</button>` : ''}
                 ${app.status === '已退回' && currentUser.role === '學生' && !review ? `<button type="button" onclick="openApplyModal(${Number(app.item_id)}, ${Number(app.id)})" class="text-xs bg-ukn-800 text-white rounded px-2.5 py-1">修改後重新送出</button>` : ''}
+                ${compact ? '' : `<a href="${escapeHtml(app.signed_url)}" target="_blank" rel="noopener" class="text-xs border border-rose-300 text-rose-800 rounded px-2.5 py-1 hover:bg-rose-50">📄 蓋章申請表${app.stamp_count ? `（已蓋 ${Number(app.stamp_count)} 個章）` : ''}</a>`}
                 ${app.form_code && !review ? `<a href="/forms/${encodeURIComponent(app.form_code)}" target="_blank" class="text-xs border border-slate-300 rounded px-2.5 py-1 hover:border-ukn-500">紙本表單</a>` : ''}
             </div>
             ${review && app.can_review ? `
                 <div class="flex flex-col sm:flex-row gap-2 border-t border-slate-100 pt-3">
-                    <input id="appNote-${Number(app.id)}" maxlength="200" placeholder="意見 (退回時必填)" class="flex-1 text-xs border border-slate-300 rounded px-2 py-1.5">
+                    <input id="appNote-${Number(app.id)}" maxlength="200" placeholder="意見 / 交辦下一關的話 (退回時必填)" class="flex-1 text-xs border border-slate-300 rounded px-2 py-1.5">
                     <div class="flex gap-2">
-                        <button type="button" onclick="reviewOnlineApp(${Number(app.id)}, 'approve')" class="text-xs font-bold px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white">核准「${escapeHtml(app.stages[app.current_stage].name)}」</button>
+                        <button type="button" onclick="reviewOnlineApp(${Number(app.id)}, 'approve', ${escapeHtml(JSON.stringify(app.next_stage || ''))})" class="text-xs font-bold px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-800 text-white">🔴 ${app.next_stage && app.next_stage !== '完成' ? `蓋章並送交「${escapeHtml(app.next_stage)}」` : '蓋章核准（最後一關）'}</button>
                         <button type="button" onclick="reviewOnlineApp(${Number(app.id)}, 'reject')" class="text-xs font-bold px-3 py-1.5 rounded border border-rose-300 text-rose-700 hover:bg-rose-50">退回</button>
                     </div>
                 </div>` : ''}
@@ -207,8 +208,11 @@ async function loadAppReview() {
     }
 }
 
-async function reviewOnlineApp(id, action) {
+async function reviewOnlineApp(id, action, nextStage = '') {
     const note = document.getElementById(`appNote-${id}`).value.trim();
+    if (action === 'approve' && !confirm(nextStage && nextStage !== '完成'
+        ? `確定以你的名義蓋電子章，並送交下一關「${nextStage}」？蓋章後無法撤銷。`
+        : '確定蓋電子章？這是最後一關，蓋完整張申請就完成了，無法撤銷。')) return;
     try {
         const res = await api(`/api/applications/${id}/review`, { json: { action, note } });
         toast(res.message);

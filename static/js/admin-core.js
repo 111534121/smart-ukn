@@ -1971,3 +1971,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// 重補修推薦推播：dry_run=true 只列出會通知誰；寄送前再確認一次
+async function sendRetakeNotifications(dryRun) {
+    if (!dryRun && !confirm('確定寄送重補修推薦通知？已通知過的同一科同一狀態不會重複寄。')) return;
+    const box = document.getElementById('retakeNotifyResult');
+    const btns = ['btnRetakePreview', 'btnRetakeSend'].map(id => document.getElementById(id));
+    btns.forEach(b => { b.disabled = true; });
+    box.textContent = '比對中…';
+    box.classList.remove('hidden');
+    try {
+        const res = await fetch('/api/admin/notify/retake', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dry_run: dryRun })
+        });
+        const data = await res.json();
+        let text = data.message || '';
+        const label = { prereq_blocked: '擋修', available: '有班可選', all_conflict: '全部衝堂', not_offered: '未開課' };
+        (data.students || []).forEach(s => {
+            text += `
+・${s.student_id} ${s.full_name || ''}（${s.class_name || ''}）：`
+                + s.items.map(i => `${i.course_name}[${label[i.status] || i.status}]${i.is_new ? '' : '(已通知過)'}`).join('、');
+        });
+        (data.failed || []).forEach(f => { text += `
+寄送失敗 ${f.student_id}：${f.error}`; });
+        box.textContent = text;
+    } catch (e) {
+        console.error(e);
+        box.textContent = '連線失敗，請稍後再試。';
+    } finally {
+        btns.forEach(b => { b.disabled = false; });
+    }
+}

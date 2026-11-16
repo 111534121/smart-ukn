@@ -575,6 +575,27 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
 
+        # 獎助學金線上申請 (scholarship_apply 套件)：上傳文件、審核、核准後的電子章
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `scholarship_applications` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `student_id` varchar(20) NOT NULL,
+              `scholarship_id` int(11) NOT NULL,
+              `scholarship_name` varchar(100) NOT NULL,
+              `status` varchar(10) NOT NULL DEFAULT '審核中' COMMENT '審核中/已核准/已退回/已撤回',
+              `files_json` text NOT NULL COMMENT '上傳文件：原始檔名、存放檔名、大小、SHA-256',
+              `note` varchar(300) DEFAULT NULL COMMENT '學生備註',
+              `review_note` varchar(200) DEFAULT NULL,
+              `reviewer` varchar(50) DEFAULT NULL,
+              `reviewed_at` datetime DEFAULT NULL,
+              `stamp_json` text DEFAULT NULL COMMENT '電子章：核定字號、承辦、時間、驗證碼',
+              `submitted_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_sch_app_student` (`student_id`),
+              KEY `idx_sch_app_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+
         # 我的科系與顯示範圍 (分系)：username 不設外鍵，因示範帳號可能不在 users 資料表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `user_preferences` (

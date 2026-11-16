@@ -130,6 +130,28 @@ def test_class_meeting_period_counts_as_free_time():
     assert r["sections"][0]["uses_free_time"] == ["週三 第 6-7 節"]
 
 
+def test_every_course_reports_prerequisite_check():
+    """每一科都先回報擋修檢查結果 (畫面先顯示有沒有擋修，再看班別)"""
+    schedule = MY_CLASS + [row("資管五孝", 4, 2, 4, "資料結構")]
+    blocked = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
+                              courses=COURSES, passed_ids=set())[0]["prereq"]
+    assert blocked["has_prerequisite"] and blocked["blocked"] and not blocked["passed"]
+    assert blocked["course_name"] == "程式設計(一)"
+    cleared = logic.recommend(logic.needs_retake(failed("CS201"), COURSES), schedule, "資管五忠", "S1",
+                              courses=COURSES, passed_ids={"CS102"})[0]["prereq"]
+    assert cleared["passed"] and not cleared["blocked"]
+    none = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1",
+                           courses=COURSES)[0]["prereq"]
+    assert not none["has_prerequisite"] and not none["blocked"]
+
+
+def test_class_weekly_meeting_name_counts_as_free_time():
+    """課表寫「班週會」也算空堂；校部週會不算"""
+    assert logic.is_free_time({"course_name": "班週會"})
+    assert logic.is_free_time({"course_name": "班會 / 導師時間"})
+    assert not logic.is_free_time({"course_name": "校部週會"})
+
+
 def test_not_offered():
     """無課可選：這學期沒有任何班級開微積分"""
     r = logic.recommend(logic.needs_retake(failed("MA101"), COURSES), MY_CLASS, "資管五忠", "S1")[0]
@@ -215,3 +237,63 @@ def test_notifications_for_helper(monkeypatch):
     notes = retake.notifications_for("S112001")
     assert notes and notes[0]["status"] == "not_offered"
     assert retake.notifications_for("NOPE") == []
+
+
+# ---------- 排除條件：自習、班會、週會、社團不是課 ----------
+
+def test_non_course_rows_are_not_sections_or_retake_items():
+    courses = {**COURSES, "HR001": {"course_id": "HR001", "course_name": "班會", "credits": 0}}
+    # 成績表就算有「班會」不及格，也不推薦重補修
+    assert [i["course_id"] for i in logic.needs_retake(failed("HR001", "GE102"), courses)] == ["GE102"]
+    # 別班的自習、社團活動不會被當成「開這門課的班別」
+    schedule = MY_CLASS + [row("資管五孝", 4, 1, 2, "自習/班週會"), row("資管五孝", 3, 7, 8, "社團活動")]
+    assert logic.sections_of(schedule, "自習/班週會") == {}
+    assert logic.sections_of(schedule, "社團活動") == {}
+
+
+# ---------- 推播：讀取資料 → 推薦結果 → 寄通知 ----------
+
+class FakeMailer:
+    mode = "demo"
+
+    def __init__(self):
+        self.sent = []
+
+    def send(self, to, subject, body):
+        self.sent.append((to, subject, body))
+
+
+@pytest.fixture
+def retake_push(monkeypatch):
+    import app as app_module
+    app_module.DEMO_NOTIFICATION_LOG.clear()
+    schedule = MY_CLASS + [row("資管五孝", 4, 2, 4, "程式設計(二)")]
+    mailer = FakeMailer()
+    monkeypatch.setattr(retake.deps, "load_schedule", lambda: schedule)
+    monkeypatch.setattr(retake.deps, "load_student", lambda sid: {"student_id": sid, "class_name": "資管五忠"})
+    monkeypatch.setattr(retake.deps, "list_students", lambda: [{"student_id": "S112001", "full_name": "王小明", "class_name": "資管五忠"}])
+    monkeypatch.setattr(retake.deps, "get_mailer", lambda: mailer)
+    yield mailer
+    app_module.DEMO_NOTIFICATION_LOG.clear()
+
+
+def test_push_requires_staff(client, login):
+    assert client.post("/api/admin/notify/retake", json={}).status_code == 401
+    login("student1")
+    assert client.post("/api/admin/notify/retake", json={}).status_code == 403
+
+
+def test_push_dry_run_then_send_once(client, login, retake_push):
+    login("admin", "admin123")
+    preview = client.post("/api/admin/notify/retake", json={"dry_run": True}).get_json()
+    assert preview["dry_run"] and preview["sent"] == 0 and retake_push.sent == []
+    assert preview["students"][0]["new"] == 1 and preview["students"][0]["items"][0]["status"] == "available"
+
+    first = client.post("/api/admin/notify/retake", json={}).get_json()
+    assert first["sent"] == 1 and len(retake_push.sent) == 1
+    to, _, body = retake_push.sent[0]
+    assert to.lower().startswith("s112001@") and "程式設計(二)" in body and "50" not in body  # 信裡不寫成績
+
+    # 同一科同一狀態不重複通知
+    again = client.post("/api/admin/notify/retake", json={}).get_json()
+    assert again["sent"] == 0 and again["message"] == "目前沒有需要通知的新項目"

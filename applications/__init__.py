@@ -6,10 +6,13 @@
 - 學生、家長看得到每一關目前跑到哪；退回時附上原因，學生可修改後重新送出
 - /forms/<code>：可列印的空白表單、?example=1 填寫範例、?download=doc 下載 Word 檔
   舊網址 /forms/xxx.pdf 會轉到新的表單頁；static/forms 內放了真正的檔案時直接下載該檔
+- 線上蓋章：每一關核准時蓋電子章 (審核人、時間、驗證碼)，記在 history，然後自動送交下一關的審核人；
+  /applications/<id>/signed 是填好內容 + 各關電子章的可列印申請表，/api/applications/stamp/<驗證碼> 可查驗真偽
 
 app.py 呼叫 applications.init_app(app, deps) 註冊；deps 提供 fetch_db_rows、db_execute、write_audit_log、
 load_checklists、load_student、class_student_ids、notify_student、forms_folder。
 """
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -19,7 +22,7 @@ from urllib.parse import quote
 from flask import Blueprint, jsonify, make_response, redirect, render_template, request, send_from_directory, session
 from werkzeug.utils import safe_join
 
-from .forms import COMMON_FIELDS, FORMS, form_code_from_url, stages_for, template_for_item
+from .forms import COMMON_FIELDS, FORMS, GENERIC_FIELDS, form_code_from_url, stages_for, template_for_item
 
 bp = Blueprint("applications", __name__, template_folder="templates")
 deps = SimpleNamespace()
@@ -120,6 +123,41 @@ def save_transition(app, stage, status, history, expect_stage):
     return True
 
 
+# ---------- 電子章 ----------
+
+def reviewer_label(stage):
+    """這一關由誰審 (給「送交下一關」與「等待誰」的提示用)"""
+    return {"老師": "導師班老師", "教職員": "處室承辦人"}.get(stage.get("role"), "承辦人")
+
+
+def stamp_code(app, stage_index, signer, at):
+    """驗證碼綁申請內容、關卡與審核人：申請內容事後被改過就對不上"""
+    payload = json.dumps({"id": app["id"], "student_id": app["student_id"], "stage": stage_index,
+                          "name": app["stages"][stage_index]["name"], "fields": app["fields"], "by": signer, "at": at},
+                         sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12].upper()
+
+
+def make_stamp(app, stage_index, signer, at):
+    return {"name": app["stages"][stage_index]["name"], "by": signer, "role": session.get("role"), "at": at,
+            "code": stamp_code(app, stage_index, signer, at)}
+
+
+def stamps_of(app):
+    """{關卡: 電子章}；同一關退回後重送是新的申請，所以一關只會有一個章"""
+    return {h["stage"]: h["stamp"] for h in app["history"] if h.get("stamp")}
+
+
+def can_view(app, student_class=None):
+    """申請人本人、綁定家長、導師班老師、教職員 / 管理員"""
+    role = session.get("role")
+    if role in ("教職員", "管理員"):
+        return True
+    if role == "老師":
+        return student_class is not None and student_class == session.get("advised_class")
+    return role in ("學生", "家長") and session.get("student_id") == app["student_id"]
+
+
 # ---------- 顯示用整理 ----------
 
 def can_review(app, student_class=None):
@@ -158,10 +196,13 @@ def describe(app, student=None):
     elif status == STATUS_WITHDRAWN:
         summary = "已撤回"
     else:
-        summary = f"目前在「{stages[current]['name']}」，等待審核"
+        summary = f"目前在「{stages[current]['name']}」，等待{reviewer_label(stages[current])}蓋章"
     total = len(stages) - 1
+    stamps = stamps_of(app)
     return {
-        **app, "steps": steps, "summary": summary,
+        **app, "steps": steps, "summary": summary, "stamp_count": len(stamps),
+        "signed_url": f"/applications/{app['id']}/signed",
+        "next_stage": stages[current + 1]["name"] if status == STATUS_RUNNING and current + 1 < len(stages) else None,
         "progress_percent": 100 if status == STATUS_DONE else round(min(current, total) / total * 100),
         "student_name": (student or {}).get("full_name", ""), "class_name": (student or {}).get("class_name", ""),
         "can_withdraw": status == STATUS_RUNNING and session.get("role") == "學生",
@@ -324,8 +365,11 @@ def review_application(app_id):
         stage, status = (current + 1, STATUS_DONE if current >= last_signer else STATUS_RUNNING)
     else:
         stage, status = current, STATUS_REJECTED
-    history = app["history"] + [{"stage": current, "action": "核准" if action == "approve" else "退回",
-                                 "by": session.get("full_name", ""), "note": note, "at": _now()}]
+    signer, at = session.get("full_name", "") or session.get("username", ""), _now()
+    entry = {"stage": current, "action": "核准" if action == "approve" else "退回", "by": signer, "note": note, "at": at}
+    if action == "approve":
+        entry["stamp"] = make_stamp(app, current, signer, at)  # 核准才蓋章，退回不蓋
+    history = app["history"] + [entry]
     if not save_transition(app, stage, status, history, current):
         return _error("這一關剛剛已經有人處理過了，請重新整理", 409)
     deps.write_audit_log("online_applications", app_id, "修改",
@@ -333,10 +377,56 @@ def review_application(app_id):
     notified = False
     if status in (STATUS_DONE, STATUS_REJECTED):
         notified = deps.notify_student(app["student_id"], f"【康寧大學】線上申辦「{app['business_name']}」{status}")
-    message = {STATUS_DONE: "已核准，整張申請完成", STATUS_REJECTED: "已退回"}.get(status, f"已核准，移到下一關：{app['stages'][stage]['name']}")
+    if status == STATUS_DONE:
+        message = f"已蓋章（驗證碼 {entry['stamp']['code']}），各關都蓋完，整張申請完成"
+    elif status == STATUS_REJECTED:
+        message = "已退回"
+    else:
+        nxt = app["stages"][stage]
+        message = f"已蓋章（驗證碼 {entry['stamp']['code']}），送交下一關「{nxt['name']}」，等待{reviewer_label(nxt)}審核"
     if notified:
         message += "，已通知學生"
     return jsonify({"status": "success", "message": message, "data": describe(get_application(app_id), student)}), 200
+
+
+# ---------- 蓋好章的申請表與查驗 ----------
+
+@bp.route("/applications/<int:app_id>/signed", methods=["GET"])
+def signed_form(app_id):
+    """填好的內容 + 每一關的電子章，可列印 / 存成 PDF"""
+    if "username" not in session:
+        return _error("請先登入系統", 401)
+    if session.get("role") not in ("學生", "家長") + REVIEW_ROLES:
+        return _error("你的身分無法查看申請表", 403)
+    app = get_application(app_id)
+    student = deps.load_student(app["student_id"]) if app else None
+    if not app or not can_view(app, (student or {}).get("class_name")):
+        return _error("找不到這張申請", 404)
+    tpl = FORMS.get(app["form_code"]) or {"title": app["business_name"], "office": "", "fields": GENERIC_FIELDS}
+    known = {f["key"] for f in tpl["fields"]}
+    fields = [(f["label"], app["fields"].get(f["key"], "")) for f in tpl["fields"]]
+    fields += [(k, v) for k, v in app["fields"].items() if k not in known and k != "phone" and v]
+    approved = {h["stage"]: h for h in app["history"] if h["action"] == "核准"}
+    return render_template("application_signed.html", app=describe(app, student), tpl=tpl, fields=fields,
+                           student=student or {}, stamps=stamps_of(app), approved=approved,
+                           signers=list(enumerate(app["stages"]))[1:-1])
+
+
+@bp.route("/api/applications/stamp/<code>", methods=["GET"])
+def verify_stamp(code):
+    """任何人拿到蓋章的申請表都能查；只回傳遮蔽後的姓名，不回傳學號與申請內容"""
+    code = code.strip().upper()
+    for app in load_applications():
+        for stage, stamp in stamps_of(app).items():
+            if stamp.get("code") != code:
+                continue
+            if stamp_code(app, stage, stamp["by"], stamp["at"]) != code:
+                return jsonify({"status": "success", "valid": False, "message": "申請內容在蓋章後被變更過，這個章已失效"}), 200
+            name = (deps.load_student(app["student_id"]) or {}).get("full_name") or ""
+            masked = name[:1] + "○" * max(len(name) - 2, 0) + (name[-1:] if len(name) > 1 else "")
+            return jsonify({"status": "success", "valid": True, "business_name": app["business_name"], "stage": stamp["name"],
+                            "by": stamp["by"], "at": stamp["at"], "student_name": masked}), 200
+    return jsonify({"status": "success", "valid": False, "message": "查無此驗證碼"}), 200
 
 
 # ---------- 申請表單：可列印、下載 Word、填寫範例 ----------
