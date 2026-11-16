@@ -6,6 +6,26 @@ verify_line_id_token 實際會打 LINE 官方 API，測試一律 monkeypatch 成
 from campus import line_binding
 
 
+def test_liff_favorites_page_injects_liff_id(client, monkeypatch):
+    """「我的常用功能」LIFF 頁面 (/liff/favorites) 要注入正確的 LIFF ID，跟「設定常用功能」(/liff/menu) 用不同的 LIFF app，
+    避免兩個入口混用同一個 ID 導致都顯示設定頁 (過去真的發生過的設定錯誤)"""
+    monkeypatch.setenv("LINE_LIFF_ID_FAVORITES", "2012266647-ftqZLpK3")
+    monkeypatch.setenv("LINE_LIFF_ID", "2012266647-el203x6g")
+    res = client.get("/liff/favorites")
+    assert res.status_code == 200
+    assert b"2012266647-ftqZLpK3" in res.data
+    assert b"__LIFF_ID__" not in res.data
+
+
+def test_liff_favorites_is_display_only_not_settings_page(client):
+    """/liff/favorites 是「顯示已選常用功能」的頁面，不是「設定常用功能」那份 (menu.html)；
+    兩者網址跟內容都要不一樣，才不會點兩個入口看到同一頁"""
+    favorites = client.get("/liff/favorites").data
+    menu = client.get("/liff/menu").data
+    assert favorites != menu
+    assert "我的常用功能".encode() in favorites
+
+
 def _fake_verify(line_user_id):
     def verify(id_token):
         return line_user_id if id_token == "good-token" else None
