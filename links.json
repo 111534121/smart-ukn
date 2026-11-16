@@ -253,6 +253,33 @@
       "url": "https://www.gimp.org/",
       "group": "好用軟體",
       "todo": ""
+    },
+    {
+      "id": 25,
+      "category": "career",
+      "title": "台灣就業通｜求職求才總覽",
+      "description": "勞動部就業服務平台，求職求才、職訓課程與各項就業方案入口",
+      "url": "https://www.taiwanjobs.gov.tw/",
+      "group": "台灣就業通（勞動部）",
+      "todo": ""
+    },
+    {
+      "id": 26,
+      "category": "career",
+      "title": "支援青年就業計畫",
+      "description": "勞動部青年就業支援方案專區",
+      "url": "https://special.taiwanjobs.gov.tw/internet/2025/YNGSRH/index.html",
+      "group": "台灣就業通（勞動部）",
+      "todo": ""
+    },
+    {
+      "id": 27,
+      "category": "career",
+      "title": "投資青年方案2.0",
+      "description": "勞動部青年就業投資方案專區",
+      "url": "https://youth.taiwanjobs.gov.tw/",
+      "group": "台灣就業通（勞動部）",
+      "todo": ""
     }
   ]
 }
