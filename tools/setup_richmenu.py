@@ -89,6 +89,7 @@ def build_menus():
     own_site = (os.getenv("PUBLIC_SITE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
     events_url = f"{own_site}/#events" if own_site else demo_home
     announcements_url = f"{own_site}/#announcements" if own_site else demo_home
+    calendar_url = f"{own_site}/#calendar" if own_site else demo_home
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",
@@ -109,7 +110,7 @@ def build_menus():
             grid_cell(0, 0, uri_action("課表查詢", schedule_url)),
             grid_cell(0, 1, uri_action("活動報名", events_url)),
             grid_cell(0, 2, uri_action("我的公告", notices_url)),
-            grid_cell(1, 0, message_action("校園行事曆", "行事曆")),
+            grid_cell(1, 0, uri_action("校園行事曆", calendar_url)),
             grid_cell(1, 1, uri_action("我的常用功能", favorites_url)),
             grid_cell(1, 2, uri_action("設定常用功能", f"https://liff.line.me/{liff_id}")),
         ],
