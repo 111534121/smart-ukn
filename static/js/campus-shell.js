@@ -228,7 +228,7 @@ function tabFromHash() {
 }
 function maybeScrollToAnnouncements() {
     if (decodeURIComponent(location.hash.replace('#', '')) !== 'announcements') return;
-    setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
 }
 window.addEventListener('hashchange', () => { switchTab(tabFromHash(), { updateHash: false }); maybeScrollToAnnouncements(); });
 

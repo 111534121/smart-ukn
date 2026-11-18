@@ -26,6 +26,15 @@ def test_liff_favorites_is_display_only_not_settings_page(client):
     assert "我的常用功能".encode() in favorites
 
 
+def test_liff_favorites_links_use_hash_catalog_key_not_dom_id(client):
+    """常用功能卡片連結要用 #calendar 這種 catalog key，網站的 tabFromHash() 是靠這個找 FEATURES，
+    之前錯用 #tab-calendar 這種 DOM id 會找不到對應功能、直接退回首頁 (這裡曾經真的壞過)"""
+    html = client.get("/liff/favorites").data.decode("utf-8")
+    assert "href=\"/#${f.key}\"" in html
+    assert "tab-calendar" not in html
+    assert "TAB_OF" not in html
+
+
 def test_liff_notices_page_injects_liff_id(client, monkeypatch):
     """「我的公告」LIFF 頁面 (/liff/notices) 要注入自己的 LIFF ID，不跟其他 LIFF app 共用"""
     monkeypatch.setenv("LINE_LIFF_ID_NOTICES", "2012266647-testNotice")

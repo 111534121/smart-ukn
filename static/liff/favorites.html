@@ -53,11 +53,6 @@ const CATALOG = [
   { key: 'my-schedule', name: '🗓️ 我的課表（老師）' },
   { key: 'my-class', name: '🏫 我的導師班（老師／教職員）' },
 ];
-const TAB_OF = { calendar: 'tab-calendar', 'course-plan': 'tab-plan', course: 'tab-course', graduation: 'tab-graduation',
-  certs: 'tab-certs', warning: 'tab-warning', retake: 'tab-retake', conduct: 'tab-conduct', rules: 'tab-ai',
-  checklist: 'tab-checklist', scholarship: 'tab-scholarship', services: 'tab-services', reports: 'tab-reports',
-  rent: 'tab-rent', events: 'tab-events', map: 'tab-map', traffic: 'tab-traffic', notices: 'tab-notices',
-  meetings: 'tab-meetings', 'my-schedule': 'tab-myschedule', 'my-class': 'tab-myclass' };
 
 const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
 let idToken = '';
@@ -87,7 +82,7 @@ function renderBindPrompt(message) {
 function renderFavorites(data) {
   const pinned = (data.pinned || []).map(key => CATALOG.find(f => f.key === key)).filter(Boolean);
   const body = pinned.length
-    ? pinned.map(f => `<a class="fav-link" href="/#${TAB_OF[f.key] || ''}" target="_top"><span>${f.name}</span><span class="arrow">›</span></a>`).join('')
+    ? pinned.map(f => `<a class="fav-link" href="/#${f.key}" target="_top"><span>${f.name}</span><span class="arrow">›</span></a>`).join('')
     : '<p class="muted">還沒有設定常用功能，點下面的按鈕去選幾項吧。</p>';
   show(`
     <div class="card">
