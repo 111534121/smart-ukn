@@ -26,6 +26,15 @@ def test_liff_favorites_is_display_only_not_settings_page(client):
     assert "我的常用功能".encode() in favorites
 
 
+def test_liff_notices_page_injects_liff_id(client, monkeypatch):
+    """「我的公告」LIFF 頁面 (/liff/notices) 要注入自己的 LIFF ID，不跟其他 LIFF app 共用"""
+    monkeypatch.setenv("LINE_LIFF_ID_NOTICES", "2012266647-testNotice")
+    res = client.get("/liff/notices")
+    assert res.status_code == 200
+    assert b"2012266647-testNotice" in res.data
+    assert b"__LIFF_ID__" not in res.data
+
+
 def _fake_verify(line_user_id):
     def verify(id_token):
         return line_user_id if id_token == "good-token" else None
@@ -166,3 +175,62 @@ def test_schedule_for_bound_student(client, login, monkeypatch):
     assert data["username"] == "student1"
     assert data["student"]["student_id"] == "S112001"
     assert isinstance(data["schedule"], list) and data["schedule"]
+
+
+def test_notices_requires_valid_token(client):
+    res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "bad-token"})
+    assert res.status_code == 401
+
+
+def test_notices_unbound_reports_unbound(client, monkeypatch):
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify("U" + "8" * 32))
+    res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    assert res.get_json()["data"]["bound"] is False
+
+
+def test_notices_for_bound_student_matches_website_inbox(client, login, monkeypatch):
+    """LIFF 端看到的公告要跟網站的 /api/campus/notices/inbox 一致，且標記已讀後兩邊同步"""
+    login("teacher1")  # advised_class = 資管五忠，跟 student1 同班
+    sent = client.post("/api/campus/notices", json={
+        "class_name": "資管五忠", "title": "LIFF 測試公告", "content": "請留意", "priority": "重要",
+    })
+    assert sent.status_code == 200, sent.get_json()
+    client.post("/api/auth/logout")
+
+    login("student1")
+    code = client.post("/api/line/bind/start").get_json()["data"]["code"]
+    line_user_id = "U" + "9" * 32
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
+    client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
+    client.post("/api/auth/logout")
+
+    res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    data = res.get_json()["data"]
+    assert data["bound"] is True
+    assert data["username"] == "student1"
+    mine = next(n for n in data["items"] if n["title"] == "LIFF 測試公告")
+    assert mine["priority"] == "重要"
+    assert mine["is_read"] is False
+    assert data["unread_count"] >= 1
+
+    login("student1")
+    client.post(f"/api/campus/notices/{mine['id']}/read")
+    client.post("/api/auth/logout")
+
+    res2 = client.get("/api/line/notices", headers={"X-Line-Id-Token": "good-token"})
+    mine2 = next(n for n in res2.get_json()["data"]["items"] if n["title"] == "LIFF 測試公告")
+    assert mine2["is_read"] is True
+
+
+def test_notices_requires_bound_student_id(client, login, monkeypatch):
+    """沒有學號的帳號 (例如老師) 綁定後查詢我的公告應該回錯誤，不是回一堆不相干的資料"""
+    login("teacher1")
+    code = client.post("/api/line/bind/start").get_json()["data"]["code"]
+    line_user_id = "U" + "a" * 32
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
+    client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
+
+    res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 403

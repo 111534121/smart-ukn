@@ -173,6 +173,26 @@ def line_schedule():
                     "semester": report["semester"], "schedule": report["schedule"]})
 
 
+@bp.route("/api/line/notices", methods=["GET"])
+def line_notices():
+    """LIFF「我的公告」頁面專用：帶 X-Line-Id-Token 標頭呼叫，綁定過的學生直接看自己的班級通知。"""
+    line_user_id = verify_line_id_token(_id_token_from_request())
+    if not line_user_id:
+        return error("LINE 驗證失敗，請從 LINE 選單重新打開這個頁面", 401)
+    username = username_for_line_user(line_user_id)
+    if not username:
+        return ok(data={"bound": False})
+    student_id = _student_id_for_username(username)
+    if not student_id:
+        return error("這個帳號沒有綁定學號，無法查詢公告", 403)
+    from .messaging import load_notices  # 延後匯入，避免跟 messaging 互相匯入造成循環
+    items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username", "replies")}
+             | {"is_read": student_id in n["read_by"], "my_reply": n.get("replies", {}).get(student_id)}
+             for n in load_notices(student_id=student_id)]
+    return ok(data={"bound": True, "username": username, "items": items,
+                     "unread_count": sum(1 for i in items if not i["is_read"])})
+
+
 # ---------- LINE 官方帳號加好友：QR Code 與連結，公開資訊，不含任何登入狀態 ----------
 
 def _oa_id():

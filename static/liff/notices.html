@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的公告｜Smart UKN</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: #f4f5f3; color: #1f2937; }
+  header { background: #16503f; color: #fff; padding: 14px 16px; font-weight: 700; }
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+  .muted { color: #64748b; font-size: 13px; }
+  .msg { font-size: 13px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .msg.error { background: #fef2f2; color: #b91c1c; }
+  .notice-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  .notice-meta { color: #64748b; font-size: 12px; margin-top: 2px; }
+  .notice-content { font-size: 14px; margin-top: 8px; white-space: pre-wrap; }
+  .badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+  .badge.unread { background: #fef2f2; color: #b91c1c; }
+  .badge.重要 { background: #fff7ed; color: #c2410c; }
+  .badge.緊急 { background: #fef2f2; color: #b91c1c; }
+  a.link-btn { display: block; text-align: center; background: #16503f; color: #fff; text-decoration: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
+  #hint { font-size: 12px; color: #94a3b8; text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+<header>Smart UKN · 我的公告</header>
+<main>
+  <div id="hint">連接 LINE 中…</div>
+  <div id="app" hidden></div>
+</main>
+<script>
+const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
+let idToken = '';
+
+function show(html) {
+  document.getElementById('hint').hidden = true;
+  const app = document.getElementById('app');
+  app.hidden = false;
+  app.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function call(path) {
+  const res = await fetch(path, { headers: { 'X-Line-Id-Token': idToken } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.status === 'error') throw new Error(body.message || '發生錯誤');
+  return body;
+}
+
+function renderBindPrompt(message) {
+  show(`
+    <div class="card">
+      <p>這個 LINE 帳號還沒綁定 Smart UKN 帳號，請先到 LINE 選單「設定常用功能」完成綁定，再回來看公告。</p>
+      ${message ? `<div class="msg error">${message}</div>` : ''}
+    </div>`);
+}
+
+function renderNotices(data) {
+  const items = data.items || [];
+  const body = items.length
+    ? items.map(n => `
+        <div class="card">
+          <div class="notice-title">
+            ${!n.is_read ? '<span class="badge unread">未讀</span>' : ''}
+            ${n.priority && n.priority !== '一般' ? `<span class="badge ${esc(n.priority)}">${esc(n.priority)}</span>` : ''}
+            <span>${esc(n.title)}</span>
+          </div>
+          <div class="notice-meta">${esc(n.class_name)} · ${esc(n.sender)} · ${esc(n.created_at)}${n.due_date ? ` · 期限 ${esc(n.due_date)}` : ''}</div>
+          <div class="notice-content">${esc(n.content)}</div>
+        </div>`).join('')
+    : '<p class="muted">目前沒有任何通知。</p>';
+  show(`
+    <p class="muted" style="margin:0 0 10px">共 ${items.length} 則，${data.unread_count} 則未讀。</p>
+    ${body}
+    <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
+}
+
+async function loadNotices() {
+  try {
+    const res = await call('/api/line/notices');
+    if (res.data.bound) renderNotices(res.data);
+    else renderBindPrompt();
+  } catch (e) {
+    renderBindPrompt(e.message);
+  }
+}
+
+(async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    idToken = liff.getIDToken();
+    if (!idToken) { show('<div class="card msg error">無法取得 LINE 身分權杖，請關閉後重新從選單打開。</div>'); return; }
+    await loadNotices();
+  } catch (e) {
+    show(`<div class="card msg error">LIFF 初始化失敗：${e.message}</div>`);
+  }
+})();
+</script>
+</body>
+</html>
