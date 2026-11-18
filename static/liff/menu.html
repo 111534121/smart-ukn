@@ -33,6 +33,8 @@
 <script>
 // 全部功能都是學生/教職員共用的 key，跟網站 static/js/campus-shell.js 的 FEATURES 對齊，
 // 不一致也不會壞 (網站端會自動濾掉不認得的 key)，只是不會顯示而已。
+const STAFF_ROLES = ['老師', '教職員', '管理員', '系統管理員'];
+const MAX_PINNED = 12;
 const CATALOG = [
   { key: 'calendar', name: '📅 行事曆' },
   { key: 'course-plan', name: '🧮 選課檢查' },
@@ -53,8 +55,8 @@ const CATALOG = [
   { key: 'traffic', name: '🚌 天氣與交通' },
   { key: 'notices', name: '📣 班級通知' },
   { key: 'meetings', name: '🎥 線上會議' },
-  { key: 'my-schedule', name: '🗓️ 我的課表（老師）' },
-  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）' },
+  { key: 'my-schedule', name: '🗓️ 我的課表（老師）', staffOnly: true },
+  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）', staffOnly: true },
 ];
 
 const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
@@ -95,19 +97,30 @@ function renderBindForm(message) {
   };
 }
 
+function updateCountAndLimit() {
+  const boxes = [...document.querySelectorAll('#app input[type=checkbox]')];
+  const checkedCount = boxes.filter(el => el.checked).length;
+  document.getElementById('pinCount').textContent = checkedCount;
+  boxes.forEach(el => { if (!el.checked) el.disabled = checkedCount >= MAX_PINNED; });
+}
+
 function renderMenu(data, message) {
   const pinned = new Set(data.pinned || []);
+  const isStaff = STAFF_ROLES.includes(data.role);
+  const visible = CATALOG.filter(f => !f.staffOnly || isStaff);
   show(`
     ${message ? `<div class="msg ok">${message}</div>` : ''}
     <div class="card">
       <p class="muted">帳號：${data.username}　勾選的功能會跟網站「★ 我的置頂」同步。</p>
-      ${CATALOG.map(f => `
+      <p class="muted">已選 <span id="pinCount">0</span> / ${MAX_PINNED}（最多只能放 ${MAX_PINNED} 個）</p>
+      ${visible.map(f => `
         <label class="row">
-          <input type="checkbox" value="${f.key}" ${pinned.has(f.key) ? 'checked' : ''}>
+          <input type="checkbox" value="${f.key}" ${pinned.has(f.key) ? 'checked' : ''} onchange="updateCountAndLimit()">
           <span>${f.name}</span>
         </label>`).join('')}
       <button class="primary" id="saveBtn">儲存</button>
     </div>`);
+  updateCountAndLimit();
   document.getElementById('saveBtn').onclick = async () => {
     const keys = [...document.querySelectorAll('#app input[type=checkbox]:checked')].map(el => el.value);
     const btn = document.getElementById('saveBtn');

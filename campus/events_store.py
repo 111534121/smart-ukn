@@ -94,9 +94,9 @@ def _decode_registration(row):
     item['checked_in_at'] = str(item['checked_in_at'])[:19] if item.get('checked_in_at') else None
     item['feedback_at'] = str(item['feedback_at'])[:19] if item.get('feedback_at') else None
     item['notified_at'] = str(item['notified_at'])[:19] if item.get('notified_at') else None
-    item['checked_in'] = bool(item['checked_in'])
-    item['reminded'] = bool(item['reminded'])
-    item['notified'] = bool(item['notified'])
+    item['checked_in'] = bool(item.get('checked_in'))
+    item['reminded'] = bool(item.get('reminded'))
+    item['notified'] = bool(item.get('notified'))
     item['phone'] = item.get('phone') or ''
     item['note'] = item.get('note') or ''
     item['school_from'] = item.get('school_from') or ''

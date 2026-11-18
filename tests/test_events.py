@@ -2,6 +2,7 @@
 import datetime
 
 import app as app_module
+from campus.events_store import _decode_registration
 
 
 def _today():
@@ -75,6 +76,24 @@ def test_duplicate_registration_is_blocked(client, login):
     assert first.status_code == 200, first.get_json()
     again = _register(client, login, event_id, "student1", "S112001")
     assert again.status_code == 409
+
+
+def test_decode_registration_tolerates_legacy_rows_missing_notified_field(client):
+    """JSON 示範模式讀到比較舊、建立於加上 notified 欄位之前的報名紀錄時不該直接崩潰 (真的發生過一次)"""
+    legacy_row = {
+        "id": 1, "event_id": 1, "student_id": "S112001", "full_name": "測試",
+        "email": "test@example.com", "phone": None, "age": 18, "note": None,
+        "status": "已報名", "checkin_code": "abc", "registered_by_key": "user:student1",
+        "registered_by_role": "學生", "created_at": "2026-01-01 00:00:00", "cancelled_at": None,
+        "checked_in_at": None, "feedback_at": None, "notified_at": None,
+        "rating": None, "feedback_comment": None,
+        # 沒有 checked_in / reminded / notified / school_from 這幾個欄位
+    }
+    decoded = _decode_registration(legacy_row)
+    assert decoded["checked_in"] is False
+    assert decoded["reminded"] is False
+    assert decoded["notified"] is False
+    assert decoded["school_from"] == ""
 
 
 def test_capacity_full_goes_to_waitlist_then_auto_promotes_on_cancel(client, login):

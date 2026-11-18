@@ -145,11 +145,11 @@ def line_menu():
     username = username_for_line_user(line_user_id)
     if not username:
         return ok(data={"bound": False})
+    role = _role_for_username(username)
     if request.method == "PUT":
         data = request.get_json(silent=True) or {}
         pinned = set_pinned(username, data.get("pinned", []))
-        return ok(message="已更新常用功能", data={"bound": True, "username": username, "pinned": pinned})
-    role = _role_for_username(username)
+        return ok(message="已更新常用功能", data={"bound": True, "username": username, "role": role, "pinned": pinned})
     return ok(data={"bound": True, "username": username, "role": role, "pinned": get_pinned(username, role)})
 
 

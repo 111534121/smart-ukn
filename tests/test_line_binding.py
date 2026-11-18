@@ -35,6 +35,24 @@ def test_liff_favorites_links_use_hash_catalog_key_not_dom_id(client):
     assert "TAB_OF" not in html
 
 
+def test_liff_menu_and_favorites_mark_teacher_only_items(client):
+    """老師專用項目 (我的課表/我的導師班) 要標記 staffOnly，學生登入時這兩格不該出現在設定常用功能
+    或我的常用功能清單裡 (之前學生帳號真的看得到並點得進去)"""
+    for path in ("/liff/menu", "/liff/favorites"):
+        html = client.get(path).data.decode("utf-8")
+        assert "staffOnly: true" in html
+        assert "key: 'my-schedule', name: '🗓️ 我的課表（老師）', staffOnly: true" in html
+        assert "key: 'my-class', name: '🏫 我的導師班（老師／教職員）', staffOnly: true" in html
+
+
+def test_liff_menu_shows_pin_limit(client):
+    """常用功能最多只能放 12 個是伺服器端的真實限制 (campus/services.py set_pinned)，
+    設定頁要明確顯示這個上限，不能悄悄截斷卻不告訴使用者"""
+    html = client.get("/liff/menu").data.decode("utf-8")
+    assert "MAX_PINNED = 12" in html
+    assert "最多只能放" in html
+
+
 def test_liff_notices_page_injects_liff_id(client, monkeypatch):
     """「我的公告」LIFF 頁面 (/liff/notices) 要注入自己的 LIFF ID，不跟其他 LIFF app 共用"""
     monkeypatch.setenv("LINE_LIFF_ID_NOTICES", "2012266647-testNotice")
@@ -96,6 +114,8 @@ def test_full_bind_then_read_and_write_menu(client, login, monkeypatch):
                         headers={"X-Line-Id-Token": "good-token"})
     assert update.status_code == 200
     assert update.get_json()["data"]["pinned"] == ["events", "calendar"]
+    # PUT 回應也要帶 role，LIFF 頁面存檔後重新渲染才能正確過濾老師專用項目，不能只有 GET 才有
+    assert update.get_json()["data"]["role"] == "學生"
 
     # 網站端讀到的置頂跟 LINE 端寫入的是同一份資料
     web_prefs = client.get("/api/campus/prefs").get_json()["data"]

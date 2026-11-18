@@ -30,6 +30,7 @@
 </main>
 <script>
 // 跟 static/liff/menu.html 用同一份對照表，key 要跟網站 static/js/campus-shell.js 的 FEATURES 對齊。
+const STAFF_ROLES = ['老師', '教職員', '管理員', '系統管理員'];
 const CATALOG = [
   { key: 'calendar', name: '📅 行事曆' },
   { key: 'course-plan', name: '🧮 選課檢查' },
@@ -50,8 +51,8 @@ const CATALOG = [
   { key: 'traffic', name: '🚌 天氣與交通' },
   { key: 'notices', name: '📣 班級通知' },
   { key: 'meetings', name: '🎥 線上會議' },
-  { key: 'my-schedule', name: '🗓️ 我的課表（老師）' },
-  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）' },
+  { key: 'my-schedule', name: '🗓️ 我的課表（老師）', staffOnly: true },
+  { key: 'my-class', name: '🏫 我的導師班（老師／教職員）', staffOnly: true },
 ];
 
 const LIFF_ID = new URLSearchParams(location.search).get('liffId') || '__LIFF_ID__';
@@ -80,7 +81,10 @@ function renderBindPrompt(message) {
 }
 
 function renderFavorites(data) {
-  const pinned = (data.pinned || []).map(key => CATALOG.find(f => f.key === key)).filter(Boolean);
+  const isStaff = STAFF_ROLES.includes(data.role);
+  const pinned = (data.pinned || [])
+    .map(key => CATALOG.find(f => f.key === key))
+    .filter(f => f && (!f.staffOnly || isStaff));
   const body = pinned.length
     ? pinned.map(f => `<a class="fav-link" href="/#${f.key}" target="_top"><span>${f.name}</span><span class="arrow">›</span></a>`).join('')
     : '<p class="muted">還沒有設定常用功能，點下面的按鈕去選幾項吧。</p>';
