@@ -1839,3 +1839,309 @@ def list_student_records():
             "cadre_count": cadre_count
         }
     }), 200
+
+# -------------------------------------------------------------------------
+# 17. meetings & records（全校會議與綜合歷史紀錄中控台）
+# -------------------------------------------------------------------------
+@bp.route("/api/admin/meetings", methods=["GET"])
+@admin_required
+def admin_list_meetings():
+    """管理員全校線上會議歷史紀錄查詢（含智慧會議衝突偵測與狀態分類）"""
+    import campus.meetings_store as cms
+    from datetime import datetime, timedelta
+
+    search = request.args.get("search", "").strip().lower()
+    status_filter = request.args.get("status", "").strip()
+
+    all_m = cms.all_meetings()
+    all_members = cms.all_members()
+    now = datetime.now()
+
+    # 會議解析與時間區間計算
+    parsed_meetings = []
+    for m in all_m:
+        m_copy = dict(m)
+        m_id = m_copy["id"]
+        members = [mem for mem in all_members if mem["meeting_id"] == m_id]
+        m_copy["members"] = members
+        m_copy["attendee_count"] = len(members)
+
+        start_str = str(m_copy["start_at"])[:16]
+        try:
+            start_dt = datetime.strptime(start_str, "%Y-%m-%d %H:%M")
+        except Exception:
+            try:
+                start_dt = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                start_dt = now
+
+        duration = int(m_copy.get("duration_min") or 60)
+        end_dt = start_dt + timedelta(minutes=duration)
+        m_copy["start_time_display"] = start_dt.strftime("%Y-%m-%d %H:%M")
+        m_copy["end_time_display"] = end_dt.strftime("%H:%M")
+        m_copy["start_dt"] = start_dt
+        m_copy["end_dt"] = end_dt
+
+        # 狀態計算
+        is_cancelled = (m_copy.get("status") == "已取消")
+        is_ongoing = (not is_cancelled) and (start_dt <= now <= end_dt)
+        is_past = (not is_cancelled) and (now > end_dt)
+        is_upcoming = (not is_cancelled) and (now < start_dt)
+
+        if is_cancelled:
+            state_label = "已取消"
+            state_code = "cancelled"
+        elif is_ongoing:
+            state_label = "進行中"
+            state_code = "ongoing"
+        elif is_past:
+            state_label = "已結束"
+            state_code = "past"
+        else:
+            state_label = "即將開始"
+            state_code = "upcoming"
+
+        m_copy["state_label"] = state_label
+        m_copy["state_code"] = state_code
+        m_copy["is_ongoing"] = is_ongoing
+        m_copy["is_past"] = is_past
+        m_copy["is_upcoming"] = is_upcoming
+        parsed_meetings.append(m_copy)
+
+    # 智慧會議衝突偵測 (Smart Conflict Detection)
+    conflict_count = 0
+    for i, m1 in enumerate(parsed_meetings):
+        conflicts = []
+        if m1["state_code"] != "cancelled":
+            for j, m2 in enumerate(parsed_meetings):
+                if i != j and m2["state_code"] != "cancelled":
+                    if max(m1["start_dt"], m2["start_dt"]) < min(m1["end_dt"], m2["end_dt"]):
+                        conflicts.append({
+                            "id": m2["id"],
+                            "title": m2["title"],
+                            "host_name": m2["host_name"],
+                            "time": m2["start_time_display"]
+                        })
+        m1["conflicts"] = conflicts
+        m1["has_conflict"] = len(conflicts) > 0
+        if m1["has_conflict"]:
+            conflict_count += 1
+
+    # 過濾
+    filtered = []
+    for m in parsed_meetings:
+        if status_filter and status_filter != "all":
+            if m["state_code"] != status_filter:
+                continue
+        if search:
+            match_title = search in m.get("title", "").lower()
+            match_host = search in m.get("host_name", "").lower()
+            match_code = search in m.get("invite_code", "").lower()
+            match_desc = search in (m.get("description") or "").lower()
+            match_member = any(search in mem.get("display_name", "").lower() for mem in m["members"])
+            if not (match_title or match_host or match_code or match_desc or match_member):
+                continue
+        filtered.append(m)
+
+    filtered.sort(key=lambda x: (0 if x["state_code"] == "ongoing" else (1 if x["state_code"] == "upcoming" else (2 if x["state_code"] == "past" else 3)), -x["start_dt"].timestamp()))
+
+    out_list = []
+    for m in filtered:
+        item = dict(m)
+        item.pop("start_dt", None)
+        item.pop("end_dt", None)
+        out_list.append(item)
+
+    upcoming_count = sum(1 for m in parsed_meetings if m["state_code"] == "upcoming")
+    ongoing_count = sum(1 for m in parsed_meetings if m["state_code"] == "ongoing")
+    past_count = sum(1 for m in parsed_meetings if m["state_code"] == "past")
+    cancelled_count = sum(1 for m in parsed_meetings if m["state_code"] == "cancelled")
+    total_participants = sum(len(m["members"]) for m in parsed_meetings)
+
+    return jsonify({
+        "status": "success",
+        "data": out_list,
+        "total": len(out_list),
+        "stats": {
+            "total_meetings": len(parsed_meetings),
+            "upcoming_count": upcoming_count,
+            "ongoing_count": ongoing_count,
+            "past_count": past_count,
+            "cancelled_count": cancelled_count,
+            "conflict_count": conflict_count,
+            "total_participants": total_participants
+        }
+    }), 200
+
+
+@bp.route("/api/admin/meetings/<int:meeting_id>/cancel", methods=["POST"])
+@admin_required
+def admin_cancel_meeting(meeting_id):
+    """管理員強制取消或封存特定會議"""
+    import campus.meetings_store as cms
+    target = None
+    for m in cms.all_meetings():
+        if m["id"] == meeting_id:
+            target = m
+            break
+    if not target:
+        return jsonify({"status": "error", "message": "找不到該會議紀錄"}), 404
+
+    cms.update_meeting(meeting_id, {"status": "已取消"})
+
+    actor_name, actor_role, actor_ip = _get_current_actor()
+    admin_db.log_audit_trail(
+        "meetings", str(meeting_id), "管理員取消會議",
+        {"meeting_id": meeting_id, "title": target.get("title"), "status": target.get("status")},
+        {"meeting_id": meeting_id, "title": target.get("title"), "status": "已取消"},
+        actor_name, actor_role, actor_ip
+    )
+
+    return jsonify({"status": "success", "message": f"會議「{target.get('title')}」已成功由管理員取消", "meeting_id": meeting_id}), 200
+
+
+@bp.route("/api/admin/records/overview", methods=["GET"])
+@admin_required
+def admin_records_overview():
+    """全校跨模組綜合歷史紀錄中心概覽"""
+    import campus.meetings_store as cms
+    from campus.common import store
+
+    meetings = cms.all_meetings()
+    notices = store.data.get("notices", [])
+    bookings = store.data.get("room_bookings", [])
+    dorm_apps = store.data.get("dorm_applications", [])
+    audit_count = admin_db.query_one("SELECT COUNT(*) AS c FROM audit_logs")
+    visitor_count = admin_db.query_one("SELECT COUNT(*) AS c FROM visitor_logs")
+    attendance_count = admin_db.query_one("SELECT COUNT(*) AS c FROM attendance_records")
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "meetings_count": len(meetings),
+            "notices_count": len(notices),
+            "bookings_count": len(bookings),
+            "dorm_apps_count": len(dorm_apps),
+            "audit_count": audit_count["c"] if audit_count else 0,
+            "visitor_count": visitor_count["c"] if visitor_count else 0,
+            "attendance_count": attendance_count["c"] if attendance_count else 0
+        }
+    }), 200
+
+
+# -------------------------------------------------------------------------
+# 18. smart_insights（智慧校園 AI 決策與異常預警中樞）
+# -------------------------------------------------------------------------
+@bp.route("/api/admin/smart-insights", methods=["GET"])
+@admin_required
+def admin_smart_insights():
+    """智慧校園決策建議與異常預警 AI 洞察引擎"""
+    insights = []
+
+    # 1. 學業擋修風險分析 (Prerequisite Block Risk)
+    failed_credits = admin_db.query_db("""
+        SELECT sc.student_id, sc.course_id, sc.score, c.course_name, c.dept_id, s.full_name, s.class_name
+        FROM student_credits sc
+        JOIN course_map c ON sc.course_id = c.course_id
+        JOIN students s ON sc.student_id = s.student_id
+        WHERE sc.score < 60
+    """)
+    if failed_credits:
+        blocked_pairs = []
+        for fc in failed_credits:
+            subsequent = admin_db.query_db("SELECT course_id, course_name FROM course_map WHERE prerequisite_id = %s", (fc["course_id"],))
+            for sub in subsequent:
+                blocked_pairs.append({
+                    "student_id": fc["student_id"],
+                    "student_name": fc["full_name"],
+                    "class_name": fc["class_name"],
+                    "failed_course": f"{fc['course_name']} ({fc['score']}分)",
+                    "blocked_course": sub["course_name"]
+                })
+        if blocked_pairs:
+            insights.append({
+                "category": "學業擋修風險預警",
+                "severity": "high",
+                "icon": "⚠️",
+                "title": f"偵測到 {len(blocked_pairs)} 人次先修科目未通過引發擋修",
+                "summary": "發現學生先修科目未達 60 分及格門檻，下學期將被電腦選課自動擋修，無法修習後續必修課程。",
+                "recommendation": "建議教務處課務組與導師主動啟動重補修輔導計畫，或安排暑期重修課程以利如期畢業。",
+                "affected_items": blocked_pairs[:5]
+            })
+
+    # 2. 缺曠出勤預警分析 (Attendance Risk)
+    absences = admin_db.query_db("""
+        SELECT a.student_id, s.full_name, s.class_name, COUNT(*) as absence_count
+        FROM attendance_records a
+        JOIN students s ON a.student_id = s.student_id
+        WHERE a.type IN ('曠課', '缺席')
+        GROUP BY a.student_id
+        HAVING COUNT(*) >= 1
+        ORDER BY absence_count DESC
+    """)
+    if absences:
+        insights.append({
+            "category": "出勤扣考警戒預警",
+            "severity": "medium",
+            "icon": "⏱️",
+            "title": f"偵測到 {len(absences)} 位學生曠缺課達警戒閾值",
+            "summary": "依據校規，學生某科目缺曠達授課時數 1/3 將面臨扣考處分。已有部分同學累積多次未到課。",
+            "recommendation": "建議學務處生輔組與各班導師發送關懷提醒信，並於學生儀表板顯示出勤警示通知。",
+            "affected_items": [{"student_id": a["student_id"], "name": a["full_name"], "class": a["class_name"], "count": f"缺課 {a['absence_count']} 次"} for a in absences[:5]]
+        })
+
+    # 3. 搜尋意圖聚類與同義詞智慧推薦 (Search Intent & Synonym Gap)
+    unmatched = admin_db.query_db("""
+        SELECT query_id, query_text, search_count
+        FROM unmatched_queries
+        WHERE status = '待處理'
+        ORDER BY search_count DESC LIMIT 10
+    """)
+    if unmatched:
+        synonym_suggestions = []
+        import campus.official_rules as cor
+        rules = getattr(cor, "OFFICIAL_RULES", [])
+        for u in unmatched:
+            q = u["query_text"]
+            best_rule = None
+            for r in rules:
+                if any(w in r.get("keyword", "") or w in r.get("official_term", "") or w in r.get("subcategory", "") for w in [q[:2], q[-2:], q]):
+                    best_rule = r
+                    break
+            suggested_term = best_rule["official_term"] if best_rule else "校務規章導覽"
+            synonym_suggestions.append({
+                "query_id": u["query_id"],
+                "user_query": q,
+                "search_count": u["search_count"],
+                "suggested_official_term": suggested_term,
+                "suggested_doc": best_rule["doc_name"] if best_rule else "康寧大學法規彙編"
+            })
+        insights.append({
+            "category": "AI 知識庫擴充推薦",
+            "severity": "info",
+            "icon": "💡",
+            "title": f"有 {len(unmatched)} 筆高頻搜尋詞未命中規章，已智慧產生推薦對應詞",
+            "summary": "學生在搜尋或 AI 小幫手提問時經常使用口語詞彙，系統已自動比對並推薦最佳對應正式條文。",
+            "recommendation": "管理員可點選一鍵採納，直接將口語詞轉入同義詞字典，提升全校搜尋命中率。",
+            "affected_items": synonym_suggestions[:5]
+        })
+
+    # 4. 會議時段負載與排程分析 (Meeting Resource Load)
+    import campus.meetings_store as cms
+    meetings = cms.all_meetings()
+    if meetings:
+        insights.append({
+            "category": "線上會議與數位資源負載",
+            "severity": "low",
+            "icon": "📊",
+            "title": f"全校已排定/進行 {len(meetings)} 場線上視訊會議",
+            "summary": "全校師生與行政團隊積極運用 Jitsi 視訊系統辦理會報與線上指導，各會議室連線狀態正常。",
+            "recommendation": "持續監控尖峰時段頻寬，並建議各單位會議排程錯開，以維持最佳視訊與通訊品質。",
+            "affected_items": [{"title": m["title"], "host": m["host_name"], "time": str(m["start_at"])[:16]} for m in meetings[:3]]
+        })
+
+    return jsonify({
+        "status": "success",
+        "data": insights,
+        "total": len(insights)
+    }), 200

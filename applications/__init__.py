@@ -172,6 +172,15 @@ def describe(app, student=None):
 # ---------- 學生：送出、查看、撤回 ----------
 
 def _find_item(item_id):
+    if int(item_id) == 0:
+        found = next((c for c in deps.load_checklists() if int(c.get("item_id", -1)) == 0), None)
+        if found:
+            return found
+        return {
+            "item_id": 0, "category_id": 0, "category_name": "通用申辦",
+            "business_name": "自行上傳之申請表件", "form_download_url": "#upload",
+            "required_docs": "自行上傳之申請表及相關附件", "steps": ["上傳檔案", "線上送出", "審核"],
+        }
     return next((c for c in deps.load_checklists() if int(c["item_id"]) == item_id), None)
 
 
@@ -214,14 +223,26 @@ def submit_application():
         return _error("線上申請僅限學生本人送出", 403)
     student_id = session["student_id"]
     data = request.get_json(silent=True) or {}
-    try:
-        item_id = int(data.get("item_id"))
-    except (TypeError, ValueError):
-        return _error("請選擇申辦項目")
-    item = _find_item(item_id)
-    if not item:
-        return _error("找不到該申辦項目", 404)
-    code, tpl = template_for_item(item)
+    form_code_req = str(data.get("form_code", "")).strip().lower()
+    raw_item_id = data.get("item_id")
+    if raw_item_id is None and form_code_req == "upload":
+        item_id = 0
+    else:
+        try:
+            item_id = int(raw_item_id)
+        except (TypeError, ValueError):
+            return _error("請選擇申辦項目")
+
+    if form_code_req == "upload" or item_id == 0:
+        item_id = 0
+        item = _find_item(0)
+        code = "upload"
+        tpl = FORMS["upload"]
+    else:
+        item = _find_item(item_id)
+        if not item:
+            return _error("找不到該申辦項目", 404)
+        code, tpl = template_for_item(item)
 
     given = data.get("fields") or {}
     fields, missing = {}, []
@@ -231,7 +252,13 @@ def submit_application():
             return _error(f"「{f['label']}」最多 {FIELD_MAX} 字")
         if not value and not f.get("optional"):
             missing.append(f["label"])
-        fields[f["key"]] = value
+        if value:
+            fields[f["key"]] = value
+
+    for k, v in given.items():
+        if k not in fields and isinstance(v, (str, int, float, bool, list, dict)):
+            fields[k] = v
+
     if missing:
         return _error(f"還沒填：{'、'.join(missing)}")
     if any(a["item_id"] == item_id and a["status"] == STATUS_RUNNING for a in load_applications([student_id])):
@@ -240,20 +267,21 @@ def submit_application():
     stages = stages_for(tpl)
     now = _now()
     history = [{"stage": 0, "action": "送出", "by": session.get("full_name", ""), "note": "", "at": now}]
+    business_name = str(data.get("business_name") or item["business_name"]).strip()
     result = deps.db_execute(
         "INSERT INTO online_applications (student_id, item_id, form_code, business_name, fields_json, stages_json, "
         "current_stage, status, history_json, submitted_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
-        (student_id, item_id, code, item["business_name"], json.dumps(fields, ensure_ascii=False),
+        (student_id, item_id, code, business_name, json.dumps(fields, ensure_ascii=False),
          json.dumps(stages, ensure_ascii=False), 1, STATUS_RUNNING, json.dumps(history, ensure_ascii=False)))
     if result is not None:
         app_id = result["lastrowid"]
     else:
         app_id = max((a["id"] for a in DEMO_APPLICATIONS), default=0) + 1
         DEMO_APPLICATIONS.append({"id": app_id, "student_id": student_id, "item_id": item_id, "form_code": code,
-                                  "business_name": item["business_name"], "fields": fields, "stages": stages,
+                                  "business_name": business_name, "fields": fields, "stages": stages,
                                   "current_stage": 1, "status": STATUS_RUNNING, "history": history,
                                   "submitted_at": now, "updated_at": now})
-    deps.write_audit_log("online_applications", app_id, "新增", after={"item_id": item_id, "status": STATUS_RUNNING})
+    deps.write_audit_log("online_applications", app_id, "新增", after={"item_id": item_id, "form_code": code, "status": STATUS_RUNNING})
     app = get_application(app_id)
     return jsonify({"status": "success", "message": f"已線上送出，下一關：{stages[1]['name']}",
                     "data": describe(app, deps.load_student(student_id))}), 201

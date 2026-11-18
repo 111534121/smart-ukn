@@ -116,6 +116,21 @@ FORMS = {
         "attachments": ["證書正反面影本", "郵局存摺封面影本", "印領清冊 (親筆簽名)"],
         "notes": ["獎勵金額依「學生取得專業證照獎勵辦法」核定。"],
     },
+    "upload": {
+        "title": "自行上傳申請表",
+        "office": "各承辦單位",
+        "intro": "自行上傳填妥之各項紙本掃描申請表或相關佐證附件。",
+        "fields": [
+            {"key": "file_url", "label": "檔案連結", "example": "/uploads/application_20261118_sample.pdf", "optional": True},
+            {"key": "file_name", "label": "檔案名稱", "example": "申請表.pdf", "optional": True},
+            {"key": "description", "label": "申請說明", "example": "已填妥申請表件並檢附相關佐證，敬請惠予審核。", "long": True, "optional": True},
+        ],
+        "signers": [
+            {"name": "承辦審核", "icon": "🏢", "role": "教職員"},
+        ],
+        "attachments": ["自行上傳之申請表及相關附件"],
+        "notes": ["請確認上傳之 PDF 或圖檔清晰且簽章齊備。"],
+    },
 }
 
 # 範本以外的申辦項目 (後台自行新增的) 用這份通用欄位
@@ -135,6 +150,8 @@ def form_code_from_url(url):
 
 def template_for_item(item):
     """申辦項目 (checklist_items 一列) 對應的表單範本；沒有對應範本時以處室名稱產生通用版"""
+    if str(item.get("item_id", "")) == "0" or item.get("form_download_url") == "#upload":
+        return "upload", FORMS["upload"]
     code = form_code_from_url(item.get("form_download_url"))
     if code:
         return code, FORMS[code]

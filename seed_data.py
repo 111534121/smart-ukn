@@ -167,6 +167,10 @@ def seed_data():
         # 9. 寫入行政申辦流程指引 (含處室位置、分機、表單下載與規章關聯)
         cursor.execute("""
             INSERT IGNORE INTO `checklist_items` (`item_id`, `category_id`, `category_name`, `business_name`, `steps_json`, `required_docs`, `office_hours`, `office_location`, `contact_phone`, `form_download_url`, `system_url`, `deadline_week_info`, `related_kb_id`, `audience`) VALUES
+            (0, 0, '通用申辦', '自行上傳之申請表件',
+             '[\"線上下載或填寫申請表件\", \"上傳文件並填寫申辦資訊\", \"送出由承辦單位審核\"]',
+             '自行上傳之申請表及相關附件', '週一至週五 08:30 - 17:00', '各承辦單位辦公室', '02-2632-1181', '/forms/upload', '', '全學期受理', NULL, '學生'),
+
             (1, 1, '課務組', '課程停修申請', 
              '[\"至校務資訊系統登入『停修申請表』\", \"列印紙本停修申請單\", \"親自送請任課教師簽章同意\", \"送請班級導師及科主任簽章\", \"於第12週五前送交教務處課程與教學組核備\"]',
              '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '行政大樓 2 樓 教務處 (課程與教學組)', '02-2632-1181 分機 323, 325', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (115-1：11/16-12/4，五專前三年除外)', 1, '學生'),

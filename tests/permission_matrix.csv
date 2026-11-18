@@ -321,3 +321,10 @@ PUT,/api/admin/unmatched-queries/<int:query_id>/status,/api/admin/unmatched-quer
 GET,/api/admin/credentials/query,/api/admin/credentials/query,,管理員帳密查詢,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
 POST,/api/admin/users/<int:user_id>/reset-password,/api/admin/users/999999/reset-password,,管理員重設密碼,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
 GET,/api/admin/users/<int:user_id>/credential-info,/api/admin/users/999999/credential-info,,查詢使用者帳密詳情,401,403,403,403,403,403,OK,僅管理員可操作；測試使用獨立 SQLite
+GET,/seals/<path:filename>,/seals/not_exist.png,,電子印章圖檔,OK,OK,OK,OK,OK,OK,OK,公開讀取印章靜態圖檔
+GET,/api/user/seal,/api/user/seal,,查詢電子印章,401,OK,OK,OK,OK,OK,OK,需登入系統方可查詢
+POST,/api/user/seal,/api/user/seal,{},上傳電子印章,401,403,403,403,OK,OK,OK,僅限教師與行政人員上傳
+GET,/api/admin/meetings,/api/admin/meetings,,全校會議歷史紀錄,401,403,403,403,403,403,OK,僅管理員可操作
+POST,/api/admin/meetings/<int:meeting_id>/cancel,/api/admin/meetings/999999/cancel,{},管理員取消會議,401,403,403,403,403,403,OK,僅管理員可操作
+GET,/api/admin/records/overview,/api/admin/records/overview,,全校歷史紀錄總覽,401,403,403,403,403,403,OK,僅管理員可操作
+GET,/api/admin/smart-insights,/api/admin/smart-insights,,智慧校園AI決策洞察,401,403,403,403,403,403,OK,僅管理員可操作
