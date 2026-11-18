@@ -201,7 +201,7 @@ function highlightNav(tabId) {
 }
 
 let currentTabId = HOME_TAB;
-function switchTab(tabId, { updateHash = true } = {}) {
+function switchTab(tabId, { updateHash = true, skipScroll = false } = {}) {
     const target = document.getElementById(tabId);
     if (!target) return;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -219,18 +219,22 @@ function switchTab(tabId, { updateHash = true } = {}) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!skipScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function tabFromHash() {
     const key = decodeURIComponent(location.hash.replace('#', ''));
     return featureByKey(key)?.tab || HOME_TAB;
 }
+function isAnnouncementsHash() { return decodeURIComponent(location.hash.replace('#', '')) === 'announcements'; }
 function maybeScrollToAnnouncements() {
-    if (decodeURIComponent(location.hash.replace('#', '')) !== 'announcements') return;
+    if (!isAnnouncementsHash()) return;
     setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
 }
-window.addEventListener('hashchange', () => { switchTab(tabFromHash(), { updateHash: false }); maybeScrollToAnnouncements(); });
+window.addEventListener('hashchange', () => {
+    switchTab(tabFromHash(), { updateHash: false, skipScroll: isAnnouncementsHash() });
+    maybeScrollToAnnouncements();
+});
 
 // ---------- 首頁：主視覺輪播 ----------
 
@@ -691,7 +695,7 @@ function campusInit() {
     loadHomeCertReminder();
     renderVisitorWelcome();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
-    switchTab(tabFromHash(), { updateHash: false });
+    switchTab(tabFromHash(), { updateHash: false, skipScroll: isAnnouncementsHash() });
     maybeScrollToAnnouncements();
 }
 

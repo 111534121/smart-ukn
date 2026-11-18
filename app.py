@@ -852,6 +852,11 @@ def serve_admin():
 def serve_admin_core():
     return app.send_static_file("admin-core.html")
 
+@app.route("/announcements")
+def serve_announcements():
+    """公開校園公告頁面：不需要登入，給 LINE 圖文選單等外部連結直接連過來看，不是嵌在首頁裡的那個區塊。"""
+    return app.send_static_file("announcements.html")
+
 @app.route("/liff/menu")
 def serve_liff_menu():
     """LINE LIFF「設定常用功能」頁面；LIFF ID 從環境變數注入，避免寫死在前端原始碼裡。"""

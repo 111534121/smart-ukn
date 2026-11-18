@@ -259,6 +259,7 @@ POST,/api/line/bind/confirm,/api/line/bind/confirm,,LIFF 端確認綁定,401,401
 POST,/api/line/unbind,/api/line/unbind,,LIFF 端解除綁定,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 GET,/api/line/menu,/api/line/menu,,LIFF 端讀取我的常用功能,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 PUT,/api/line/menu,/api/line/menu,,LIFF 端更新我的常用功能,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
+GET,/announcements,/announcements,,公開校園公告頁面,OK,OK,OK,OK,OK,OK,OK,不需要登入，頁面內呼叫既有公開的 /api/campus/announcements
 GET,/liff/menu,/liff/menu,,設定常用功能 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查
 GET,/api/line/schedule,/api/line/schedule,,LIFF 端讀取我的課表,401,401,401,401,401,401,401,測試不連外網；LINE 權杖驗證一律失敗回 401，跟登入身分無關
 GET,/liff/schedule,/liff/schedule,,我的課表 LIFF 頁面,OK,OK,OK,OK,OK,OK,OK,僅回傳靜態頁面，權限在頁面內的 API 呼叫檢查

@@ -88,7 +88,9 @@ def build_menus():
     # PUBLIC_SITE_URL/RENDER_EXTERNAL_URL 還沒設定時才退回 demo_home
     own_site = (os.getenv("PUBLIC_SITE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
     events_url = f"{own_site}/#events" if own_site else demo_home
-    announcements_url = f"{own_site}/#announcements" if own_site else demo_home
+    # 連到獨立的 /announcements 頁面 (只顯示公告列表，不是嵌在首頁裡那個還有天氣卡、分頁切換的大區塊)，
+    # 不需要登入，一打開就是對的內容，不會有「先看到別的、才跳過去」的感覺
+    announcements_url = f"{own_site}/announcements" if own_site else demo_home
     calendar_url = f"{own_site}/#calendar" if own_site else demo_home
 
     main = {

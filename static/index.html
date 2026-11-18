@@ -2369,6 +2369,9 @@
         let allCoursesCache = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // 網址是 #announcements 時先跳過去，不用等下面兩個非同步請求跑完
+            // (homeNewsSection 本來就在靜態 HTML 裡，不需要 currentUser/科系資料才能捲過去)
+            if (typeof maybeScrollToAnnouncements === 'function') maybeScrollToAnnouncements();
             await loadCurrentUser();
             // 我的科系與顯示範圍 (dept-scope.js)：要先載入，期限、課程等資料才會依科系過濾
             await loadDeptPref();
@@ -4609,7 +4612,7 @@
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
     <script src="/js/field-validate.js"></script>
-    <script src="/js/campus-shell.js?v=20261118-jump-ann"></script>
+    <script src="/js/campus-shell.js?v=20261118-jump-ann2"></script>
     <script src="/js/home-portal.js?v=50"></script>
     <script src="/js/campus-access.js?v=48"></script>
     <script src="/js/campus-features.js?v=20261116-merge"></script>
