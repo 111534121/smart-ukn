@@ -156,3 +156,49 @@ def test_parent_can_view_but_not_submit(client, login):
     login("parent1")
     assert client.get("/api/applications/mine").get_json()["data"]
     assert submit(client).status_code == 403
+
+
+def test_upload_application_form_code_upload_and_item_id_zero(client, login):
+    # 測試自主上傳申請表 (item_id: 0, form_code: 'upload')
+    login("student2")
+    form_res = client.get("/api/applications/form/0")
+    assert form_res.status_code == 200
+    form_data = form_res.get_json()
+    assert form_data["form_code"] == "upload"
+
+    # 送出自訂上傳申請表
+    upload_payload = {
+        "item_id": 0,
+        "form_code": "upload",
+        "business_name": "英文能力證明抵免申請",
+        "fields": {
+            "phone": "0912-345-678",
+            "file_url": "/uploads/application_cert_proof.pdf",
+            "file_name": "多益證書成績單.pdf",
+            "file_size": 204800,
+            "description": "已取得多益 750 分證書，申請外語抵免。"
+        }
+    }
+    submit_res = client.post("/api/applications", json=upload_payload)
+    assert submit_res.status_code == 201
+    app_data = submit_res.get_json()["data"]
+    assert app_data["item_id"] == 0
+    assert app_data["form_code"] == "upload"
+    assert app_data["business_name"] == "英文能力證明抵免申請"
+    assert app_data["fields"]["file_url"] == "/uploads/application_cert_proof.pdf"
+    assert app_data["fields"]["file_name"] == "多益證書成績單.pdf"
+
+    # 學生在我的申請中可看到這筆
+    my_res = client.get("/api/applications/mine")
+    assert my_res.status_code == 200
+    my_apps = my_res.get_json()["data"]
+    upload_app = next(a for a in my_apps if a["id"] == app_data["id"])
+    assert upload_app["item_id"] == 0
+    assert upload_app["form_code"] == "upload"
+
+    # 教職員 (staff1) 進行審核核准
+    client.post("/api/auth/logout")
+    login("staff1")
+    review_res = client.post(f"/api/applications/{app_data['id']}/review", json={"action": "approve"})
+    assert review_res.status_code == 200
+    assert review_res.get_json()["data"]["status"] == "已完成"

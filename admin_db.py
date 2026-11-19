@@ -10,6 +10,7 @@ import json
 import sqlite3
 import threading
 from datetime import datetime
+# pyrefly: ignore[missing-import]
 from werkzeug.security import generate_password_hash
 
 # 資料目錄
@@ -17,6 +18,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 SQLITE_DB_PATH = os.path.join(DATA_DIR, "smart_ukn.sqlite3")
+SEALS_DIR = os.path.join(DATA_DIR, "seals")
+os.makedirs(SEALS_DIR, exist_ok=True)
 
 _db_lock = threading.Lock()
 
@@ -181,6 +184,33 @@ def log_audit_trail(table_name, record_id, action, before=None, after=None, chan
         })
     except Exception:
         pass
+
+def get_user_seal(username):
+    """查詢使用者的啟用印章紀錄"""
+    return query_one(
+        "SELECT * FROM user_seals WHERE username = %s AND is_active = 1",
+        (username,)
+    )
+
+def save_user_seal(username, seal_filename, original_filename="", file_size=0, mime_type="image/png"):
+    """儲存或更新使用者的電子印章記錄並寫入審計軌跡"""
+    existing = query_one("SELECT id, username, seal_filename FROM user_seals WHERE username = %s", (username,))
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if existing:
+        execute_db(
+            "UPDATE user_seals SET seal_filename = %s, original_filename = %s, file_size = %s, mime_type = %s, is_active = 1, updated_at = %s WHERE username = %s",
+            (seal_filename, original_filename, file_size, mime_type, now_str, username)
+        )
+        seal_id = existing["id"]
+        log_audit_trail("user_seals", seal_id, "UPDATE", before=existing, after={"username": username, "seal_filename": seal_filename}, changed_by=username)
+    else:
+        res = execute_db(
+            "INSERT INTO user_seals (username, seal_filename, original_filename, file_size, mime_type, is_active, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, 1, %s, %s)",
+            (username, seal_filename, original_filename, file_size, mime_type, now_str, now_str)
+        )
+        seal_id = res.get("lastrowid", 1)
+        log_audit_trail("user_seals", seal_id, "INSERT", after={"username": username, "seal_filename": seal_filename}, changed_by=username)
+    return seal_id
 
 def init_sqlite_schema():
     """初始化 SQLite 資料表結構與種子資料"""
@@ -554,6 +584,21 @@ def _init_sqlite_schema_internal(conn):
         except Exception:
             pass
 
+    # 21. user_seals (老師與行政人員電子印章)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_seals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            seal_filename TEXT NOT NULL,
+            original_filename TEXT DEFAULT '',
+            file_size INTEGER DEFAULT 0,
+            mime_type TEXT DEFAULT 'image/png',
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
 
     # 檢查是否需要載入種子資料
@@ -569,6 +614,7 @@ def _seed_missing_sqlite_tables(cur, conn):
         cur.execute("SELECT COUNT(*) AS c FROM checklist_items")
         if cur.fetchone()["c"] == 0:
             checklist_data = [
+                (0, 0, '通用申辦', '自行上傳之申請表件', '["線上下載或填寫申請表件", "上傳文件並填寫申辦資訊", "送出由承辦單位審核"]', '自行上傳之申請表及相關附件', '週一至週五 08:30 - 17:00', '各承辦單位辦公室', '02-2632-1181', '#upload', '', '全學期受理', None, '學生'),
                 (1, 1, '課務組', '課程停修申請', '["至校務資訊系統登入『停修申請表』", "列印紙本停修申請單", "親自送請任課教師簽章同意", "送請班級導師及科主任簽章", "於第12週五前送交教務處課務組核備"]', '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
                 (2, 2, '生輔組', '學生請假申請 (病假/事假)', '["登入學生資訊系統填寫請假單", "上傳就醫證明或相關佐證文件圖檔", "送出後通知導師進行線上簽核", "請假超過3日由生輔組組長複核", "系統顯示審核通過即完成登錄"]', '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
                 (3, 3, '通識中心', '外語證照免修與學分抵免', '["填寫通識外語抵免申請表", "備妥多益/英檢/雅思成績單正本及影本各一份", "送交通識教育中心辦公室查驗正本", "教務處課務組複審學分折抵", "次學期初於歷年成績單確認抵免註記"]', '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
@@ -576,6 +622,13 @@ def _seed_missing_sqlite_tables(cur, conn):
                 (5, 3, '研發處', '專業證照與競賽獲獎獎勵金申請', '["登入研發處證照獎勵申請平台", "填寫證照/競賽名稱、證書字號與發證單位", "上傳證書正反面與郵局存摺封面圖檔", "列印紙本印領清冊並親筆簽名", "送交研發處實習就業組審核並撥款"]', '證照證書影本、郵局存摺封面影本、印領清冊', '週一至週五 09:00 - 17:00', '圖資大樓 2 樓 研發處實習就業組', '02-2632-1181 分機 612', '/forms/certificate_reward_form', 'https://oes3.ukn.edu.tw/~license/', '每學期第 1-5 週', 5, '學生')
             ]
             cur.executemany("INSERT OR REPLACE INTO checklist_items (item_id, category_id, category_name, business_name, steps_json, required_docs, office_hours, office_location, contact_phone, form_download_url, system_url, deadline_week_info, related_kb_id, audience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", checklist_data)
+        else:
+            cur.execute("SELECT COUNT(*) AS c FROM checklist_items WHERE item_id = 0")
+            if cur.fetchone()["c"] == 0:
+                cur.execute(
+                    "INSERT OR REPLACE INTO checklist_items (item_id, category_id, category_name, business_name, steps_json, required_docs, office_hours, office_location, contact_phone, form_download_url, system_url, deadline_week_info, related_kb_id, audience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (0, 0, '通用申辦', '自行上傳之申請表件', '["線上下載或填寫申請表件", "上傳文件並填寫申辦資訊", "送出由承辦單位審核"]', '自行上傳之申請表及相關附件', '週一至週五 08:30 - 17:00', '各承辦單位辦公室', '02-2632-1181', '#upload', '', '全學期受理', None, '學生')
+                )
     except Exception:
         pass
 
@@ -822,6 +875,7 @@ def _seed_sqlite_data(cur, conn):
 
     # 16. checklist_items
     checklist_data = [
+        (0, 0, '通用申辦', '自行上傳之申請表件', '["線上下載或填寫申請表件", "上傳文件並填寫申辦資訊", "送出由承辦單位審核"]', '自行上傳之申請表及相關附件', '週一至週五 08:30 - 17:00', '各承辦單位辦公室', '02-2632-1181', '#upload', '', '全學期受理', None, '學生'),
         (1, 1, '課務組', '課程停修申請', '["至校務資訊系統登入『停修申請表』", "列印紙本停修申請單", "親自送請任課教師簽章同意", "送請班級導師及科主任簽章", "於第12週五前送交教務處課務組核備"]', '停修申請單紙本、歷年成績單正本', '週一至週五 08:30 - 17:00', '康寧樓 2 樓 A201 (課務組)', '02-2632-1181 分機 310, 312', '/forms/course_withdraw_form', 'http://talk.ukn.edu.tw/class_redi/class.php', '第 10-12 週 (本週受理中)', 1, '學生'),
         (2, 2, '生輔組', '學生請假申請 (病假/事假)', '["登入學生資訊系統填寫請假單", "上傳就醫證明或相關佐證文件圖檔", "送出後通知導師進行線上簽核", "請假超過3日由生輔組組長複核", "系統顯示審核通過即完成登錄"]', '健保特約就醫證明、就診收據影本', '週一至週五 08:00 - 17:30', '行政大樓 1 樓 學務處生輔組', '02-2632-1181 分機 211', '/forms/leave_application_form', 'https://ec.ukn.edu.tw/AskLeave/login.aspx', '請假日當日起 3 日內', 2, '學生'),
         (3, 3, '通識中心', '外語證照免修與學分抵免', '["填寫通識外語抵免申請表", "備妥多益/英檢/雅思成績單正本及影本各一份", "送交通識教育中心辦公室查驗正本", "教務處課務組複審學分折抵", "次學期初於歷年成績單確認抵免註記"]', '外語檢定成績單正本、影本、抵免申請書', '週一至週五 09:00 - 16:30', '卓越樓 3 樓 C305 (通識教育中心)', '02-2632-1181 分機 520, 521', '/forms/english_waiver_form', 'http://203.71.63.13/academic/', '開學前至加退選截止 (已截止)', 3, '學生'),
@@ -887,6 +941,23 @@ def init_mysql_schema():
             cur.execute("ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1")
         if "default_password" not in cols:
             cur.execute("ALTER TABLE users ADD COLUMN default_password VARCHAR(50) NOT NULL DEFAULT '123456'")
+
+        # 3. 建立 user_seals (老師與行政人員電子印章)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_seals (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                username VARCHAR(50) NOT NULL,
+                seal_filename VARCHAR(255) NOT NULL,
+                original_filename VARCHAR(255) DEFAULT '',
+                file_size INT(11) DEFAULT 0,
+                mime_type VARCHAR(50) DEFAULT 'image/png',
+                is_active TINYINT(1) DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_user_seal (username)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
 
 
         mysql_conn.commit()

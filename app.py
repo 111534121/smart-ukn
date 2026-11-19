@@ -134,10 +134,68 @@ def save_uploaded_file(file_obj, prefix="file"):
     relative_url = f"/uploads/{unique_name}"
     return relative_url, basename, file_type
 
+SEALS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "seals")
+os.makedirs(SEALS_FOLDER, exist_ok=True)
+
 @app.route("/uploads/<path:filename>")
 def serve_uploaded_file(filename):
     """安全提供靜態上傳檔案與 PDF 在線預覽"""
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route("/seals/<path:filename>")
+def serve_seal_file(filename):
+    """安全提供教師與行政印章圖檔"""
+    return send_from_directory(SEALS_FOLDER, filename)
+
+@app.route("/api/user/seal", methods=["GET", "POST"])
+def user_seal_endpoint():
+    """查詢與上傳儲存使用者（教師／行政）之電子印章至 user_seals 資料表與 data/seals/"""
+    if "username" not in session:
+        return jsonify({"status": "error", "message": "請先登入系統"}), 401
+    import admin_db
+    username = session.get("username")
+    role = session.get("role")
+
+    if request.method == "GET":
+        requested_user = request.args.get("username", username)
+        # 僅管理員/教職員可查閱他人印章
+        if requested_user != username and role not in ("管理員", "系統管理員", "教職員"):
+            return jsonify({"status": "error", "message": "無權限查看其他人員之印章"}), 403
+        seal = admin_db.get_user_seal(requested_user)
+        if not seal:
+            return jsonify({"status": "success", "has_seal": False, "data": None}), 200
+        return jsonify({
+            "status": "success",
+            "has_seal": True,
+            "data": {**seal, "seal_url": f"/seals/{seal['seal_filename']}"}
+        }), 200
+
+    if role not in ("老師", "教職員", "管理員", "系統管理員"):
+        return jsonify({"status": "error", "message": "僅限教師與行政人員上傳印章"}), 403
+
+    file_obj = request.files.get("seal_file") or request.files.get("file")
+    if not file_obj or not file_obj.filename:
+        return jsonify({"status": "error", "message": "請選擇印章圖檔"}), 400
+
+    raw_name = file_obj.filename
+    basename = os.path.basename(raw_name)
+    ext = basename.rsplit(".", 1)[1].lower() if "." in basename else ""
+    if ext not in ("png", "jpg", "jpeg", "svg"):
+        return jsonify({"status": "error", "message": "印章格式僅支援 PNG、JPG 或 SVG"}), 400
+
+    unique_name = f"{username}_seal_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:4]}.{ext}"
+    target_path = os.path.join(SEALS_FOLDER, unique_name)
+    file_obj.save(target_path)
+    file_size = os.path.getsize(target_path)
+    mime_type = "image/png" if ext == "png" else ("image/svg+xml" if ext == "svg" else "image/jpeg")
+
+    admin_db.save_user_seal(username, unique_name, original_filename=basename, file_size=file_size, mime_type=mime_type)
+    saved_seal = admin_db.get_user_seal(username)
+    return jsonify({
+        "status": "success",
+        "message": "印章已成功儲存至資料庫",
+        "data": {**saved_seal, "seal_url": f"/seals/{unique_name}"}
+    }), 200
 
 # 申辦表單下載 /forms/<code> (可列印、下載 Word、填寫範例)：見 applications 套件
 
@@ -943,7 +1001,8 @@ def auth_login():
         if str(stored_val) in ("12345678", "admin123") and str(input_val) in ("12345678", "admin123"):
             return True
         try:
-            return check_password_hash(str(stored_val), str(input_val))
+            if str(stored_val).startswith("scrypt:"):
+                return check_password_hash(str(stored_val), str(input_val))
         except Exception:
             pass
         return False

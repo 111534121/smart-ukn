@@ -669,6 +669,24 @@ def init_database():
               CONSTRAINT `fk_app_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+
+        # 教師與人員電子印章表：正式上線支援簽核印鑑資料庫化管理
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `user_seals` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `username` varchar(50) NOT NULL COMMENT '對應 users.username',
+              `seal_filename` varchar(255) NOT NULL COMMENT '儲存於 data/seals/ 的檔名或路徑',
+              `original_filename` varchar(255) DEFAULT '' COMMENT '原始上傳檔名',
+              `file_size` int(11) DEFAULT 0 COMMENT '圖檔大小 (bytes)',
+              `mime_type` varchar(50) DEFAULT 'image/png' COMMENT '圖檔 MIME 類型',
+              `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否啟用中 (0=停用, 1=啟用)',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_teacher_seal` (`username`),
+              CONSTRAINT `fk_user_seals_users` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='教師電子印章與職章檔案對照表';
+        """)
         # 我的操行：獎懲 (生輔組登錄) 與每學期導師評分；操行成績 = 基本分 + 導師評分 + 獎懲 + 缺曠扣分，由程式計算不另存
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `conduct_records` (

@@ -128,3 +128,32 @@ def test_notice_rejects_bad_dates_and_deduplicates_recipients(client, login):
     nid = send(client, recipients=['S112001', 'S112001'])
     n = next(n for n in client.get('/api/campus/notices/sent').get_json()['data'] if n['id'] == nid)
     assert n['total'] == 1
+
+
+def test_user_seal_upload_and_query(client, login):
+    import io, admin_db
+    admin_db.execute_db("DELETE FROM user_seals WHERE username = %s", ("teacher1",))
+    # 學生無權上傳印章
+    login('student1')
+    assert client.post('/api/user/seal', data={'seal_file': (io.BytesIO(b'fake-image'), 'seal.png')}).status_code == 403
+
+    # 老師查詢初始印章 (尚未設定)
+    login('teacher1')
+    res = client.get('/api/user/seal')
+    assert res.status_code == 200
+    assert not res.get_json()['has_seal']
+
+    # 老師上傳印章圖檔
+    upload_res = client.post('/api/user/seal', data={
+        'seal_file': (io.BytesIO(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR...'), 'my_seal.png')
+    }, content_type='multipart/form-data')
+    assert upload_res.status_code == 200
+    seal_info = upload_res.get_json()['data']
+    assert seal_info['username'] == 'teacher1'
+    assert 'seal_url' in seal_info
+
+    # 再次查詢印章
+    get_res = client.get('/api/user/seal')
+    assert get_res.status_code == 200
+    assert get_res.get_json()['has_seal']
+    assert get_res.get_json()['data']['username'] == 'teacher1'

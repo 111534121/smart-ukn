@@ -1768,6 +1768,319 @@ async function loadStudentRecordsAudit() {
 }
 
 // ==========================================
+// 13. 全校線上會議與歷史紀錄 (meetings)
+// ==========================================
+async function loadAdminMeetings() {
+    const tbody = document.getElementById('adminMeetingsTableBody');
+    if (!tbody) return;
+
+    const statusFilter = document.getElementById('adminMtgStatusFilter')?.value || 'all';
+    const search = document.getElementById('adminMtgSearch')?.value || '';
+
+    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">載入全校會議歷史與審查資料中...</td></tr>';
+
+    try {
+        const queryParams = new URLSearchParams();
+        if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
+        if (search.trim()) queryParams.append('search', search.trim());
+
+        const res = await fetch(`/api/admin/meetings?${queryParams.toString()}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.status === 'error') {
+            throw new Error(data.message || '無法取得會議資料');
+        }
+
+        const stats = data.stats || {};
+        if (document.getElementById('adminMtgTotal')) document.getElementById('adminMtgTotal').textContent = stats.total_meetings ?? 0;
+        if (document.getElementById('adminMtgUpcoming')) document.getElementById('adminMtgUpcoming').textContent = stats.upcoming_count ?? 0;
+        if (document.getElementById('adminMtgOngoing')) document.getElementById('adminMtgOngoing').textContent = stats.ongoing_count ?? 0;
+        if (document.getElementById('adminMtgPast')) document.getElementById('adminMtgPast').textContent = stats.past_count ?? 0;
+        if (document.getElementById('adminMtgConflict')) document.getElementById('adminMtgConflict').textContent = stats.conflict_count ?? 0;
+        if (document.getElementById('adminMtgParticipants')) document.getElementById('adminMtgParticipants').textContent = stats.total_participants ?? 0;
+
+        const meetings = data.data || [];
+        if (meetings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">目前沒有符合條件的會議紀錄。</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = meetings.map(m => {
+            const statusColors = {
+                '即將開始': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                '進行中': 'bg-blue-100 text-blue-800 border-blue-300',
+                '已結束': 'bg-slate-100 text-slate-700 border-slate-300',
+                '已取消': 'bg-rose-100 text-rose-800 border-rose-300'
+            };
+            const statusBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-semibold border ${statusColors[m.status] || 'bg-slate-100 text-slate-700'}">${escapeHtml(m.status)}</span>`;
+
+            let conflictBadge = '';
+            if (m.conflict_detected && m.conflicts && m.conflicts.length > 0) {
+                const confNames = m.conflicts.map(c => `與 ID:${c.meeting_id}「${escapeHtml(c.title)}」時段衝突`).join('；');
+                conflictBadge = `<div class="mt-1 inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded text-[10px] font-semibold" title="${confNames}">⚠️ 時段衝突 (${m.conflicts.length}場)</div>`;
+            }
+
+            const membersList = (m.members || []).map(mem => {
+                const roleBadge = mem.role ? `<span class="text-[10px] text-slate-400 font-normal">(${escapeHtml(mem.role)})</span>` : '';
+                return `<span class="inline-block bg-slate-50 border border-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[11px] mr-1 mb-1">${escapeHtml(mem.full_name || mem.username)} ${roleBadge}</span>`;
+            }).join('');
+
+            const timeStr = `${escapeHtml(m.start_time || '—')} ~ ${escapeHtml((m.end_time || '').slice(-5)) || ''}`;
+            const durationBadge = m.duration ? `<span class="text-[10px] text-slate-400 font-mono">(${m.duration} 分鐘)</span>` : '';
+
+            const cancelBtn = (m.status !== '已取消' && m.status !== '已結束')
+                ? `<button onclick="adminCancelMeeting(${m.meeting_id}, '${escapeHtml(m.title)}')" class="px-2 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded text-xs font-semibold transition">取消會議</button>`
+                : `<span class="text-slate-400 text-xs">—</span>`;
+
+            return `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-3 font-mono font-bold text-slate-800">#${m.meeting_id}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-slate-900 text-xs sm:text-sm">${escapeHtml(m.title)}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(m.description || '無詳細說明')}</div>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] px-1.5 py-0.2 rounded font-medium">${escapeHtml(m.type || '視訊會議')}</span>
+                            ${m.room_code ? `<span class="text-[10px] text-slate-400 font-mono">房號：${escapeHtml(m.room_code)}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-medium text-slate-900">${escapeHtml(m.host_name || m.host_username)}</div>
+                        <div class="text-[10px] text-slate-400">${escapeHtml(m.host_role || '')} ${escapeHtml(m.host_dept ? '· ' + m.host_dept : '')}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-mono text-xs text-slate-700 font-medium">${timeStr}</div>
+                        <div class="mt-0.5">${durationBadge}</div>
+                    </td>
+                    <td class="p-3">
+                        <div>${statusBadge}</div>
+                        ${conflictBadge}
+                    </td>
+                    <td class="p-3 max-w-xs">
+                        <div class="text-[11px] font-semibold text-slate-500 mb-1">出席者 (${(m.members || []).length}人)：</div>
+                        <div class="flex flex-wrap">${membersList || '<span class="text-slate-300">尚未登記名冊</span>'}</div>
+                    </td>
+                    <td class="p-3 text-center whitespace-nowrap">
+                        ${cancelBtn}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+async function adminCancelMeeting(meetingId, title) {
+    if (!confirm(`確定要以管理員身分強制取消會議「${title}」嗎？\n此操作將同步記錄於系統稽核日誌。`)) return;
+    try {
+        await adminFetch(`/api/admin/meetings/${meetingId}/cancel`, {
+            method: 'POST'
+        });
+        showAdminToast(`已成功取消會議「${title}」`, 'success');
+        loadAdminMeetings();
+    } catch (e) {
+        // error handled by adminFetch
+    }
+}
+
+// ==========================================
+// 14. 智慧校園 AI 決策與異常預警中樞 (smart_insights)
+// ==========================================
+async function loadSmartInsights() {
+    const overviewBar = document.getElementById('smartRecordsOverviewBar');
+    const container = document.getElementById('smartInsightsContainer');
+    if (!container) return;
+
+    container.innerHTML = '<div class="p-8 text-center text-slate-400">智慧分析引擎交叉比對全校各系統資料庫中...</div>';
+
+    // 1. 取得全校跨模組歷史紀錄總覽
+    try {
+        const overviewRes = await fetch('/api/admin/records/overview');
+        const overviewData = await overviewRes.json().catch(() => ({}));
+        if (overviewData.status === 'success' && overviewData.data && overviewBar) {
+            const counts = overviewData.data;
+            const items = [
+                { label: '全校會議紀錄', count: counts.meetings_count || 0, icon: '📅' },
+                { label: '學生缺曠登記', count: counts.attendance_count || 0, icon: '📋' },
+                { label: '安全稽核軌跡', count: counts.audit_count || 0, icon: '🛡️' },
+                { label: '系統重要通知', count: counts.notices_count || 0, icon: '📢' },
+                { label: '空間借用申請', count: counts.bookings_count || 0, icon: '🏫' },
+                { label: '宿舍進住申請', count: counts.dorm_apps_count || 0, icon: '🛏️' },
+                { label: '校外訪客登記', count: counts.visitor_count || 0, icon: '🚪' }
+            ];
+            overviewBar.innerHTML = items.map(it => `
+                <div class="bg-white border border-slate-200 p-3 rounded-lg shadow-xs flex items-center justify-between">
+                    <div>
+                        <div class="text-[11px] text-slate-500 font-medium">${it.label}</div>
+                        <div class="text-lg font-bold text-slate-900 mt-0.5">${it.count}</div>
+                    </div>
+                    <div class="text-2xl">${it.icon}</div>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Overview fetch failed:', e);
+    }
+
+    // 2. 取得智慧洞察卡片
+    try {
+        const res = await fetch('/api/admin/smart-insights');
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.status === 'error') {
+            throw new Error(data.message || '無法取得智慧洞察分析');
+        }
+
+        const insights = data.insights || [];
+        if (insights.length === 0) {
+            container.innerHTML = '<div class="p-8 text-center text-slate-400">目前校園各系統運作完全正常，暫無異常預警或優化建議。</div>';
+            return;
+        }
+
+        const severityStyles = {
+            'high': { border: 'border-rose-300', bg: 'bg-rose-50/50', badge: 'bg-rose-100 text-rose-800 border-rose-300', icon: '🚨 高度警戒' },
+            'medium': { border: 'border-amber-300', bg: 'bg-amber-50/50', badge: 'bg-amber-100 text-amber-800 border-amber-300', icon: '⚠️ 中度注意' },
+            'info': { border: 'border-sky-300', bg: 'bg-sky-50/50', badge: 'bg-sky-100 text-sky-800 border-sky-300', icon: '💡 智慧優化' },
+            'low': { border: 'border-slate-300', bg: 'bg-slate-50/50', badge: 'bg-slate-100 text-slate-700 border-slate-300', icon: 'ℹ️ 常規資訊' }
+        };
+
+        container.innerHTML = insights.map(ins => {
+            const sty = severityStyles[ins.severity] || severityStyles['info'];
+
+            let itemsHtml = '';
+            if (ins.category === 'AI 知識庫擴充推薦' && ins.affected_items && ins.affected_items.length > 0) {
+                itemsHtml = `
+                    <div class="mt-3 bg-white rounded border border-slate-200 divide-y divide-slate-100">
+                        ${ins.affected_items.map(item => `
+                            <div class="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-900">「${escapeHtml(item.user_query)}」</span>
+                                    <span class="text-[11px] text-slate-500 font-mono ml-2">(被搜尋 ${item.search_count} 次)</span>
+                                    <div class="text-[11px] text-indigo-700 mt-0.5">
+                                        👉 建議映射標準詞：<span class="font-semibold underline">${escapeHtml(item.suggested_official_term)}</span>
+                                        <span class="text-slate-400">(${escapeHtml(item.suggested_doc || '')})</span>
+                                    </div>
+                                </div>
+                                <button onclick="adoptSynonymRecommendation(${item.query_id}, '${escapeHtml(item.user_query)}', '${escapeHtml(item.suggested_official_term)}')"
+                                    class="shrink-0 bg-sky-700 hover:bg-sky-800 text-white px-3 py-1.5 rounded font-semibold transition text-xs flex items-center gap-1 shadow-xs">
+                                    <span>✨ 一鍵採納為同義詞</span>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (ins.category === '學業擋修風險預警' && ins.affected_items && ins.affected_items.length > 0) {
+                itemsHtml = `
+                    <div class="mt-3 overflow-x-auto rounded border border-slate-200 bg-white">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 border-b">
+                                <tr>
+                                    <th class="p-2">學號 / 姓名</th>
+                                    <th class="p-2">班級</th>
+                                    <th class="p-2 text-rose-700">不及格之先修科目</th>
+                                    <th class="p-2 text-slate-800">受阻擋無法修習科目</th>
+                                    <th class="p-2 text-right">處理</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${ins.affected_items.map(item => `
+                                    <tr>
+                                        <td class="p-2 font-mono font-bold text-ukn-800">${escapeHtml(item.student_id)} <span class="font-normal text-slate-700">(${escapeHtml(item.student_name)})</span></td>
+                                        <td class="p-2 text-slate-600">${escapeHtml(item.class_name)}</td>
+                                        <td class="p-2 font-semibold text-rose-700">${escapeHtml(item.failed_course)}</td>
+                                        <td class="p-2 font-semibold text-slate-900">⛔ ${escapeHtml(item.blocked_course)}</td>
+                                        <td class="p-2 text-right">
+                                            <button onclick="switchAdminCoreTab('coursemap')" class="text-indigo-700 hover:underline">查閱擋修規則</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (ins.category === '出勤扣考警戒預警' && ins.affected_items && ins.affected_items.length > 0) {
+                itemsHtml = `
+                    <div class="mt-3 overflow-x-auto rounded border border-slate-200 bg-white">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 border-b">
+                                <tr>
+                                    <th class="p-2">學號 / 姓名</th>
+                                    <th class="p-2">班級</th>
+                                    <th class="p-2 text-rose-700">累計缺課節數</th>
+                                    <th class="p-2 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${ins.affected_items.map(item => `
+                                    <tr>
+                                        <td class="p-2 font-mono font-bold text-ukn-800">${escapeHtml(item.student_id)} <span class="font-normal text-slate-700">(${escapeHtml(item.name)})</span></td>
+                                        <td class="p-2 text-slate-600">${escapeHtml(item.class)}</td>
+                                        <td class="p-2 font-bold text-rose-700">${escapeHtml(item.count)}</td>
+                                        <td class="p-2 text-right">
+                                            <button onclick="switchAdminCoreTab('attendance')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded font-semibold">缺曠預警處理</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (ins.affected_items && ins.affected_items.length > 0) {
+                itemsHtml = `
+                    <div class="mt-2 text-xs text-slate-600 space-y-1">
+                        ${ins.affected_items.map(it => `<div>· ${escapeHtml(it.title || '')} (${escapeHtml(it.host || '')} - ${escapeHtml(it.time || '')})</div>`).join('')}
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="p-4 rounded-lg border ${sty.border} ${sty.bg} shadow-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold border ${sty.badge}">${sty.icon}</span>
+                            <h4 class="font-bold text-sm sm:text-base text-slate-900">${escapeHtml(ins.title)}</h4>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-500">分類：${escapeHtml(ins.category)}</span>
+                    </div>
+                    <div class="text-xs text-slate-700 mt-2 leading-relaxed">
+                        ${escapeHtml(ins.summary || '')}
+                    </div>
+                    ${ins.recommendation ? `
+                        <div class="mt-2 text-xs font-semibold text-indigo-900 bg-white/80 p-2.5 rounded border border-indigo-100 flex items-start gap-1.5">
+                            <span class="shrink-0 text-base leading-none">🎯</span>
+                            <span>智慧決策建議：${escapeHtml(ins.recommendation)}</span>
+                        </div>
+                    ` : ''}
+                    ${itemsHtml}
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        container.innerHTML = `<div class="p-6 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</div>`;
+    }
+}
+
+async function adoptSynonymRecommendation(queryId, keyword, officialTerm) {
+    if (!confirm(`確定要將學生常見搜尋詞「${keyword}」採納為官方同義詞「${officialTerm}」嗎？\n採納後該未命中問題將標記為已處理，且所有搜尋將立即生效。`)) return;
+    try {
+        await adminFetch('/api/admin/unmatched-queries/convert-synonym', {
+            method: 'POST',
+            body: JSON.stringify({
+                query_id: queryId,
+                user_keyword: keyword,
+                official_term: officialTerm,
+                category_id: 1
+            })
+        });
+
+        showAdminToast(`已成功採納！「${keyword}」已加入同義詞對照表`, 'success');
+        loadSmartInsights();
+    } catch (e) {
+        // error handled by adminFetch
+    }
+}
+
+// ==========================================
 // 全局側邊欄與分頁切換分派器
 // ==========================================
 function toggleSidebar() {
@@ -1818,7 +2131,8 @@ function switchAdminCoreTab(tabName) {
         'dashboard',
         'users', 'departments', 'coursemap', 'gradreqs', 'categories', 'synonyms', 'rules',
         'audit', 'searchlogs', 'unmatched', 'visitors', 'credits', 'attendance_audit', 'records',
-        'missed', 'checklists', 'deadlines', 'feedback', 'links', 'calendar', 'attendance', 'scholarwarn', 'campus', 'faculty', 'conduct', 'anniversary', 'selfcheck'
+        'missed', 'checklists', 'deadlines', 'feedback', 'links', 'calendar', 'attendance', 'scholarwarn', 'campus', 'faculty', 'conduct', 'anniversary', 'selfcheck',
+        'meetings', 'smartinsights'
     ];
 
     allPanels.forEach(p => {
@@ -1871,7 +2185,10 @@ function switchAdminCoreTab(tabName) {
         // 四、系統管理
         'users': ['系統管理', '帳號與權限管理'],
         'audit': ['系統管理', '修改紀錄'],
-        'selfcheck': ['系統管理', '系統檢測']
+        'selfcheck': ['系統管理', '系統檢測'],
+        // 五、會議與智慧分析
+        'meetings': ['校園與行政', '全校線上會議歷史紀錄'],
+        'smartinsights': ['智慧中樞', '智慧校園 AI 決策洞察']
     };
     if (breadcrumbs[tabName]) {
         const catEl = document.getElementById('breadcrumbCategory');
@@ -1918,6 +2235,8 @@ function switchAdminCoreTab(tabName) {
         if (typeof loadSchoolCalendarInfo === 'function') loadSchoolCalendarInfo();
     }
     else if (tabName === 'feedback') { if (typeof loadFeedbackStats === 'function') loadFeedbackStats(); }
+    else if (tabName === 'meetings') { loadAdminMeetings(); }
+    else if (tabName === 'smartinsights') { loadSmartInsights(); }
 }
 
 // 啟動時自動載入核心資料與狀態

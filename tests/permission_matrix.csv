@@ -339,3 +339,10 @@ POST,/api/admin/scholarship-applications/<int:app_id>/review,/api/admin/scholars
 GET,/scholarship/applications/<int:app_id>/certificate,/scholarship/applications/999999/certificate,,電子章核定通知,401,403,OK,OK,403,OK,OK,學生/家長只能看自己的
 GET,/scholarship/<int:sch_id>/form-template,/scholarship/1/form-template,,獎助學金申請表範本 (空白表 / 填寫範例),401,403,OK,OK,403,OK,OK,?mode=sample 為填寫範例與示範章，用虛構資料
 GET,/api/scholarships/stamp/<code>,/api/scholarships/stamp/ABC,,電子章查驗,OK,OK,OK,OK,OK,OK,OK,公開查驗；只回遮蔽後姓名
+GET,/seals/<path:filename>,/seals/not_exist.png,,電子印章圖檔,OK,OK,OK,OK,OK,OK,OK,公開讀取印章靜態圖檔
+GET,/api/user/seal,/api/user/seal,,查詢電子印章,401,OK,OK,OK,OK,OK,OK,需登入系統方可查詢
+POST,/api/user/seal,/api/user/seal,{},上傳電子印章,401,403,403,403,OK,OK,OK,僅限教師與行政人員上傳
+GET,/api/admin/meetings,/api/admin/meetings,,全校會議歷史紀錄,401,403,403,403,403,403,OK,僅管理員可操作
+POST,/api/admin/meetings/<int:meeting_id>/cancel,/api/admin/meetings/999999/cancel,{},管理員取消會議,401,403,403,403,403,403,OK,僅管理員可操作
+GET,/api/admin/records/overview,/api/admin/records/overview,,全校歷史紀錄總覽,401,403,403,403,403,403,OK,僅管理員可操作
+GET,/api/admin/smart-insights,/api/admin/smart-insights,,智慧校園AI決策洞察,401,403,403,403,403,403,OK,僅管理員可操作
