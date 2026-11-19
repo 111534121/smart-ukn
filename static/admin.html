@@ -348,6 +348,18 @@
                         <span>🛡️ 系統管理</span>
                     </div>
                     <div class="space-y-1">
+                        <button onclick="switchAdminCoreTab('smartinsights')" id="tabBtn-smartinsights"
+                            class="nav-btn w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-700 hover:bg-slate-100 hover:text-ukn-800 transition">
+                            <span class="flex items-center gap-2"><span>🧠</span> <span>智慧校園 AI 決策洞察</span></span>
+                            <span
+                                class="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">AI</span>
+                        </button>
+                        <button onclick="switchAdminCoreTab('meetings')" id="tabBtn-meetings"
+                            class="nav-btn w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-700 hover:bg-slate-100 hover:text-ukn-800 transition">
+                            <span class="flex items-center gap-2"><span>📅</span> <span>全校會議與歷史紀錄</span></span>
+                            <span id="meetingCountBadge"
+                                class="bg-indigo-100 text-indigo-700 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">5</span>
+                        </button>
                         <button onclick="switchAdminCoreTab('users')" id="tabBtn-users"
                             class="nav-btn w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-700 hover:bg-slate-100 hover:text-ukn-800 transition">
                             <span class="flex items-center gap-2"><span>👤</span> <span>帳號與權限管理</span></span>
@@ -1773,6 +1785,123 @@
                     <div id="selfCheckResults" class="space-y-4 text-xs sm:text-sm"></div>
                 </div>
 
+                <!-- 分頁：全校線上會議歷史與審查中心 (panel-meetings) -->
+                <div id="panel-meetings" class="hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                        <div>
+                            <h3 class="ukn-title text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <span>📅 全校線上會議與歷史紀錄管理中樞</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1">
+                                管理員可綜覽全校所有會議紀錄（含即將開始、進行中、歷史已結束與已取消會議），具備智慧時段重疊衝突偵測與出席名冊審查。
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadAdminMeetings()"
+                                class="bg-indigo-700 hover:bg-indigo-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow-xs">
+                                <span>🔄 重新整理會議</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 統計數據卡片 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-slate-500 font-semibold">全校會議總數</div>
+                            <div class="text-xl font-bold text-slate-900 mt-0.5" id="adminMtgTotal">0</div>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-emerald-700 font-semibold">即將開始</div>
+                            <div class="text-xl font-bold text-emerald-800 mt-0.5" id="adminMtgUpcoming">0</div>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-blue-700 font-semibold">進行中</div>
+                            <div class="text-xl font-bold text-blue-800 mt-0.5" id="adminMtgOngoing">0</div>
+                        </div>
+                        <div class="bg-slate-100 border border-slate-300 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-slate-600 font-semibold">已結束歷史會議</div>
+                            <div class="text-xl font-bold text-slate-700 mt-0.5" id="adminMtgPast">0</div>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-amber-700 font-semibold">⚠️ 時段衝突</div>
+                            <div class="text-xl font-bold text-amber-800 mt-0.5" id="adminMtgConflict">0</div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 p-3 rounded-lg text-center">
+                            <div class="text-[11px] text-purple-700 font-semibold">總參與人次</div>
+                            <div class="text-xl font-bold text-purple-800 mt-0.5" id="adminMtgParticipants">0</div>
+                        </div>
+                    </div>
+
+                    <!-- 搜尋與過濾工具列 -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                        <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+                            <span class="text-slate-500 font-semibold">搜尋：</span>
+                            <input type="text" id="adminMtgSearch" placeholder="搜尋會議名稱、主持人、與會者或邀請碼..."
+                                onkeyup="if(event.key==='Enter')loadAdminMeetings()"
+                                class="w-full border rounded px-3 py-1.5 bg-white text-xs">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-500 font-semibold">狀態：</span>
+                            <select id="adminMtgStatusFilter" onchange="loadAdminMeetings()" class="border rounded px-2.5 py-1.5 bg-white text-xs">
+                                <option value="all">全部狀態</option>
+                                <option value="upcoming">即將開始</option>
+                                <option value="ongoing">進行中</option>
+                                <option value="past">已結束</option>
+                                <option value="cancelled">已取消</option>
+                            </select>
+                            <button onclick="loadAdminMeetings()" class="bg-ukn-800 hover:bg-ukn-900 text-white px-3 py-1.5 rounded font-semibold transition">查詢</button>
+                        </div>
+                    </div>
+
+                    <!-- 會議清單表格 -->
+                    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b">
+                                    <th class="p-3 font-mono w-12">ID</th>
+                                    <th class="p-3">會議主題 / 說明</th>
+                                    <th class="p-3">發起主持人</th>
+                                    <th class="p-3">會議時段 / 長度</th>
+                                    <th class="p-3">狀態 / 衝突檢測</th>
+                                    <th class="p-3">受邀 / 與會名單</th>
+                                    <th class="p-3 text-center">管理操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminMeetingsTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="7" class="p-6 text-center text-slate-400">載入全校會議紀錄中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 分頁：智慧校園 AI 決策與異常預警中樞 (panel-smartinsights) -->
+                <div id="panel-smartinsights" class="hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                        <div>
+                            <h3 class="ukn-title text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <span>🧠 智慧校園 AI 決策建議與異常預警中樞</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1">
+                                系統自動橫向交叉比對教務擋修、出缺勤扣考警戒、規章提問未命中詞與全校活動負載，生成智慧化洞察分析與行動建議。
+                            </p>
+                        </div>
+                        <button onclick="loadSmartInsights()"
+                            class="bg-amber-700 hover:bg-amber-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow-xs">
+                            <span>⚡ 重新分析洞察</span>
+                        </button>
+                    </div>
+
+                    <!-- 綜合歷史紀錄指標橫幅 -->
+                    <div id="smartRecordsOverviewBar" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                        <!-- 動態填入 -->
+                    </div>
+
+                    <!-- 智慧洞察卡片容器 -->
+                    <div id="smartInsightsContainer" class="space-y-4">
+                        <div class="p-8 text-center text-slate-400">智慧分析引擎運算中...</div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- 頁尾 -->
@@ -3152,8 +3281,8 @@
                 switchAdminCoreTab(tab);
                 return;
             }
-            document.querySelectorAll('#panel-dashboard, #panel-users, #panel-departments, #panel-coursemap, #panel-gradreqs, #panel-categories, #panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-conduct, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#tabBtn-dashboard, #tabBtn-users, #tabBtn-departments, #tabBtn-coursemap, #tabBtn-gradreqs, #tabBtn-categories, #tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-conduct, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck').forEach(b => {
+            document.querySelectorAll('#panel-dashboard, #panel-users, #panel-departments, #panel-coursemap, #panel-gradreqs, #panel-categories, #panel-unmatched, #panel-missed, #panel-rules, #panel-synonyms, #panel-checklists, #panel-deadlines, #panel-feedback, #panel-links, #panel-calendar, #panel-attendance, #panel-scholarwarn, #panel-campus, #panel-faculty, #panel-conduct, #panel-anniversary, #panel-visitors, #panel-audit, #panel-selfcheck, #panel-meetings, #panel-smartinsights').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('#tabBtn-dashboard, #tabBtn-users, #tabBtn-departments, #tabBtn-coursemap, #tabBtn-gradreqs, #tabBtn-categories, #tabBtn-unmatched, #tabBtn-missed, #tabBtn-rules, #tabBtn-synonyms, #tabBtn-checklists, #tabBtn-deadlines, #tabBtn-feedback, #tabBtn-links, #tabBtn-calendar, #tabBtn-attendance, #tabBtn-scholarwarn, #tabBtn-campus, #tabBtn-faculty, #tabBtn-conduct, #tabBtn-anniversary, #tabBtn-visitors, #tabBtn-audit, #tabBtn-selfcheck, #tabBtn-meetings, #tabBtn-smartinsights').forEach(b => {
                 b.className = 'nav-btn w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-700 hover:bg-slate-100 hover:text-ukn-800 transition';
             });
 
@@ -3170,6 +3299,8 @@
             if (tab === 'anniversary') loadAnniversary();
             if (tab === 'faculty') loadFacultyAdmin();
             if (tab === 'conduct') loadConductRules();
+            if (tab === 'meetings') loadAdminMeetings();
+            if (tab === 'smartinsights') loadSmartInsights();
         }
 
         // ---------- 操行計分規則 (conduct_settings) ----------

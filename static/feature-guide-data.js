@@ -4865,15 +4865,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 4222
+          "line": 4353
         },
         {
           "file": "static/admin.html",
-          "line": 4265
+          "line": 4396
         },
         {
           "file": "static/admin.html",
-          "line": 4291
+          "line": 4422
         },
         {
           "file": "static/index.html",
@@ -9211,15 +9211,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 3296
+          "line": 3427
         },
         {
           "file": "static/admin.html",
-          "line": 3362
+          "line": 3493
         },
         {
           "file": "static/admin.html",
-          "line": 3373
+          "line": 3504
         },
         {
           "file": "static/js/campus-features.js",
@@ -10587,19 +10587,19 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2925
+          "line": 3054
         },
         {
           "file": "static/admin.html",
-          "line": 3834
+          "line": 3965
         },
         {
           "file": "static/admin.html",
-          "line": 3877
+          "line": 4008
         },
         {
           "file": "static/admin.html",
-          "line": 3915
+          "line": 4046
         },
         {
           "file": "static/index.html",
@@ -11106,15 +11106,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2962
+          "line": 3091
         },
         {
           "file": "static/admin.html",
-          "line": 3046
+          "line": 3175
         },
         {
           "file": "static/admin.html",
-          "line": 3059
+          "line": 3188
         },
         {
           "file": "static/index.html",
@@ -12532,39 +12532,39 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2736
+          "line": 2865
         },
         {
           "file": "static/admin.html",
-          "line": 3069
+          "line": 3198
         },
         {
           "file": "static/admin.html",
-          "line": 3130
+          "line": 3259
         },
         {
           "file": "static/admin.html",
-          "line": 3142
+          "line": 3271
         },
         {
           "file": "static/admin.html",
-          "line": 4040
+          "line": 4171
         },
         {
           "file": "static/admin.html",
-          "line": 4056
+          "line": 4187
         },
         {
           "file": "static/admin.html",
-          "line": 4070
+          "line": 4201
         },
         {
           "file": "static/admin.html",
-          "line": 4136
+          "line": 4267
         },
         {
           "file": "static/admin.html",
-          "line": 4156
+          "line": 4287
         },
         {
           "file": "static/index.html",
@@ -13093,7 +13093,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 4311
+          "line": 4442
         },
         {
           "file": "static/index.html",
@@ -14321,19 +14321,19 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2747
+          "line": 2876
         },
         {
           "file": "static/admin.html",
-          "line": 2764
+          "line": 2893
         },
         {
           "file": "static/admin.html",
-          "line": 2795
+          "line": 2924
         },
         {
           "file": "static/admin.html",
-          "line": 2810
+          "line": 2939
         },
         {
           "file": "static/js/campus-life.js",
@@ -14813,15 +14813,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 3927
+          "line": 4058
         },
         {
           "file": "static/admin.html",
-          "line": 4004
+          "line": 4135
         },
         {
           "file": "static/admin.html",
-          "line": 4025
+          "line": 4156
         },
         {
           "file": "static/index.html",
@@ -17869,19 +17869,19 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 3393
+          "line": 3524
         },
         {
           "file": "static/admin.html",
-          "line": 3465
+          "line": 3596
         },
         {
           "file": "static/admin.html",
-          "line": 3478
+          "line": 3609
         },
         {
           "file": "static/admin.html",
-          "line": 3512
+          "line": 3643
         },
         {
           "file": "static/js/anniversary.js",
@@ -17985,11 +17985,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2771
+          "line": 2900
         },
         {
           "file": "static/admin.html",
-          "line": 2788
+          "line": 2917
         },
         {
           "file": "static/js/campus-shell.js",
@@ -26870,59 +26870,43 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 2816
+          "line": 2945
         },
         {
           "file": "static/admin.html",
-          "line": 2879
+          "line": 3008
         },
         {
           "file": "static/admin.html",
-          "line": 2899
+          "line": 3028
         },
         {
           "file": "static/admin.html",
-          "line": 3180
+          "line": 3311
         },
         {
           "file": "static/admin.html",
-          "line": 3268
+          "line": 3399
         },
         {
           "file": "static/admin.html",
-          "line": 3274
+          "line": 3405
         },
         {
           "file": "static/admin.html",
-          "line": 3283
+          "line": 3414
         },
         {
           "file": "static/admin.html",
-          "line": 3296
+          "line": 3427
         },
         {
           "file": "static/admin.html",
-          "line": 3362
+          "line": 3493
         },
         {
           "file": "static/admin.html",
-          "line": 3373
-        },
-        {
-          "file": "static/admin.html",
-          "line": 3393
-        },
-        {
-          "file": "static/admin.html",
-          "line": 3465
-        },
-        {
-          "file": "static/admin.html",
-          "line": 3478
-        },
-        {
-          "file": "static/admin.html",
-          "line": 3512
+          "line": 3504
         },
         {
           "file": "static/admin.html",
@@ -26930,51 +26914,67 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/admin.html",
-          "line": 3556
+          "line": 3596
         },
         {
           "file": "static/admin.html",
-          "line": 3616
+          "line": 3609
         },
         {
           "file": "static/admin.html",
-          "line": 3648
+          "line": 3643
         },
         {
           "file": "static/admin.html",
-          "line": 3898
+          "line": 3655
         },
         {
           "file": "static/admin.html",
-          "line": 3900
+          "line": 3687
         },
         {
           "file": "static/admin.html",
-          "line": 4056
+          "line": 3747
         },
         {
           "file": "static/admin.html",
-          "line": 4166
+          "line": 3779
         },
         {
           "file": "static/admin.html",
-          "line": 4180
+          "line": 4029
         },
         {
           "file": "static/admin.html",
-          "line": 4222
+          "line": 4031
         },
         {
           "file": "static/admin.html",
-          "line": 4265
+          "line": 4187
         },
         {
           "file": "static/admin.html",
-          "line": 4291
+          "line": 4297
         },
         {
           "file": "static/admin.html",
           "line": 4311
+        },
+        {
+          "file": "static/admin.html",
+          "line": 4353
+        },
+        {
+          "file": "static/admin.html",
+          "line": 4396
+        },
+        {
+          "file": "static/admin.html",
+          "line": 4422
+        },
+        {
+          "file": "static/admin.html",
+          "line": 4442
         },
         {
           "file": "static/index.html",
