@@ -29022,7 +29022,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "applications/__init__.py",
-              "line": 500,
+              "line": 501,
               "function": "insert_application"
             },
             {
@@ -29212,7 +29212,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "applications/__init__.py",
-              "line": 500,
+              "line": 501,
               "function": "insert_application"
             },
             {

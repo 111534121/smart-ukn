@@ -491,7 +491,8 @@ def submit_application():
         return _error("這個項目已經有一張審核中的申請，請等結果出來或先撤回", 409)
 
     stages = stages_for(tpl)
-    app_id = insert_application(student_id, item_id, code, item["business_name"], fields, stages)
+    business_name = str(data.get("business_name") or item["business_name"]).strip()
+    app_id = insert_application(student_id, item_id, code, business_name, fields, stages)
     app = get_application(app_id)
     return jsonify({"status": "success", "message": f"已線上送出，下一關：{stages[1]['name']}",
                     "data": describe(app, deps.load_student(student_id))}), 201
@@ -501,7 +502,6 @@ def insert_application(student_id, item_id, code, business_name, fields, stages)
     """寫進 online_applications (MySQL 離線時寫進 DEMO_APPLICATIONS)，回傳申請編號"""
     now = _now()
     history = [{"stage": 0, "action": "送出", "by": session.get("full_name", ""), "note": "", "at": now}]
-    business_name = str(data.get("business_name") or item["business_name"]).strip()
     result = deps.db_execute(
         "INSERT INTO online_applications (student_id, item_id, form_code, business_name, fields_json, stages_json, "
         "current_stage, status, history_json, submitted_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
