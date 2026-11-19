@@ -2508,7 +2508,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 4002
+          "line": 4004
         },
         {
           "file": "static/js/campus-features.js",
@@ -3933,23 +3933,23 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3931
+          "line": 3933
         },
         {
           "file": "static/index.html",
-          "line": 4266
+          "line": 4268
         },
         {
           "file": "static/index.html",
-          "line": 4294
+          "line": 4296
         },
         {
           "file": "static/index.html",
-          "line": 4468
+          "line": 4470
         },
         {
           "file": "static/index.html",
-          "line": 4559
+          "line": 4561
         }
       ]
     },
@@ -6795,15 +6795,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4513
+          "line": 4515
         },
         {
           "file": "static/index.html",
-          "line": 4532
+          "line": 4534
         },
         {
           "file": "static/index.html",
-          "line": 4537
+          "line": 4539
         }
       ]
     },
@@ -11240,11 +11240,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 4054
-        },
-        {
-          "file": "static/index.html",
-          "line": 4058
+          "line": 4056
         },
         {
           "file": "static/index.html",
@@ -11252,11 +11248,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 4160
+          "line": 4062
         },
         {
           "file": "static/index.html",
-          "line": 4198
+          "line": 4162
+        },
+        {
+          "file": "static/index.html",
+          "line": 4200
         },
         {
           "file": "static/js/campus-features.js",
@@ -12720,7 +12720,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 4655
+          "line": 4657
         },
         {
           "file": "static/js/campus-features.js",
@@ -18229,15 +18229,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4610
+          "line": 4612
         },
         {
           "file": "static/index.html",
-          "line": 4619
+          "line": 4621
         },
         {
           "file": "static/index.html",
-          "line": 4634
+          "line": 4636
         },
         {
           "file": "static/js/campus-shell.js",

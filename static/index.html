@@ -3683,7 +3683,7 @@
                 homeNotices.filter(n => !n.is_read).slice(0, 5).forEach(n => {
                     list.push({
                         id: `notice-${n.id}`, level: n.priority === '緊急' ? 'urgent' : n.priority === '重要' ? 'warning' : 'info',
-                        icon: '📣', title: `班級通知：${n.title}`, desc: `${n.sender}：${(n.content || '').slice(0, 60)}`,
+                        pin: 'message', icon: '📣', title: `班級通知：${n.title}`, desc: `${n.sender}：${(n.content || '').slice(0, 60)}`,
                         time: relativeDayLabel((n.created_at || '').slice(0, 10)), tab: 'tab-notices'
                     });
                 });
@@ -3802,14 +3802,16 @@
                     const cancelled = m.status === '已取消';
                     list.push({
                         id: `meet-${m.id}-${cancelled ? 'cancel' : m.is_open ? 'open' : 'invite'}`,
-                        level: cancelled ? 'warning' : m.is_open ? 'urgent' : 'info', icon: cancelled ? '🚫' : '🎥',
+                        level: cancelled ? 'warning' : m.is_open ? 'urgent' : 'info', pin: 'meeting', icon: cancelled ? '🚫' : '🎥',
                         title: cancelled ? `會議已取消：${m.title}` : m.is_open ? `會議可以進入了：${m.title}` : `會議邀請：${m.title}`,
                         desc: `${m.host_name}（${m.host_role}）· ${m.start_at.slice(5).replace('-', '/')} 開始，${m.duration_min} 分鐘`,
                         time: m.start_at.slice(5, 10).replace('-', '/'), tab: 'tab-meetings'
                     });
                 });
             }
-            return list.sort((a, b) => NOTIF_LEVEL_ORDER[a.level] - NOTIF_LEVEL_ORDER[b.level]);
+            return list.sort((a, b) =>
+                (NOTIF_PIN_ORDER[a.pin] ?? NOTIF_PIN_ORDER.normal) - (NOTIF_PIN_ORDER[b.pin] ?? NOTIF_PIN_ORDER.normal)
+                || NOTIF_LEVEL_ORDER[a.level] - NOTIF_LEVEL_ORDER[b.level]);
         }
 
         function renderNotifications() {
