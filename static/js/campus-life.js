@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面 (校務申請、校園生活與社群)：獎助學金檢核、宿舍與總務、教室 / 櫃子租借、
-// 校園地圖與老師辦公室、天氣交通、人流、班級通知。
+// 校園地圖與老師辦公室、天氣交通、班級通知。
 // 依賴 campus-shell.js 與 campus-features.js 的共用函式 (api、toast、esc、statusBadge…)。
 
 // =====================================================================
@@ -770,7 +770,7 @@ function showTeacherTimetable(name) {
 }
 
 // =====================================================================
-// 天氣與交通、人流
+// 天氣與交通
 // =====================================================================
 
 async function loadWeatherDetail() {
@@ -811,28 +811,6 @@ async function loadTransport() {
                     <div class="rounded border border-slate-200 p-3"><div class="font-semibold text-sm">🚏 ${esc(s.stop)}</div>
                         <ul class="mt-1 space-y-0.5 text-xs">${s.arrivals.length ? s.arrivals.map(a => `<li class="flex justify-between"><span>${esc(a.route)}</span><span class="${a.minutes != null && a.minutes <= 3 ? 'text-rose-700 font-bold' : 'text-slate-600'}">${a.minutes != null ? (a.minutes <= 1 ? '即將進站' : `${a.minutes} 分`) : esc(a.status || '—')}</span></li>`).join('') : `<li class="text-slate-500">行經：${s.routes.map(esc).join('、')}</li>`}</ul></div>`).join('')}</div>`
                 : `<div class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded px-3 py-2">${r.bus_configured ? `公車即時資訊暫時無法取得${r.bus_error ? `（${esc(r.bus_error)}）` : ''}。` : '尚未設定交通部 TDX 帳號，暫時只提供路線查詢連結。管理員申請 TDX 帳號後，設定環境變數 TDX_CLIENT_ID / TDX_CLIENT_SECRET 即可顯示學校附近公車站的即時到站時間。'}</div>`}</div>`;
-    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
-}
-
-async function loadCrowd() {
-    const body = document.getElementById('crowdBody');
-    try {
-        const r = await api('/api/campus/crowd');
-        const hourNow = Number(r.now.slice(11, 13));
-        body.innerHTML = r.data.map(p => {
-            const level = p.current >= 70 ? ['人很多', 'red'] : p.current >= 40 ? ['普通', 'amber'] : ['人少', 'green'];
-            return `
-            <div class="rounded border border-slate-200 p-4 space-y-3">
-                <div class="flex items-center justify-between"><span class="font-bold text-slate-900">${esc(p.place)}</span>${hourNow >= 8 && hourNow < 20 ? statusBadge(`現在：${level[0]}`, level[1]) : statusBadge('非開放時段', 'gray')}</div>
-                <div class="flex items-end gap-1 h-28" role="img" aria-label="${esc(p.place)} 各時段人潮">
-                    ${p.levels.map((l, i) => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${p.hours[i]}:00 人潮指數 ${l}">
-                        <div class="w-full rounded-t-sm ${p.hours[i] === hourNow ? 'bg-accent-500' : p.hours[i] === p.best_hour ? 'bg-emerald-500' : 'bg-ukn-300'}" style="height:${Math.max(4, l)}%"></div>
-                        <div class="text-[9px] text-slate-500 mt-0.5">${p.hours[i]}</div></div>`).join('')}
-                </div>
-                <div class="flex flex-wrap gap-3 text-[10px] text-slate-500"><span><span class="inline-block w-2 h-2 bg-accent-500 mr-1"></span>現在</span><span><span class="inline-block w-2 h-2 bg-emerald-500 mr-1"></span>接下來最空</span></div>
-                <div class="text-xs text-slate-700">💡 ${esc(p.tip)}${p.best_hour != null ? `；今天接下來 ${p.best_hour}:00 左右最空` : ''}</div>
-            </div>`;
-        }).join('') + `<p class="md:col-span-2 text-[11px] text-slate-400">${r.simulated ? '目前為依課表推算的模擬數據；接上門禁刷卡、Wi-Fi 連線數或學餐交易資料後即可顯示實際人流。' : ''}</p>`;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 

@@ -267,6 +267,46 @@ def delete_cert(item_id):
     return ok(message="已刪除")
 
 
+# ---------- 證照牆：便利貼自己排位置 ----------
+# 位置存在 data/campus_store.json 的 cert_board (不用資料庫)：{學號: {證照 id: {"x": 0~1, "y": 0~1, "z": 疊放順序}}}
+# x、y 是「便利貼左上角在牆上可移動範圍的比例」，手機、電腦牆的大小不同也排得一樣
+
+def board_layout(student_id):
+    return dict(store.section("cert_board", dict).get(student_id) or {})
+
+
+@bp.route("/api/campus/certs/board", methods=["GET"])
+@require("學生")
+def get_board():
+    sid = current_user()["student_id"]
+    return ok(layout=board_layout(sid))
+
+
+@bp.route("/api/campus/certs/board", methods=["PUT"])
+@require("學生")
+def save_board():
+    """整面牆一起存；只收自己的證照，其他 id 直接忽略"""
+    sid = current_user()["student_id"]
+    positions = (request.get_json(silent=True) or {}).get("positions")
+    if not isinstance(positions, dict):
+        return error("positions 格式不正確")
+    mine = {str(i["id"]) for i in submissions() if i["student_id"] == sid}
+    layout = {}
+    for key, pos in positions.items():
+        if str(key) not in mine or not isinstance(pos, dict):
+            continue
+        try:
+            x, y, z = float(pos.get("x")), float(pos.get("y")), int(pos.get("z") or 0)
+        except (TypeError, ValueError):
+            return error("位置必須是數字")
+        layout[str(key)] = {"x": round(min(max(x, 0.0), 1.0), 4), "y": round(min(max(y, 0.0), 1.0), 4),
+                            "z": min(max(z, 0), 10000)}
+    with store.lock:
+        store.section("cert_board", dict)[sid] = layout
+        store.save()
+    return ok(message="已記住排列位置", layout=layout)
+
+
 @bp.route("/api/campus/certs/review", methods=["GET"])
 @require("老師", "教職員", "管理員")
 def review_list():

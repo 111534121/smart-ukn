@@ -93,6 +93,8 @@ DELETE,/api/campus/certs/<int:item_id>,/api/campus/certs/999999,,刪除證照,40
 GET,/api/campus/certs/review,/api/campus/certs/review,,待審證照,401,403,403,403,OK,OK,OK,
 POST,/api/campus/certs/<int:item_id>/review,/api/campus/certs/999999/review,,審核證照,401,403,403,403,OK,OK,OK,老師只能審自己導師班 (個別資料層級，需另寫功能測試)
 GET,/api/campus/certs/stats,/api/campus/certs/stats,,證照統計,OK,OK,OK,OK,OK,OK,OK,公開：只有人數統計，不含姓名
+GET,/api/campus/certs/board,/api/campus/certs/board,,證照牆便利貼位置,401,403,OK,403,403,403,403,
+PUT,/api/campus/certs/board,/api/campus/certs/board,,儲存證照牆排列,401,403,OK,403,403,403,403,只存自己的證照位置
 GET,/api/campus/classes,/api/campus/classes,,【科上通知】班級列表,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)；⚠️ 任何老師都看得到「所有班級」的成員名單，不限自己的班
 POST,/api/campus/classes,/api/campus/classes,,【科上通知】建立班級,401,403,403,403,OK,OK,OK,
 POST,/api/campus/classes/password,/api/campus/classes/password,,【科上通知】設定加入密碼,401,403,403,403,OK,OK,OK,⚠️ 任何老師都能改「任何班級」的加入密碼；示範班級預設密碼都是 ukn2026
@@ -121,7 +123,6 @@ POST,/api/campus/lockers/<locker_id>/reserve,/api/campus/lockers/Z-999/reserve,,
 POST,/api/campus/lockers/<locker_id>/cancel,/api/campus/lockers/Z-999/cancel,,取消櫃子,401,403,OK,403,403,403,403,
 GET,/api/campus/lockers/admin,/api/campus/lockers/admin,,櫃子管理,401,403,403,403,403,OK,OK,
 POST,/api/campus/lockers/<locker_id>/paid,/api/campus/lockers/Z-999/paid,,櫃子已繳費,401,403,403,403,403,OK,OK,
-GET,/api/campus/crowd,/api/campus/crowd,,人流,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/weather,/api/campus/weather,,天氣,OK,OK,OK,OK,OK,OK,OK,會連氣象署；測試時不連外網所以回 502。目前天氣是否為真實資料待確認
 GET,/api/campus/transport,/api/campus/transport,,交通,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/prefs,/api/campus/prefs,,置頂設定,401,403*,OK,OK,OK,OK,OK,訪客目前可以使用，但前端 isLoggedIn() 把訪客當成未登入；campus/common.py 的 @require() 應排除訪客 (待組內確認)
@@ -161,10 +162,6 @@ PUT,/api/admin/teachers/<int:teacher_id>,/api/admin/teachers/999999,,修改老�
 DELETE,/api/admin/teachers/<int:teacher_id>,/api/admin/teachers/999999,,刪除老師辦公室資料,401,403,403,403,403,OK,OK,教職員為申請刪除，待管理員核准
 POST,/api/admin/teachers/<int:teacher_id>/review,/api/admin/teachers/999999/review,,審核老師辦公室異動,401,403,403,403,403,403,OK,只有管理員能核准或退回
 POST,/api/admin/teachers/photo,/api/admin/teachers/photo,,上傳老師照片,401,403,403,403,403,OK,OK,只收 JPG/PNG/WebP 且檢查檔頭
-GET,/api/self-review,/api/self-review,,自評表列表,401,403,OK,403,403,403,403,
-GET,/api/self-review/<semester>,/api/self-review/114-1,,查看自評表,401,403,OK,403,403,403,403,
-PUT,/api/self-review/<semester>,/api/self-review/114-1,,儲存自評表,401,403,OK,403,403,403,403,
-DELETE,/api/self-review/<semester>,/api/self-review/114-1,,刪除自評表,401,403,OK,403,403,403,403,
 POST,/api/assistant/ask,/api/assistant/ask,,AI 小幫手提問,OK,OK,OK,OK,OK,OK,OK,不需登入，有頻率限制
 GET,/api/assistant/status,/api/assistant/status,,AI 小幫手狀態,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/anniversary/marquee,/api/anniversary/marquee,,校慶跑馬燈,OK,OK,OK,OK,OK,OK,OK,
@@ -268,6 +265,19 @@ GET,/api/applications/review,/api/applications/review,,線上申請待審清單,
 POST,/api/applications/<int:app_id>/review,/api/applications/999999/review,,審核線上申請 (核准即蓋電子章並送交下一關),401,403,403,403,OK,OK,OK,
 GET,/applications/<int:app_id>/signed,/applications/999999/signed,,蓋好電子章的線上申請表,401,403,OK,OK,OK,OK,OK,學生/家長只能看自己的，老師只能看導師班的 (其他回 404)
 GET,/api/applications/stamp/<code>,/api/applications/stamp/ABC,,線上申請電子章查驗,OK,OK,OK,OK,OK,OK,OK,公開查驗；只回遮蔽後姓名
+GET,/api/applications/upload-options,/api/applications/upload-options,,上傳申請表可選的申請項目,OK,OK,OK,OK,OK,OK,OK,
+POST,/api/applications/upload,/api/applications/upload,,上傳自己的申請表（選申請項目，關卡自動排好）,401,403,OK,403,403,403,403,只有學生本人能送出
+GET,/api/applications/<int:app_id>/files/<int:index>,/api/applications/999999/files/0,,下載學生上傳的申請表,401,403,OK,OK,OK,OK,OK,學生/家長只能看自己的，老師只能看導師班的 (其他回 404)
+GET,/applications/<int:app_id>/seal/<int:stage>,/applications/999999/seal/1,,申請表上某一關蓋的印章圖,401,403,OK,OK,OK,OK,OK,跟蓋章申請表同樣的查看權限
+GET,/api/seals/mine,/api/seals/mine,,我的印章 (老師章),401,403,403,403,OK,OK,OK,
+POST,/api/seals/mine,/api/seals/mine,,上傳自己的印章圖,401,403,403,403,OK,OK,OK,
+DELETE,/api/seals/mine,/api/seals/mine,,改回系統依姓名刻的章,401,403,403,403,OK,OK,OK,
+GET,/api/seals/mine/image,/api/seals/mine/image,,我的印章圖,401,403,403,403,OK,OK,OK,
+POST,/api/seals/sign-link,/api/seals/sign-link,,產生手機簽名連結 (QR code),401,403,403,403,OK,OK,OK,
+GET,/api/seals/sign-link/<token>/qr.svg,/api/seals/sign-link/abc/qr.svg,,手機簽名連結的 QR code,401,403,403,403,OK,OK,OK,只能看自己產生的連結 (別人的回 404)
+GET,/api/seals/sign-link/<token>/status,/api/seals/sign-link/abc/status,,手機簽好了沒,401,403,403,403,OK,OK,OK,只能查自己產生的連結
+GET,/seal/sign/<token>,/seal/sign/abc,,手機簽名頁,OK,OK,OK,OK,OK,OK,OK,不用登入：一次性連結 10 分鐘內有效
+POST,/seal/sign/<token>,/seal/sign/abc,,送出手機簽名,OK,OK,OK,OK,OK,OK,OK,不用登入：連結無效回 410
 GET,/api/conduct/me,/api/conduct/me,,我的操行,401,403,OK,OK,403,403,403,
 GET,/api/conduct/students,/api/conduct/students,,操行學生清單,401,403,403,403,OK,OK,OK,
 GET,/api/conduct/students/<student_id>,/api/conduct/students/S112001,,查詢學生操行,401,403,403,403,OK,OK,OK,導師僅限導師班

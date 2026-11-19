@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面：行事曆月曆、AI 智慧校規、選課檢查、證照審核、獎助學金、宿舍與總務、
-// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、人流、班級通知。
+// 教室 / 櫃子租借、校園地圖與老師辦公室、天氣交通、班級通知。
 // 依賴 campus-shell.js (api、toast、openModal、tabLoaders…) 與 index.html (currentUser、escapeHtml…)。
 
 const WEEKDAY_TEXT = ['', '一', '二', '三', '四', '五', '六', '日'];
@@ -22,7 +22,6 @@ function campusFeaturesInit() {
         'tab-events': () => loadEvents(),
         'tab-map': () => { loadMap(); loadTeachers(); },
         'tab-traffic': () => { loadWeatherDetail(); loadTransport(); },
-        'tab-crowd': loadCrowd,
         'tab-notices': loadNotices,
         'tab-myschedule': loadMySchedule,
         'tab-classattend': () => loadClassAttendance(),
@@ -68,7 +67,7 @@ function fileLinks(files) {
 // =====================================================================
 
 let calYear = null, calMonth = null, calData = null;
-const CAL_KNOWN = ['申辦', '考試', '繳費', '放假', '活動', '教務', '獎助', '個人', '班務'];
+const CAL_KNOWN = ['申辦', '考試', '繳費', '放假', '活動', '教務', '獎助', '個人', '班務', '會議', '通知'];
 
 function calendarShift(step) {
     if (step === 0 || calYear === null) {
@@ -107,6 +106,13 @@ function eventsOn(day) {
 
 function eventStatus(e) {
     const today = calData.today;
+    // 會議、班級通知是「某一天的事」，不是有截止日的期間
+    if (e.type === 'meeting' || e.type === 'notice') {
+        if (e.type === 'meeting' && e.title.endsWith('（已取消）')) return { text: '已取消', tone: 'gray' };
+        if (e.start_date < today) return { text: '已過', tone: 'gray' };
+        if (e.start_date === today) return { text: '今天', tone: 'red' };
+        return { text: `${Math.round((new Date(e.start_date) - new Date(today)) / 86400000)} 天後`, tone: 'blue' };
+    }
     if (e.expired) return { text: '已截止', tone: 'gray' };
     if (e.start_date > today) {
         const days = Math.round((new Date(e.start_date) - new Date(today)) / 86400000);
@@ -145,7 +151,7 @@ function renderCalendar() {
             </div>`);
     }
     document.getElementById('calGrid').innerHTML = cells.join('');
-    document.getElementById('calSourceNote').textContent = '國定假日：行政院人事行政總處辦公日曆表（自動抓取）· 學校事項：' + (isStaff() ? '校曆 · 班務：導師班請假與我發的通知期限' : '校曆與申辦期限')
+    document.getElementById('calSourceNote').textContent = '國定假日：行政院人事行政總處辦公日曆表（自動抓取）· 學校事項：' + (isStaff() ? '校曆 · 班務：導師班請假與我發的通知期限 · 我的線上會議' : '校曆、申辦期限、線上會議與班級通知')
         + (calData.ukn_synced_at ? `，康寧官網行事曆 ${calData.ukn_synced_at.slice(0, 10)} 同步` : '');
 }
 
@@ -647,6 +653,14 @@ async function loadCerts() {
                 <li>想考自己想要的證照（不一定是班導要求的）也可以上傳在這裡，之後寫自傳、找實習都用得到。</li>
             </ul>
         </details>
+        <div>
+            <div class="flex flex-wrap items-end justify-between gap-2 mb-2">
+                <div><h3 class="font-bold text-slate-900">📌 我的證照牆</h3>
+                    <p class="text-[11px] text-slate-500">拖曳便利貼可以自己排位置，點一下就能看證照。</p></div>
+                <button type="button" onclick="tidyCertBoard()" class="text-xs border border-slate-300 rounded px-2.5 py-1 hover:border-ukn-500">🧹 自動排整齊</button>
+            </div>
+            <div id="certBoard" class="cert-board" aria-label="我的證照牆"></div>
+        </div>
         <div><h3 class="font-bold text-slate-900 mb-2">我的紀錄</h3><div id="myCertList" class="space-y-2"></div></div>
         <div><h3 class="font-bold text-slate-900 mb-2">🎖️ 我的獎懲與幹部</h3><div id="myRecordsBox"></div></div>`;
     loadMyCerts();
@@ -701,6 +715,7 @@ const CERT_TONE = { '已通過': 'green', '待審核': 'amber', '已退回': 're
 async function loadMyCerts() {
     try {
         const items = (await api('/api/campus/certs/mine')).data;
+        renderCertBoard(items);
         document.getElementById('myCertList').innerHTML = items.length ? items.map(i => `
             <div class="rounded border border-slate-200 p-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div class="flex-1 min-w-0">
@@ -731,8 +746,156 @@ async function submitCert(event) {
 
 async function deleteCert(id) {
     if (!confirm('確定刪除這筆紀錄？')) return;
-    try { await api(`/api/campus/certs/${id}`, { method: 'DELETE' }); toast('已刪除'); loadMyCerts(); }
+    try { await api(`/api/campus/certs/${id}`, { method: 'DELETE' }); toast('已刪除'); closeModal(); loadMyCerts(); }
     catch (e) { toast(e.message, 'error'); }
+}
+
+// ---------- 證照牆：便利貼可以拖曳排位置，點一下看證照 ----------
+// 位置存比例 (0~1)：牆的寬高不同 (手機 / 電腦) 也會排在差不多的地方
+
+let certBoardItems = [];
+let certBoardLayout = {};
+let certBoardSaveTimer = null;
+const CERT_KIND_ICON = { '證照': '🏅', '競賽': '🏆', '作品': '🎨' };
+
+async function renderCertBoard(items) {
+    const board = document.getElementById('certBoard');
+    if (!board) return;
+    certBoardItems = items;
+    try { certBoardLayout = (await api('/api/campus/certs/board')).layout || {}; } catch (e) { certBoardLayout = {}; }
+    if (!items.length) {
+        board.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-sm text-amber-950/70 px-6 text-center">上傳證照、獎狀或作品後，就會變成一張便利貼貼在這裡。</div>';
+        return;
+    }
+    // 還沒排過的便利貼放到空位 (依序往右、往下)
+    items.forEach((it, i) => {
+        if (!certBoardLayout[it.id]) certBoardLayout[it.id] = defaultNoteSpot(i, items.length);
+    });
+    board.innerHTML = items.map(it => {
+        const tilt = ((it.id * 37) % 7) - 3;  // 每張固定歪一點點，看起來像手貼的
+        const thumb = (it.files || []).find(f => f.type === 'image');
+        return `
+        <button type="button" class="cert-note cert-note-${esc(it.kind)}" data-id="${Number(it.id)}" style="--tilt:${tilt}deg; transform: rotate(${tilt}deg)"
+            aria-label="${esc(it.kind)}：${esc(it.name)}，${esc(it.status)}。點一下查看，拖曳可移動，也可用方向鍵移動">
+            <span class="pin" aria-hidden="true">📌</span>
+            <span class="block text-[10px] font-bold text-slate-600">${CERT_KIND_ICON[it.kind] || '📄'} ${esc(it.kind)}</span>
+            <span class="block text-sm font-bold text-slate-900 leading-snug line-clamp-2">${esc(it.name)}</span>
+            ${thumb ? `<img src="${esc(thumb.url)}" alt="" class="mt-1 w-full h-12 object-cover rounded-sm border border-black/10 pointer-events-none" loading="lazy">` : ''}
+            <span class="block mt-1 text-[10px] ${it.status === '已通過' ? 'text-emerald-800' : it.status === '已退回' ? 'text-rose-700' : 'text-amber-800'} font-bold">${it.status === '已通過' ? '✓ 班導已確認' : esc(it.status)}</span>
+            ${it.issue_date ? `<span class="block text-[10px] text-slate-500">${esc(it.issue_date)}</span>` : ''}
+        </button>`;
+    }).join('');
+    board.querySelectorAll('.cert-note').forEach(bindCertNote);
+    placeCertNotes();
+}
+
+function defaultNoteSpot(index, total) {
+    const cols = window.innerWidth < 640 ? 2 : 5;
+    const rows = Math.max(1, Math.ceil(total / cols));
+    const col = index % cols, row = Math.floor(index / cols);
+    return { x: cols > 1 ? col / (cols - 1) : 0, y: rows > 1 ? Math.min(1, row / Math.max(rows - 1, 2)) : 0, z: index };
+}
+
+// 比例 → 像素
+function placeCertNotes() {
+    const board = document.getElementById('certBoard');
+    if (!board) return;
+    const W = board.clientWidth, H = board.clientHeight;
+    board.querySelectorAll('.cert-note').forEach(note => {
+        const pos = certBoardLayout[note.dataset.id] || { x: 0, y: 0, z: 0 };
+        note.style.left = `${pos.x * Math.max(0, W - note.offsetWidth)}px`;
+        note.style.top = `${pos.y * Math.max(0, H - note.offsetHeight)}px`;
+        note.style.zIndex = String(10 + (pos.z || 0));
+    });
+}
+window.addEventListener('resize', () => placeCertNotes());
+
+function bringNoteToFront(id) {
+    const top = Math.max(0, ...Object.values(certBoardLayout).map(p => p.z || 0));
+    certBoardLayout[id] = { ...certBoardLayout[id], z: top + 1 };
+}
+
+function bindCertNote(note) {
+    const id = note.dataset.id;
+    let start = null;
+    note.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        const board = document.getElementById('certBoard');
+        start = { px: e.clientX, py: e.clientY, left: note.offsetLeft, top: note.offsetTop, moved: false,
+                  maxX: Math.max(0, board.clientWidth - note.offsetWidth), maxY: Math.max(0, board.clientHeight - note.offsetHeight) };
+        note.setPointerCapture(e.pointerId);
+    });
+    note.addEventListener('pointermove', e => {
+        if (!start) return;
+        const dx = e.clientX - start.px, dy = e.clientY - start.py;
+        if (!start.moved && Math.hypot(dx, dy) < 5) return;  // 手指抖一下不算拖曳
+        if (!start.moved) {
+            start.moved = true;
+            note.classList.add('dragging');
+            bringNoteToFront(id);
+            note.style.zIndex = '9999';
+        }
+        note.style.left = `${Math.min(start.maxX, Math.max(0, start.left + dx))}px`;
+        note.style.top = `${Math.min(start.maxY, Math.max(0, start.top + dy))}px`;
+    });
+    const finish = () => {
+        if (!start) return;
+        const s = start;
+        start = null;
+        note.classList.remove('dragging');
+        if (!s.moved) { openCertNote(Number(id)); return; }
+        certBoardLayout[id] = { x: s.maxX ? note.offsetLeft / s.maxX : 0, y: s.maxY ? note.offsetTop / s.maxY : 0, z: certBoardLayout[id].z };
+        placeCertNotes();
+        saveCertBoard();
+    };
+    note.addEventListener('pointerup', finish);
+    note.addEventListener('pointercancel', () => { start = null; note.classList.remove('dragging'); placeCertNotes(); });
+    // 鍵盤：Enter / 空白鍵開啟 (button 預設行為會觸發 click)，方向鍵移動
+    note.addEventListener('click', e => { if (e.detail === 0) openCertNote(Number(id)); });
+    note.addEventListener('keydown', e => {
+        const step = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, -0.05], ArrowDown: [0, 0.05] }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        const p = certBoardLayout[id];
+        certBoardLayout[id] = { ...p, x: Math.min(1, Math.max(0, p.x + step[0])), y: Math.min(1, Math.max(0, p.y + step[1])) };
+        placeCertNotes();
+        saveCertBoard();
+    });
+}
+
+function saveCertBoard() {
+    clearTimeout(certBoardSaveTimer);
+    certBoardSaveTimer = setTimeout(async () => {
+        try { await api('/api/campus/certs/board', { method: 'PUT', json: { positions: certBoardLayout } }); }
+        catch (e) { toast(`排列位置沒存到：${e.message}`, 'error'); }
+    }, 400);
+}
+
+function tidyCertBoard() {
+    certBoardItems.forEach((it, i) => { certBoardLayout[it.id] = defaultNoteSpot(i, certBoardItems.length); });
+    placeCertNotes();
+    saveCertBoard();
+    toast('已排整齊');
+}
+
+function openCertNote(id) {
+    const it = certBoardItems.find(x => Number(x.id) === id);
+    if (!it) return;
+    const row = (label, value) => value ? `<div class="flex gap-3 text-sm"><span class="w-20 shrink-0 text-slate-500">${label}</span><span class="text-slate-900 break-words">${esc(value)}</span></div>` : '';
+    const files = (it.files || []).map(f => f.type === 'image'
+        ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="block"><img src="${esc(f.url)}" alt="${esc(f.name)}" class="w-full max-h-[60vh] object-contain rounded border border-slate-200 bg-slate-50"></a>`
+        : `<div class="space-y-1"><iframe src="${esc(f.url)}" title="${esc(f.name)}" class="w-full h-[60vh] rounded border border-slate-200"></iframe>
+               <a href="${esc(f.url)}" target="_blank" rel="noopener" class="text-xs text-ukn-700 hover:underline">📄 另開視窗看「${esc(f.name)}」↗</a></div>`).join('');
+    openModal(`${CERT_KIND_ICON[it.kind] || '📄'} ${it.name}`, `
+        <div class="space-y-4">
+            <div class="space-y-1.5">
+                ${row('類別', it.kind)}${row('狀態', it.status === '已通過' ? `已通過（${it.reviewer} 確認）` : it.status)}
+                ${row('發證單位', it.issuer)}${row('取得日期', it.issue_date)}${row('證號', it.number)}${row('名次', it.award)}${row('說明', it.description)}
+                ${it.review_note ? `<div class="text-xs text-rose-700">班導意見：${esc(it.review_note)}</div>` : ''}
+            </div>
+            ${files || '<div class="text-sm text-slate-500">這筆沒有附檔案。</div>'}
+            ${it.status !== '已通過' ? `<div class="text-right"><button type="button" onclick="deleteCert(${Number(it.id)})" class="text-xs text-rose-700 border border-rose-200 rounded px-2.5 py-1 hover:bg-rose-50">刪除這筆</button></div>` : ''}
+        </div>`, true);
 }
 
 async function loadCertReview(status) {
