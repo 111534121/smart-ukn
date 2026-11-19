@@ -104,6 +104,63 @@
             }
         }
 
+        /* 證照牆：軟木板 + 便利貼 (campus-features.js 的 renderCertBoard) */
+        .cert-board {
+            position: relative;
+            height: 440px;
+            border-radius: 6px;
+            border: 6px solid #b07d4f;
+            background-color: #d9b48a;
+            background-image: radial-gradient(rgba(120, 72, 30, .25) 1px, transparent 1.5px);
+            background-size: 14px 14px;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .cert-note {
+            position: absolute;
+            width: 150px;
+            min-height: 132px;
+            padding: 22px 10px 10px;
+            text-align: left;
+            border: 0;
+            border-radius: 2px;
+            box-shadow: 2px 4px 8px rgba(0, 0, 0, .25);
+            cursor: grab;
+            touch-action: none;
+            transition: box-shadow .15s;
+            font-family: inherit;
+        }
+
+        .cert-note:focus-visible {
+            outline: 3px solid #1d4ed8;
+            outline-offset: 2px;
+        }
+
+        .cert-note.dragging {
+            cursor: grabbing;
+            box-shadow: 6px 12px 18px rgba(0, 0, 0, .35);
+            transform: rotate(0deg) scale(1.05) !important;
+        }
+
+        .cert-note .pin {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            pointer-events: none;
+        }
+
+        .cert-note-證照 { background: #fff4a3; }
+        .cert-note-競賽 { background: #ffc9de; }
+        .cert-note-作品 { background: #c5f0d2; }
+
+        @media (max-width: 640px) {
+            .cert-board { height: 520px; }
+            .cert-note { width: 118px; min-height: 112px; padding: 20px 8px 8px; }
+        }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -478,6 +535,18 @@
             background: #ecfeff;
             border-left: 3px solid #0891b2;
             color: #155e75;
+        }
+
+        .cal-cat-會議 {
+            background: #f5f3ff;
+            border-left: 3px solid #7c3aed;
+            color: #5b21b6;
+        }
+
+        .cal-cat-通知 {
+            background: #fff7ed;
+            border-left: 3px solid #ea580c;
+            color: #9a3412;
         }
 
         .cal-ev.expired {
@@ -977,11 +1046,15 @@
                         <h2 class="ukn-title text-lg sm:text-xl font-bold text-slate-900">線上申辦審核</h2>
                         <p class="text-xs text-slate-500 mt-1" id="appReviewScope"></p>
                     </div>
-                    <select id="appReviewFilter" onchange="loadAppReview()"
-                        class="text-xs border border-slate-300 rounded px-2 py-1.5 self-start sm:self-auto">
-                        <option value="pending">輪到我審</option>
-                        <option value="all">全部</option>
-                    </select>
+                    <div class="flex gap-2 self-start sm:self-auto">
+                        <button type="button" onclick="openSealModal()" class="text-xs font-bold border border-rose-300 text-rose-800 rounded px-2.5 py-1.5 hover:bg-rose-50">🔴 我的印章</button>
+                        <button type="button" onclick="openPhoneSignModal()" class="text-xs font-bold border border-ukn-300 text-ukn-800 rounded px-2.5 py-1.5 hover:bg-ukn-50">📱 手機簽名</button>
+                        <select id="appReviewFilter" onchange="loadAppReview()"
+                            class="text-xs border border-slate-300 rounded px-2 py-1.5">
+                            <option value="pending">輪到我審</option>
+                            <option value="all">全部</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="appReviewList" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
             </section>
@@ -1403,8 +1476,9 @@
                     <div class="flex items-center gap-2">
                         <h2 class="ukn-title text-lg font-bold text-slate-900">我的線上申請進度</h2>
                         <span class="text-[10px] bg-ukn-50 text-ukn-800 font-bold px-2 py-0.5 rounded">線上簽核</span>
+                        <button type="button" onclick="openUploadModal()" class="ml-auto bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold px-3 py-1.5 rounded transition">📎 上傳自己的申請表</button>
                     </div>
-                    <p class="text-xs text-slate-500 mt-1">線上送出後依序由老師、處室簽核。✓ 綠色為已通過、藍框閃爍為目前這一關、✕ 紅色為被退回、灰色為還沒到。</p>
+                    <p class="text-xs text-slate-500 mt-1">線上送出後依序由老師、處室簽核。✓ 綠色為已通過、藍框閃爍為目前這一關、✕ 紅色為被退回、灰色為還沒到。下方清單沒有的表單，可以按「上傳自己的申請表」，自己選要給哪幾關蓋章。</p>
                 </div>
                 <div id="onlineAppsList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
             </section>
@@ -1740,6 +1814,10 @@
                         <span class="flex items-center gap-1"><span
                                 class="w-3 h-3 rounded-sm cal-cat-個人"></span>我的行程</span>
                         <span class="flex items-center gap-1"><span
+                                class="w-3 h-3 rounded-sm cal-cat-會議"></span>會議</span>
+                        <span class="flex items-center gap-1" data-cal-student><span
+                                class="w-3 h-3 rounded-sm cal-cat-通知"></span>班級通知</span>
+                        <span class="flex items-center gap-1"><span
                                 class="w-3 h-3 rounded-sm bg-slate-200"></span>已截止</span>
                         <button type="button" id="calAddBtn" onclick="openAddEventModal()"
                             class="hidden ml-1 text-xs bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-2.5 py-1">＋
@@ -2049,16 +2127,6 @@
             </section>
         </div>
 
-        <!-- 人流分析 -->
-        <div id="tab-crowd" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">校園人流分析</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">看學餐、圖書館、電梯什麼時候人最多，避開尖峰時段。</p>
-                </div>
-                <div id="crowdBody" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
-            </section>
-        </div>
 
         <!-- 學餐、購書與常用系統 -->
         <div id="tab-links" class="tab-content hidden space-y-6">
@@ -2250,17 +2318,6 @@
             </section>
         </div>
 
-        <!-- 學期學習自評表 (self-review.js) -->
-        <div id="tab-selfreview" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">學期學習自評表</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                        每學期一份，替自己的學習打分數、寫下收穫與目標。內容只有你自己看得到，寫到一半會自動存成草稿，下次登入還在，也可以刪除。</p>
-                </div>
-                <div id="selfReviewBody"></div>
-            </section>
-        </div>
 
         <!-- AI 申辦小幫手 (assistant.js) -->
         <div id="tab-assistant" class="tab-content hidden space-y-6">
@@ -2854,6 +2911,22 @@
         }, 5 * 60 * 1000);
 
         // 我的缺曠課摘要 (登入學生才顯示；扣考門檻依學則：曠課時數達授課總時數 1/3)
+        // 系統通知 (手機 / 電腦右下角)：使用者有按過「開啟通知」才會跳
+        async function showAbsenceSystemNotice(r) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const title = `被記${r.type}：${r.course_name}`;
+            const opts = { body: `${String(r.date).slice(0, 10)}，如有請假請儘快找任課老師或生輔組確認。`, icon: '/img/icon-192.png', tag: `absence-${r.id}`, data: { url: '/#home' } };
+            try {
+                const reg = await navigator.serviceWorker?.getRegistration();
+                if (reg) reg.showNotification(title, opts); else new Notification(title, opts);
+            } catch (e) { /* 不支援時只顯示頁面上的提示 */ }
+        }
+
+        // 學生每 2 分鐘重抓一次缺曠紀錄：老師當天記了曠課，不用重新整理就會收到通知
+        setInterval(() => {
+            if (isStudentLoggedIn() && document.visibilityState === 'visible') loadMyAttendance();
+        }, 120000);
+
         async function loadMyAttendance() {
             const section = document.getElementById('homeAttendance');
             if (!isStudentLoggedIn()) return;
@@ -2861,8 +2934,17 @@
                 const res = await fetch('/api/student/attendance');
                 const data = await res.json();
                 if (data.status !== 'success') return;
+                // 跟上一次比，有新的曠課紀錄就馬上跳提示 (允許通知時也跳系統通知)
+                const prevIds = new Set((notifSources.attendance?.recent_records || []).map(r => r.id));
+                const fresh = notifSources.attendance
+                    ? (data.recent_records || []).filter(r => r.id != null && !prevIds.has(r.id) && ['曠課', '遲到'].includes(r.type)) : [];
                 notifSources.attendance = data;
                 renderNotifications();
+                if (fresh.length) {
+                    const r = fresh[0];
+                    toast(`🚨 你在「${r.course_name}」被記${r.type}（${String(r.date).slice(5, 10).replace('-', '/')}）`);
+                    showAbsenceSystemNotice(r);
+                }
 
                 document.getElementById('attTotals').innerHTML = ['曠課', '遲到', '病假'].map(t =>
                     `<span class="px-2.5 py-1 rounded border ${t === '曠課' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-slate-50 border-slate-200 text-slate-700'}">${t} <strong>${data.totals[t] || 0}</strong> 次</span>`
@@ -3540,7 +3622,13 @@
         // 通知由儀表板、缺曠課、獎助學金 API 的資料動態產生；各 loader 取得資料後呼叫 renderNotifications()
         const notifSources = {};
         const NOTIF_LEVEL_ORDER = { urgent: 0, warning: 1, info: 2 };
+        // 置頂分組：訊息(班級通知)最上面，接著是開會邀請/狀態，其餘照原本的緊急程度排序
+        // 線上申請的結果 (完成 / 退回) 排在會議之後、一般提醒之前
+        // 剛被記曠課排在班級訊息後面、會議前面
+        const NOTIF_PIN_ORDER = { message: 0, absence: 1, meeting: 2, application: 3, normal: 4 };
         const NOTIF_LEAVE_DAYS = 7;
+        const NOTIF_ABSENCE_DAYS = 3;
+        const NOTIF_APP_DAYS = 14;
         const NOTIF_STYLES = {
             urgent: 'bg-rose-50 text-rose-700 border-rose-200',
             warning: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -3645,6 +3733,17 @@
             }
             // 缺曠課：接近或已達扣考門檻的科目
             const att = notifSources.attendance;
+            // 剛被記的曠課 / 遲到 (3 天內)：一筆一則，老師一記下去學生就看得到
+            (att?.recent_records || []).filter(r => r.id != null && ['曠課', '遲到'].includes(r.type)
+                && daysAgo(String(r.date).slice(0, 10)) <= NOTIF_ABSENCE_DAYS).forEach(r => {
+                const absent = r.type === '曠課';
+                list.push({
+                    id: `absence-${r.id}`, level: absent ? 'urgent' : 'warning', pin: 'absence', icon: absent ? '🚨' : '⏰',
+                    title: `${absent ? '被記曠課' : '被記遲到'}：${r.course_name}`,
+                    desc: `${String(r.date).slice(5, 10).replace('-', '/')}${r.hours ? `，${r.hours} 小時` : ''}。如果你其實有請假或到課，請儘快找任課老師或生輔組確認。`,
+                    time: relativeDayLabel(String(r.date).slice(0, 10)), anchor: 'homeAttendance'
+                });
+            });
             if (att) {
                 att.courses.filter(c => c.level !== 'ok').forEach(c => {
                     const banned = c.level === 'banned';
@@ -3683,6 +3782,17 @@
                 list.push({
                     id: r.key, level: blocked ? 'warning' : 'info', icon: '🔁',
                     title: r.title, desc: r.body, time: '本學期', tab: 'tab-retake', url: r.link
+                });
+            });
+            // 線上申請 (applications.js 每 2 分鐘更新)：14 天內「全部蓋完章」或「被退回」的申請；id 帶狀態，退回後重送再完成會是新的一則
+            (notifSources.applications || []).filter(a => (a.status === '已完成' || a.status === '已退回')
+                && a.updated_at && daysAgo(a.updated_at) <= NOTIF_APP_DAYS).forEach(a => {
+                const done = a.status === '已完成';
+                list.push({
+                    id: `app-${a.id}-${a.status}`, level: done ? 'info' : 'warning', pin: 'application', icon: done ? '✅' : '↩️',
+                    title: done ? `申請已完成：${a.business_name}` : `申請被退回：${a.business_name}`,
+                    desc: done ? `各關都蓋好章了（共 ${a.stamp_count} 個章），可以列印蓋章申請表。` : a.summary,
+                    time: relativeDayLabel(a.updated_at), tab: 'tab-checklist', scrollTo: `online-app-${a.id}`
                 });
             });
             // 線上會議 (meetings.js 每 2 分鐘更新)：別人邀請我、還沒結束的會議；快開始時 id 改變再提醒一次
@@ -3782,6 +3892,14 @@
             if (notif.url) history.replaceState(null, '', notif.url);
             if (notif.tab) {
                 switchTab(notif.tab);
+                // 分頁內的某一張卡片 (例如線上申請)：等分頁畫好再捲過去並框起來
+                if (notif.scrollTo) setTimeout(() => {
+                    const el = document.getElementById(notif.scrollTo);
+                    if (!el) return;
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-4', 'ring-ukn-300');
+                    setTimeout(() => el.classList.remove('ring-4', 'ring-ukn-300'), 3000);
+                }, 600);
             } else if (notif.anchor) {
                 // 儀表板上的卡片：切回首頁並捲到該區塊
                 switchTab('tab-home');
@@ -4619,7 +4737,6 @@
     <script src="/js/campus-life.js?v=20261116-merge"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js?v=20261029"></script>
-    <script src="/js/self-review.js"></script>
     <script src="/js/reports.js"></script>
     <script src="/js/applications.js"></script>
     <script src="/js/conduct.js"></script>

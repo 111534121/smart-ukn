@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>手機簽名 - 康寧大學</title>
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #eef2f7; color: #0f172a; font-family: "Microsoft JhengHei", "Noto Sans TC", "PingFang TC", sans-serif; }
+    header { background: #003377; color: #fff; padding: 14px 16px; font-weight: 700; }
+    main { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p { margin: 4px 0; font-size: 14px; color: #475569; line-height: 1.6; }
+    .pad-wrap { position: relative; margin: 14px 0; }
+    canvas { display: block; width: 100%; height: 220px; background: #fff; border: 2px dashed #94a3b8; border-radius: 8px; touch-action: none; }
+    .hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 22px; pointer-events: none; }
+    .line { position: absolute; left: 24px; right: 24px; bottom: 50px; border-bottom: 1px solid #e2e8f0; pointer-events: none; }
+    .row { display: flex; gap: 10px; }
+    button { flex: 1; font: inherit; font-size: 16px; font-weight: 700; border-radius: 8px; padding: 13px; border: 0; cursor: pointer; }
+    .primary { background: #b91c1c; color: #fff; }
+    .primary:disabled { background: #fca5a5; }
+    .ghost { background: #fff; color: #334155; border: 1px solid #cbd5e1; }
+    .msg { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 15px; display: none; }
+    .ok { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .err { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .done { text-align: center; font-size: 48px; margin: 12px 0 0; }
+</style>
+</head>
+<body>
+<header>康寧大學 · 線上簽核手寫簽名</header>
+<main>
+    <div class="card">
+    {% if valid %}
+        <div id="padArea">
+            <h1>{{ name }}，請在下方簽名</h1>
+            <p>用手指在框裡簽名。送出後，你在網站上核准申請時就會蓋這個簽名。</p>
+            <div class="pad-wrap">
+                <canvas id="pad" aria-label="簽名區"></canvas>
+                <div class="line"></div>
+                <div class="hint" id="hint">在這裡簽名</div>
+            </div>
+            <div class="row">
+                <button type="button" class="ghost" id="clearBtn">重簽</button>
+                <button type="button" class="primary" id="sendBtn" disabled>送出簽名</button>
+            </div>
+        </div>
+        <div class="msg" id="msg" role="status"></div>
+    {% else %}
+        <div class="done">⌛</div>
+        <h1 style="text-align:center">這個簽名連結已經用過或過期了</h1>
+        <p style="text-align:center">請回到電腦上的「我的印章」，重新產生 QR code。連結 10 分鐘內有效，只能簽一次。</p>
+    {% endif %}
+    </div>
+</main>
+{% if valid %}
+<script>
+(() => {
+    const canvas = document.getElementById('pad');
+    const ctx = canvas.getContext('2d');
+    const sendBtn = document.getElementById('sendBtn');
+    const hint = document.getElementById('hint');
+    const msg = document.getElementById('msg');
+    let drawing = false, last = null, inked = false;
+
+    function resize() {
+        // 依螢幕像素密度放大畫布，簽名才不會糊；調整大小時清空 (避免變形)
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#0b1f4d';
+        ctx.lineWidth = 3;
+        clearPad();
+    }
+    function clearPad() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        inked = false;
+        sendBtn.disabled = true;
+        hint.style.display = 'flex';
+    }
+    function point(e) {
+        const r = canvas.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+    canvas.addEventListener('pointerdown', e => {
+        drawing = true;
+        last = point(e);
+        canvas.setPointerCapture(e.pointerId);
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 1.4, 0, Math.PI * 2);
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+    });
+    canvas.addEventListener('pointermove', e => {
+        if (!drawing) return;
+        const p = point(e);
+        ctx.beginPath();
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        last = p;
+        if (!inked) { inked = true; sendBtn.disabled = false; hint.style.display = 'none'; }
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => canvas.addEventListener(t, () => { drawing = false; }));
+    document.getElementById('clearBtn').addEventListener('click', clearPad);
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 只留有筆跡的範圍，送出的圖比較小，蓋在申請表上也比較好看
+    function trimmed() {
+        const { width, height } = canvas;
+        const data = ctx.getImageData(0, 0, width, height).data;
+        let minX = width, minY = height, maxX = -1, maxY = -1;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (data[(y * width + x) * 4 + 3] > 0) {
+                    if (x < minX) minX = x; if (x > maxX) maxX = x;
+                    if (y < minY) minY = y; if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (maxX < 0) return canvas;
+        const pad = 12;
+        const out = document.createElement('canvas');
+        out.width = maxX - minX + pad * 2;
+        out.height = maxY - minY + pad * 2;
+        out.getContext('2d').drawImage(canvas, minX - pad, minY - pad, out.width, out.height, 0, 0, out.width, out.height);
+        return out;
+    }
+
+    sendBtn.addEventListener('click', () => {
+        sendBtn.disabled = true;
+        sendBtn.textContent = '送出中…';
+        trimmed().toBlob(async blob => {
+            const fd = new FormData();
+            fd.append('signature', blob, 'signature.png');
+            try {
+                const res = await fetch(location.pathname, { method: 'POST', body: fd });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.message || `送出失敗 (${res.status})`);
+                document.getElementById('padArea').innerHTML = '<div class="done">✅</div><h1 style="text-align:center">簽名已儲存</h1><p style="text-align:center">可以關掉這個頁面了，電腦上的「我的印章」會自動更新。</p>';
+                msg.className = 'msg';
+            } catch (err) {
+                msg.textContent = err.message;
+                msg.className = 'msg err';
+                sendBtn.disabled = false;
+                sendBtn.textContent = '送出簽名';
+            }
+        }, 'image/png');
+    });
+})();
+</script>
+{% endif %}
+</body>
+</html>

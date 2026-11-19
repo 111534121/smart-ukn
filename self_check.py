@@ -12,7 +12,7 @@
     執行期間完全不影響正式資料，檢測完會自動還原。
   - 每一項檢測都包含「正常情況」與重要功能的「異常/權限情況」，模擬教務處老師指派
     的驗收方式：一個功能至少一個正常操作 + 一個異常或權限測試。
-  - 檢測中建立的任何資料（證照、報表檔案與實體檔案、收藏、請假單、自評表、
+  - 檢測中建立的任何資料（證照、報表檔案與實體檔案、收藏、請假單、
     教師專長、校慶祝福…）執行完都會呼叫對應的刪除 API，或在沒有刪除 API 時
     直接從記憶體/示範資料移除，不留下測試垃圾。
   - 需要外部網路（天氣、交通）的檢測，連不上網路時標記為 skip 而不是 fail，
@@ -661,12 +661,12 @@ def t_early_warning(c):
 # 15. 設施與借用
 # ============================================================
 
-@check("設施與借用", "校園地圖、教師辦公室、人流查詢")
+@check("設施與借用", "校園地圖、教師辦公室查詢")
 def t_facilities_readonly(c):
-    for url in ("/api/campus/map", "/api/campus/teachers", "/api/campus/crowd"):
+    for url in ("/api/campus/map", "/api/campus/teachers"):
         r = c.student.get(url)
         assert r.status_code == 200, f"{url} 應回 200"
-    return "校園地圖/教師辦公室/人流查詢皆正常"
+    return "校園地圖/教師辦公室查詢皆正常"
 
 
 @check("設施與借用", "教室借用申請與自行取消（正常，含清理）")
@@ -733,7 +733,7 @@ def t_assistant(c):
 
 
 # ============================================================
-# 18. 個人化偏好、學期自評表、教師專長、校慶跑馬燈、健康檢查
+# 18. 個人化偏好、教師專長、校慶跑馬燈、健康檢查
 # ============================================================
 
 @check("個人化內容偏好", "科系內容偏好設定")
@@ -741,21 +741,6 @@ def t_me_preferences(c):
     r = c.student.put("/api/me/preferences", json={"dept_id": None, "content_scope": "all"})
     assert r.status_code == 200, _j(r)
     return "個人化內容偏好設定正常"
-
-
-@check("學期自評表", "填寫、查詢、刪除（正常，含清理）")
-def t_self_review(c):
-    semester = _j(c.student.get("/api/self-review"))["current_semester"]
-    r = c.student.put(f"/api/self-review/{semester}", json={
-        "ratings": {}, "reflections": {}, "status": "草稿",
-    })
-    assert r.status_code == 200, _j(r)
-    try:
-        got = _j(c.student.get(f"/api/self-review/{semester}"))
-        assert got.get("exists") is True
-        return f"{semester} 學期自評表可填寫與查詢"
-    finally:
-        c.student.delete(f"/api/self-review/{semester}")
 
 
 @check("教師專長查詢", "查詢老師專長、老師修改自己資料")

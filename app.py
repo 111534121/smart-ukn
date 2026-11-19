@@ -29,7 +29,7 @@ from io import StringIO
 from datetime import datetime, timedelta
 from attendance.sources import MemoryAttendanceSource, MySQLAttendanceSource, VALID_TYPES as ATTENDANCE_TYPES
 from attendance.policy import summarize_attendance
-from attendance.notify import send_pending_notifications, get_mailer, campus_email
+from attendance.notify import send_pending_notifications, get_mailer, campus_email, NOTIFY_SUBJECT
 from dashboard.sources import MemoryDashboardSource, MySQLDashboardSource
 from dashboard.summary import build_dashboard
 from dashboard import demo_data as dashboard_demo
@@ -4258,7 +4258,8 @@ def get_my_attendance():
         "status": "success",
         "student_id": student_id,
         **summary,
-        "recent_records": [{k: r[k] for k in ("date", "course_name", "type")} for r in records[:5]]
+        # id 給通知中心判斷「是不是新的紀錄」；當天被記曠課時首頁鈴鐺會跳出通知
+        "recent_records": [{k: r.get(k) for k in ("id", "date", "course_name", "type", "hours")} for r in records[:5]]
     }), 200
 
 @app.route("/api/admin/attendance", methods=["GET", "POST"])
@@ -4312,7 +4313,26 @@ def manage_attendance_records():
     except Exception as e:
         return jsonify({"status": "error", "message": f"新增失敗：{e}"}), 500
     write_audit_log("attendance_records", record.get("id", student_id), "新增", after=record)
-    return jsonify({"status": "success", "message": "已新增模擬缺曠紀錄 (尚未通知)", "data": record}), 201
+    # 記了就立刻通知學生 (不用等批次寄信)；寄失敗就維持「未通知」，之後按「立即寄出」會再補寄
+    notified = notify_new_absence(source, record)
+    message = "已新增缺曠紀錄，並立即通知學生" if notified else "已新增缺曠紀錄（通知信沒寄出，稍後可按「立即寄出通知」補寄）"
+    return jsonify({"status": "success", "message": message, "notified": notified, "data": record}), 201
+
+
+def notify_new_absence(source, record):
+    """單筆缺曠紀錄馬上寄信給學生，成功就標記已通知；學生登入後首頁鈴鐺也會出現這筆紀錄"""
+    try:
+        when = str(record["date"])[:10]
+        body = (f"{when}「{record['course_name']}」記錄為{record['type']}"
+                + (f"（{record['hours']:g} 小時）" if record.get("hours") else "")
+                + "。\n如有疑問 (例如已請假)，請儘快洽任課老師或生輔組。\n請登入系統查看缺曠紀錄與扣考門檻。")
+        get_mailer().send(campus_email(record["student_id"]), f"{NOTIFY_SUBJECT}：{when} {record['course_name']} {record['type']}", body)
+        if record.get("id") is not None:
+            source.mark_notified([record["id"]])
+        return True
+    except Exception as e:
+        app.logger.warning("缺曠即時通知寄送失敗：%s", e)
+        return False
 
 @app.route("/api/admin/attendance/notify", methods=["POST"])
 @role_required("管理員", "教職員")
@@ -4721,15 +4741,6 @@ faculty.init_app(app, SimpleNamespace(
     write_audit_log=write_audit_log,
 ))
 
-# 學期學習自評表 (self_review 套件)
-import self_review
-
-self_review.init_app(app, SimpleNamespace(
-    fetch_db_rows=fetch_db_rows,
-    db_execute=db_execute,
-    current_semester=lambda: "{academic_year}-{semester}".format(**current_academic_term(datetime.now().date())),
-))
-
 # AI 申辦小幫手 (assistant 套件)：先查資料庫，有設定 Claude 時再由 Claude 整理成口語回答
 import assistant
 
@@ -4766,6 +4777,9 @@ applications.init_app(app, SimpleNamespace(
     class_student_ids=_get_class_student_ids,
     notify_student=notify_student,
     forms_folder=FORMS_FOLDER,
+    # 學生上傳的申請表、老師章圖檔 (data/ 不進 git，也不能用網址直接打開)
+    upload_dir=os.getenv("APPLICATION_UPLOAD_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "application_uploads")),
+    seal_dir=os.getenv("SEAL_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "seals")),
 ))
 
 # 我的操行 (conduct 套件)：基本分 + 導師評分 + 獎懲 + 缺曠扣分

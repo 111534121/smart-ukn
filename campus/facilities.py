@@ -1,11 +1,10 @@
-"""校園空間：教室租借、櫃子租借、校園地圖 (新生找教室)、老師辦公室與目前是否上課、人流分析。
+"""校園空間：教室租借、櫃子租借、校園地圖 (新生找教室)、老師辦公室與目前是否上課。
 
 建築物、教室、辦公室與櫃子為示範資料；請依學校實際配置修改 CAMPUS_BUILDINGS / ROOMS / TEACHER_OFFICES。
 
 教室租借與櫃子租借的預約紀錄交給 campus/facilities_store.py：有 MySQL 表時走資料庫，
 連不上或還沒建表則退回 data/campus_store.json。
 """
-import random
 from datetime import datetime, date, timedelta
 
 from flask import Blueprint, request
@@ -428,34 +427,3 @@ def locker_paid(locker_id):
     deps.write_audit_log("lockers", locker_id, "修改", before=before, after={**before, "status": "已租用"})
     return ok(message=f"{locker_id} 已完成繳費")
 
-
-# ---------- 人流分析 (模擬) ----------
-
-CROWD_PLACES = [
-    {"place": "學生餐廳", "base": [5, 10, 15, 25, 95, 70, 30, 20, 35, 45, 20, 10], "tip": "11:40 前或 12:40 後去比較不用排隊"},
-    {"place": "圖書館", "base": [5, 20, 30, 35, 40, 60, 55, 50, 45, 30, 25, 15], "tip": "上午人最少，適合找座位讀書"},
-    {"place": "康寧樓電梯", "base": [30, 90, 40, 85, 45, 80, 40, 85, 40, 60, 20, 10], "tip": "整點前 10 分鐘 (下課) 最擠，可以改走樓梯"},
-    {"place": "影印中心", "base": [5, 30, 25, 20, 60, 40, 30, 25, 20, 15, 10, 5], "tip": "期中期末前一週會大排長龍，建議提早印"},
-]
-CROWD_HOURS = list(range(8, 20))
-
-
-@bp.route("/api/campus/crowd", methods=["GET"])
-def crowd():
-    """依排課時間推估的人潮指數 (0-100)。示範資料；可改接門禁、Wi-Fi 連線數或學餐刷卡資料。"""
-    now = parse_now()
-    wd = now.isoweekday()
-    schedule = load_schedule()
-    class_blocks = sum(1 for s in schedule if s["weekday"] == wd)
-    factor = 0.3 if wd > 5 else 0.8 + min(0.4, class_blocks / 40)
-    rnd = random.Random(now.strftime("%Y%m%d"))
-    result = []
-    for p in CROWD_PLACES:
-        levels = [max(0, min(100, round(v * factor + rnd.randint(-5, 5)))) for v in p["base"]]
-        idx = now.hour - CROWD_HOURS[0]
-        current = levels[idx] if 0 <= idx < len(levels) else 0
-        future = [(h, l) for h, l in zip(CROWD_HOURS, levels) if h >= now.hour]
-        best = min(future, key=lambda x: x[1]) if future else None
-        result.append({"place": p["place"], "hours": CROWD_HOURS, "levels": levels, "current": current,
-                       "best_hour": best[0] if best else None, "tip": p["tip"]})
-    return ok(now=now.strftime("%Y-%m-%d %H:%M"), weekday=wd, data=result, simulated=True)

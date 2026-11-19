@@ -92,6 +92,10 @@ def client(monkeypatch, tmp_path):
                         lambda *a, **k: {"students_notified": 0, "records_notified": 0, "failed": [], "mode": "test"})
     # 不改到 links.json
     monkeypatch.setattr(app_module, "save_quick_links", lambda *a, **k: None)
+    # 線上申請的上傳檔、老師章與手機簽名連結寫到暫存資料夾，不動 data/
+    import applications
+    monkeypatch.setattr(applications.deps, "upload_dir", str(tmp_path / "application_uploads"))
+    monkeypatch.setattr(applications.deps, "seal_dir", str(tmp_path / "seals"))
     # campus 功能的資料 (科上通知、證照、租借…) 改寫到暫存檔，不動 data/campus_store.json
     from campus.common import store
     # 從空白資料開始 (班級由示範學生自動產生)，結果不受每個人電腦裡的 campus_store.json 影響

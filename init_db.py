@@ -1057,9 +1057,15 @@ def init_database():
         cursor.execute(TEACHERS_TABLE_SQL)
 
         # 線上會議與成員 (campus/meetings.py)
-        from campus.meetings_store import MEETINGS_TABLE_SQL, MEMBERS_TABLE_SQL
+        from campus.meetings_store import MEETINGS_TABLE_SQL, MEMBERS_TABLE_SQL, LOG_TABLES_SQL
         cursor.execute(MEETINGS_TABLE_SQL)
         cursor.execute(MEMBERS_TABLE_SQL)
+        for sql in LOG_TABLES_SQL:  # 會議留痕：文字討論、出席紀錄、會議紀錄與保存期限
+            cursor.execute(sql)
+
+        # 臨時停課／調課通知 (campus/course_changes.py)
+        from campus.course_changes import TABLE_SQL as COURSE_CHANGES_TABLE_SQL
+        cursor.execute(COURSE_CHANGES_TABLE_SQL)
 
         # 報表與文件庫 (campus/reports.py)
         from campus.reports_store import FILES_TABLE_SQL, VIEW_LOGS_TABLE_SQL, DOWNLOAD_LOGS_TABLE_SQL, FAVORITES_TABLE_SQL

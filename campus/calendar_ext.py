@@ -317,6 +317,60 @@ def staff_events(u, overlaps, today):
     return events
 
 
+def meeting_events(u, overlaps, today):
+    """我主持或受邀的線上會議 (排定、已取消)，標在會議那天"""
+    from . import meetings_store
+    from .meetings import _parse_time
+    me = user_key()
+    members = meetings_store.all_members()
+    events = []
+    for m in meetings_store.all_meetings():
+        mine = [x for x in members if x["meeting_id"] == m["id"]]
+        if m["host_key"] != me and not any(x["member_key"] == me for x in mine):
+            continue
+        start = _parse_time(m["start_at"])
+        if not start:
+            continue
+        d = start.date()
+        if not overlaps(d, d):
+            continue
+        end = start + timedelta(minutes=m["duration_min"])
+        cancelled = m["status"] == "已取消"
+        host = "我" if m["host_key"] == me else m["host_name"]
+        events.append({"key": f"meeting-{m['id']}", "type": "meeting", "category": "會議",
+                       "title": f"🎥 {start:%H:%M} {m['title']}" + ("（已取消）" if cancelled else ""),
+                       "start_date": d.isoformat(), "end_date": d.isoformat(), "expired": cancelled or d < today,
+                       "detail": {"note": f"時間：{start:%H:%M}–{end:%H:%M}（{m['duration_min']} 分鐘）\n主持人：{host}\n參加人數：{len(mine) + 1} 人"
+                                          + (f"\n說明：{m['description']}" if m.get("description") else ""),
+                                  "goto": {"tab": "tab-meetings", "label": "前往線上會議"}}})
+    return events
+
+
+def notice_events(u, overlaps, today):
+    """學生 / 家長收到的班級通知：標在發出那天；有期限的另外在期限那天標一次"""
+    from .messaging import load_notices
+    sid = u.get("student_id")
+    if u["role"] not in ("學生", "家長") or not sid:
+        return []
+    events = []
+    for n in load_notices(student_id=sid):
+        unread = sid not in n["read_by"]
+        note = f"{n.get('sender', '')}{'（未讀）' if unread else ''}\n{(n.get('content') or '')[:200]}"
+        goto = {"tab": "tab-notices", "label": "前往班級通知"}
+        sent = _to_date(str(n.get("created_at") or "")[:10]) if n.get("created_at") else None
+        if sent and overlaps(sent, sent):
+            events.append({"key": f"notice-{n['id']}", "type": "notice", "category": "通知",
+                           "title": f"📣 {n['title']}", "start_date": sent.isoformat(), "end_date": sent.isoformat(),
+                           "expired": False, "detail": {"note": note, "goto": goto}})
+        if n.get("due_date"):
+            due = _to_date(n["due_date"])
+            if overlaps(due, due):
+                events.append({"key": f"notice-{n['id']}-due", "type": "notice", "category": "通知",
+                               "title": f"📣 期限：{n['title']}", "start_date": due.isoformat(), "end_date": due.isoformat(),
+                               "expired": due < today, "detail": {"note": note, "goto": goto}})
+    return events
+
+
 @bp.route("/api/campus/calendar/month", methods=["GET"])
 def calendar_month():
     """某月份的所有事項 (含前後週，方便畫整張月曆)。?year=2026&month=10"""
@@ -388,6 +442,9 @@ def calendar_month():
         for ev in events:
             ev["detail"].pop("checklist", None)  # 學生的「要準備什麼、怎麼辦」說明
         events += staff_events(u, overlaps, today)
+    if u:
+        events += meeting_events(u, overlaps, today)
+        events += notice_events(u, overlaps, today)
 
     holidays = {}
     for y in {grid_start.year, grid_end.year}:

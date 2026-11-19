@@ -66,23 +66,147 @@ function meetingCard(m) {
             ${members}
             <div class="flex flex-wrap items-center gap-2 pt-1">
                 ${joinBtn}
+                ${!cancelled && !m.is_past ? `<button type="button" onclick="openMeetingChat(${m.id})" class="border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded px-3 py-1.5">💬 文字討論</button>` : ''}
+                <button type="button" onclick="openMeetingRecord(${m.id})" class="border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded px-3 py-1.5">📄 會議紀錄</button>
                 ${m.is_host && !cancelled && !m.is_past ? `<button type="button" onclick="cancelMeeting(${m.id})" class="text-xs text-rose-700 hover:underline ml-auto">取消會議</button>` : ''}
                 ${!m.is_host && !cancelled && !m.is_past ? `<button type="button" onclick="leaveMeeting(${m.id})" class="text-xs text-slate-500 hover:underline ml-auto">不參加</button>` : ''}
             </div>
         </article>`;
 }
 
-function enterMeeting(id) {
+async function enterMeeting(id) {
     const m = meetingData.data.find(x => x.id === id);
     if (!m || !m.join_url) return;
+    // 先記出席 (會議紀錄裡的「實際出席」)；彈出視窗要在使用者點擊當下開，所以先開空白分頁再填網址
+    const tab = meetingData.jitsi.embed ? null : window.open('', '_blank');
+    try { await api(`/api/campus/meetings/${id}/enter`, { json: {} }); }
+    catch (e) { if (tab) tab.close(); toast(e.message, 'error'); return; }
     const name = encodeURIComponent(JSON.stringify(currentUser.full_name || ''));
     const url = `${m.join_url}#userInfo.displayName=${name}&config.prejoinPageEnabled=true`;
     if (meetingData.jitsi.embed) {
         openModal(`🎥 ${m.title}`, `<iframe src="${esc(url)}" allow="camera; microphone; display-capture; fullscreen; autoplay" class="w-full h-[70vh] rounded border border-slate-200"></iframe>`, true);
     } else {
-        window.open(url, '_blank', 'noopener');
+        if (tab) { tab.opener = null; tab.location.href = url; } else window.open(url, '_blank', 'noopener');
         toast('已在新分頁開啟會議室，按「加入會議」就能進去；第一次使用請允許瀏覽器使用攝影機和麥克風');
     }
+}
+
+// ---------- 會議留痕：文字討論 ----------
+
+let meetingChatTimer = null;
+let meetingChatLast = 0;
+const MEETING_CHAT_POLL_MS = 4000;
+
+function chatTime(text) { return text.slice(11, 16); }
+
+function meetingMessageHtml(x) {
+    return `<div class="flex ${x.is_mine ? 'justify-end' : 'justify-start'}">
+        <div class="max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${x.is_mine ? 'bg-ukn-800 text-white' : 'bg-slate-100 text-slate-900'}">
+            <div class="text-[11px] ${x.is_mine ? 'text-white/70' : 'text-slate-500'}">${x.is_mine ? '我' : esc(x.sender_name)} · ${esc(chatTime(x.created_at))}</div>
+            <div class="whitespace-pre-line break-words">${esc(x.content)}</div>
+        </div></div>`;
+}
+
+// 【功能：會議留痕】文字討論視窗：開著的時候每 4 秒拿一次新訊息，關掉視窗就停止
+async function openMeetingChat(id) {
+    stopMeetingChat();
+    meetingChatLast = 0;
+    const m = meetingData.data.find(x => x.id === id);
+    openModal(`💬 ${m ? m.title : '文字討論'}`, `
+        <div class="space-y-3">
+            <p class="text-[11px] text-slate-500">討論內容會留在會議紀錄裡當佐證，會議結束後只能查看。</p>
+            <div id="meetingChatList" data-meeting="${id}" class="h-72 overflow-y-auto space-y-2 border border-slate-200 rounded p-2 bg-white">
+                <div class="text-xs text-slate-400 text-center py-6">載入中…</div></div>
+            <form id="meetingChatForm" onsubmit="sendMeetingChat(event, ${id})" class="flex gap-2">
+                <input name="content" maxlength="500" autocomplete="off" required placeholder="輸入訊息，按 Enter 送出" class="flex-1 border border-slate-300 rounded px-3 py-2 text-sm">
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4">送出</button>
+            </form>
+        </div>`);
+    await pullMeetingChat(id);
+    meetingChatTimer = setInterval(() => pullMeetingChat(id), MEETING_CHAT_POLL_MS);
+}
+
+function stopMeetingChat() { clearInterval(meetingChatTimer); meetingChatTimer = null; }
+
+async function pullMeetingChat(id) {
+    const list = document.getElementById('meetingChatList');
+    // 視窗關了或換成別的內容：停止輪詢
+    if (!list || list.dataset.meeting !== String(id) || document.getElementById('uiModal').classList.contains('hidden')) return stopMeetingChat();
+    try {
+        const r = await api(`/api/campus/meetings/${id}/chat?after=${meetingChatLast}`);
+        if (!meetingChatLast) list.innerHTML = r.data.length ? '' : '<div data-empty class="text-xs text-slate-400 text-center py-6">還沒有人留言，先打聲招呼吧。</div>';
+        if (r.data.length) {
+            list.querySelector('[data-empty]')?.remove();
+            const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+            list.insertAdjacentHTML('beforeend', r.data.map(meetingMessageHtml).join(''));
+            meetingChatLast = r.data[r.data.length - 1].id;
+            if (atBottom || r.data.some(x => x.is_mine)) list.scrollTop = list.scrollHeight;
+        }
+        const form = document.getElementById('meetingChatForm');
+        if (form && !r.can_post) {
+            form.outerHTML = `<p class="text-xs text-slate-500 text-center">${r.purged ? '討論已過保存期限並刪除。' : '會議已結束或已取消，討論只能查看。'}</p>`;
+            stopMeetingChat();
+        }
+    } catch (e) { stopMeetingChat(); toast(e.message, 'error'); }
+}
+
+async function sendMeetingChat(event, id) {
+    event.preventDefault();
+    const input = event.target.elements.content;
+    const content = input.value.trim();
+    if (!content) return;
+    input.value = '';
+    try { await api(`/api/campus/meetings/${id}/chat`, { json: { content } }); await pullMeetingChat(id); }
+    catch (e) { input.value = content; toast(e.message, 'error'); }
+}
+
+// ---------- 會議留痕：會議紀錄 (出席、紀錄、討論、保存期限) ----------
+
+// 【功能：會議留痕】會議紀錄視窗：成員都看得到；主持人可以寫紀錄、選保存 3 / 6 / 12 個月；可下載純文字檔
+async function openMeetingRecord(id) {
+    stopMeetingChat();
+    let r;
+    try { r = (await api(`/api/campus/meetings/${id}/record`)).data; } catch (e) { toast(e.message, 'error'); return; }
+    const absent = r.invited.filter(x => !x.attended);
+    const attendance = r.attendance.length ? `<ul class="text-xs space-y-0.5">${r.attendance.map(a => `<li>✅ ${esc(a.name)}${a.is_host ? '（主持人）' : ''}
+            <span class="text-slate-500">${esc(a.first_joined_at.slice(11, 16))} 進入${a.join_count > 1 ? `，共 ${a.join_count} 次，最後 ${esc(a.last_joined_at.slice(11, 16))}` : ''}</span></li>`).join('')}</ul>`
+        : '<p class="text-xs text-slate-500">還沒有人進入會議室。</p>';
+    const minutes = r.is_host && !r.purged ? `
+        <form onsubmit="saveMeetingRecord(event, ${id})" class="space-y-2">
+            <textarea name="minutes" rows="6" maxlength="5000" placeholder="討論了什麼、決議、誰負責什麼、下次什麼時候" class="w-full border border-slate-300 rounded px-3 py-2 text-sm">${esc(r.minutes)}</textarea>
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                <label class="text-xs font-semibold text-slate-600">保存期限</label>
+                <select name="keep_months" class="border border-slate-300 rounded px-2 py-1 text-sm bg-white">
+                    ${r.keep_options.map(n => `<option value="${n}" ${n === r.keep_months ? 'selected' : ''}>會議結束後 ${n === 12 ? '1 年' : `${n} 個月`}</option>`).join('')}</select>
+                <button class="ml-auto bg-ukn-800 hover:bg-ukn-900 text-white text-sm font-bold rounded px-4 py-1.5">儲存紀錄</button>
+            </div>
+        </form>`
+        : `<div class="text-sm whitespace-pre-line bg-slate-50 border border-slate-200 rounded p-3">${r.minutes ? esc(r.minutes) : '<span class="text-slate-400">主持人尚未填寫。</span>'}</div>`;
+    openModal(`📄 會議紀錄：${r.title}`, r.purged ? `<p class="text-sm text-slate-600">這場會議的討論與紀錄已在 ${esc(r.keep_until)} 過保存期限，已自動刪除。</p>` : `
+        <div class="space-y-4 text-sm">
+            <div class="text-xs text-slate-600 space-y-0.5">
+                <div>🕒 ${esc(r.start_at)} – ${esc(r.end_at.slice(11))}（${r.duration_min} 分鐘）${r.status === '已取消' ? ' · <b class="text-rose-700">已取消</b>' : ''}</div>
+                <div>主持人：${esc(r.host_name)}（${esc(r.host_role)}）</div>
+                <div>🗄️ 保存到 <b>${esc(r.keep_until)}</b>，之後討論與紀錄自動刪除</div>
+            </div>
+            <section><h4 class="font-bold text-slate-900 mb-1">出席（${r.attendance.length} / ${r.invited.length + 1} 人）</h4>${attendance}
+                ${absent.length ? `<p class="text-xs text-slate-500 mt-1">未出席：${absent.map(x => esc(x.name)).join('、')}</p>` : ''}</section>
+            <section><h4 class="font-bold text-slate-900 mb-1">會議紀錄</h4>${minutes}
+                ${r.minutes_updated_at ? `<p class="text-[11px] text-slate-400 mt-1">${esc(r.minutes_updated_by)} 於 ${esc(r.minutes_updated_at.slice(0, 16))} 更新</p>` : ''}</section>
+            <section><h4 class="font-bold text-slate-900 mb-1">文字討論（${r.messages.length} 則）</h4>
+                <div class="max-h-48 overflow-y-auto space-y-2 border border-slate-200 rounded p-2">${r.messages.map(meetingMessageHtml).join('') || '<div class="text-xs text-slate-400 text-center py-3">沒有文字討論</div>'}</div></section>
+            <a href="/api/campus/meetings/${id}/record/download" class="inline-block border border-ukn-700 text-ukn-800 hover:bg-ukn-50 text-sm font-bold rounded px-4 py-2">⬇️ 下載會議紀錄 (.txt)</a>
+        </div>`, true);
+}
+
+async function saveMeetingRecord(event, id) {
+    event.preventDefault();
+    const f = new FormData(event.target);
+    try {
+        const r = await api(`/api/campus/meetings/${id}/record`, { method: 'PUT', json: { minutes: f.get('minutes'), keep_months: Number(f.get('keep_months')) } });
+        toast(r.message);
+        openMeetingRecord(id);
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 function copyMeetingInvite(id) {

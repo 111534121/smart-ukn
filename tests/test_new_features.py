@@ -1,4 +1,4 @@
-"""我的科系 (分系)、教師專長查詢、學期自評表、AI 申辦小幫手"""
+"""我的科系 (分系)、教師專長查詢、AI 申辦小幫手"""
 import copy
 
 import pytest
@@ -6,7 +6,6 @@ import pytest
 import assistant
 import faculty
 import preferences
-import self_review
 from assistant import logic as assistant_logic
 from faculty import logic as faculty_logic
 
@@ -15,7 +14,6 @@ from faculty import logic as faculty_logic
 def fresh_state(monkeypatch):
     monkeypatch.setattr(preferences, "DEMO_PREFS", {})
     monkeypatch.setattr(faculty, "DEMO_PROFILES", copy.deepcopy(faculty.DEMO_PROFILES))
-    monkeypatch.setattr(self_review, "DEMO_REVIEWS", {})
     monkeypatch.setattr(assistant, "_recent", {})
     monkeypatch.setattr(assistant, "claude_enabled", lambda: False)
 
@@ -197,55 +195,6 @@ def test_admin_faculty_crud(client, login):
     assert client.get("/api/faculty?q=驗光").get_json()["data"] == []
     assert client.delete(f"/api/admin/faculty/{new_id}").status_code == 200
 
-
-# ---------- 學期自評表 ----------
-
-RATINGS = {"attitude": 4, "attendance": 5, "assignments": 3, "skills": 4, "teamwork": 4, "time": 2}
-
-
-def test_self_review_only_for_students(client, login):
-    assert client.get("/api/self-review").status_code == 401
-    login("parent1")
-    assert client.get("/api/self-review").status_code == 403
-
-
-def test_self_review_draft_complete_persist_delete(client, login):
-    login("student1")
-    meta = client.get("/api/self-review").get_json()
-    current = meta["current_semester"]
-    assert len(meta["rating_items"]) == 6 and meta["data"] == []
-
-    # 草稿可以只填一部分
-    draft = client.put(f"/api/self-review/{current}", json={"ratings": {"attitude": 4}, "reflections": {"gained": "學會 SQL"}})
-    assert draft.status_code == 200 and draft.get_json()["data"]["status"] == "草稿"
-    # 完成時 6 項都要填
-    assert client.put(f"/api/self-review/{current}", json={"ratings": {"attitude": 4}, "status": "已完成"}).status_code == 400
-    done = client.put(f"/api/self-review/{current}", json={"ratings": RATINGS, "reflections": {"goals": "準時交作業"}, "status": "已完成"})
-    assert done.get_json()["data"]["average"] == 3.67
-
-    # 登出再登入仍在
-    client.post("/api/auth/logout")
-    login("student1")
-    saved = client.get(f"/api/self-review/{current}").get_json()
-    assert saved["exists"] and saved["data"]["reflections"]["goals"] == "準時交作業"
-
-    # 其他學生看不到
-    login("student2")
-    assert client.get(f"/api/self-review/{current}").get_json()["exists"] is False
-
-    login("student1")
-    assert client.delete(f"/api/self-review/{current}").status_code == 200
-    assert client.get("/api/self-review").get_json()["data"] == []
-    assert client.delete(f"/api/self-review/{current}").status_code == 404
-
-
-def test_self_review_validation(client, login):
-    login("student1")
-    assert client.put("/api/self-review/2026", json={}).status_code == 400
-    assert client.put("/api/self-review/999-1", json={}).status_code == 400  # 未來學期
-    assert client.put("/api/self-review/114-2", json={"ratings": {"attitude": 9}}).status_code == 400
-    assert client.put("/api/self-review/114-2", json={"reflections": {"gained": "字" * 501}}).status_code == 400
-    assert client.put("/api/self-review/114-2", json={"ratings": RATINGS}).status_code == 200  # 補填過去學期
 
 
 # ---------- AI 申辦小幫手 ----------

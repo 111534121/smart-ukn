@@ -1,5 +1,5 @@
 // Smart UKN 新功能畫面 (校務申請、校園生活與社群)：獎助學金檢核、宿舍與總務、教室 / 櫃子租借、
-// 校園地圖與老師辦公室、天氣交通、人流、班級通知。
+// 校園地圖與老師辦公室、天氣交通、班級通知。
 // 依賴 campus-shell.js 與 campus-features.js 的共用函式 (api、toast、esc、statusBadge…)。
 
 // =====================================================================
@@ -770,7 +770,7 @@ function showTeacherTimetable(name) {
 }
 
 // =====================================================================
-// 天氣與交通、人流
+// 天氣與交通
 // =====================================================================
 
 async function loadWeatherDetail() {
@@ -814,28 +814,6 @@ async function loadTransport() {
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-async function loadCrowd() {
-    const body = document.getElementById('crowdBody');
-    try {
-        const r = await api('/api/campus/crowd');
-        const hourNow = Number(r.now.slice(11, 13));
-        body.innerHTML = r.data.map(p => {
-            const level = p.current >= 70 ? ['人很多', 'red'] : p.current >= 40 ? ['普通', 'amber'] : ['人少', 'green'];
-            return `
-            <div class="rounded border border-slate-200 p-4 space-y-3">
-                <div class="flex items-center justify-between"><span class="font-bold text-slate-900">${esc(p.place)}</span>${hourNow >= 8 && hourNow < 20 ? statusBadge(`現在：${level[0]}`, level[1]) : statusBadge('非開放時段', 'gray')}</div>
-                <div class="flex items-end gap-1 h-28" role="img" aria-label="${esc(p.place)} 各時段人潮">
-                    ${p.levels.map((l, i) => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${p.hours[i]}:00 人潮指數 ${l}">
-                        <div class="w-full rounded-t-sm ${p.hours[i] === hourNow ? 'bg-accent-500' : p.hours[i] === p.best_hour ? 'bg-emerald-500' : 'bg-ukn-300'}" style="height:${Math.max(4, l)}%"></div>
-                        <div class="text-[9px] text-slate-500 mt-0.5">${p.hours[i]}</div></div>`).join('')}
-                </div>
-                <div class="flex flex-wrap gap-3 text-[10px] text-slate-500"><span><span class="inline-block w-2 h-2 bg-accent-500 mr-1"></span>現在</span><span><span class="inline-block w-2 h-2 bg-emerald-500 mr-1"></span>接下來最空</span></div>
-                <div class="text-xs text-slate-700">💡 ${esc(p.tip)}${p.best_hour != null ? `；今天接下來 ${p.best_hour}:00 左右最空` : ''}</div>
-            </div>`;
-        }).join('') + `<p class="md:col-span-2 text-[11px] text-slate-400">${r.simulated ? '目前為依課表推算的模擬數據；接上門禁刷卡、Wi-Fi 連線數或學餐交易資料後即可顯示實際人流。' : ''}</p>`;
-    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
-}
-
 // =====================================================================
 // 班級通知
 // =====================================================================
@@ -863,10 +841,11 @@ async function loadNotices() {
     if (isStaff()) return loadNoticesTeacher();
     if (currentUser.role === '家長') {
         try {
-            const [inbox, msgs] = await Promise.all([api('/api/campus/notices/inbox'), api('/api/campus/advisor-messages')]);
+            const [inbox, msgs, changes] = await Promise.all([api('/api/campus/notices/inbox'), api('/api/campus/advisor-messages'),
+                api('/api/campus/course-changes').catch(() => ({ data: [] }))]);
             body.innerHTML = `
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="space-y-2">${noticeListHtml(inbox, true)}
+                    <div class="space-y-2">${courseChangesHtml(changes.data, false)}${noticeListHtml(inbox, true)}
                         <p class="text-xs text-slate-400 pt-2">僅能查看，標記已讀與加入／退出班級請由學生本人操作。</p></div>
                     <div class="space-y-3">
                         <h3 class="font-bold text-slate-900">留言給導師</h3>
@@ -892,12 +871,13 @@ async function loadNotices() {
     }
     if (currentUser.role !== '學生') { body.innerHTML = '<div class="text-sm text-slate-500">班級通知提供學生與老師使用。</div>'; return; }
     try {
-        const [cls, inbox] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/inbox')]);
+        const [cls, inbox, changes] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/inbox'),
+            api('/api/campus/course-changes').catch(() => ({ data: [] }))]);
         noticeClasses = cls.data;
         const joined = noticeClasses.filter(c => c.joined), others = noticeClasses.filter(c => !c.joined);
         body.innerHTML = `
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 space-y-2">${noticeListHtml(inbox, false)}</div>
+                <div class="lg:col-span-2 space-y-2">${courseChangesHtml(changes.data, true)}${noticeListHtml(inbox, false)}</div>
                 <div class="space-y-4">
                     <div class="rounded border border-slate-200 p-4 space-y-2">
                         <h3 class="font-bold text-slate-900 text-sm">我加入的班級</h3>
@@ -913,6 +893,57 @@ async function loadNotices() {
                 </div>
             </div>`;
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
+}
+
+// ---------- 臨時停課／調課：原時段 → 補課 / 調課後時段，一鍵加入行事曆 ----------
+
+function courseChangeWhen(day, periods, room) {
+    const wd = '日一二三四五六'[new Date(`${day}T00:00`).getDay()];
+    return `${mmdd(day)}（${wd}）第 ${esc(periods)} 節${room ? ` ${esc(room)}` : ''}`;
+}
+
+// 【功能：停調課通知】班級通知頁上方的停調課卡片；學生可一鍵加入行事曆，家長只能看
+function courseChangesHtml(items, canAdd) {
+    if (!items || !items.length) return '';
+    const upcoming = items.filter(c => !c.is_past), past = items.filter(c => c.is_past);
+    const card = c => `
+        <article class="rounded border ${c.is_past ? 'border-slate-200 opacity-70' : 'border-rose-200 bg-rose-50/40'} px-4 py-3 space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-block text-[11px] font-bold rounded px-1.5 py-0.5 ${c.kind === '停課' ? 'bg-rose-600' : 'bg-amber-500'} text-white">${c.kind === '停課' ? '🚫 停課' : '🔁 調課'}</span>
+                <span class="font-semibold text-slate-900">${esc(c.course_name)}</span>
+                <span class="text-[11px] text-slate-500">${esc(c.class_name)}${c.teacher ? ` · ${esc(c.teacher)}` : ''}</span>
+            </div>
+            <div class="text-sm text-slate-700 grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5">
+                <span class="text-slate-500">原本</span><span class="${c.is_past ? '' : 'line-through decoration-rose-400'}">${courseChangeWhen(c.orig_date, c.orig_periods, c.orig_room)}</span>
+                ${c.new_date ? `<span class="text-slate-500">${c.kind === '停課' ? '補課' : '改到'}</span><span class="font-semibold text-slate-900">${courseChangeWhen(c.new_date, c.new_periods, c.new_room)}</span>`
+                    : '<span class="text-slate-500">補課</span><span class="text-slate-500">暫無補課，老師另行通知</span>'}
+            </div>
+            ${c.reason ? `<p class="text-xs text-slate-600">原因：${esc(c.reason)}</p>` : ''}
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <span class="text-[11px] text-slate-400">${esc(c.created_by)} · ${esc(c.created_at.slice(5, 16).replace('-', '/'))} 發布</span>
+                ${!canAdd || c.is_past ? '' : c.in_calendar ? '<span class="text-xs text-emerald-700 font-semibold">✅ 已在我的行事曆</span>'
+                    : `<button type="button" onclick="addCourseChangeToCalendar(${c.id}, this)" class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold rounded px-3 py-1.5">📅 加入我的行事曆</button>`}
+            </div>
+        </article>`;
+    return `
+        <section class="space-y-2 mb-4">
+            <h3 class="font-bold text-slate-900 text-sm">臨時停課／調課${upcoming.length ? `<span class="ml-1 text-rose-700">（${upcoming.length}）</span>` : ''}</h3>
+            ${upcoming.map(card).join('') || '<div class="text-xs text-slate-500">近期沒有停課或調課。</div>'}
+            ${past.length ? `<details><summary class="text-xs text-slate-500 cursor-pointer">已過的停調課（${past.length}）</summary><div class="space-y-2 mt-2">${past.map(card).join('')}</div></details>` : ''}
+        </section>`;
+}
+
+async function addCourseChangeToCalendar(id, btn) {
+    btn.disabled = true;
+    try {
+        const r = await api(`/api/campus/course-changes/${id}/calendar`, { json: {} });
+        toast(r.message);
+        btn.outerHTML = '<span class="text-xs text-emerald-700 font-semibold">✅ 已在我的行事曆</span>';
+        if (typeof refreshCalendar === 'function') refreshCalendar();
+    } catch (e) {
+        btn.disabled = false;
+        toast(e.message, e.status === 409 ? 'info' : 'error');
+    }
 }
 
 async function sendAdvisorMessage(event) {

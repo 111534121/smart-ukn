@@ -1,5 +1,6 @@
 """線上申辦進度 (送出 → 逐關簽核 → 完成 / 退回) 與申請表單下載"""
 import copy
+import io
 
 import pytest
 
@@ -7,8 +8,11 @@ import applications
 
 
 @pytest.fixture(autouse=True)
-def fresh_apps(monkeypatch):
+def fresh_apps(monkeypatch, tmp_path):
     monkeypatch.setattr(applications, "DEMO_APPLICATIONS", copy.deepcopy(applications.DEMO_APPLICATIONS))
+    # 上傳的申請表、老師章寫到暫存資料夾，不動 data/
+    monkeypatch.setattr(applications.deps, "upload_dir", str(tmp_path / "uploads"))
+    monkeypatch.setattr(applications.deps, "seal_dir", str(tmp_path / "seals"))
 
 
 WITHDRAW_FIELDS = {"phone": "0912-000-000", "semester": "115-1", "course_code": "CS201", "course_name": "資料結構",
@@ -202,3 +206,196 @@ def test_upload_application_form_code_upload_and_item_id_zero(client, login):
     review_res = client.post(f"/api/applications/{app_data['id']}/review", json={"action": "approve"})
     assert review_res.status_code == 200
     assert review_res.get_json()["data"]["status"] == "已完成"
+# ---------- 學生上傳自己的申請表、老師章 ----------
+
+PDF = b"%PDF-1.4 test form"
+PNG = b"\x89PNG\r\n\x1a\n fake seal"
+
+
+def upload(client, type="resume", files=None, **form):
+    data = {"type": type, "phone": "0912-000-000", "reason": "寒假實習", **form}
+    data["files"] = files if files is not None else [(io.BytesIO(PDF), "實習申請.pdf")]
+    return client.post("/api/applications/upload", data=data, content_type="multipart/form-data")
+
+
+def test_upload_options_list_types_with_fixed_stages(client):
+    types = client.get("/api/applications/upload-options").get_json()["types"]
+    resume = next(t for t in types if t["key"] == "resume")
+    assert resume["name"] == "復學申請" and [s["name"] for s in resume["stages"]] == ["導師簽章", "教務處註冊組"]
+    assert all(t["stages"] for t in types)
+
+
+def test_upload_validates_type_and_files(client, login):
+    login("student2")
+    assert upload(client, type="").status_code == 400
+    assert upload(client, type="no_such").status_code == 400
+    res = upload(client, files=[(io.BytesIO(b"MZ fake exe"), "form.pdf")])
+    assert res.status_code == 400 and "不是真的 PDF" in res.get_json()["message"]
+    assert upload(client, files=[(io.BytesIO(PDF), "a.docx")]).status_code == 400
+    assert upload(client, phone="").status_code == 400
+
+
+def test_student_cannot_pick_own_stages(client, login):
+    login("student2")
+    res = upload(client, route=["cashier"], title="自己取的名字")  # 舊參數一律忽略
+    data = res.get_json()["data"]
+    assert res.status_code == 201 and data["business_name"] == "復學申請"
+    assert data["route_keys"] == ["advisor", "registry"]
+
+
+def test_upload_flows_through_chosen_stages_with_personal_seals(client, login):
+    login("student2")  # 資管四忠，導師是 teacher1
+    res = upload(client)
+    assert res.status_code == 201
+    data = res.get_json()["data"]
+    assert [s["name"] for s in data["steps"]] == ["線上送出", "導師簽章", "教務處註冊組", "完成"]
+    assert data["is_upload"] and data["files"][0]["name"] == "實習申請.pdf"
+    assert "_files" not in data["fields"]  # 存檔名不外流
+    app_id = data["id"]
+    assert client.get(data["files"][0]["url"]).data == PDF
+
+    # 老師上傳自己的印章圖，再核准 → 申請表上蓋的是這張圖
+    client.post("/api/auth/logout")
+    login("teacher1")
+    assert client.get("/api/seals/mine").get_json()["type"] == "name"
+    bad = client.post("/api/seals/mine", data={"seal": (io.BytesIO(b"not image"), "seal.png")}, content_type="multipart/form-data")
+    assert bad.status_code == 400
+    ok = client.post("/api/seals/mine", data={"seal": (io.BytesIO(PNG), "seal.png")}, content_type="multipart/form-data")
+    assert ok.status_code == 200 and client.get("/api/seals/mine").get_json()["type"] == "image"
+    res = client.post(f"/api/applications/{app_id}/review", json={"action": "approve"}).get_json()
+    stamp = res["data"]["history"][-1]["stamp"]
+    assert stamp["seal"]["type"] == "image" and "教務處註冊組" in res["message"]
+    assert client.get(f"/applications/{app_id}/seal/1").data == PNG
+
+    # 換回系統刻的章：已經蓋好的那關仍是原本的圖
+    assert client.delete("/api/seals/mine").status_code == 200
+    assert client.get(f"/applications/{app_id}/seal/1").data == PNG
+
+    # 行政人員沒上傳過 → 蓋系統依姓名刻的章
+    client.post("/api/auth/logout")
+    login("staff1")
+    res = client.post(f"/api/applications/{app_id}/review", json={"action": "approve"}).get_json()
+    assert res["data"]["status"] == "已完成"
+    assert res["data"]["history"][-1]["stamp"]["seal"] == {"type": "name", "text": "周立威"}
+    html = client.get(f"/applications/{app_id}/signed").get_data(as_text=True)
+    assert "復學申請" in html and "實習申請.pdf" in html and "周立威的印章" in html
+
+    # 驗證碼綁著上傳的檔案：檔案被換掉章就失效
+    assert client.get(f"/api/applications/stamp/{stamp['code']}").get_json()["valid"]
+    target = next(a for a in applications.DEMO_APPLICATIONS if a["id"] == app_id)
+    target["fields"]["_files"][0]["sha256"] = "0" * 64
+    assert not client.get(f"/api/applications/stamp/{stamp['code']}").get_json()["valid"]
+
+
+def test_uploaded_file_hidden_from_others(client, login):
+    login("student2")
+    app_id = upload(client).get_json()["data"]["id"]
+    client.post("/api/auth/logout")
+    login("student1")
+    assert client.get(f"/api/applications/{app_id}/files/0").status_code == 404
+    client.post("/api/auth/logout")
+    login("parent1")  # 王小明的家長
+    assert client.get(f"/api/applications/{app_id}/files/0").status_code == 404
+
+
+def test_students_have_no_seal(client, login):
+    login("student1")
+    assert client.get("/api/seals/mine").status_code == 403
+
+
+def test_name_seal_layout():
+    from applications.seals import name_seal_svg, seal_text
+    assert seal_text("彭賓鈺 老師") == "彭賓鈺" and seal_text("周立威 (研發處)") == "周立威"
+    svg = str(name_seal_svg("<script>"))
+    assert "<script>" not in svg  # 姓名有跳脫
+
+
+# ---------- 手機簽名 ----------
+
+def test_phone_signature_link_flow(client, login):
+    login("teacher1")
+    link = client.post("/api/seals/sign-link").get_json()
+    token = link["token"]
+    assert link["url"].endswith(f"/seal/sign/{token}")
+    qr = client.get(link["qr_url"])
+    assert qr.status_code == 200 and qr.mimetype == "image/svg+xml"
+    assert client.get(f"/api/seals/sign-link/{token}/status").get_json()["signed"] is False
+
+    # 手機端：沒登入也能開、能簽
+    phone = client.application.test_client()
+    page = phone.get(f"/seal/sign/{token}").get_data(as_text=True)
+    assert "彭賓鈺，請在下方簽名" in page
+    bad = phone.post(f"/seal/sign/{token}", data={"signature": (io.BytesIO(b"not png"), "s.png")}, content_type="multipart/form-data")
+    assert bad.status_code == 400  # 不是圖片：連結還能再用
+    ok = phone.post(f"/seal/sign/{token}", data={"signature": (io.BytesIO(PNG), "s.png")}, content_type="multipart/form-data")
+    assert ok.status_code == 200
+    # 只能簽一次
+    again = phone.post(f"/seal/sign/{token}", data={"signature": (io.BytesIO(PNG), "s.png")}, content_type="multipart/form-data")
+    assert again.status_code == 410 and "用過或過期" in phone.get(f"/seal/sign/{token}").get_data(as_text=True)
+
+    # 電腦端：狀態變成已簽，印章換成手寫簽名，核准時蓋的就是它
+    assert client.get(f"/api/seals/sign-link/{token}/status").get_json()["signed"] is True
+    seal = client.get("/api/seals/mine").get_json()
+    assert seal["kind"] == "signature" and client.get("/api/seals/mine/image").data == PNG
+
+
+def test_sign_link_belongs_to_creator_and_expires(client, login, monkeypatch):
+    login("teacher1")
+    token = client.post("/api/seals/sign-link").get_json()["token"]
+    client.post("/api/auth/logout")
+    login("staff1")
+    assert client.get(f"/api/seals/sign-link/{token}/status").status_code == 404  # 別人的連結
+    assert client.get(f"/api/seals/sign-link/{token}/qr.svg").status_code == 404
+    # 過期
+    from applications.seals import SealStore
+    store = SealStore(applications.deps.seal_dir)
+    tokens = store._load_tokens()
+    tokens[token]["expires"] = 0
+    store._save_tokens(tokens)
+    phone = client.application.test_client()
+    assert phone.post(f"/seal/sign/{token}", data={"signature": (io.BytesIO(PNG), "s.png")},
+                      content_type="multipart/form-data").status_code == 410
+    assert phone.get("/seal/sign/no-such-token").status_code == 200  # 顯示「已過期」頁，不是錯誤頁
+
+
+# ---------- 保存三個月 ----------
+
+def _finish_upload(client, login):
+    login("student2")
+    app_id = upload(client, type="enrollment_cert").get_json()["data"]["id"]
+    client.post("/api/auth/logout")
+    login("staff1")
+    client.post(f"/api/applications/{app_id}/review", json={"action": "approve"})
+    client.post("/api/auth/logout")
+    login("student2")
+    return app_id
+
+
+def test_finished_application_kept_three_months(client, login):
+    from datetime import date
+    app_id = _finish_upload(client, login)
+    mine = next(a for a in client.get("/api/applications/mine").get_json()["data"] if a["id"] == app_id)
+    assert mine["status"] == "已完成" and mine["keep_until"] == applications._add_months(date.today(), 3).isoformat()
+    assert 89 <= mine["keep_days_left"] <= 92
+    assert "保存至" in client.get(f"/applications/{app_id}/signed").get_data(as_text=True)
+
+    # 結束超過三個月：清單看不到，申請表與檔案回 410；章仍可查驗真偽
+    target = next(a for a in applications.DEMO_APPLICATIONS if a["id"] == app_id)
+    code = target["history"][-1]["stamp"]["code"]
+    target["history"][-1]["at"] = "2020-01-01 10:00"
+    assert all(a["id"] != app_id for a in client.get("/api/applications/mine").get_json()["data"])
+    assert client.get(f"/applications/{app_id}/signed").status_code == 410
+    assert client.get(f"/api/applications/{app_id}/files/0").status_code == 410
+    assert client.get(f"/api/applications/stamp/{code}").get_json()["valid"]
+
+
+def test_running_application_has_no_deadline(client, login):
+    login("student2")
+    data = upload(client).get_json()["data"]
+    assert data["keep_until"] is None and data["status"] == "審核中"
+
+
+def test_add_months_handles_month_end():
+    from datetime import date
+    assert applications._add_months(date(2026, 11, 30), 3) == date(2027, 2, 28)
+    assert applications._add_months(date(2026, 10, 15), 3) == date(2027, 1, 15)

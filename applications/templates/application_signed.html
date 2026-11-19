@@ -22,7 +22,10 @@
     .section { font-weight: 700; margin: 12px 0 4px; font-size: 10.5pt; }
     .sign th { width: auto; text-align: center; font-size: 9.5pt; }
     .sign td { height: 118px; text-align: center; vertical-align: middle; font-size: 9pt; color: #555; }
-    .seal { width: 92px; height: 92px; display: block; margin: 0 auto 2px; }
+    .seal { width: 84px; height: 84px; display: block; margin: 0 auto 2px; }
+    .seal-img { object-fit: contain; mix-blend-mode: multiply; }
+    .stamp-meta { font-size: 8pt; color: #c41d1d; line-height: 1.4; }
+    .files a { color: #003377; }
     .wait { color: #003377; font-weight: 700; }
     .note { font-size: 8.5pt; color: #333; margin-top: 2px; }
     .verify { margin-top: 12px; font-size: 8.5pt; color: #444; border-top: 1px dashed #999; padding-top: 8px; line-height: 1.8; word-break: break-all; }
@@ -40,6 +43,7 @@
     <h1>康寧大學 {{ tpl.title }}</h1>
     <p class="sub">{% if tpl.office %}承辦單位：{{ tpl.office }}　｜　{% endif %}申請編號 #{{ app.id }}　｜　線上送出 {{ app.submitted_at }}</p>
     <p class="status">目前狀態：<b>{{ app.status }}</b>　{{ app.summary }}</p>
+    {% if app.keep_until %}<p class="status" style="font-size:9pt;color:#555">本申請表保存至 {{ app.keep_until }}（結束後保留 3 個月），請於期限內列印或存成 PDF 留底。</p>{% endif %}
 
     <div class="section">一、申請人資料</div>
     <table>
@@ -52,6 +56,13 @@
         {% for label, value in fields %}<tr><th>{{ label }}</th><td class="val">{{ value }}</td></tr>{% endfor %}
     </table>
 
+    {% if app.files %}
+    <div class="section">附件：學生上傳的申請表</div>
+    <table class="files">
+        {% for f in app.files %}<tr><th>檔案 {{ loop.index }}</th><td><a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.name }}</a>（{{ (f.size / 1024)|round(0)|int }} KB）</td></tr>{% endfor %}
+    </table>
+    {% endif %}
+
     <div class="section">三、簽核欄（線上依序蓋章）</div>
     <table class="sign">
         <tr><th>申請人</th>{% for i, s in signers %}<th>{{ s.name }}</th>{% endfor %}</tr>
@@ -61,17 +72,13 @@
             <td>
                 {% set st = stamps.get(i) %}
                 {% if st %}
-                <!-- 電子章：紅色圓章，上方是關卡名稱，中間審核人，下方日期與驗證碼前 6 碼 -->
-                <svg class="seal" viewBox="0 0 120 120" role="img" aria-label="{{ st.name }}電子章，{{ st.by }}">
-                    <circle cx="60" cy="60" r="55" fill="none" stroke="#c41d1d" stroke-width="4"/>
-                    <circle cx="60" cy="60" r="47" fill="none" stroke="#c41d1d" stroke-width="1.2"/>
-                    <text x="60" y="36" fill="#c41d1d" font-size="12" font-weight="700" text-anchor="middle">{{ st.name[:6] }}</text>
-                    <line x1="20" y1="44" x2="100" y2="44" stroke="#c41d1d" stroke-width="1"/>
-                    <text x="60" y="66" fill="#c41d1d" font-size="{{ 15 if st.by|length <= 5 else 11 }}" font-weight="700" text-anchor="middle">{{ st.by.replace(' 老師', '')[:8] }}</text>
-                    <line x1="20" y1="76" x2="100" y2="76" stroke="#c41d1d" stroke-width="1"/>
-                    <text x="60" y="90" fill="#c41d1d" font-size="10" text-anchor="middle">{{ st.at[:10] }}</text>
-                    <text x="60" y="102" fill="#c41d1d" font-size="8" text-anchor="middle" font-family="monospace">{{ st.code[:6] }}</text>
-                </svg>
+                <!-- 老師章：審核人自己的印章 (上傳的印章圖，或系統依姓名刻的方章)，下方是關卡、日期與驗證碼前 6 碼 -->
+                {% if st.seal and st.seal.type == 'image' %}
+                <img class="seal seal-img" src="/applications/{{ app.id }}/seal/{{ i }}" alt="{{ st.by }}的印章">
+                {% else %}
+                {{ name_seal((st.seal or {}).get('text') or st.by) }}
+                {% endif %}
+                <div class="stamp-meta">{{ st.by }}<br>{{ st.at[:10] }}　{{ st.code[:6] }}</div>
                 {% if approved.get(i) and approved[i].note %}<div class="note">意見：{{ approved[i].note }}</div>{% endif %}
                 {% elif approved.get(i) %}
                 核准（{{ approved[i].by }}，{{ approved[i].at[:10] }}）<div class="note">系統加上電子章前核准，無章</div>
@@ -88,7 +95,7 @@
     {% if stamps %}
     <div class="verify">
         電子章驗證碼：{% for i, s in signers %}{% if stamps.get(i) %}{{ s.name }} <b>{{ stamps[i].code }}</b>（{{ stamps[i].by }}，{{ stamps[i].at }}）　{% endif %}{% endfor %}<br>
-        查驗：/api/applications/stamp/&lt;驗證碼&gt;。驗證碼由申請內容、關卡與審核人產生，蓋章後申請內容被修改將無法通過查驗。本表由系統產生，無須另行用印。
+        查驗：/api/applications/stamp/&lt;驗證碼&gt;。驗證碼由申請內容、關卡與審核人產生，蓋章後申請內容或上傳的檔案被修改將無法通過查驗。本表由系統產生，無須另行用印。
     </div>
     {% endif %}
     <div class="foot"><span>表單代碼：{{ app.form_code or '—' }}</span><span>Smart UKN 康寧大學智慧校園服務平台</span></div>

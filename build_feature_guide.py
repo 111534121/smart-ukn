@@ -18,7 +18,6 @@ FEATURES = [
     ('counseling', '導生關懷紀錄', '導師班', '/api/campus/counseling', '檢查班級與紀錄權限，儲存晤談、追蹤進度並提供匯出。'),
     ('warning', '學業預警', '學習', '/api/student/early-warning', '檢查查詢權限與授權，分析未通過科目和擋修風險。'),
     ('certs', '證照與競賽成果', '學習', '/api/campus/certs|/api/certificates|/api/competitions', '上傳成果並保存紀錄，由授權人員審核與統計。'),
-    ('review', '學期自評表', '學習', '/api/self-review', '依登入學生與學期讀取、儲存或刪除自評內容。'),
     ('faculty', '教師專長與我的課表', '學習', '/api/faculty|/api/admin/faculty|/api/campus/teachers|/api/admin/teachers', '查詢教師專長、課表與辦公室資料，提供個人或管理端維護；教職員送出的老師名錄異動由管理員審核。'),
     ('assistant', '申請問題小幫手', '校務', '/api/assistant', '比對申請流程與規章，依設定產生問題回覆。'),
     ('rules', '智慧校規與搜尋', '校務', '/api/search|/api/feedback|/api/rules|/api/categories|/api/synonyms|/api/campus/rules', '接收關鍵字，比對規章與同義詞，回傳結果並記錄回饋。'),
@@ -28,14 +27,14 @@ FEATURES = [
     ('services', '宿舍與總務申請', '校務', '/api/campus/dorm|/api/campus/reimburse|/api/campus/services', '檢查申請內容與權限，記錄送件及審核進度。'),
     ('reports', '報表與文件下載', '校務', '/api/campus/reports', '依報表種類與查詢條件整理資料，提供檢視或下載。'),
     ('rent', '教室與櫃子租借', '校園生活', '/api/campus/rooms|/api/campus/lockers|/api/campus/bookings', '查詢空間與時段，檢查借用限制後保存預約。'),
-    ('map', '地圖、辦公室與交通', '校園生活', '/api/campus/map|/api/campus/locations|/api/campus/weather|/api/campus/traffic|/api/campus/crowd', '讀取校園地點或外部資訊，整理成地圖與生活資訊。'),
+    ('map', '地圖、辦公室與交通', '校園生活', '/api/campus/map|/api/campus/locations|/api/campus/weather|/api/campus/traffic', '讀取校園地點或外部資訊，整理成地圖與生活資訊。'),
     ('links', '常用系統連結', '校園生活', '/api/links', '讀取或維護常用連結，供使用者開啟外部系統。'),
-    ('notices', '班級通知與幹部紀錄', '導師班', '/api/campus/notices|/api/campus/groups|/api/campus/records', '檢查發送對象與班級權限，保存通知、群組及幹部紀錄。'),
+    ('notices', '班級通知與幹部紀錄', '導師班', '/api/campus/notices|/api/campus/groups|/api/campus/records|/api/campus/course-changes', '檢查發送對象與班級權限，保存通知、群組及幹部紀錄；臨時停課／調課通知可一鍵加入個人行事曆。'),
     ('privacy', '個人偏好、授權與聯絡資料', '系統', '/api/me/preferences|/api/departments|/api/student/privacy-consent|/api/student/emergency-contact', '依帳號讀取或更新科系偏好、資料授權及緊急聯絡資料。'),
     ('anniversary', '校慶活動與祝福', '校園生活', '/api/anniversary|/api/admin/anniversary', '查詢活動與祝福內容，由管理端維護與審核。'),
     ('visits', '訪客預約與參訪', '校園生活', '/api/campus/visits', '查詢可預約時段，建立或取消參訪紀錄。'),
     ('affairs', '校務送件與獎學金資料', '校務', '/api/campus/affairs|/api/campus/scholarships', '查詢申辦資料、檢查送件內容並保存申請。'),
-    ('messages', '校園公告、班級與師生聯繫', '導師班', '/api/campus/announcements|/api/campus/classes|/api/campus/broadcast|/api/campus/advisor-messages|/api/campus/meetings', '依身分與班級權限讀取公告、管理班級或傳遞訊息；開線上會議並以邀請或邀請碼加入。'),
+    ('messages', '校園公告、班級與師生聯繫', '導師班', '/api/campus/announcements|/api/campus/classes|/api/campus/broadcast|/api/campus/advisor-messages|/api/campus/meetings', '依身分與班級權限讀取公告、管理班級或傳遞訊息；開線上會議並以邀請或邀請碼加入，會中文字討論、出席與會議紀錄依保存期限留存。'),
     ('transport', '交通資訊與校園偏好', '校園生活', '/api/campus/transport|/api/campus/prefs', '提供交通資訊，讀取或儲存校園生活偏好。'),
     ('admin-cases', '行政案件工作台、補件與處室分工', '校務', '/api/campus/admin-cases', '學生送出申請後依類別分流；承辦處室可分派、要求補件、重新受理與結案，案件及附件依身分隔離。'),
     ('public-site', '公開網址、QR Code 與 LINE 分享', '系統', '/api/public-site', '使用固定公開首頁網址產生 QR Code 與 LINE 分享入口，不包含個人資料。'),
@@ -46,7 +45,7 @@ FEATURES = [
 def build():
     modules = {}
     paths = [ROOT / 'app.py', ROOT / 'public_portal.py', ROOT / 'admin_core.py']
-    for directory in ('campus', 'faculty', 'self_review', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap', 'retake', 'scholarship_apply'):
+    for directory in ('campus', 'faculty', 'assistant', 'anniversary', 'preferences', 'attendance', 'dashboard', 'curriculum', 'moodle_sync', 'school_calendar', 'applications', 'conduct', 'devmap', 'retake', 'scholarship_apply'):
         paths.extend((ROOT / directory).glob('*.py'))
     for path in sorted(paths):
         source = path.read_text(encoding='utf-8-sig')
