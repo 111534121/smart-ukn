@@ -155,6 +155,15 @@ POST,/api/campus/meetings/<int:meeting_id>/invite,/api/campus/meetings/999999/in
 POST,/api/campus/meetings/join,/api/campus/meetings/join,,邀請碼加入會議,401,OK,OK,OK,OK,OK,OK,
 POST,/api/campus/meetings/<int:meeting_id>/cancel,/api/campus/meetings/999999/cancel,,取消會議,401,OK,OK,OK,OK,OK,OK,實際只有主持人能取消
 POST,/api/campus/meetings/<int:meeting_id>/leave,/api/campus/meetings/999999/leave,,退出會議,401,OK,OK,OK,OK,OK,OK,
+POST,/api/campus/meetings/<int:meeting_id>/enter,/api/campus/meetings/999999/enter,,進入會議記出席,401,OK,OK,OK,OK,OK,OK,實際只有會議成員能記出席
+GET,/api/campus/meetings/<int:meeting_id>/chat,/api/campus/meetings/999999/chat,,會議文字討論,401,OK,OK,OK,OK,OK,OK,實際只有會議成員看得到
+POST,/api/campus/meetings/<int:meeting_id>/chat,/api/campus/meetings/999999/chat,,會議留言,401,OK,OK,OK,OK,OK,OK,實際只有會議成員能留言；會議結束後只能看
+GET,/api/campus/meetings/<int:meeting_id>/record,/api/campus/meetings/999999/record,,會議紀錄,401,OK,OK,OK,OK,OK,OK,實際只有會議成員看得到
+PUT,/api/campus/meetings/<int:meeting_id>/record,/api/campus/meetings/999999/record,,寫會議紀錄與保存期限,401,OK,OK,OK,OK,OK,OK,實際只有主持人能寫
+GET,/api/campus/meetings/<int:meeting_id>/record/download,/api/campus/meetings/999999/record/download,,下載會議紀錄,401,OK,OK,OK,OK,OK,OK,實際只有會議成員能下載
+GET,/api/campus/course-changes,/api/campus/course-changes,,我的停調課,401,403,OK,OK,403,403,403,只列出自己班與自己修的課
+POST,/api/campus/course-changes,/api/campus/course-changes,,發布停調課,401,403,403,403,OK,OK,OK,老師限自己任教與導師班；目前沒有發布畫面
+POST,/api/campus/course-changes/<int:change_id>/calendar,/api/campus/course-changes/999999/calendar,,停調課加入行事曆,401,403,OK,403,403,403,403,
 GET,/api/campus/forms,/api/campus/forms,,表單下載查詢,OK,OK,OK,OK,OK,OK,OK,公開表單清單；登入後多回傳自己的常用表單
 PUT,/api/campus/forms/favorites,/api/campus/forms/favorites,,常用表單,401,OK,OK,OK,OK,OK,OK,存在自己的帳號 (user_preferences.favorite_forms)
 POST,/api/admin/teachers,/api/admin/teachers,,新增老師辦公室資料,401,403,403,403,403,OK,OK,教職員新增為待審核；管理員直接上線

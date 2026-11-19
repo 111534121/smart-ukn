@@ -9,13 +9,14 @@ from . import line_notifications
 from . import line_binding
 from . import teacher_admin
 from . import meetings
+from . import course_changes
 
 
 def init_app(app, deps):
     _deps.__dict__.update(deps.__dict__)
     for module in (calendar_ext, courses_ext, rules_ext, certificates, messaging, counseling,
                    facilities, info, services, reports, records, visits, admin_cases, events, line_notifications,
-                   line_binding, teacher_admin, meetings):
+                   line_binding, teacher_admin, meetings, course_changes):
         app.register_blueprint(module.bp)
     with app.app_context():
         certificates.init_sync()

@@ -8,14 +8,18 @@
   學校架了自己的 Jitsi 伺服器時設定 JITSI_DOMAIN=網域、JITSI_EMBED=1，就會直接嵌在網站裡
 - 邀請訊息裡的網址：有設定 PUBLIC_SITE_URL 就用它；主持人用 127.0.0.1 開網站時改用這台電腦的區網 IP，別人才連得到
 - 會議室名稱是隨機字串，只有會議成員從這裡拿得到連結
+- 會議留痕：成員可以在會議裡文字討論；按「加入視訊」會記出席時間；主持人寫會議紀錄並選保存 3 / 6 / 12 個月，
+  過了保存期限 (會議結束時間 + 保存月數) 討論、出席與紀錄內容自動刪除；成員可以下載純文字的會議紀錄當佐證
 """
+import calendar
 import os
 import re
 import secrets
 import socket
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
-from flask import Blueprint, request
+from flask import Blueprint, Response, request
 
 from public_portal import public_site_url
 
@@ -164,6 +168,7 @@ def _describe(m, me, members, now):
 @require()
 def my_meetings():
     me, u, now = user_key(), current_user(), datetime.now()
+    purge_expired_logs(now)
     members = db.all_members()
     result = []
     for m in db.all_meetings():
@@ -287,3 +292,219 @@ def leave_meeting(meeting_id):
         return error("主持人不能退出，要結束請按「取消會議」")
     db.remove_member(meeting_id, user_key())
     return ok(message="已退出會議")
+
+
+# =====================================================================
+# 會議留痕：會中文字討論、出席紀錄 (誰按了「加入視訊」)、會議紀錄，保存 3 / 6 / 12 個月後自動刪除
+# =====================================================================
+
+KEEP_MONTH_OPTIONS = (3, 6, 12)
+DEFAULT_KEEP_MONTHS = 12
+MAX_MESSAGE_LEN = 500
+MAX_MINUTES_LEN = 5000
+
+
+def add_months(dt, months):
+    """2026-11-30 + 3 個月 → 2027-02-28 (月底對齊)"""
+    total = dt.month - 1 + months
+    year, month = dt.year + total // 12, total % 12 + 1
+    return dt.replace(year=year, month=month, day=min(dt.day, calendar.monthrange(year, month)[1]))
+
+
+def _end_of(m):
+    return _parse_time(m["start_at"]) + timedelta(minutes=m["duration_min"])
+
+
+# 【功能：會議留痕】保存期限 = 會議結束時間 + 保存月數；過期就刪掉討論、出席與紀錄內容
+def log_state(m, now):
+    """回傳 (會議紀錄或 None, 保存月數, 保存到期時間, 是否已過期刪除)；到期但還沒刪的順便刪掉"""
+    record = db.get_record(m["id"])
+    keep = record["keep_months"] if record else DEFAULT_KEEP_MONTHS
+    keep_until = add_months(_end_of(m), keep)
+    purged = bool(record) and record.get("updated_by") == db.PURGED_BY
+    if not purged and now > keep_until:
+        db.purge_logs(m["id"], keep, now.strftime("%Y-%m-%d %H:%M:%S"))
+        record, purged = db.get_record(m["id"]), True
+    return record, keep, keep_until, purged
+
+
+def purge_expired_logs(now=None):
+    """把所有已過保存期限的會議留痕刪掉 (開會議列表時順便做，不用另外排程)"""
+    now = now or datetime.now()
+    for m in db.all_meetings():
+        if _parse_time(m["start_at"]) and add_months(_end_of(m), 1) < now:  # 結束不到 1 個月的一定還沒到期
+            log_state(m, now)
+
+
+def _member_meeting(meeting_id):
+    """回傳 (會議, 我是不是主持人, 錯誤回應)；只有主持人和成員看得到討論與紀錄"""
+    m = _find(meeting_id)
+    if not m:
+        return None, False, error("找不到這場會議", 404)
+    me = user_key()
+    if m["host_key"] == me:
+        return m, True, None
+    if not any(x["member_key"] == me for x in db.all_members(meeting_id)):
+        return None, False, error("你不是這場會議的成員", 403)
+    return m, False, None
+
+
+def _can_chat(m, now):
+    """會議排定中、還沒結束都可以留言；結束或取消後討論只能看不能寫 (保留原樣當佐證)"""
+    return m["status"] == "排定" and now <= _end_of(m)
+
+
+def _message_out(x, me):
+    return {"id": x["id"], "sender_name": x["sender_name"], "content": x["content"],
+            "created_at": x["created_at"], "is_mine": x["sender_key"] == me}
+
+
+@bp.route("/api/campus/meetings/<int:meeting_id>/enter", methods=["POST"])
+@require()
+def enter_meeting(meeting_id):
+    """按「加入視訊」時記一筆出席 (第一次進入時間、最後進入時間、進入次數)"""
+    m, _, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    now = datetime.now()
+    start = _parse_time(m["start_at"])
+    if m["status"] != "排定" or not (start - timedelta(minutes=EARLY_JOIN_MINUTES) <= now <= _end_of(m)):
+        return error("現在不是會議時間")
+    u = current_user()
+    db.record_attendance(meeting_id, user_key(), u["full_name"], now.strftime("%Y-%m-%d %H:%M:%S"))
+    return ok(join_url=f"https://{jitsi_config()['domain']}/{m['room_name']}")
+
+
+# 【功能：會議留痕】會中文字討論：成員才能看，排定中可以留言，after 只拿新訊息 (前端每幾秒輪詢)
+@bp.route("/api/campus/meetings/<int:meeting_id>/chat", methods=["GET"])
+@require()
+def meeting_chat(meeting_id):
+    m, _, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    now = datetime.now()
+    _, _, _, purged = log_state(m, now)
+    try:
+        after = max(int(request.args.get("after") or 0), 0)
+    except ValueError:
+        after = 0
+    me = user_key()
+    return ok(data=[_message_out(x, me) for x in db.list_messages(meeting_id, after)],
+              can_post=_can_chat(m, now) and not purged, purged=purged, title=m["title"])
+
+
+@bp.route("/api/campus/meetings/<int:meeting_id>/chat", methods=["POST"])
+@require()
+def post_chat(meeting_id):
+    m, _, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    if not _can_chat(m, datetime.now()):
+        return error("會議已結束或已取消，討論只能查看")
+    content = str((request.get_json(silent=True) or {}).get("content") or "").strip()
+    if not content:
+        return error("請輸入訊息")
+    if len(content) > MAX_MESSAGE_LEN:
+        return error(f"一則訊息最多 {MAX_MESSAGE_LEN} 字")
+    msg = db.add_message({"meeting_id": meeting_id, "sender_key": user_key(), "sender_name": current_user()["full_name"],
+                          "content": content, "created_at": now_str()})
+    return ok(data=_message_out(msg, user_key()))
+
+
+def build_record(m, now):
+    """會議紀錄全文：會議資訊、受邀名單、實際出席、會議紀錄、文字討論、保存期限"""
+    record, keep, keep_until, purged = log_state(m, now)
+    members = db.all_members(m["id"])
+    attendance = [] if purged else db.list_attendance(m["id"])
+    came = {a["member_key"] for a in attendance}
+    return {
+        "id": m["id"], "title": m["title"], "description": m.get("description") or "", "status": m["status"],
+        "host_name": m["host_name"], "host_role": m["host_role"], "start_at": m["start_at"],
+        "end_at": _end_of(m).strftime("%Y-%m-%d %H:%M"), "duration_min": m["duration_min"],
+        "is_past": now > _end_of(m),
+        "invited": [{"name": x["display_name"], "source": x["source"], "attended": x["member_key"] in came} for x in members],
+        "attendance": [{"name": a["display_name"], "first_joined_at": a["first_joined_at"], "last_joined_at": a["last_joined_at"],
+                        "join_count": a["join_count"], "is_host": a["member_key"] == m["host_key"]} for a in attendance],
+        "minutes": "" if purged or not record else (record.get("minutes") or ""),
+        "minutes_updated_by": "" if purged or not record else (record.get("updated_by") or ""),
+        "minutes_updated_at": "" if purged or not record else (record.get("updated_at") or ""),
+        "messages": [] if purged else [_message_out(x, user_key()) for x in db.list_messages(m["id"])],
+        "keep_months": keep, "keep_until": keep_until.strftime("%Y-%m-%d"), "purged": purged,
+        "keep_options": list(KEEP_MONTH_OPTIONS),
+    }
+
+
+# 【功能：會議留痕】會議紀錄：成員都能看；主持人可以寫紀錄、選保存 3 / 6 / 12 個月
+@bp.route("/api/campus/meetings/<int:meeting_id>/record", methods=["GET"])
+@require()
+def meeting_record(meeting_id):
+    m, is_host, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    return ok(data={**build_record(m, datetime.now()), "is_host": is_host})
+
+
+@bp.route("/api/campus/meetings/<int:meeting_id>/record", methods=["PUT"])
+@require()
+def save_meeting_record(meeting_id):
+    m, is_host, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    if not is_host:
+        return error("只有主持人可以寫會議紀錄", 403)
+    _, old_keep, _, purged = log_state(m, datetime.now())
+    if purged:
+        return error("這場會議的紀錄已過保存期限並刪除")
+    data = request.get_json(silent=True) or {}
+    minutes = str(data.get("minutes") or "").strip()
+    if len(minutes) > MAX_MINUTES_LEN:
+        return error(f"會議紀錄最多 {MAX_MINUTES_LEN} 字")
+    try:
+        keep = int(data.get("keep_months") or DEFAULT_KEEP_MONTHS)
+    except (TypeError, ValueError):
+        keep = 0
+    if keep not in KEEP_MONTH_OPTIONS:
+        return error("保存期限只能選 3、6 或 12 個月")
+    if add_months(_end_of(m), keep) < datetime.now():
+        return error(f"會議結束已超過 {keep} 個月，請選更長的保存期限")
+    db.save_record(meeting_id, minutes, keep, current_user()["full_name"], now_str())
+    deps.write_audit_log("meetings", meeting_id, "修改", before={"keep_months": old_keep},
+                         after={"keep_months": keep, "minutes_length": len(minutes)})
+    return ok(message=f"已儲存會議紀錄，保存到 {add_months(_end_of(m), keep):%Y-%m-%d}")
+
+
+def record_text(r):
+    """下載用的純文字會議紀錄"""
+    lines = [f"會議紀錄：{r['title']}", "",
+             f"時間：{r['start_at']} – {r['end_at'][11:]}（{r['duration_min']} 分鐘）" + ("（已取消）" if r["status"] == "已取消" else ""),
+             f"主持人：{r['host_name']}（{r['host_role']}）",
+             f"保存期限：{r['keep_until']}（會議結束後 {r['keep_months']} 個月）"]
+    if r["description"]:
+        lines.append(f"說明：{r['description']}")
+    if r["purged"]:
+        return "\n".join(lines + ["", "這場會議的討論與紀錄已過保存期限並刪除。"]) + "\n"
+    lines += ["", f"受邀 {len(r['invited'])} 人，實際出席 {len(r['attendance'])} 人（含主持人）", "", "【出席紀錄】"]
+    lines += [f"- {a['name']}{'（主持人）' if a['is_host'] else ''}：{a['first_joined_at'][11:16]} 進入"
+              + (f"，共進入 {a['join_count']} 次，最後 {a['last_joined_at'][11:16]}" if a["join_count"] > 1 else "")
+              for a in r["attendance"]] or ["（沒有人進入會議室）"]
+    absent = [x["name"] for x in r["invited"] if not x["attended"]]
+    if absent:
+        lines.append(f"未出席：{'、'.join(absent)}")
+    lines += ["", "【會議紀錄】", r["minutes"] or "（主持人尚未填寫）"]
+    if r["minutes_updated_at"]:
+        lines.append(f"（{r['minutes_updated_by']} 於 {r['minutes_updated_at'][:16]} 更新）")
+    lines += ["", "【文字討論】"]
+    lines += [f"[{x['created_at'][5:16]}] {x['sender_name']}：{x['content']}" for x in r["messages"]] or ["（沒有文字討論）"]
+    return "\n".join(lines) + "\n"
+
+
+@bp.route("/api/campus/meetings/<int:meeting_id>/record/download", methods=["GET"])
+@require()
+def download_meeting_record(meeting_id):
+    m, _, problem = _member_meeting(meeting_id)
+    if problem:
+        return problem
+    text = record_text(build_record(m, datetime.now()))
+    filename = quote(f"會議紀錄_{m['title']}_{m['start_at'][:10]}.txt")
+    return Response(text.encode("utf-8-sig"), mimetype="text/plain; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
