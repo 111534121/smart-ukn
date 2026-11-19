@@ -177,7 +177,7 @@ def _find_item(item_id):
         if found:
             return found
         return {
-            "item_id": 0, "category_id": 0, "category_name": "通用申辦",
+            "item_id": 0, "category_id": None, "category_name": "通用申辦",
             "business_name": "自行上傳之申請表件", "form_download_url": "#upload",
             "required_docs": "自行上傳之申請表及相關附件", "steps": ["上傳檔案", "線上送出", "審核"],
         }
