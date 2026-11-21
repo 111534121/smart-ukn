@@ -160,6 +160,14 @@ def calendar_entries(c):
 # API
 # =====================================================================
 
+@bp.route("/api/campus/course-changes/classes", methods=["GET"])
+@require(*STAFF_ROLES)
+def course_change_classes():
+    """發布停課／調課表單用：這個身分能發給哪些班級 (老師只能選自己任教或導師班)"""
+    from .meetings import invitable_classes
+    return ok(data=invitable_classes(current_user()))
+
+
 @bp.route("/api/campus/course-changes", methods=["GET"])
 @require("學生", "家長")
 def my_course_changes():

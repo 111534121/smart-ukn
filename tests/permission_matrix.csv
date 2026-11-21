@@ -164,7 +164,8 @@ GET,/api/campus/meetings/<int:meeting_id>/record,/api/campus/meetings/999999/rec
 PUT,/api/campus/meetings/<int:meeting_id>/record,/api/campus/meetings/999999/record,,寫會議紀錄與保存期限,401,OK,OK,OK,OK,OK,OK,實際只有主持人能寫
 GET,/api/campus/meetings/<int:meeting_id>/record/download,/api/campus/meetings/999999/record/download,,下載會議紀錄,401,OK,OK,OK,OK,OK,OK,實際只有會議成員能下載
 GET,/api/campus/course-changes,/api/campus/course-changes,,我的停調課,401,403,OK,OK,403,403,403,只列出自己班與自己修的課
-POST,/api/campus/course-changes,/api/campus/course-changes,,發布停調課,401,403,403,403,OK,OK,OK,老師限自己任教與導師班；目前沒有發布畫面
+GET,/api/campus/course-changes/classes,/api/campus/course-changes/classes,,發布停調課可選的班級,401,403,403,403,OK,OK,OK,老師只列自己任教與導師班
+POST,/api/campus/course-changes,/api/campus/course-changes,,發布停調課,401,403,403,403,OK,OK,OK,老師限自己任教與導師班；班級通知頁「停課／調課」分頁
 POST,/api/campus/course-changes/<int:change_id>/calendar,/api/campus/course-changes/999999/calendar,,停調課加入行事曆,401,403,OK,403,403,403,403,
 GET,/api/campus/forms,/api/campus/forms,,表單下載查詢,OK,OK,OK,OK,OK,OK,OK,公開表單清單；登入後多回傳自己的常用表單
 PUT,/api/campus/forms/favorites,/api/campus/forms/favorites,,常用表單,401,OK,OK,OK,OK,OK,OK,存在自己的帳號 (user_preferences.favorite_forms)

@@ -40,6 +40,26 @@ def test_add_to_calendar_once(client, login):
     assert client.post("/api/campus/course-changes/999/calendar").status_code == 404
 
 
+def test_classes_endpoint_matches_what_teacher_can_publish_to(client, login):
+    """發布表單的班級下拉選單要跟後端實際接受的班級一致，不然選了也會被 403 擋下"""
+    assert client.get("/api/campus/course-changes/classes").status_code == 401
+
+    login("student1")
+    assert client.get("/api/campus/course-changes/classes").status_code == 403
+    client.post("/api/auth/logout")
+
+    login("teacher1")  # 導師班 資管五忠
+    res = client.get("/api/campus/course-changes/classes")
+    assert res.status_code == 200
+    classes = res.get_json()["data"]
+    assert "資管五忠" in classes
+    assert "護理四忠" not in classes  # 不是自己任教或導師班，不該出現在可選清單
+    client.post("/api/auth/logout")
+
+    login("admin", "admin123")
+    assert "護理四忠" in client.get("/api/campus/course-changes/classes").get_json()["data"]  # 教職員/管理員看全部
+
+
 def test_teacher_publishes_and_class_is_notified(client, login):
     day = (date.today() + timedelta(days=3)).isoformat()
     login("teacher1")  # 導師班 資管五忠

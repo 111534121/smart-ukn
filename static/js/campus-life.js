@@ -933,6 +933,49 @@ function courseChangesHtml(items, canAdd) {
         </section>`;
 }
 
+// 老師／教職員／管理員發布停課或調課，同時送出一則緊急班級通知
+function courseChangeComposeHtml() {
+    if (!courseChangeClasses.length) return '<div class="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">課表上沒有您任教或帶班的班級，無法發布停調課。</div>';
+    return `
+        <form onsubmit="createCourseChange(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-3 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select name="kind" required class="border border-slate-300 rounded px-3 py-2 bg-white">
+                    <option value="">停課或調課？</option>
+                    <option value="停課">🚫 停課</option>
+                    <option value="調課">🔁 調課</option>
+                </select>
+                <select name="class_name" required class="border border-slate-300 rounded px-3 py-2 bg-white">
+                    ${courseChangeClasses.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+                </select>
+            </div>
+            <input name="course_name" required maxlength="100" placeholder="課程名稱" class="w-full border border-slate-300 rounded px-3 py-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="sm:col-span-3 text-xs font-semibold text-slate-600">原本上課時段</div>
+                <input type="date" name="orig_date" required class="border border-slate-300 rounded px-3 py-2">
+                <input name="orig_periods" required placeholder="節次，例如 3 或 3-4" class="border border-slate-300 rounded px-3 py-2">
+                <input name="orig_room" placeholder="教室（選填）" class="border border-slate-300 rounded px-3 py-2">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="sm:col-span-3 text-xs font-semibold text-slate-600">調課／補課時段（停課沒有補課可留空）</div>
+                <input type="date" name="new_date" class="border border-slate-300 rounded px-3 py-2">
+                <input name="new_periods" placeholder="節次，例如 3 或 3-4" class="border border-slate-300 rounded px-3 py-2">
+                <input name="new_room" placeholder="教室（選填）" class="border border-slate-300 rounded px-3 py-2">
+            </div>
+            <input name="reason" maxlength="200" placeholder="原因（選填，例如研習、天候）" class="w-full border border-slate-300 rounded px-3 py-2">
+            <p class="text-[11px] text-slate-500">送出後會立即以「緊急」優先級通知該班全部學生，並顯示在學生「班級通知」頁的停課／調課卡片。</p>
+            <div class="text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">發布</button></div>
+        </form>`;
+}
+
+async function createCourseChange(event) {
+    event.preventDefault();
+    try {
+        const r = await api('/api/campus/course-changes', { json: Object.fromEntries(new FormData(event.target)) });
+        toast(r.message);
+        event.target.reset();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
 async function addCourseChangeToCalendar(id, btn) {
     btn.disabled = true;
     try {
@@ -1015,14 +1058,16 @@ function noticeTargetText(n) {
 }
 
 let noticeSelectedClass = null;
-let noticeMode = 'class';      // 'class' = 班級通知；'broadcast' = 課程／科系／年級／全校廣播
+let noticeMode = 'class';      // 'class' = 班級通知；'broadcast' = 課程／科系／年級／全校廣播；'course-change' = 發布停課／調課
 let broadcastTargets = null;
+let courseChangeClasses = [];
 async function loadNoticesTeacher() {
     const body = document.getElementById('noticesBody');
     try {
-        const [cls, sent, targets, advisorMsgs] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets'), api('/api/campus/advisor-messages')]);
+        const [cls, sent, targets, advisorMsgs, changeClasses] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets'), api('/api/campus/advisor-messages'), api('/api/campus/course-changes/classes')]);
         noticeClasses = cls.data;
         broadcastTargets = targets.data;
+        courseChangeClasses = changeClasses.data;
         noticeSelectedClass = noticeSelectedClass || (noticeClasses.find(c => c.is_advised) || noticeClasses[0])?.class_name;
         body.innerHTML = `
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -1042,8 +1087,9 @@ async function loadNoticesTeacher() {
                     <div class="inline-flex rounded border border-slate-300 overflow-hidden text-sm" role="tablist">
                         <button type="button" onclick="noticeMode='class'; loadNoticesTeacher()" class="px-4 py-1.5 ${noticeMode === 'class' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">發給班級</button>
                         <button type="button" onclick="noticeMode='broadcast'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'broadcast' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">${broadcastTargets.school !== null ? '課程／全校廣播' : '課程廣播'}</button>
+                        <button type="button" onclick="noticeMode='course-change'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'course-change' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">停課／調課</button>
                     </div>
-                    ${noticeMode === 'broadcast' ? broadcastComposeHtml() : noticeComposeHtml()}
+                    ${noticeMode === 'broadcast' ? broadcastComposeHtml() : noticeMode === 'course-change' ? courseChangeComposeHtml() : noticeComposeHtml()}
                     <div><h3 class="font-bold text-slate-900 mb-2">家長留言 ${advisorMsgs.data.filter(m => m.status === '待回覆').length ? `<span class="text-xs text-accent-500">(${advisorMsgs.data.filter(m => m.status === '待回覆').length} 則待回覆)</span>` : ''}</h3>
                         ${advisorMsgs.data.length ? `<div class="space-y-2">${advisorMsgs.data.map(m => `
                             <div class="rounded border ${m.status === '待回覆' ? 'border-accent-500/50 bg-accent-50/30' : 'border-slate-200'} px-4 py-3 space-y-1.5">

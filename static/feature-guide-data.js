@@ -15633,18 +15633,36 @@ window.FEATURE_GUIDE = {
       "summary": "檢查發送對象與班級權限，保存通知、群組及幹部紀錄；臨時停課／調課通知可一鍵加入個人行事曆。",
       "routes": [
         {
-          "url": "/api/campus/course-changes",
+          "url": "/api/campus/course-changes/classes",
           "methods": [
             "GET"
           ],
           "file": "campus/course_changes.py",
           "line": 165,
-          "function": "my_course_changes",
+          "function": "course_change_classes",
           "tables": [],
           "files": [
             {
               "file": "campus/course_changes.py",
               "line": 165,
+              "function": "course_change_classes"
+            }
+          ],
+          "storage": []
+        },
+        {
+          "url": "/api/campus/course-changes",
+          "methods": [
+            "GET"
+          ],
+          "file": "campus/course_changes.py",
+          "line": 173,
+          "function": "my_course_changes",
+          "tables": [],
+          "files": [
+            {
+              "file": "campus/course_changes.py",
+              "line": 173,
               "function": "my_course_changes"
             },
             {
@@ -15713,13 +15731,13 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/course_changes.py",
-          "line": 186,
+          "line": 194,
           "function": "add_change_to_calendar",
           "tables": [],
           "files": [
             {
               "file": "campus/course_changes.py",
-              "line": 186,
+              "line": 194,
               "function": "add_change_to_calendar"
             },
             {
@@ -15788,7 +15806,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/course_changes.py",
-          "line": 226,
+          "line": 234,
           "function": "create_course_change",
           "tables": [
             {
@@ -15833,7 +15851,7 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/course_changes.py",
-              "line": 226,
+              "line": 234,
               "function": "create_course_change"
             },
             {
@@ -15848,7 +15866,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/course_changes.py",
-              "line": 214,
+              "line": 222,
               "function": "_valid_periods"
             },
             {
@@ -15888,7 +15906,7 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/course_changes.py",
-              "line": 204,
+              "line": 212,
               "function": "_valid_day"
             }
           ],
@@ -17824,27 +17842,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 939
+          "line": 973
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 963
+          "line": 982
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1023
+          "line": 1006
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1584
+          "line": 1067
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1632
+          "line": 1630
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1640
+          "line": 1678
+        },
+        {
+          "file": "static/js/campus-life.js",
+          "line": 1686
         },
         {
           "file": "static/js/campus-shell.js",
@@ -22538,35 +22560,35 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 952
+          "line": 995
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 968
+          "line": 1011
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 974
+          "line": 1017
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1023
+          "line": 1067
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1572
+          "line": 1618
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1593
+          "line": 1639
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1599
+          "line": 1645
         },
         {
           "file": "static/js/campus-life.js",
-          "line": 1604
+          "line": 1650
         },
         {
           "file": "static/js/campus-shell.js",
@@ -32444,7 +32466,7 @@ window.FEATURE_GUIDE = {
       "frontend": []
     }
   ],
-  "routeCount": 305,
+  "routeCount": 306,
   "schemaCount": 63,
   "schema": {
     "academic_calendar": [
