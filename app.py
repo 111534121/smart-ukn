@@ -226,8 +226,9 @@ def get_db_connection():
         conn = mysql.connector.connect(**DB_CONFIG, connection_timeout=3)
         if conn.is_connected():
             return conn
-    except Exception:
-        pass
+    except Exception as e:
+        # 有 30 秒冷卻時間 (DB_RETRY_SECONDS) 才會再印一次，不會洗版
+        app.logger.warning("MySQL 連線失敗，接下來 %s 秒退回示範模式：%s", DB_RETRY_SECONDS, e)
     _db_unavailable_until = time.monotonic() + DB_RETRY_SECONDS
     return None
 
@@ -1003,8 +1004,8 @@ def auth_login():
         try:
             if str(stored_val).startswith("scrypt:"):
                 return check_password_hash(str(stored_val), str(input_val))
-        except Exception:
-            pass
+        except Exception as e:
+            app.logger.error("密碼雜湊格式異常，視為驗證失敗：%s", e)
         return False
 
     conn = get_db_connection()
@@ -1032,7 +1033,8 @@ def auth_login():
                 found_username_in_db = True
                 if _verify_user_password(candidate["password_hash"], password):
                     user_record = candidate
-        except Exception:
+        except Exception as e:
+            app.logger.error("登入時查詢 MySQL 帳號失敗：%s", e)
             if conn: conn.close()
 
     # MySQL 未找到帳號時，查詢持久化的 SQLite 備援帳號。
@@ -1054,8 +1056,8 @@ def auth_login():
                             user_record.setdefault("dept_id", stu["dept_id"])
                             user_record.setdefault("class_name", stu["class_name"])
                             user_record.setdefault("dept_name", stu.get("dept_name", "資訊管理科（五專）"))
-        except Exception:
-            pass
+        except Exception as e:
+            app.logger.error("登入時查詢 SQLite 備援帳號失敗：%s", e)
 
     if not user_record and not found_username_in_db:
         for u in sorted(DEMO_USERS, key=lambda x: x["username"].lower() != username_key):

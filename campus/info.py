@@ -10,7 +10,7 @@ import time
 import urllib.parse
 import urllib.request
 
-from flask import Blueprint
+from flask import Blueprint, current_app
 
 from .common import ok, error
 
@@ -120,8 +120,8 @@ def weather():
     if key:
         try:
             data = {**data, "cwa": _cached("cwa", lambda: load_cwa(key))}
-        except Exception:
-            pass
+        except Exception as e:
+            current_app.logger.warning("中央氣象署 CWA 補充資料取得失敗（不影響主要天氣資料）：%s", e)
     return ok(data=data)
 
 

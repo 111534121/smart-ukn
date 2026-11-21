@@ -98,7 +98,7 @@ def parse_now():
         if request.args.get("at"):
             return datetime.strptime(request.args["at"], "%Y-%m-%d %H:%M")
     except ValueError:
-        pass
+        pass  # ?at= 只是測試/模擬用的選填參數，格式錯就忽略、退回真實現在時間，不用記 log
     return datetime.now()
 
 

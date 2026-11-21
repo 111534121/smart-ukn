@@ -378,8 +378,8 @@ def init_database():
         # 18b. 舊資料庫的 audit_logs 補上 ip_address 欄位 (已存在時略過)
         try:
             cursor.execute("ALTER TABLE `audit_logs` ADD COLUMN `ip_address` varchar(45) DEFAULT NULL AFTER `changed_by_role`")
-        except mysql.connector.Error:
-            pass
+        except mysql.connector.Error as e:
+            print(f"⚠️ audit_logs 新增 ip_address 欄位略過（可能已存在）：{e}")
 
         # 19. 建立學期校曆事項表 academic_calendar (首頁「本週可辦」橫幅)
         cursor.execute("""

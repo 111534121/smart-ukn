@@ -30,8 +30,8 @@ def _get_mysql_conn():
         conn = get_db_connection()
         if conn and conn.is_connected():
             return conn
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ admin_db 取得 MySQL 連線失敗，退回 SQLite：{e}")
     return None
 
 def is_mysql_active():
@@ -40,8 +40,8 @@ def is_mysql_active():
         try:
             conn.close()
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 檢查 MySQL 可用性時關閉連線失敗：{e}")
     return False
 
 def get_sqlite_conn():
@@ -75,8 +75,8 @@ def query_db(sql, params=()):
             if mysql_conn:
                 try:
                     mysql_conn.close()
-                except Exception:
-                    pass
+                except Exception as close_e:
+                    print(f"⚠️ 關閉失敗的 MySQL 連線時又出錯：{close_e}")
             print(f"⚠️ MySQL 查詢失敗，切換至 SQLite: {e}")
 
     # SQLite 備援
@@ -123,15 +123,15 @@ def execute_db(sql, params=()):
                         s_conn.commit()
                     finally:
                         s_conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"⚠️ MySQL 寫入成功但同步到 SQLite 失敗，兩邊資料可能不一致：{e}")
             return res
         except Exception as e:
             if mysql_conn:
                 try:
                     mysql_conn.close()
-                except Exception:
-                    pass
+                except Exception as close_e:
+                    print(f"⚠️ 關閉失敗的 MySQL 連線時又出錯：{close_e}")
             print(f"⚠️ MySQL 寫入失敗，改用 SQLite: {e}")
 
     # SQLite 寫入
@@ -182,8 +182,8 @@ def log_audit_trail(table_name, record_id, action, before=None, after=None, chan
             "after_json": after,
             "changed_at": now_str
         })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ 稽核紀錄同步到記憶體 DEMO_AUDIT_LOGS 失敗（資料庫寫入已成功，不影響正式紀錄）：{e}")
 
 def get_user_seal(username):
     """查詢使用者的啟用印章紀錄"""
@@ -274,8 +274,8 @@ def _init_sqlite_schema_internal(conn):
     ):
         try:
             cur.execute(alter_sql)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 略過（欄位可能已存在）：{alter_sql} -> {e}")
 
     # 4. course_map
     cur.execute("""
@@ -467,8 +467,8 @@ def _init_sqlite_schema_internal(conn):
     ):
         try:
             cur.execute(alter_sql)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 略過（欄位可能已存在）：{alter_sql} -> {e}")
 
     # 17. deadlines (重要日程與期限)
     cur.execute("""
@@ -489,8 +489,8 @@ def _init_sqlite_schema_internal(conn):
     """)
     try:
         cur.execute("ALTER TABLE deadlines ADD COLUMN semester_week INTEGER DEFAULT 1")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ 略過（deadlines.semester_week 欄位可能已存在）：{e}")
 
     # 18. academic_calendar (學期校曆事項)
     cur.execute("""
@@ -556,8 +556,8 @@ def _init_sqlite_schema_internal(conn):
     ):
         try:
             cur.execute(alter_sql)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 略過（欄位可能已存在）：{alter_sql} -> {e}")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS anniversary_wishes (
@@ -581,8 +581,8 @@ def _init_sqlite_schema_internal(conn):
     ):
         try:
             cur.execute(alter_sql)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 略過（欄位可能已存在）：{alter_sql} -> {e}")
 
     # 21. user_seals (老師與行政人員電子印章)
     cur.execute("""
@@ -629,8 +629,8 @@ def _seed_missing_sqlite_tables(cur, conn):
                     "INSERT OR REPLACE INTO checklist_items (item_id, category_id, category_name, business_name, steps_json, required_docs, office_hours, office_location, contact_phone, form_download_url, system_url, deadline_week_info, related_kb_id, audience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (0, 0, '通用申辦', '自行上傳之申請表件', '["線上下載或填寫申請表件", "上傳文件並填寫申辦資訊", "送出由承辦單位審核"]', '自行上傳之申請表及相關附件', '週一至週五 08:30 - 17:00', '各承辦單位辦公室', '02-2632-1181', '#upload', '', '全學期受理', None, '學生')
                 )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ checklist_items 預設資料寫入失敗：{e}")
 
     try:
         cur.execute("SELECT COUNT(*) AS c FROM deadlines")
@@ -643,8 +643,8 @@ def _seed_missing_sqlite_tables(cur, conn):
                 (5, '暑期重補修意願登記與開班調查', '教務處課務組', 14, '2026-11-01', '2026-11-20', '學生', 'CS', 'http://talk.ukn.edu.tw/class_redi/class.php', '先修科目不及格需重修者，可預先登記暑期課程開班意願。', '尚未開放')
             ]
             cur.executemany("INSERT OR REPLACE INTO deadlines (deadline_id, title, category, semester_week, start_date, end_date, applies_to_role, applies_to_dept, related_system_url, description, status_badge) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", deadlines_data)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ deadlines 預設資料寫入失敗：{e}")
 
     try:
         cur.execute("SELECT COUNT(*) AS c FROM academic_calendar")
@@ -657,8 +657,8 @@ def _seed_missing_sqlite_tables(cur, conn):
                 (5, '教學意見調查開放期間', '2026-12-14', '2027-01-15', '教務', None, None, None, None)
             ]
             cur.executemany("INSERT OR REPLACE INTO academic_calendar (id, event_name, start_date, end_date, category, related_checklist_id, owner_key, note, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", calendar_data)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ academic_calendar 預設資料寫入失敗：{e}")
 
     try:
         cur.execute("SELECT COUNT(*) AS c FROM anniversary_events")
@@ -667,8 +667,8 @@ def _seed_missing_sqlite_tables(cur, conn):
                 (1, '康寧大學校慶', 'UKN Anniversary Celebration', '康寧大学 創立記念祭', '2026-11-01', '2026-11-01', 30, 1, 1, '康寧大學校慶', '歡迎全校師生共襄盛舉', '', 1, 1, 1)
             ]
             cur.executemany("INSERT OR REPLACE INTO anniversary_events (id, name_zh, name_en, name_ja, start_date, end_date, announce_days, require_approval, is_enabled, title, content, link_url, allow_wishes, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", anniversary_data)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ anniversary_events 預設資料寫入失敗：{e}")
 
     conn.commit()
 
@@ -929,8 +929,8 @@ def init_mysql_schema():
                 ALTER TABLE users
                 MODIFY COLUMN role ENUM('學生','家長','教職員','老師','管理員','系統管理員','內容管理人員','處室承辦','科助','住宿管理員','訪客') NOT NULL
             """)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ users.role enum 擴充略過（可能已是最新定義）：{e}")
 
         # 2. 補齊 office, permissions, is_active 欄位
         if "office" not in cols:
@@ -967,8 +967,8 @@ def init_mysql_schema():
     finally:
         try:
             mysql_conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️ 關閉 MySQL schema 升級連線失敗：{e}")
 
 
 # 模組載入時自動初始化 SQLite 與 MySQL 資料表

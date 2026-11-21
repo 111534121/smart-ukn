@@ -12,7 +12,7 @@
 """
 from datetime import date
 
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
 
 from .common import all_students, current_user, deps, error, next_id, ok, require, store
 from .counseling import scope_class, student_in_scope
@@ -132,8 +132,8 @@ def _audit(action, record):
     try:
         deps.write_audit_log("student_records", record["id"], action,
                              **({"after": record} if action == "新增" else {"before": record}))
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("寫入學生表現紀錄稽核失敗：%s", e)
 
 
 @bp.route("/api/campus/records/cadres", methods=["GET"])

@@ -24,7 +24,7 @@ import io
 import json
 from datetime import datetime
 from functools import wraps
-from flask import Blueprint, jsonify, request, session, Response
+from flask import Blueprint, current_app, jsonify, request, session, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import admin_db
@@ -318,8 +318,8 @@ def create_user():
             "office": office, "permissions": permissions, "is_active": is_active,
             "can_manage_dorm": bool(can_manage_dorm)
         })
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增使用者同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已成功建立使用者「{username}」({full_name})", "user_id": new_id, "data": new_dict}), 201
 
@@ -440,8 +440,8 @@ def update_user(user_id):
                 })
                 if password and str(password).strip():
                     u["password_hash"] = generate_password_hash(str(password).strip())
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新使用者同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"使用者「{before['username']}」資料已更新", "data": after}), 200
 
@@ -472,8 +472,8 @@ def delete_user(user_id):
     try:
         from app import DEMO_USERS
         DEMO_USERS[:] = [u for u in DEMO_USERS if u.get("username") != before["username"]]
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除使用者同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"使用者「{before['username']}」已成功刪除"}), 200
 
@@ -594,8 +594,8 @@ def reset_user_password(user_id):
             if u.get("username") == target["username"]:
                 u["password_hash"] = new_hash
                 break
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("重設密碼同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     actor_name, actor_role, actor_ip = _get_current_actor()
     admin_db.log_audit_trail(
@@ -725,8 +725,8 @@ def create_department():
     try:
         from app import DEMO_DEPARTMENTS
         DEMO_DEPARTMENTS.append(new_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增科系同步 DEMO_DEPARTMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已成功新增科系「{dept_name}」({dept_id})", "data": new_dict}), 201
 
@@ -763,8 +763,8 @@ def update_department(dept_id):
         for d in DEMO_DEPARTMENTS:
             if d.get("dept_id") == dept_id:
                 d.update({"dept_name": dept_name, "college_name": college_name})
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新科系同步 DEMO_DEPARTMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"科系「{dept_id}」資料已更新"}), 200
 
@@ -796,8 +796,8 @@ def delete_department(dept_id):
     try:
         from app import DEMO_DEPARTMENTS
         DEMO_DEPARTMENTS[:] = [d for d in DEMO_DEPARTMENTS if d.get("dept_id") != dept_id]
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除科系同步 DEMO_DEPARTMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"科系「{before['dept_name']}」已成功刪除"}), 200
 
@@ -917,8 +917,8 @@ def create_course():
     try:
         from app import DEMO_COURSES
         DEMO_COURSES.append(new_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增課程同步 DEMO_COURSES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已成功新增課程「{course_name}」({course_id})", "data": new_dict}), 201
 
@@ -980,8 +980,8 @@ def update_course(course_id):
         for c in DEMO_COURSES:
             if c.get("course_id") == course_id:
                 c.update(after)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新課程同步 DEMO_COURSES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"課程「{course_name}」資訊已更新"}), 200
 
@@ -1017,8 +1017,8 @@ def delete_course(course_id):
     try:
         from app import DEMO_COURSES
         DEMO_COURSES[:] = [c for c in DEMO_COURSES if c.get("course_id") != course_id]
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除課程同步 DEMO_COURSES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"課程「{before['course_name']}」已成功刪除"}), 200
 
@@ -1104,8 +1104,8 @@ def create_graduation_requirement():
         try:
             from app import DEMO_GRADUATION_REQUIREMENTS
             DEMO_GRADUATION_REQUIREMENTS[dept_id] = after
-        except Exception:
-            pass
+        except Exception as e:
+            current_app.logger.warning("更新畢業門檻同步 DEMO_GRADUATION_REQUIREMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
         return jsonify({"status": "success", "message": f"已成功更新科系「{dept_id}」畢業門檻", "req_id": req_id, "data": after}), 200
 
     res = admin_db.execute_db("""
@@ -1122,8 +1122,8 @@ def create_graduation_requirement():
     try:
         from app import DEMO_GRADUATION_REQUIREMENTS
         DEMO_GRADUATION_REQUIREMENTS[dept_id] = new_dict
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增畢業門檻同步 DEMO_GRADUATION_REQUIREMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已成功設定科系「{dept_id}」畢業門檻", "req_id": new_id, "data": new_dict}), 201
 
@@ -1155,8 +1155,8 @@ def update_graduation_requirement(req_id):
     try:
         from app import DEMO_GRADUATION_REQUIREMENTS
         DEMO_GRADUATION_REQUIREMENTS[dept_id] = after
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新畢業門檻同步 DEMO_GRADUATION_REQUIREMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"科系「{dept_id}」畢業門檻已更新"}), 200
 
@@ -1174,8 +1174,8 @@ def delete_graduation_requirement(req_id):
     try:
         from app import DEMO_GRADUATION_REQUIREMENTS
         DEMO_GRADUATION_REQUIREMENTS.pop(before["dept_id"], None)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除畢業門檻同步 DEMO_GRADUATION_REQUIREMENTS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"科系「{before['dept_id']}」畢業門檻已刪除"}), 200
 
@@ -1227,8 +1227,8 @@ def create_knowledge_category():
     try:
         from app import DEMO_CATEGORIES
         DEMO_CATEGORIES.append(new_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增知識庫分類同步 DEMO_CATEGORIES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已新增規章分類「{category_name}」", "category_id": new_id, "data": new_dict}), 201
 
@@ -1269,8 +1269,8 @@ def update_knowledge_category(category_id):
         for c in DEMO_CATEGORIES:
             if c.get("category_id") == category_id:
                 c.update(after)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新知識庫分類同步 DEMO_CATEGORIES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"規章分類「{category_name}」已更新"}), 200
 
@@ -1299,8 +1299,8 @@ def delete_knowledge_category(category_id):
     try:
         from app import DEMO_CATEGORIES
         DEMO_CATEGORIES[:] = [c for c in DEMO_CATEGORIES if c.get("category_id") != category_id]
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除知識庫分類同步 DEMO_CATEGORIES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"規章分類「{before['category_name']}」已成功刪除"}), 200
 
@@ -1376,8 +1376,8 @@ def create_synonym():
     try:
         from app import DEMO_SYNONYMS
         DEMO_SYNONYMS.append(new_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("新增同義詞同步 DEMO_SYNONYMS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"已成功新增同義詞「{user_keyword}」→「{official_term}」", "synonym_id": new_id, "data": new_dict}), 201
 
@@ -1418,8 +1418,8 @@ def update_synonym(synonym_id):
         for s in DEMO_SYNONYMS:
             if s.get("synonym_id") == synonym_id:
                 s.update(after)
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新同義詞同步 DEMO_SYNONYMS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"同義詞「{user_keyword}」已更新"}), 200
 
@@ -1437,8 +1437,8 @@ def delete_synonym(synonym_id):
     try:
         from app import DEMO_SYNONYMS
         DEMO_SYNONYMS[:] = [s for s in DEMO_SYNONYMS if s.get("synonym_id") != synonym_id]
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("刪除同義詞同步 DEMO_SYNONYMS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"同義詞「{before['user_keyword']}」已刪除"}), 200
 
@@ -1614,8 +1614,8 @@ def convert_unmatched_to_synonym():
             if u.get("query_id") == query_id or u.get("query_text") == user_keyword:
                 u["status"] = "已轉同義詞"
                 u["resolved_term"] = official_term
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("同義詞轉換同步 DEMO_SYNONYMS/DEMO_UNMATCHED_QUERIES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"成功將「{user_keyword}」轉換為同義詞「{official_term}」！詞庫已即時更新。"}), 200
 
@@ -1641,8 +1641,8 @@ def update_unmatched_status(query_id):
         for u in DEMO_UNMATCHED_QUERIES:
             if u.get("query_id") == query_id:
                 u["status"] = new_status
-    except Exception:
-        pass
+    except Exception as e:
+        current_app.logger.warning("更新未匹配查詢狀態同步 DEMO_UNMATCHED_QUERIES 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     return jsonify({"status": "success", "message": f"未匹配詞彙「{before['query_text']}」狀態已更新為「{new_status}」"}), 200
 

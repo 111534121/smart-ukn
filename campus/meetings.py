@@ -19,7 +19,7 @@ import socket
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, current_app, request
 
 from public_portal import public_site_url
 
@@ -50,8 +50,8 @@ def share_base():
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
                 s.connect(("8.8.8.8", 80))  # UDP 不會真的送封包，只是讓系統選出對外的網卡
                 host = s.getsockname()[0]
-        except OSError:
-            pass
+        except OSError as e:
+            current_app.logger.warning("偵測對外網卡 IP 失敗，會議連結將使用 %s：%s", host, e)
     # 經過 Cloudflare 等反向代理時，對外其實是 https：以代理送來的 X-Forwarded-Proto 為準
     scheme = request.headers.get("X-Forwarded-Proto", request.scheme).split(",")[0].strip()
     return f"{scheme}://{host}{':' + port if port else ''}"

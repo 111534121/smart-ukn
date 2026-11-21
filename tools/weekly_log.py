@@ -36,8 +36,8 @@ def load_env():
                 if "=" in line and not line.startswith("#"):
                     k, v = line.split("=", 1)
                     env[k.strip()] = v.strip().strip('"').strip("'")
-    except OSError:
-        pass
+    except OSError as e:
+        print(f"⚠️ 讀取 .env 失敗，將只使用系統環境變數：{e}")
     return {k: os.getenv(k) or env.get(k, "") for k in ("WEEKLY_LOG_URL", "WEEKLY_LOG_TOKEN")}
 
 

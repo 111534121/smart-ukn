@@ -420,8 +420,8 @@ def t_certs_submit_review_delete(c):
             try:
                 if os.path.exists(p):
                     os.remove(p)
-            except OSError:
-                pass
+            except OSError as e:
+                print(f"⚠️ 測試證照檔案清理失敗 {p}：{e}")
 
 
 @check("證照與抵免提醒", "學生不能看導師審核清單（權限異常）")
@@ -513,8 +513,8 @@ def t_reports_full_flow(c):
             try:
                 if os.path.exists(p):
                     os.remove(p)
-            except OSError:
-                pass
+            except OSError as e:
+                print(f"⚠️ 測試報表檔案清理失敗 {p}：{e}")
 
 
 @check("報表與文件庫", "未登入訪客看不到需要權限的檔案清單（權限異常/隱藏）")
@@ -541,8 +541,8 @@ def t_reports_anon_hidden(c):
             try:
                 if os.path.exists(p):
                     os.remove(p)
-            except OSError:
-                pass
+            except OSError as e:
+                print(f"⚠️ 測試報表檔案清理失敗 {p}：{e}")
 
 
 # ============================================================

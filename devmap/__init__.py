@@ -263,8 +263,8 @@ def build_map():
         try:
             with open(os.path.join(ROOT, path), encoding="utf-8") as f:
                 files_cache[path] = f.read().splitlines()
-        except OSError:
-            pass
+        except OSError as e:
+            current_app.logger.warning("功能對照表讀取原始碼檔案失敗 %s：%s", path, e)
 
     rules = sorted((r for r in app.url_map.iter_rules() if r.endpoint != "static"), key=lambda r: r.rule)
     features, used_by = [], defaultdict(list)
