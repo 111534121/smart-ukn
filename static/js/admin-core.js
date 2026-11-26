@@ -1930,7 +1930,7 @@ async function loadSmartInsights() {
             throw new Error(data.message || '無法取得智慧洞察分析');
         }
 
-        const insights = data.insights || [];
+        const insights = data.insights || data.data || [];
         if (insights.length === 0) {
             container.innerHTML = '<div class="p-8 text-center text-slate-400">目前校園各系統運作完全正常，暫無異常預警或優化建議。</div>';
             return;
