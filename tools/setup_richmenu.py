@@ -37,6 +37,13 @@ import sys
 import urllib.error
 import urllib.request
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+if load_dotenv:
+    load_dotenv()  # 跟 app.py 一樣讀取專案根目錄的 .env；不然直接執行這支腳本看不到 PUBLIC_SITE_URL 等設定，全部會退回 demo_home
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")  # Windows 預設主控台編碼 (cp950) 印不出中文/全形符號
 
