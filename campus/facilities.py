@@ -73,18 +73,53 @@ OFFICES = [
 
 ]
 
-# 老師辦公室的示範資料：teacher_directory 表 (或 JSON 示範模式) 第一次是空的時候灌入，之後由後台「老師辦公室」維護
+# 老師辦公室資料：參考康寧大學官網 (ukn.edu.tw) 各系科公開師資與臺北校區分機表；
+# teacher_directory 表 (或 JSON 示範模式) 第一次是空的時候灌入，之後由後台「老師辦公室」維護
+# (兼任教師張丕白僅出現於課表，未列入專任辦公室名錄，供示範與測試未登錄老師機制)
 TEACHER_OFFICES = [
-    {"name": "彭賓鈺", "title": "副教授 / 資管五忠導師", "dept": "資訊管理科", "office": "A410", "building": "A", "floor": 4, "ext": "分機 361", "email": "", "office_hours": [{"weekday": 2, "start": "13:10", "end": "15:00"}, {"weekday": 4, "start": "10:10", "end": "12:00"}]},
-    {"name": "林志明", "title": "助理教授", "dept": "資訊管理科", "office": "A411", "building": "A", "floor": 4, "ext": "分機 362", "email": "", "office_hours": [{"weekday": 3, "start": "13:10", "end": "15:00"}]},
-    {"name": "吳建宏", "title": "講師", "dept": "資訊管理科", "office": "A412", "building": "A", "floor": 4, "ext": "分機 363", "email": "", "office_hours": [{"weekday": 1, "start": "13:10", "end": "15:00"}]},
-    {"name": "張文華", "title": "講師", "dept": "資訊管理科", "office": "A413", "building": "A", "floor": 4, "ext": "分機 364", "email": "", "office_hours": [{"weekday": 5, "start": "10:10", "end": "12:00"}]},
-    {"name": "黃淑芬", "title": "副教授", "dept": "通識教育中心", "office": "B305", "building": "B", "floor": 3, "ext": "分機 522", "email": "", "office_hours": [{"weekday": 2, "start": "10:10", "end": "12:00"}]},
-    {"name": "李佩珊", "title": "助理教授", "dept": "通識教育中心", "office": "B306", "building": "B", "floor": 3, "ext": "分機 523", "email": "", "office_hours": [{"weekday": 4, "start": "13:10", "end": "15:00"}]},
-    {"name": "Amy Chen", "title": "講師", "dept": "應用外語科", "office": "B205", "building": "B", "floor": 2, "ext": "分機 541", "email": "", "office_hours": [{"weekday": 1, "start": "10:10", "end": "12:00"}]},
-    {"name": "許美玲", "title": "副教授", "dept": "護理科", "office": "B310", "building": "B", "floor": 3, "ext": "分機 461", "email": "", "office_hours": [{"weekday": 5, "start": "13:10", "end": "15:00"}]},
-    {"name": "蔡宗翰", "title": "助理教授", "dept": "護理科", "office": "B311", "building": "B", "floor": 3, "ext": "分機 462", "email": "", "office_hours": [{"weekday": 3, "start": "10:10", "end": "12:00"}]},
-    {"name": "鄭如君", "title": "講師", "dept": "護理科", "office": "B312", "building": "B", "floor": 3, "ext": "分機 463", "email": "", "office_hours": [{"weekday": 2, "start": "15:10", "end": "17:00"}]},
+    # 資訊管理科（第一教學大樓 A 棟，科辦分機 280 / 281 / 283）
+    {"name": "彭賓鈺", "title": "專任教師 / 資管五忠導師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 284", "email": "mis@g.ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "13:20", "end": "15:10"}, {"weekday": 3, "start": "10:30", "end": "12:20"}]},
+    {"name": "周建羽", "title": "講師兼資管科代理主任", "dept": "資訊管理科", "office": "資管科辦公室", "building": "A", "floor": 3, "ext": "分機 280 / 283", "email": "beckchou@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}, {"weekday": 4, "start": "13:20", "end": "15:10"}]},
+    {"name": "謝樹明", "title": "專任教師 / 資管五孝導師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 289", "email": "stanleyh@ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "13:20", "end": "15:10"}, {"weekday": 5, "start": "10:30", "end": "12:20"}]},
+    {"name": "嚴竹華", "title": "專任教師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 286", "email": "echoyan@ukn.edu.tw", "office_hours": [{"weekday": 1, "start": "13:20", "end": "15:10"}]},
+    {"name": "朱錦文", "title": "專任教師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 294", "email": "winnie@ukn.edu.tw", "office_hours": [{"weekday": 5, "start": "10:30", "end": "12:20"}]},
+    {"name": "益西曲珍", "title": "專任教師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 289", "email": "amy0718@ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "10:30", "end": "12:20"}]},
+    {"name": "李栢松", "title": "專任教師兼資訊組組長", "dept": "資訊管理科", "unit": "資訊暨圖書中心", "office": "圖書館資訊組", "building": "D", "floor": 1, "ext": "分機 375", "email": "jacklee521@ukn.edu.tw", "office_hours": [{"weekday": 4, "start": "10:30", "end": "12:20"}]},
+    {"name": "楊景琦", "title": "專任教師", "dept": "資訊管理科", "office": "資管科教師研究室", "building": "A", "floor": 4, "ext": "分機 289", "email": "mis@g.ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}]},
+    # 護理科（第二教學大樓 B 棟，科辦分機 200 / 202）
+    {"name": "葉美玉", "title": "教授兼護理健康學院院長、護理科主任", "dept": "護理科", "office": "B3 護理科主任室", "building": "B", "floor": 3, "ext": "分機 200", "email": "yehdiana@g.ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "13:20", "end": "15:10"}]},
+    {"name": "劉璧瑜", "title": "副教授兼護理科副主任", "dept": "護理科", "office": "B3 護理科辦公室", "building": "B", "floor": 3, "ext": "分機 211", "email": "n4889159@g.ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "13:20", "end": "15:10"}]},
+    {"name": "呂莉婷", "title": "副教授", "dept": "護理科", "office": "B3 護理科研究室", "building": "B", "floor": 3, "ext": "分機 206", "email": "ltlu@ukn.edu.tw", "office_hours": [{"weekday": 5, "start": "13:20", "end": "15:10"}]},
+    {"name": "嚴惠宇", "title": "副教授", "dept": "護理科", "office": "B3 護理科研究室", "building": "B", "floor": 3, "ext": "分機 207", "email": "hyan@ukn.edu.tw", "office_hours": [{"weekday": 4, "start": "13:20", "end": "15:10"}]},
+    {"name": "林宛萱", "title": "助理教授兼護理科實習組長", "dept": "護理科", "office": "B3 護理科實習組", "building": "B", "floor": 3, "ext": "分機 201 / 205", "email": "manyaaqq@g.ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}]},
+    {"name": "王凱立", "title": "副教授", "dept": "護理科", "office": "B3 護理科研究室", "building": "B", "floor": 3, "ext": "分機 215", "email": "kellywang@ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "10:30", "end": "12:20"}]},
+    # 應用外語科（第二教學大樓 B 棟，科辦分機 560 / 561）
+    {"name": "李惠瀅", "title": "助理教授兼應外科主任、外語中心主任", "dept": "應用外語科", "office": "B1 應外科辦公室", "building": "B", "floor": 1, "ext": "分機 560 / 595", "email": "hylee@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}]},
+    {"name": "李智偉", "title": "講師兼應外科副主任", "dept": "應用外語科", "office": "B1 應外科辦公室", "building": "B", "floor": 1, "ext": "分機 569", "email": "albert@ukn.edu.tw", "office_hours": [{"weekday": 1, "start": "10:30", "end": "12:20"}]},
+    {"name": "蔡明杰", "title": "助理教授兼海外實習組組長", "dept": "應用外語科", "office": "B1 應外科研究室", "building": "B", "floor": 1, "ext": "分機 565", "email": "jasonakira@ukn.edu.tw", "office_hours": [{"weekday": 4, "start": "10:30", "end": "12:20"}]},
+    {"name": "陳琇娟", "title": "副教授", "dept": "應用外語科", "office": "B1 應外科研究室", "building": "B", "floor": 1, "ext": "分機 116", "email": "hcchen@ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "13:20", "end": "15:10"}]},
+    {"name": "洪信惠", "title": "助理教授", "dept": "應用外語科", "office": "B1 應外科研究室", "building": "B", "floor": 1, "ext": "分機 260", "email": "shinhye@g.ukn.edu.tw", "office_hours": [{"weekday": 5, "start": "10:30", "end": "12:20"}]},
+    # 通識教育中心（第二教學大樓 B 棟，分機 593）
+    {"name": "李金瑛", "title": "副教授兼通識教育中心主任", "dept": "應用外語科", "unit": "通識教育中心", "office": "B3 通識教育中心", "building": "B", "floor": 3, "ext": "分機 593 / 567", "email": "cylee@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "13:20", "end": "15:10"}]},
+    {"name": "傅木龍", "title": "助理教授兼主任秘書", "dept": "通識教育中心", "office": "行政大樓秘書室", "building": "G", "floor": 2, "ext": "分機 103", "email": "", "office_hours": [{"weekday": 4, "start": "13:20", "end": "15:10"}]},
+    {"name": "蔡維岳", "title": "專任教師", "dept": "通識教育中心", "office": "B3 通識教育中心", "building": "B", "floor": 3, "ext": "分機 593", "email": "", "office_hours": [{"weekday": 3, "start": "13:20", "end": "15:10"}]},
+    # 企業管理學系（第一教學大樓 A 棟，科辦分機 270 / 272）
+    {"name": "鍾珮珊", "title": "副教授兼企業管理科主任", "dept": "企業管理學系", "office": "企管科辦公室", "building": "A", "floor": 2, "ext": "分機 270", "email": "coral@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}]},
+    {"name": "連章宸", "title": "副教授", "dept": "企業管理學系", "office": "企管科教師研究室", "building": "A", "floor": 2, "ext": "分機 279", "email": "", "office_hours": [{"weekday": 4, "start": "10:30", "end": "12:20"}]},
+    {"name": "陳乃禎", "title": "助理教授", "dept": "企業管理學系", "office": "企管科教師研究室", "building": "A", "floor": 2, "ext": "分機 104", "email": "", "office_hours": [{"weekday": 3, "start": "13:20", "end": "15:10"}]},
+    # 數位影視動畫科（第一教學大樓 A 棟，科辦分機 240 / 241）
+    {"name": "藍靜義", "title": "助理教授兼數位影視動畫科主任", "dept": "數位影視動畫科", "office": "動畫科辦公室", "building": "A", "floor": 2, "ext": "分機 240", "email": "chingyi@ukn.edu.tw", "office_hours": [{"weekday": 1, "start": "13:20", "end": "15:10"}]},
+    {"name": "楊士央", "title": "副教授", "dept": "數位影視動畫科", "office": "動畫科教師研究室", "building": "A", "floor": 2, "ext": "分機 292", "email": "shihyang@ukn.edu.tw", "office_hours": [{"weekday": 4, "start": "13:20", "end": "15:10"}]},
+    {"name": "王英龢", "title": "助理教授兼數位影視動畫科副主任", "dept": "數位影視動畫科", "office": "動畫科教師研究室", "building": "A", "floor": 2, "ext": "分機 243", "email": "", "office_hours": [{"weekday": 5, "start": "13:20", "end": "15:10"}]},
+    # 嬰幼兒保育學系（第二教學大樓 B 棟，系辦分機 220 / 221）
+    {"name": "陳慧玲", "title": "副教授兼嬰幼兒保育學系主任", "dept": "嬰幼兒保育學系", "office": "B2 幼保系辦公室", "building": "B", "floor": 2, "ext": "分機 220 / 230", "email": "hlchen@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "10:30", "end": "12:20"}]},
+    {"name": "武藍蕙", "title": "副教授", "dept": "嬰幼兒保育學系", "office": "B2 幼保系研究室", "building": "B", "floor": 2, "ext": "分機 226", "email": "nicolewu@ukn.edu.tw", "office_hours": [{"weekday": 3, "start": "10:30", "end": "12:20"}]},
+    # 視光科（第二教學大樓 B 棟，科辦分機 585 / 587）
+    {"name": "林蔚荏", "title": "助理教授級專技兼視光科主任", "dept": "視光科", "office": "B2 視光科辦公室", "building": "B", "floor": 2, "ext": "分機 585", "email": "opt@ukn.edu.tw", "office_hours": [{"weekday": 2, "start": "13:20", "end": "15:10"}]},
+    {"name": "江彥穎", "title": "助理教授", "dept": "視光科", "office": "B2 視光科研究室", "building": "B", "floor": 2, "ext": "分機 587", "email": "opt@ukn.edu.tw", "office_hours": [{"weekday": 4, "start": "10:30", "end": "12:20"}]},
+    # 長期照護學系（第二教學大樓 B 棟，系辦分機 683 / 685）
+    {"name": "陳秀珍", "title": "教授兼長照系主任、商業資訊學院院長", "dept": "長期照護學系", "office": "B3 長照系辦公室", "building": "B", "floor": 3, "ext": "分機 683", "email": "sjchen@ukn.edu.tw", "office_hours": [{"weekday": 1, "start": "10:30", "end": "12:20"}]},
+    {"name": "李劭懷", "title": "助理教授", "dept": "長期照護學系", "office": "B3 長照系研究室", "building": "B", "floor": 3, "ext": "分機 685", "email": "ltc@ukn.edu.tw", "office_hours": [{"weekday": 5, "start": "10:30", "end": "12:20"}]},
 ]
 
 LOCKER_AREAS = [
@@ -120,14 +155,30 @@ def room_code(classroom):
     return str(classroom).split(" ")[0]
 
 
-# 【功能：老師辦公室與目前狀態】已核准的老師名錄 + 課表上有課但還沒登錄的老師，學生才看得到全部老師
+# 【功能：老師辦公室與目前狀態】已核准的老師名錄 + 課表上有課但還沒登錄的老師，學生才看得到全部老師（依姓名正規化去重）
+def _norm_teacher_name(name):
+    raw = str(name or "").strip()
+    return raw.replace("老師", "").strip() or raw
+
+
 def published_teachers(schedule=None):
-    """學生看得到的老師：已核准的名錄資料，加上課表有排課、但名錄還沒登錄的老師 (registered = False)"""
-    listed = [{**t, "registered": True} for t in teachers_store.all_teachers(TEACHER_OFFICES) if t["is_published"]]
-    names = {t["name"] for t in listed}
-    for name in sorted({s["teacher"] for s in (schedule if schedule is not None else load_schedule()) if s.get("teacher")}):
-        if name not in names:
-            listed.append({"id": None, "name": name, "title": "", "dept": "", "unit": "", "office": "", "building": "",
+    """學生看得到的老師：已核准的名錄資料，加上課表有排課、但名錄還沒登錄的老師 (registered = False)，不重複"""
+    listed, seen = [], set()
+    for t in teachers_store.all_teachers(TEACHER_OFFICES):
+        if not t["is_published"]:
+            continue
+        raw = str(t.get("name") or "").strip()
+        key = _norm_teacher_name(raw)
+        if not raw or key in seen:
+            continue
+        seen.add(key)
+        listed.append({**t, "name": raw, "registered": True})
+    for raw_name in sorted({s["teacher"] for s in (schedule if schedule is not None else load_schedule()) if s.get("teacher")}):
+        raw = str(raw_name).strip()
+        key = _norm_teacher_name(raw)
+        if raw and key not in seen:
+            seen.add(key)
+            listed.append({"id": None, "name": raw, "title": "", "dept": "", "unit": "", "office": "", "building": "",
                            "floor": None, "ext": "", "email": "", "office_hours": [], "photo_url": "", "registered": False})
     return listed
 

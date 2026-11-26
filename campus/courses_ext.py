@@ -18,15 +18,15 @@ SEMESTERS_TOTAL = 10  # 五專共 10 學期
 # 下學期 (115-2) 開課時段 (示範)：同一門課可能有多個班別。
 # 只列資管科修業科目表排在「下學期」的課；時段、老師、教室為示範值
 COURSE_OFFERINGS = [
-    {"offering_id": "CS102-A", "course_id": "CS102", "weekday": 1, "period_start": 6, "period_end": 8, "teacher": "張文華", "classroom": "A303"},
-    {"offering_id": "CS102-B", "course_id": "CS102", "weekday": 4, "period_start": 6, "period_end": 8, "teacher": "張文華", "classroom": "A303"},
-    {"offering_id": "CS301-A", "course_id": "CS301", "weekday": 3, "period_start": 6, "period_end": 8, "teacher": "林志明", "classroom": "A302"},
+    {"offering_id": "CS102-A", "course_id": "CS102", "weekday": 1, "period_start": 6, "period_end": 8, "teacher": "朱錦文", "classroom": "A303"},
+    {"offering_id": "CS102-B", "course_id": "CS102", "weekday": 4, "period_start": 6, "period_end": 8, "teacher": "朱錦文", "classroom": "A303"},
+    {"offering_id": "CS301-A", "course_id": "CS301", "weekday": 3, "period_start": 6, "period_end": 8, "teacher": "謝樹明", "classroom": "A302"},
     {"offering_id": "CS302-A", "course_id": "CS302", "weekday": 3, "period_start": 3, "period_end": 5, "teacher": "彭賓鈺", "classroom": "A402"},
-    {"offering_id": "CS303-A", "course_id": "CS303", "weekday": 2, "period_start": 4, "period_end": 6, "teacher": "吳建宏", "classroom": "A305 電腦教室"},
-    {"offering_id": "CS304-A", "course_id": "CS304", "weekday": 5, "period_start": 1, "period_end": 3, "teacher": "吳建宏", "classroom": "A305 電腦教室"},
+    {"offering_id": "CS303-A", "course_id": "CS303", "weekday": 2, "period_start": 4, "period_end": 6, "teacher": "嚴竹華", "classroom": "A305 電腦教室"},
+    {"offering_id": "CS304-A", "course_id": "CS304", "weekday": 5, "period_start": 1, "period_end": 3, "teacher": "嚴竹華", "classroom": "A305 電腦教室"},
     {"offering_id": "CS401-A", "course_id": "CS401", "weekday": 5, "period_start": 6, "period_end": 7, "teacher": "彭賓鈺", "classroom": "A301"},
-    {"offering_id": "EN102-A", "course_id": "EN102", "weekday": 2, "period_start": 1, "period_end": 2, "teacher": "Amy Chen", "classroom": "L201"},
-    {"offering_id": "EN102-B", "course_id": "EN102", "weekday": 3, "period_start": 3, "period_end": 4, "teacher": "Amy Chen", "classroom": "L202"},
+    {"offering_id": "EN102-A", "course_id": "EN102", "weekday": 2, "period_start": 1, "period_end": 2, "teacher": "李智偉", "classroom": "L201"},
+    {"offering_id": "EN102-B", "course_id": "EN102", "weekday": 3, "period_start": 3, "period_end": 4, "teacher": "李智偉", "classroom": "L202"},
 ]
 
 

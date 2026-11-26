@@ -577,73 +577,31 @@ async function showOnMap(locationText) {
 
 const TEACHER_TONE = { '上課中': 'red', '可以找老師': 'green', '沒有課': 'blue', '非上班時間': 'gray' };
 
-const teacherFilter = { q: '', dept: '', unit: '' };
-
 function teacherAvatar(t) {
     return t.photo_url
         ? `<img src="${esc(t.photo_url)}" alt="${esc(t.name)} 老師的照片" loading="lazy" class="w-14 h-14 rounded-full object-cover border border-slate-200 shrink-0">`
         : `<div class="w-14 h-14 rounded-full bg-ukn-50 border border-ukn-100 text-ukn-800 font-bold text-lg flex items-center justify-center shrink-0" aria-hidden="true">${esc(t.name.slice(0, 1))}</div>`;
 }
 
-// 【功能：老師辦公室與目前狀態】畫面：照片、目前狀態，科系 / 服務單位 / 姓名篩選在瀏覽器端完成
+// 【功能：老師辦公室與目前狀態（整合教師專長查詢）】同時載入 /api/campus/teachers（課表、即時狀態、服務單位、可找時間）與 /api/faculty（專長、領域、可指導專題）
 async function loadTeachers() {
     const body = document.getElementById('teachersBody');
+    if (!body) return;
     try {
-        const r = await api('/api/campus/teachers');
-        const options = (list, all) => `<option value="">${all}</option>` + list.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
-        body.innerHTML = `
-            <div class="flex flex-wrap items-center gap-2 mb-3">
-                <input type="search" placeholder="搜尋老師姓名" oninput="teacherFilter.q = this.value.trim(); filterTeachers()" value="${esc(teacherFilter.q)}" class="border border-slate-300 rounded px-3 py-2 text-sm w-full sm:w-52">
-                <select id="teacherDeptFilter" aria-label="依科系篩選" onchange="teacherFilter.dept = this.value; filterTeachers()" class="border border-slate-300 rounded px-2 py-2 text-sm bg-white flex-1 sm:flex-none">${options(r.depts, '全部科系')}</select>
-                <select id="teacherUnitFilter" aria-label="依服務單位篩選" onchange="teacherFilter.unit = this.value; filterTeachers()" class="border border-slate-300 rounded px-2 py-2 text-sm bg-white flex-1 sm:flex-none">${options(r.units, '全部服務單位')}</select>
-                <span class="text-xs text-slate-500 sm:ml-auto">狀態依課表推算 · ${esc(r.now.slice(5).replace('-', '/'))} 更新 <button type="button" onclick="loadTeachers()" class="text-ukn-700 hover:underline ml-1">重新整理</button></span>
-            </div>
-            <p id="teacherCount" class="text-xs text-slate-500 mb-2" role="status"></p>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${r.data.map(t => `
-                <div class="rounded border border-slate-200 p-4 space-y-2" data-teacher-name="${esc(t.name)}" data-dept="${esc(t.dept)}" data-unit="${esc(t.unit)}">
-                    <div class="flex items-start gap-3">
-                        ${teacherAvatar(t)}
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="font-bold text-slate-900">${esc(t.name)} 老師</div>
-                                ${statusBadge(t.status.state, TEACHER_TONE[t.status.state])}
-                            </div>
-                            <div class="text-xs text-slate-500">${[t.dept, t.unit !== t.dept ? t.unit : '', t.title].filter(Boolean).map(esc).join(' · ') || '科系與服務單位尚未登錄'}</div>
-                        </div>
-                    </div>
-                    <div class="text-xs text-slate-700">${esc(t.status.detail)}</div>
-                    ${t.office ? `<div class="text-xs text-slate-600">🚪 ${esc(t.building_name)} ${esc(t.office)}${t.ext ? ` · ${esc(t.ext)}` : ''}</div>` : '<div class="text-xs text-slate-400">🚪 辦公室資料尚未登錄，可以先在課堂上或寄信找老師</div>'}
-                    ${t.office_hours.length ? `<div class="text-xs text-slate-600">🕒 可以找老師的時間：${t.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')}</div>` : ''}
-                    ${t.email ? `<a href="mailto:${esc(t.email)}" class="block text-xs text-ukn-700 hover:underline">✉️ ${esc(t.email)}</a>` : ''}
-                    <div class="flex gap-2 pt-1">
-                        <button type="button" onclick="showTeacherTimetable('${esc(t.name)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">看課表</button>
-                        ${t.building ? `<button type="button" onclick="showOnMap('${esc(t.building_name)} ${esc(t.office)}')" class="text-xs border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">在地圖上看 🗺️</button>` : ''}
-                    </div>
-                </div>`).join('')}</div>
-            <p class="text-[11px] text-slate-400 mt-3">老師辦公室、分機與可以找老師的時間由學校後台維護，以各科公告為準。</p>`;
-        window._teachers = r;
-        document.getElementById('teacherDeptFilter').value = r.depts.includes(teacherFilter.dept) ? teacherFilter.dept : '';
-        document.getElementById('teacherUnitFilter').value = r.units.includes(teacherFilter.unit) ? teacherFilter.unit : '';
-        filterTeachers();
-    } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
-}
-
-function filterTeachers() {
-    const dept = document.getElementById('teacherDeptFilter')?.value || '';
-    const unit = document.getElementById('teacherUnitFilter')?.value || '';
-    let shown = 0;
-    document.querySelectorAll('[data-teacher-name]').forEach(el => {
-        const hit = (!teacherFilter.q || el.dataset.teacherName.includes(teacherFilter.q))
-            && (!dept || el.dataset.dept === dept) && (!unit || el.dataset.unit === unit);
-        el.classList.toggle('hidden', !hit);
-        if (hit) shown++;
-    });
-    const count = document.getElementById('teacherCount');
-    if (count) count.textContent = shown ? `共 ${shown} 位老師` : '找不到符合的老師，請換個條件。';
+        window._teachers = await api('/api/campus/teachers');
+    } catch (e) {
+        if (!window._teachers) window._teachers = null;
+    }
+    if (typeof loadFaculty === 'function') {
+        await loadFaculty();
+    } else if (!window._teachers) {
+        body.innerHTML = '<div class="text-sm text-rose-700">老師資料載入失敗，請稍後再試。</div>';
+    }
 }
 
 function showTeacherTimetable(name) {
-    const t = window._teachers.data.find(x => x.name === name);
+    const t = window._teachers?.data?.find(x => x.name === name);
+    if (!t) { toast('尚無該老師的課表資料', 'error'); return; }
     const periods = window._teachers.periods;
     const cell = (wd, p) => {
         const c = t.timetable.find(s => s.weekday === wd && s.period_start <= p && s.period_end >= p);

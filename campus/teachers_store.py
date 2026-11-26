@@ -48,13 +48,13 @@ def use_db():
 
 
 def _seed(teacher_offices):
-    """示範資料：科系老師的服務單位就是該科；通識中心不是科系，只填服務單位"""
+    """示範資料：科系老師的服務單位預設為該科 (若有另外兼任行政中心則以 unit 為準)；通識中心不是科系，只填服務單位"""
     now = now_str()
     items = []
     for i, t in enumerate(teacher_offices, start=1):
         is_dept = t['dept'].endswith('科') or t['dept'].endswith('系')
         items.append({'id': i, 'name': t['name'], 'title': t['title'], 'dept': t['dept'] if is_dept else '',
-                      'unit': t['dept'], 'office': t['office'], 'building': t['building'], 'floor': t['floor'],
+                      'unit': t.get('unit') or t['dept'], 'office': t['office'], 'building': t['building'], 'floor': t['floor'],
                       'ext': t['ext'], 'email': t.get('email', ''), 'office_hours': t['office_hours'], 'photo_url': '',
                       'is_published': 1, 'status': '已核准', 'pending_action': None, 'pending_data': None,
                       'submitted_by': '系統示範資料', 'review_note': None, 'reviewed_by': None, 'reviewed_at': None,

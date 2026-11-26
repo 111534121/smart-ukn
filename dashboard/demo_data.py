@@ -37,25 +37,25 @@ DEMO_CLASS_SCHEDULE = [
     {"id": 90, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 5, "period_end": 7, "course_name": "商務智慧數據分析", "classroom": "C3050", "teacher": "彭賓鈺"},
     {"id": 91, "class_name": "資管五忠", "student_id": None, "weekday": 6, "period_start": 1, "period_end": 1, "course_name": "實務專題", "classroom": "C2060", "teacher": "周建羽"},
     # 王小明重修
-    {"id": 8, "class_name": None, "student_id": "S112001", "weekday": 1, "period_start": 6, "period_end": 7, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "張文華"},
-    {"id": 9, "class_name": None, "student_id": "S112001", "weekday": 3, "period_start": 6, "period_end": 6, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "張文華"},
+    {"id": 8, "class_name": None, "student_id": "S112001", "weekday": 1, "period_start": 6, "period_end": 7, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "朱錦文"},
+    {"id": 9, "class_name": None, "student_id": "S112001", "weekday": 3, "period_start": 6, "period_end": 6, "course_name": "程式設計(二)", "classroom": "A303", "teacher": "朱錦文"},
     # 資管四孝
-    {"id": 10, "class_name": "資管四孝", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
-    {"id": 11, "class_name": "資管四孝", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 4, "course_name": "基礎英文(二)", "classroom": "L203", "teacher": "Amy Chen"},
-    {"id": 12, "class_name": "資管四孝", "student_id": None, "weekday": 3, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
+    {"id": 10, "class_name": "資管四孝", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "資料結構", "classroom": "A301", "teacher": "謝樹明"},
+    {"id": 11, "class_name": "資管四孝", "student_id": None, "weekday": 2, "period_start": 3, "period_end": 4, "course_name": "基礎英文(二)", "classroom": "L203", "teacher": "李智偉"},
+    {"id": 12, "class_name": "資管四孝", "student_id": None, "weekday": 3, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "嚴竹華"},
     {"id": 13, "class_name": "資管四孝", "student_id": None, "weekday": 4, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "彭賓鈺"},
-    {"id": 14, "class_name": "資管四孝", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A302", "teacher": "林志明"},
+    {"id": 14, "class_name": "資管四孝", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A302", "teacher": "謝樹明"},
     # 護理四忠
-    {"id": 15, "class_name": "護理四忠", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "內外科護理學", "classroom": "N201", "teacher": "許美玲"},
-    {"id": 16, "class_name": "護理四忠", "student_id": None, "weekday": 2, "period_start": 1, "period_end": 2, "course_name": "藥理學", "classroom": "N203", "teacher": "蔡宗翰"},
-    {"id": 17, "class_name": "護理四忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 4, "course_name": "進階分類通識課程外語類", "classroom": "L202", "teacher": "Amy Chen"},
-    {"id": 18, "class_name": "護理四忠", "student_id": None, "weekday": 4, "period_start": 1, "period_end": 4, "course_name": "基本護理學實驗", "classroom": "N105 技術教室", "teacher": "許美玲"},
-    {"id": 19, "class_name": "護理四忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "護理倫理", "classroom": "N201", "teacher": "鄭如君"},
+    {"id": 15, "class_name": "護理四忠", "student_id": None, "weekday": 1, "period_start": 1, "period_end": 3, "course_name": "內外科護理學", "classroom": "N201", "teacher": "嚴惠宇"},
+    {"id": 16, "class_name": "護理四忠", "student_id": None, "weekday": 2, "period_start": 1, "period_end": 2, "course_name": "藥理學", "classroom": "N203", "teacher": "王凱立"},
+    {"id": 17, "class_name": "護理四忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 4, "course_name": "進階分類通識課程外語類", "classroom": "L202", "teacher": "李智偉"},
+    {"id": 18, "class_name": "護理四忠", "student_id": None, "weekday": 4, "period_start": 1, "period_end": 4, "course_name": "基本護理學實驗", "classroom": "N105 技術教室", "teacher": "呂莉婷"},
+    {"id": 19, "class_name": "護理四忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "護理倫理", "classroom": "N201", "teacher": "葉美玉"},
     # 資管三忠、三孝 (三年級上學期開資料結構、JAVA程式語言)
-    {"id": 20, "class_name": "資管三忠", "student_id": None, "weekday": 1, "period_start": 2, "period_end": 4, "course_name": "資料結構", "classroom": "A301", "teacher": "林志明"},
-    {"id": 21, "class_name": "資管三忠", "student_id": None, "weekday": 3, "period_start": 6, "period_end": 8, "course_name": "JAVA程式語言(一)", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
-    {"id": 22, "class_name": "資管三孝", "student_id": None, "weekday": 4, "period_start": 6, "period_end": 8, "course_name": "資料結構", "classroom": "A302", "teacher": "林志明"},
-    {"id": 23, "class_name": "資管三孝", "student_id": None, "weekday": 1, "period_start": 6, "period_end": 8, "course_name": "JAVA程式語言(一)", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
+    {"id": 20, "class_name": "資管三忠", "student_id": None, "weekday": 1, "period_start": 2, "period_end": 4, "course_name": "資料結構", "classroom": "A301", "teacher": "謝樹明"},
+    {"id": 21, "class_name": "資管三忠", "student_id": None, "weekday": 3, "period_start": 6, "period_end": 8, "course_name": "JAVA程式語言(一)", "classroom": "A305 電腦教室", "teacher": "嚴竹華"},
+    {"id": 22, "class_name": "資管三孝", "student_id": None, "weekday": 4, "period_start": 6, "period_end": 8, "course_name": "資料結構", "classroom": "A302", "teacher": "謝樹明"},
+    {"id": 23, "class_name": "資管三孝", "student_id": None, "weekday": 1, "period_start": 6, "period_end": 8, "course_name": "JAVA程式語言(一)", "classroom": "A305 電腦教室", "teacher": "嚴竹華"},
 ]
 
 # target_class 為 None 代表全校公告

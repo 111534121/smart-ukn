@@ -17,7 +17,6 @@ const FEATURES = [
     { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在', staff: false },
     { key: 'retake', tab: 'tab-retake', name: '重補修推薦', icon: '🔁', group: '學習', desc: '沒過的科目哪班可以補、會不會衝堂' },
     { key: 'conduct', tab: 'tab-conduct', name: '我的操行', icon: '🎖️', group: '學習', desc: '操行成績、獎懲與怎麼算的' },
-    { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
     { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
     { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
     { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
@@ -27,7 +26,7 @@ const FEATURES = [
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'events', tab: 'tab-events', name: '活動報名', icon: '🎉', group: '校園生活', desc: '線上報名校園活動，查看我的報名與通知狀態' },
-    { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
+    { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課、查教師專長與專題指導' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
     { key: 'crowd', tab: 'tab-crowd', name: '人流分析', icon: '👥', group: '校園生活', desc: '避開學餐與電梯尖峰', staff: false },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
@@ -186,6 +185,7 @@ function highlightNav(tabId) {
 
 let currentTabId = HOME_TAB;
 function switchTab(tabId, { updateHash = true } = {}) {
+    if (tabId === 'tab-faculty') tabId = 'tab-map';
     const target = document.getElementById(tabId);
     if (!target) return;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -208,6 +208,7 @@ function switchTab(tabId, { updateHash = true } = {}) {
 
 function tabFromHash() {
     const key = decodeURIComponent(location.hash.replace('#', ''));
+    if (key === 'faculty') return 'tab-map';
     return featureByKey(key)?.tab || HOME_TAB;
 }
 window.addEventListener('hashchange', () => switchTab(tabFromHash(), { updateHash: false }));
