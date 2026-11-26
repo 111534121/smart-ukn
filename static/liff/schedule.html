@@ -52,9 +52,10 @@ async function call(path) {
 function renderBindPrompt(message) {
   show(`
     <div class="card">
-      <p>這個 LINE 帳號還沒綁定 Smart UKN 帳號，請先到 LINE 選單「設定常用功能」完成綁定，再回來看課表。</p>
+      <p>這個 LINE 帳號還沒綁定 Smart UKN 帳號，請先完成綁定，再回來看課表。</p>
       ${message ? `<div class="msg error">${message}</div>` : ''}
-    </div>`);
+    </div>
+    <a class="link-btn" href="/liff/menu">前往設定常用功能並綁定 →</a>`);
 }
 
 function renderSchedule(data) {
