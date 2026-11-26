@@ -865,6 +865,30 @@ def init_database():
                 cursor.execute(f"ALTER TABLE `class_notices` ADD COLUMN `{column}` {definition}")
                 print(f"✅ class_notices 已新增 {column} 欄位")
 
+        # 臨時停課／調課通知 (course_changes)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS `course_changes` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `kind` varchar(4) NOT NULL COMMENT '停課 / 調課',
+                `class_name` varchar(50) NOT NULL,
+                `course_name` varchar(100) NOT NULL,
+                `teacher` varchar(50) DEFAULT NULL,
+                `orig_date` date NOT NULL,
+                `orig_periods` varchar(10) NOT NULL COMMENT '節次，例如 3-4',
+                `orig_room` varchar(20) DEFAULT NULL,
+                `new_date` date DEFAULT NULL COMMENT '調課後 / 補課日期；停課沒有補課時為 NULL',
+                `new_periods` varchar(10) DEFAULT NULL,
+                `new_room` varchar(20) DEFAULT NULL,
+                `reason` varchar(200) DEFAULT NULL,
+                `created_by` varchar(50) NOT NULL,
+                `created_by_username` varchar(50) DEFAULT NULL,
+                `created_at` datetime NOT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_class` (`class_name`),
+                KEY `idx_orig_date` (`orig_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='臨時停課／調課通知';
+        """)
+
         # 導生關懷紀錄 (campus/counseling.py)：班導和學生的晤談紀錄與後續追蹤
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS `counseling_records` (
