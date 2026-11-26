@@ -16,6 +16,7 @@
   input[type=text] { width: 100%; font-size: 22px; letter-spacing: 4px; text-align: center; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
   button.primary { width: 100%; background: #16503f; color: #fff; border: 0; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; margin-top: 10px; }
   button.primary:disabled { opacity: .5; }
+  button.secondary { width: 100%; background: #fff; color: #16503f; border: 1px solid #16503f; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; }
   label.row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
   label.row input { width: 18px; height: 18px; }
   .msg { font-size: 13px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
@@ -119,6 +120,10 @@ function renderMenu(data, message) {
           <span>${f.name}</span>
         </label>`).join('')}
       <button class="primary" id="saveBtn">儲存</button>
+    </div>
+    <div class="card">
+      <p class="muted">要換成別的帳號，或綁定本來就有問題時，可以在這裡重新綁定：</p>
+      <button class="secondary" id="rebindBtn">🔄 重新綁定</button>
     </div>`);
   updateCountAndLimit();
   document.getElementById('saveBtn').onclick = async () => {
@@ -133,6 +138,7 @@ function renderMenu(data, message) {
       show(`<div class="msg error">${e.message}</div>` + document.getElementById('app').innerHTML);
     }
   };
+  document.getElementById('rebindBtn').onclick = () => renderBindForm();
 }
 
 async function loadMenu() {
