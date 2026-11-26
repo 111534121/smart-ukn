@@ -35,6 +35,8 @@ def seed_data():
     cursor = None
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
+        conn.autocommit = True  # 下面有一步會 import app (間接 import admin_db)，它自己會對 users 做 schema migration；
+        # 這支腳本預設 autocommit=False，前面寫入 users 的交易不提交就一直開著，會跟那個 migration 互相卡住 metadata lock
         cursor = conn.cursor()
 
         # 1. 寫入系所 (以學校公告之科系清單為準；已存在的舊名稱一併更新)
