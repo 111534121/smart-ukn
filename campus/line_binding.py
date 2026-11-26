@@ -33,19 +33,32 @@ bp = Blueprint("line_binding", __name__)
 BIND_CODE_TTL = 300  # 5 分鐘
 
 
+def _user_record_for_username(username):
+    """role/student_id 查詢共用：MySQL 查無此人時，不能直接當作「這個人沒有」，
+    因為登入 (/api/auth/login) 本身查不到 MySQL 帳號時會退回 admin_db 的 SQLite 備援資料庫，
+    這裡要跟登入用一樣的退路，不然帳號其實存在 (在 SQLite 裡)，卻被誤判成查無學號/角色。
+    """
+    rows = deps.fetch_db_rows("SELECT role, student_id FROM users WHERE username = %s", (username,))
+    if rows:
+        return rows[0]
+    if rows is None:
+        user = next((u for u in (deps.users or []) if u["username"] == username), None)
+        return user
+    try:
+        import admin_db  # 延後匯入，避免跟 admin_db/app 互相匯入造成循環
+        candidates = admin_db.query_db("SELECT role, student_id FROM users WHERE username = %s", (username,))
+        return candidates[0] if candidates else None
+    except Exception:
+        return None
+
+
 def _role_for_username(username):
-    rows = deps.fetch_db_rows("SELECT role FROM users WHERE username = %s", (username,))
-    if rows is not None:
-        return rows[0]["role"] if rows else None
-    user = next((u for u in (deps.users or []) if u["username"] == username), None)
+    user = _user_record_for_username(username)
     return user["role"] if user else None
 
 
 def _student_id_for_username(username):
-    rows = deps.fetch_db_rows("SELECT student_id FROM users WHERE username = %s", (username,))
-    if rows is not None:
-        return rows[0]["student_id"] if rows else None
-    user = next((u for u in (deps.users or []) if u["username"] == username), None)
+    user = _user_record_for_username(username)
     return user.get("student_id") if user else None
 
 

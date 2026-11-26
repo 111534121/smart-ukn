@@ -31111,18 +31111,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 87,
+          "line": 100,
           "function": "bind_start",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 87,
+              "line": 100,
               "function": "bind_start"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             }
           ],
@@ -31137,28 +31137,28 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 106,
+          "line": 119,
           "function": "bind_confirm",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 106,
+              "line": 119,
               "function": "bind_confirm"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 57,
+              "line": 70,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 52,
+              "line": 65,
               "function": "_liff_channel_id"
             }
           ],
@@ -31173,28 +31173,28 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 128,
+          "line": 141,
           "function": "unbind",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 128,
+              "line": 141,
               "function": "unbind"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 57,
+              "line": 70,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 52,
+              "line": 65,
               "function": "_liff_channel_id"
             }
           ],
@@ -31209,13 +31209,28 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "campus/line_binding.py",
-          "line": 140,
+          "line": 153,
           "function": "line_menu",
           "tables": [
             {
               "name": "users",
               "file": "campus/line_binding.py",
-              "line": 37,
+              "line": 41,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 3604
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 66
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "file": "campus/line_binding.py",
+              "line": 49,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -31231,18 +31246,23 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 140,
+              "line": 153,
               "function": "line_menu"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 81,
+              "line": 94,
               "function": "_id_token_from_request"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 36,
+              "line": 55,
               "function": "_role_for_username"
+            },
+            {
+              "file": "campus/line_binding.py",
+              "line": 36,
+              "function": "_user_record_for_username"
             },
             {
               "file": "app.py",
@@ -31256,22 +31276,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/line_binding.py",
-              "line": 76,
+              "line": 89,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 57,
+              "line": 70,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 52,
+              "line": 65,
               "function": "_liff_channel_id"
             }
           ],
@@ -31285,13 +31305,28 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 157,
+          "line": 170,
           "function": "line_schedule",
           "tables": [
             {
               "name": "users",
               "file": "campus/line_binding.py",
-              "line": 45,
+              "line": 41,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 3604
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 66
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "file": "campus/line_binding.py",
+              "line": 49,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -31307,18 +31342,23 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 157,
+              "line": 170,
               "function": "line_schedule"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 81,
+              "line": 94,
               "function": "_id_token_from_request"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 44,
+              "line": 60,
               "function": "_student_id_for_username"
+            },
+            {
+              "file": "campus/line_binding.py",
+              "line": 36,
+              "function": "_user_record_for_username"
             },
             {
               "file": "app.py",
@@ -31332,22 +31372,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/line_binding.py",
-              "line": 76,
+              "line": 89,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 57,
+              "line": 70,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 52,
+              "line": 65,
               "function": "_liff_channel_id"
             }
           ],
@@ -31361,13 +31401,28 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 177,
+          "line": 190,
           "function": "line_notices",
           "tables": [
             {
               "name": "users",
               "file": "campus/line_binding.py",
-              "line": 45,
+              "line": 41,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 3604
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 66
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "file": "campus/line_binding.py",
+              "line": 49,
               "schema": [
                 {
                   "file": "smart_ukn.sql",
@@ -31383,18 +31438,23 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 177,
+              "line": 190,
               "function": "line_notices"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 81,
+              "line": 94,
               "function": "_id_token_from_request"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 44,
+              "line": 60,
               "function": "_student_id_for_username"
+            },
+            {
+              "file": "campus/line_binding.py",
+              "line": 36,
+              "function": "_user_record_for_username"
             },
             {
               "file": "app.py",
@@ -31408,22 +31468,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/line_binding.py",
-              "line": 76,
+              "line": 89,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 72,
+              "line": 85,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 57,
+              "line": 70,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 52,
+              "line": 65,
               "function": "_liff_channel_id"
             }
           ],
@@ -31437,18 +31497,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 204,
+          "line": 217,
           "function": "line_oa",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 204,
+              "line": 217,
               "function": "line_oa"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 198,
+              "line": 211,
               "function": "_oa_id"
             }
           ],
@@ -31460,18 +31520,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 212,
+          "line": 225,
           "function": "line_oa_qr",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 212,
+              "line": 225,
               "function": "line_oa_qr"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 198,
+              "line": 211,
               "function": "_oa_id"
             }
           ],

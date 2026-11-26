@@ -308,7 +308,7 @@ async function loadPinned() {
     }
     pinnedKeys = pinnedKeys.filter(k => featureByKey(k));
     renderServices();
-    document.getElementById('lineBindBtn')?.classList.toggle('hidden', !isLoggedIn());
+    document.getElementById('lineBindBtn')?.classList.toggle('hidden', !isLoggedIn() || currentUser.role === '家長');
 }
 
 // ---------- 綁定 LINE：取代碼，在 LINE「設定常用功能」輸入即可同步置頂清單 ----------
