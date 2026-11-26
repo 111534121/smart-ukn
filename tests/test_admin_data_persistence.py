@@ -11,8 +11,9 @@ def client():
     with app.test_client() as client:
         yield client
 
-def test_admin_user_crud_and_persistence(client):
+def test_admin_user_crud_and_persistence(client, monkeypatch):
     """Test admin creating, querying, updating, and deleting a user, ensuring DB persistence."""
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)  # 強制走 SQLite，不要在 MySQL 剛好有開時誤連到正式資料庫
     with client.session_transaction() as sess:
         sess['user_id'] = 5
         sess['username'] = 'admin'
@@ -110,8 +111,9 @@ def test_admin_user_crud_and_persistence(client):
     # Clean up audit logs
     admin_db.execute_db("DELETE FROM audit_logs WHERE record_id = %s", (str(user_id),))
 
-def test_admin_course_and_department_persistence(client):
+def test_admin_course_and_department_persistence(client, monkeypatch):
     """Test admin adding and deleting departments and courses in DB."""
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)  # 強制走 SQLite，不要在 MySQL 剛好有開時誤連到正式資料庫
     with client.session_transaction() as sess:
         sess['user_id'] = 5
         sess['username'] = 'admin'

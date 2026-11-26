@@ -30,6 +30,7 @@ import admin_db
 @pytest.fixture(autouse=True)
 def isolate_admin_db(monkeypatch, tmp_path):
     monkeypatch.setattr(admin_db, "SQLITE_DB_PATH", str(tmp_path / "admin_core.sqlite3"))
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)  # 強制走上面隔離出來的 SQLite，不要在 MySQL 剛好有開時搶著連正式資料庫
     admin_db.init_sqlite_schema()
 
 

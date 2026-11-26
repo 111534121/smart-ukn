@@ -12,6 +12,7 @@ def _session(client, role, username):
 
 def test_role_header_cannot_create_admin_session(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "get_db_connection", lambda: None)
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)
     monkeypatch.setattr(admin_db, "SQLITE_DB_PATH", str(tmp_path / "admin.sqlite3"))
     admin_db.init_sqlite_schema()
     app_module.app.config["TESTING"] = True
@@ -27,6 +28,7 @@ def test_role_header_cannot_create_admin_session(monkeypatch, tmp_path):
 
 def test_initialization_preserves_existing_accounts(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "get_db_connection", lambda: None)
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)
     monkeypatch.setattr(admin_db, "SQLITE_DB_PATH", str(tmp_path / "admin.sqlite3"))
     admin_db.init_sqlite_schema()
     admin_db.execute_db(
@@ -44,6 +46,7 @@ def test_initialization_preserves_existing_accounts(monkeypatch, tmp_path):
 
 def test_content_admin_login_and_permissions_survive_restart(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "get_db_connection", lambda: None)
+    monkeypatch.setattr(admin_db, "_get_mysql_conn", lambda: None)
     monkeypatch.setattr(admin_db, "SQLITE_DB_PATH", str(tmp_path / "admin.sqlite3"))
     monkeypatch.setitem(app_module.app.config, "TESTING", False)
     admin_db.init_sqlite_schema()

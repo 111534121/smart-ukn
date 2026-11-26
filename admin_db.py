@@ -6,12 +6,14 @@ Smart UKN 統一資料庫持久化引擎 (admin_db.py)
 """
 
 import os
+import time
 import json
 import sqlite3
 import threading
 from datetime import datetime
 # pyrefly: ignore[missing-import]
 from werkzeug.security import generate_password_hash
+import mysql.connector
 
 # 資料目錄
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,15 +25,33 @@ os.makedirs(SEALS_DIR, exist_ok=True)
 
 _db_lock = threading.Lock()
 
+# 跟 app.py 的 DB_CONFIG 分開獨立一份，不要互相 import：
+# admin_db 的 init_mysql_schema() 在模組載入時就會跑，若用 `from app import get_db_connection`
+# 回頭跟正在載入 app.py (再載入 admin_core → admin_db) 的流程互相等待，會變成
+# "cannot import name 'bp' from partially initialized module 'admin_core'" 的循環 import 錯誤。
+_DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "smart_ukn"),
+    "port": int(os.getenv("DB_PORT", 3306)),
+    "charset": "utf8mb4",
+}
+_DB_RETRY_SECONDS = 30
+_db_unavailable_until = 0.0
+
 def _get_mysql_conn():
-    """嘗試取得 MySQL 連線；若失敗回傳 None"""
+    """嘗試取得 MySQL 連線；若失敗回傳 None。連線失敗後 _DB_RETRY_SECONDS 內不再重試，避免每次呼叫都卡著等逾時。"""
+    global _db_unavailable_until
+    if time.monotonic() < _db_unavailable_until:
+        return None
     try:
-        from app import get_db_connection
-        conn = get_db_connection()
+        conn = mysql.connector.connect(**_DB_CONFIG, connection_timeout=3)
         if conn and conn.is_connected():
             return conn
     except Exception as e:
         print(f"⚠️ admin_db 取得 MySQL 連線失敗，退回 SQLite：{e}")
+    _db_unavailable_until = time.monotonic() + _DB_RETRY_SECONDS
     return None
 
 def is_mysql_active():
