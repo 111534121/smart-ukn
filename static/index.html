@@ -1529,6 +1529,7 @@
                 <div id="warningConsentCard" class="bg-slate-50 border border-slate-200 p-5 rounded space-y-4">
                     <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                         <span>學生個人隱私與預警通知授權開關：</span>
+                        <span id="consentReadOnlyHint" class="hidden text-[11px] font-normal text-slate-400">（僅供查看，只有學生本人可以修改）</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white p-4 rounded border border-slate-200 flex items-center justify-between">
@@ -1536,11 +1537,11 @@
                                 <div class="font-bold text-slate-800 text-sm">授權家長查閱與通知</div>
                                 <div class="text-xs text-slate-500">允許綁定家長帳號查閱學期二一預警，並在符合獎助學金資格或出現學業預警時收到 Email 通知</div>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
+                            <label id="consentParentToggleLabel" class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="consentParentToggle" onchange="updatePrivacyConsent()"
                                     class="sr-only peer" checked>
                                 <div
-                                    class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ukn-700">
+                                    class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ukn-700 peer-disabled:opacity-40">
                                 </div>
                             </label>
                         </div>
@@ -1549,11 +1550,11 @@
                                 <div class="font-bold text-slate-800 text-sm">授權班級導師輔導關懷</div>
                                 <div class="text-xs text-slate-500">允許導師於期中評量落後時安排學習輔導訪談</div>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
+                            <label id="consentAdvisorToggleLabel" class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="consentAdvisorToggle" onchange="updatePrivacyConsent()"
                                     class="sr-only peer" checked>
                                 <div
-                                    class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ukn-700">
+                                    class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ukn-700 peer-disabled:opacity-40">
                                 </div>
                             </label>
                         </div>
@@ -4195,7 +4196,12 @@
                     return;
                 }
                 const isStudent = currentUser && currentUser.role === '學生';
-                ['consentParentToggle', 'consentAdvisorToggle'].forEach(id => document.getElementById(id).disabled = !isStudent);
+                ['consentParentToggle', 'consentAdvisorToggle'].forEach(id => {
+                    document.getElementById(id).disabled = !isStudent;
+                    document.getElementById(id + 'Label').classList.toggle('cursor-not-allowed', !isStudent);
+                    document.getElementById(id + 'Label').classList.toggle('cursor-pointer', isStudent);
+                });
+                document.getElementById('consentReadOnlyHint').classList.toggle('hidden', isStudent);
                 document.getElementById('consentParentToggle').checked = data.consent_parent;
                 document.getElementById('consentAdvisorToggle').checked = data.consent_advisor;
 
