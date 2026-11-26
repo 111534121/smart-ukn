@@ -1319,6 +1319,37 @@ INSERT INTO `counseling_records` (`id`, `student_id`, `class_name`, `talk_date`,
 -- --------------------------------------------------------
 
 --
+-- 資料表結構 `course_changes`
+--
+
+CREATE TABLE `course_changes` (
+  `id` int(11) NOT NULL,
+  `kind` varchar(4) NOT NULL COMMENT '停課 / 調課',
+  `class_name` varchar(50) NOT NULL,
+  `course_name` varchar(100) NOT NULL,
+  `teacher` varchar(50) DEFAULT NULL,
+  `orig_date` date NOT NULL,
+  `orig_periods` varchar(10) NOT NULL COMMENT '節次，例如 3-4',
+  `orig_room` varchar(20) DEFAULT NULL,
+  `new_date` date DEFAULT NULL COMMENT '調課後 / 補課日期；停課沒有補課時為 NULL',
+  `new_periods` varchar(10) DEFAULT NULL,
+  `new_room` varchar(20) DEFAULT NULL,
+  `reason` varchar(200) DEFAULT NULL,
+  `created_by` varchar(50) NOT NULL,
+  `created_by_username` varchar(50) DEFAULT NULL,
+  `created_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='臨時停課／調課通知';
+
+--
+-- 傾印資料表的資料 `course_changes`
+--
+
+INSERT INTO `course_changes` (`id`, `kind`, `class_name`, `course_name`, `teacher`, `orig_date`, `orig_periods`, `orig_room`, `new_date`, `new_periods`, `new_room`, `reason`, `created_by`, `created_by_username`, `created_at`) VALUES
+(1, '調課', '資管五忠', '雲端運算架構與實務', '彭賓鈺', '2026-11-20', '3-4', 'A402', '2026-11-27', '5-6', 'A405', '教師公假研習調課', '彭賓鈺 老師', 'teacher1', '2026-11-18 10:00:00');
+
+-- --------------------------------------------------------
+
+--
 -- 資料表結構 `course_map`
 --
 
@@ -3979,6 +4010,14 @@ ALTER TABLE `counseling_records`
   ADD KEY `idx_counsel_class` (`class_name`);
 
 --
+-- 資料表索引 `course_changes`
+--
+ALTER TABLE `course_changes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_class` (`class_name`),
+  ADD KEY `idx_orig_date` (`orig_date`);
+
+--
 -- 資料表索引 `course_map`
 --
 ALTER TABLE `course_map`
@@ -4332,6 +4371,12 @@ ALTER TABLE `conduct_records`
 --
 ALTER TABLE `counseling_records`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用資料表自動遞增(AUTO_INCREMENT) `course_changes`
+--
+ALTER TABLE `course_changes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `deadlines`
