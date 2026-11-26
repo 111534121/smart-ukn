@@ -67,6 +67,28 @@ def test_one_dorm_account_handles_both_workflows(client, login):
     assert not any(a['username'] == 'demo_dorm' for a in catalog.demo_accounts())
 
 
+def test_dorm_repair_student_progress_and_office_scope(client, login):
+    configuration(client, login)
+    item = create(client, login, '住宿設備報修')
+    case_id = item['id']
+    assert any(c['id'] == case_id for c in client.get(BASE).get_json()['data'])
+    login('student2')
+    assert all(c['id'] != case_id for c in client.get(BASE).get_json()['data'])
+    assert client.get(f'{BASE}/{case_id}').status_code == 404
+    login('staff1')
+    assert all(c['id'] != case_id for c in client.get(BASE).get_json()['data'])
+    assert client.get(f'{BASE}/{case_id}').status_code == 404
+    login('dorm_demo')
+    case = client.get(f'{BASE}/{case_id}').get_json()['data']
+    assert case['office'] == '學生事務處／住宿管理' and case['can_act']
+    started = act(client, case, 'start')
+    assert started.status_code == 200
+    login('student1')
+    student_case = client.get(f'{BASE}/{case_id}').get_json()['data']
+    assert student_case['status'] == '處理中'
+    assert not student_case['can_act']
+
+
 def test_dorm_examples_are_visible_and_idempotent():
     import seed_dorm_staff_demo
     first = seed_dorm_staff_demo.main()

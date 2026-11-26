@@ -67,7 +67,7 @@ def init_database():
               `user_id` int(11) NOT NULL AUTO_INCREMENT,
               `username` varchar(50) NOT NULL,
               `password_hash` varchar(255) NOT NULL,
-              `role` enum('學生','家長','教職員','老師','管理員','訪客') NOT NULL,
+              `role` enum('學生','家長','教職員','老師','管理員','訪客','處室承辦','科助','住宿管理員','系統管理員','內容管理員') NOT NULL,
               `student_id` varchar(20) DEFAULT NULL,
               `full_name` varchar(50) NOT NULL,
               `advised_class` varchar(50) DEFAULT NULL,
@@ -133,7 +133,10 @@ def init_database():
               `file_type` varchar(20) DEFAULT NULL,
               `issue_date` date DEFAULT NULL,
               `kind` enum('證照','競賽','作品') NOT NULL DEFAULT '證照' COMMENT '學生上傳的類別',
-              `review_status` enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' COMMENT '班導審核；只有已通過的證照算進畢業門檻',
+              `review_status` enum('待審核','待複審','已通過','已退回') NOT NULL DEFAULT '已通過' COMMENT '證照經班導初審與行政複審後才列入畢業門檻',
+              `advisor_reviewer` varchar(50) DEFAULT NULL,
+              `advisor_note` varchar(200) DEFAULT NULL,
+              `advisor_reviewed_at` timestamp NULL DEFAULT NULL,
               `reviewer` varchar(50) DEFAULT NULL,
               `review_note` varchar(200) DEFAULT NULL COMMENT '退回原因',
               `reviewed_at` timestamp NULL DEFAULT NULL,
@@ -459,6 +462,8 @@ def init_database():
               `period_start` tinyint(4) NOT NULL,
               `period_end` tinyint(4) NOT NULL,
               `course_name` varchar(100) NOT NULL,
+              `activity_type` varchar(20) NOT NULL DEFAULT 'class',
+              `allow_retake_overlap` tinyint(1) NOT NULL DEFAULT 0,
               `classroom` varchar(50) DEFAULT NULL,
               `teacher` varchar(50) DEFAULT NULL,
               PRIMARY KEY (`id`),
@@ -901,7 +906,10 @@ def init_database():
         cursor.execute("ALTER TABLE `certificates` MODIFY `issue_date` date DEFAULT NULL")
         for column, definition in (
             ("kind", "enum('證照','競賽','作品') NOT NULL DEFAULT '證照' AFTER `issue_date`"),
-            ("review_status", "enum('待審核','已通過','已退回') NOT NULL DEFAULT '已通過' AFTER `kind`"),
+            ("review_status", "enum('待審核','待複審','已通過','已退回') NOT NULL DEFAULT '已通過' AFTER `kind`"),
+            ("advisor_reviewer", "varchar(50) DEFAULT NULL AFTER `review_status`"),
+            ("advisor_note", "varchar(200) DEFAULT NULL AFTER `advisor_reviewer`"),
+            ("advisor_reviewed_at", "timestamp NULL DEFAULT NULL AFTER `advisor_note`"),
             ("reviewer", "varchar(50) DEFAULT NULL AFTER `review_status`"),
             ("review_note", "varchar(200) DEFAULT NULL AFTER `reviewer`"),
             ("reviewed_at", "timestamp NULL DEFAULT NULL AFTER `review_note`"),
@@ -916,6 +924,8 @@ def init_database():
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE `certificates` ADD COLUMN `{column}` {definition}")
                 print(f"✅ certificates 已新增 {column} 欄位")
+        cursor.execute("ALTER TABLE `certificates` MODIFY `review_status` "
+                       "enum('待審核','待複審','已通過','已退回') NOT NULL DEFAULT '已通過'")
 
         # T10：常用功能置頂改存在 user_preferences (原本在 campus_store.json)
         cursor.execute("""

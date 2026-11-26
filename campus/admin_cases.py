@@ -2,13 +2,18 @@
 from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
+import os
+import threading
 from pathlib import Path
+from urllib.parse import quote
 from uuid import uuid4
 
-from flask import Blueprint, current_app, request, send_file
+from flask import Blueprint, current_app, redirect, request, send_file
 
 from .common import current_user, deps, error, next_id, ok, require, store
 from . import office_catalog as catalog
+from . import admin_case_store, demo_signoff
+from .smart_routing import predict as predict_route
 
 bp = Blueprint('admin_cases', __name__)
 OFFICES = catalog.OFFICES
@@ -38,7 +43,8 @@ def accounts():
 def assignments():
     # 示範帳號在未連接校務資料庫時預設隸屬教務處；正式帳號由管理員明確設定。
     with store.lock:
-        members = store.section('admin_offices', lambda: {'staff1': '教務處', 'dorm_demo': '學生事務處／住宿管理'}
+        members = store.section('admin_offices', lambda: {'staff1': '教務處', 'dorm_demo': '學生事務處／住宿管理',
+                                                        'demo_assistant_cs': '資訊管理科（五專）／科辦公室'}
                                 if deps.fetch_db_rows('SELECT username FROM users LIMIT 1') is None else {})
         if members.get('demo_dorm') == '學生事務處／住宿管理' or members.get('dorm_demo') == '學生事務處':
             members.pop('demo_dorm', None)
@@ -47,8 +53,78 @@ def assignments():
         return members
 
 
+def assistant_departments():
+    return store.section('admin_assistant_departments',
+                         lambda: {'demo_assistant_cs': 'CS'}
+                         if deps.fetch_db_rows('SELECT username FROM users LIMIT 1') is None else {})
+
+
 def cases():
-    return store.section('admin_cases', list)
+    return admin_case_store.all_cases()
+
+
+def case_notifications():
+    return store.section('admin_case_notifications', list)
+
+
+def queue_case_notification(item, event):
+    """Idempotent in-app event; email is an optional secondary channel."""
+    key = f"{item['id']}:{item['revision']}:{event}"
+    with store.lock:
+        if any(row['key'] == key for row in case_notifications()):
+            return False
+        title = '行政案件需要補件' if event == 'supplement' else '行政案件補件期限提醒'
+        body = ('請補齊：' + '、'.join(item.get('requirements', [])) + '。'
+                + '期限：' + item['due_date'] + '。請登入「我的申辦進度」處理。')
+        case_notifications().append({'key': key, 'case_id': item['id'], 'recipient': item['applicant_username'],
+                                     'student_id': item.get('student_id'), 'title': title, 'body': body,
+                                     'due_date': item['due_date'], 'created_at': stamp(), 'read_at': None})
+        store.save()
+    if os.getenv('SMTP_HOST') and item.get('student_id'):
+        try:
+            from attendance.notify import campus_email, get_mailer
+            get_mailer().send(campus_email(item['student_id']), title,
+                              '您有一件行政申請需要補件；請登入校務系統查看清單與期限。')
+        except Exception:
+            current_app.logger.exception('補件提醒電子郵件寄送失敗；站內通知已保留')
+    return True
+
+
+def dispatch_due_case_reminders():
+    """Called by the background worker and on inbox reads; each revision sends once."""
+    now = today()
+    sent = 0
+    for item in cases():
+        if item.get('status') != '待補件':
+            continue
+        try:
+            days = (date.fromisoformat(item['due_date']) - now).days
+        except (KeyError, ValueError):
+            continue
+        if days <= 1 and queue_case_notification(item, 'due'):
+            sent += 1
+    return sent
+
+
+_reminder_worker_started = False
+_reminder_worker_lock = threading.Lock()
+
+
+def start_reminder_worker(app):
+    global _reminder_worker_started
+    with _reminder_worker_lock:
+        if _reminder_worker_started:
+            return
+        _reminder_worker_started = True
+    def run():
+        while True:
+            threading.Event().wait(300)
+            try:
+                with app.app_context():
+                    dispatch_due_case_reminders()
+            except Exception:
+                app.logger.exception('行政案件補件提醒排程失敗')
+    threading.Thread(target=run, name='case-reminders', daemon=True).start()
 
 
 def offices():
@@ -68,14 +144,18 @@ def owns(item, user=None):
 
 def can_manage(item, user=None):
     u = user or current_user()
+    if u['role'] == '住宿管理員':
+        return (catalog.canonical(assignments().get(u['username'])) == '學生事務處／住宿管理'
+                and catalog.canonical(item['office']) == '學生事務處／住宿管理')
     return u['role'] == '管理員' or (u['role'] in WORK_ROLES and
         catalog.canonical(assignments().get(u['username'])) == catalog.canonical(item['office']))
 
 
 def is_dorm_staff(user=None):
     u = user or current_user()
-    return (u['role'] == '教職員' and bool(u.get('can_manage_dorm'))
-            and catalog.canonical(assignments().get(u['username'])) == '學生事務處／住宿管理')
+    return ((u['role'] == '住宿管理員' and catalog.canonical(assignments().get(u['username'])) == '學生事務處／住宿管理') or
+            (u['role'] == '教職員' and bool(u.get('can_manage_dorm'))
+             and catalog.canonical(assignments().get(u['username'])) == '學生事務處／住宿管理'))
 
 
 def visible(item, user=None):
@@ -85,12 +165,43 @@ def visible(item, user=None):
 
 def payload(item):
     result = deepcopy(item)
+    result['certificate'] = demo_signoff.summary(item)
+    result['certificate_versions'] = [{'serial':v['certificate']['manifest']['serial'],'version':v['certificate']['manifest']['version'],'issued_at':v['certificate']['manifest']['issued_at'],'verification_path':v['certificate']['manifest']['verification_path'],'superseded_at':v['superseded_at']} for v in item.get('certificate_versions',[])]
+    result['signoff_required'] = demo_signoff.supported(item)
+    result['review_digest'] = demo_signoff.review_digest(item) if result['signoff_required'] else None
+    for record in result.get('signoffs', []):
+        record.pop('snapshot', None)
     result['overdue'] = item['status'] in ACTIVE and item['due_date'] < today().isoformat()
     result['office'] = catalog.canonical(item['office'])
     result['can_act'] = can_manage(item)
     result['is_owner'] = owns(item)
     result['workflow'] = deepcopy(item.get('workflow', []))
     result['workflow_index'] = item.get('workflow_index', 0)
+    workflow = result['workflow']
+    index = result['workflow_index']
+    step = workflow[index] if 0 <= index < len(workflow) else None
+    upcoming = workflow[index + 1] if 0 <= index + 1 < len(workflow) else None
+    state = item['status']
+    if state == '待補件':
+        next_action = '請依補件清單補齊資料，填寫補件說明後重新送審。' if result['is_owner'] else '等待申請人補齊資料並重新送審。'
+        responsible = '申請人'
+    elif state in ('待受理', '重新送審'):
+        next_action = '請受理案件並確認申請資料。' if result['can_act'] else '等待承辦單位受理，目前無須重複送件。'
+        responsible = result['office']
+    elif state == '處理中':
+        next_action = ('完成目前步驟後，送交「' + upcoming['name'] + '」（' + catalog.canonical(upcoming['office']) + '）。') if upcoming else '完成目前步驟檢核後，由承辦人登錄結果並結案。'
+        responsible = result['office']
+    elif state == '已完成':
+        next_action, responsible = ('案件已完成，可下載示範證明並驗證核發狀態。' if result['certificate'] else '案件已完成，可查看處理紀錄與結案結果。'), '已結案'
+    elif state == '已退件':
+        next_action, responsible = '請查看處理紀錄中的退件原因；如有疑問，洽原承辦單位。', '已結案'
+    else:
+        next_action, responsible = '請洽承辦單位確認後續處理。', result['office']
+    result['progress'] = {'current_office': result['office'], 'current_step': step['name'] if step else state,
+                          'responsible': responsible, 'next_action': next_action,
+                          'requires_supplement': state == '待補件',
+                          'supplement_items': list(item.get('requirements', [])) if state == '待補件' else [],
+                          'due_date': item.get('due_date'), 'deadline_kind': '補件期限' if state == '待補件' else '案件處理期限'}
     return result
 
 
@@ -178,6 +289,9 @@ def validate_workflow(name, spec, unit_names):
 @bp.route('/admin-workbench')
 @require(*ACCESS_ROLES)
 def page():
+    if request.args.get('embedded') != '1':
+        kind = request.args.get('kind', '').strip()
+        return redirect('/' + ('?kind=' + quote(kind) if kind else '') + '#admin-cases')
     return current_app.send_static_file('admin-workbench.html')
 
 
@@ -199,8 +313,11 @@ def config():
             names = {a['username'] for a in accounts()}
             if not isinstance(members, dict) or any(k not in names or catalog.canonical(v) not in unit_names for k, v in members.items()):
                 return error('請使用現有行政帳號與有效處室')
+            dorm_names = {a['username'] for a in accounts() if a['role'] == '住宿管理員'}
+            if any(name in members and catalog.canonical(members[name]) != '學生事務處／住宿管理' for name in dorm_names):
+                return error('住宿管理員只能指派到住宿管理單位')
             configured = deepcopy(workflows())
-            assistant_depts = data.get('assistant_departments', store.data.get('admin_assistant_departments', {}))
+            assistant_depts = data.get('assistant_departments', deepcopy(assistant_departments()))
             department_ids = {d['dept_id'] for d in deps.departments}
             assistant_names = {a['username'] for a in accounts() if a['role'] == '科助'}
             if not isinstance(assistant_depts, dict) or any(k not in assistant_names or v not in department_ids for k,v in assistant_depts.items()):
@@ -232,10 +349,28 @@ def config():
                   and members.get(u['username'])]
     return ok(offices=list(offices()), kinds={k: v['office'] for k, v in configured.items()}, workflows=configured,
               source=catalog.SOURCE, demo_accounts=catalog.demo_accounts(), office=members.get(u['username']),
-              assistant_departments=deepcopy(store.data.get('admin_assistant_departments', {})) if u['role']=='管理員' else {},
+              assistant_departments=deepcopy(assistant_departments()) if u['role']=='管理員' else {},
               departments=deps.departments,
               members=members if u['role'] == '管理員' else {a['username']: members.get(a['username']) for a in people},
               accounts=people)
+
+
+@bp.route('/api/campus/admin-cases/route-preview', methods=['POST'])
+@require(*ACCESS_ROLES)
+def route_preview():
+    data = request.get_json(silent=True) or {}
+    title, detail = text(data, 'title', 100), text(data, 'detail', 4000)
+    return ok(data=predict_route(title, detail, workflows(), current_user()['role'], current_user().get('dept_id')))
+
+
+@bp.route('/api/campus/admin-cases/notifications')
+@require(*ACCESS_ROLES)
+def notifications():
+    dispatch_due_case_reminders()
+    username = current_user()['username']
+    with store.lock:
+        rows = [deepcopy(row) for row in case_notifications() if row['recipient'] == username]
+    return ok(data=sorted(rows, key=lambda row: row['created_at'], reverse=True))
 
 
 @bp.route('/api/campus/admin-cases', methods=['GET', 'POST'])
@@ -246,6 +381,9 @@ def collection():
         try:
             data = form_data()
             title, detail, kind = text(data, 'title', 100), text(data, 'detail', 4000), text(data, 'kind', 60)
+            prediction = predict_route(title, detail, workflows(), u['role'], u.get('dept_id'))
+            if not kind and prediction['kind']:
+                kind = prediction['kind']
             spec = deepcopy(workflows().get(kind))
             if not title or not detail or (not spec and kind not in KINDS):
                 return error('請填寫案件標題、申請說明並選擇類別')
@@ -265,24 +403,48 @@ def collection():
             answers = {key: text(answers, key, 1000) for key in required}
             if any(not value for value in answers.values()):
                 return error('請填齊此處室流程的必要欄位')
+            if kind in ('請假申請', '場地借用'):
+                try:
+                    start_day = date.fromisoformat(answers.get('開始日期', ''))
+                    end_day = date.fromisoformat(answers.get('結束日期', ''))
+                except ValueError:
+                    return error('請填寫正確的開始與結束日期')
+                if end_day < start_day:
+                    return error('結束日期不可早於開始日期')
+            if kind == '成績單申請':
+                copies = answers.get('申請份數', '')
+                if not copies.isascii() or not copies.isdigit() or not 1 <= int(copies) <= 20:
+                    return error('成績單申請份數須為 1 至 20 份')
             uploads = read_uploads()
+            auto_missing = (u['role'] == '學生' and kind.endswith('資料收件')
+                            and '證照' in answers.get('資料類別（實習／證照／其他）', '') and not uploads)
         except ValueError as exc:
             return error(str(exc))
         with store.lock:
-            item = {'id': next_id(cases()), 'student_id': u['student_id'], 'student_name': u['full_name'],
-                    'title': title, 'detail': detail, 'kind': kind, 'office': spec['office'] if spec else KINDS[kind], 'assignee': '',
+            office = spec['office'] if spec else KINDS[kind]
+            eligible = [name for name, assigned in assignments().items()
+                        if catalog.canonical(assigned) == catalog.canonical(office)
+                        and any(account['username'] == name for account in accounts())]
+            auto_assignee = eligible[0] if len(eligible) == 1 else ''
+            item = {'id': 0, 'student_id': u['student_id'], 'student_name': u['full_name'],
+                    'title': title, 'detail': detail, 'kind': kind, 'office': office, 'assignee': auto_assignee,
+                    'route_prediction': prediction if prediction['kind'] == kind else None,
                     'applicant_username': u['username'], 'applicant_role': u['role'], 'answers': answers,
                     'workflow': deepcopy(spec['steps']) if spec else [], 'workflow_index': 0,
                     'workflow_days': spec['days'] if spec else 7, 'is_demo_workflow': bool(spec and spec.get('is_demo')),
                     'documents': deepcopy(spec['documents']) if spec else [],
-                    'status': '待受理', 'due_date': (today() + timedelta(days=spec['days'] if spec else 7)).isoformat(),
+                    'status': '待補件' if auto_missing else '待受理',
+                    'due_date': (today() + timedelta(days=3 if auto_missing else spec['days'] if spec else 7)).isoformat(),
                     'created_at': stamp(), 'updated_at': stamp(), 'revision': 0,
-                    'requirements': [], 'supplements': [], 'history': [], 'files': []}
+                    'requirements': ['證照正本照片或 PDF'] if auto_missing else [],
+                    'supplements': [], 'history': [], 'files': []}
             save_files(item, uploads)
-            history(item, '送出申請')
-            cases().append(item)
-            store.save()
-        return ok(data=payload(item), message='申請已送交承辦處室')
+            history(item, '送出申請', note=('智慧分類：' + prediction['reason'] if prediction['kind'] == kind else '') +
+                    ('；自動指派：' + auto_assignee if auto_assignee else ''))
+            admin_case_store.insert(item)
+            if auto_missing:
+                queue_case_notification(item, 'supplement')
+        return ok(data=payload(item), message='已建立案件；請於 3 日內補上證照照片或 PDF' if auto_missing else '申請已送交承辦處室')
     with store.lock:
         rows = [payload(c) for c in cases() if visible(c)]
     rows.sort(key=lambda c: (c['status'] not in ACTIVE, not c['overdue'], c['due_date'], c['id']))
@@ -380,12 +542,17 @@ def case_detail(case_id):
                     label = '完成案件' if action == 'complete' else '退件結案'
             else:
                 return error('不支援的操作')
+            if action in ('advance', 'complete') and demo_signoff.supported(item):
+                demo_signoff.approve(before, updated, data, note)
             history(updated, label, note)
-            item.clear()
-            item.update(updated)
-            store.save()
+            if action == 'complete' and demo_signoff.supported(updated):
+                demo_signoff.issue(updated)
+            if not admin_case_store.update(updated, before['revision']):
+                return error('案件已由其他人更新，請重新整理後再操作', 409)
+            if action == 'supplement':
+                queue_case_notification(updated, 'supplement')
             deps.write_audit_log('admin_cases', case_id, label, before=before, after=updated)
-            return ok(data=payload(item), message=label + '成功')
+            return ok(data=payload(updated), message=label + '成功')
         except (ValueError, TypeError) as exc:
             return error(str(exc) if isinstance(exc, ValueError) else '表單格式錯誤')
 
@@ -414,7 +581,7 @@ def assistant_students():
     from .common import all_students
     u = current_user()
     code = (request.args.get('dept_id') if u['role'] == '管理員'
-            else store.data.get('admin_assistant_departments', {}).get(u['username']))
+            else assistant_departments().get(u['username']))
     if not code or code not in {d['dept_id'] for d in deps.departments}:
         return error('此科助帳號尚未設定所屬科系', 403)
     if u['role'] == '科助' and request.args.get('dept_id', code) != code:

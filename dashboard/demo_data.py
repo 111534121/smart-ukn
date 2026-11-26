@@ -28,6 +28,7 @@ DEMO_CLASS_SCHEDULE = [
     {"id": 4, "class_name": "資管五忠", "student_id": None, "weekday": 3, "period_start": 3, "period_end": 5, "course_name": "資料庫系統概論", "classroom": "A402", "teacher": "彭賓鈺"},
     {"id": 5, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 2, "period_end": 4, "course_name": "物件導向程式設計", "classroom": "A305 電腦教室", "teacher": "吳建宏"},
     {"id": 6, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 3, "period_end": 4, "course_name": "跨領域思維與創新科技", "classroom": "G101", "teacher": "李佩珊"},
+    {"id": 20, "class_name": "資管五忠", "student_id": None, "weekday": 4, "period_start": 6, "period_end": 8, "course_name": "自習（示範教務核定可重補修）", "classroom": "A301", "teacher": "", "activity_type": "self_study", "allow_retake_overlap": True},
     {"id": 7, "class_name": "資管五忠", "student_id": None, "weekday": 5, "period_start": 6, "period_end": 7, "course_name": "班會 / 導師時間", "classroom": "A301", "teacher": "彭賓鈺"},
     # 王小明重修
     {"id": 8, "class_name": None, "student_id": "S112001", "weekday": 1, "period_start": 6, "period_end": 7, "course_name": "程式設計(一)", "classroom": "A303", "teacher": "張文華"},

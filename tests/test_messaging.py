@@ -39,6 +39,33 @@ def test_staff_can_notify_any_class(client, login):
     assert res.status_code == 200, res.get_json()
 
 
+def test_assistant_notifies_only_own_department_classes(client, login):
+    from campus import messaging
+    login('demo_assistant_cs')
+    classes = messaging.all_classes()
+    own = next(c for c in classes if c['class_name'] == '資管五忠')
+    own['members'].append('S112003')  # 外科學生即使加入同名群組，也不能被科助看見或通知。
+    listed = client.get('/api/campus/classes')
+    assert listed.status_code == 200
+    assert all(c['class_name'].startswith('資管') for c in listed.get_json()['data'])
+    assert 'S112003' not in [m['student_id'] for c in listed.get_json()['data'] for m in c['members']]
+    sent = client.post('/api/campus/notices', json={
+        'class_name': '資管五忠', 'title': '科助收件提醒', 'content': '請回覆是否收到',
+        'reply_required': True})
+    assert sent.status_code == 200, sent.get_json()
+    assert 'S112003' not in sent.get_json()['data']['recipients']
+    assert client.post('/api/campus/notices', json={
+        'class_name': '護理四忠', 'title': '跨科', 'content': '不可發送'}).status_code == 403
+    assert client.post('/api/campus/classes', json={'class_name': '新群組', 'password': '1234'}).status_code == 403
+    assert client.post('/api/campus/classes/password', json={
+        'class_name': '資管五忠', 'password': '1234'}).status_code == 403
+    assert any(n['title'] == '科助收件提醒' for n in client.get('/api/campus/notices/sent').get_json()['data'])
+    login('student1')
+    assert any(n['title'] == '科助收件提醒' for n in client.get('/api/campus/notices/inbox').get_json()['data'])
+    login('demo_assistant_nur')
+    assert all(c['class_name'].startswith('護理') for c in client.get('/api/campus/classes').get_json()['data'])
+
+
 def test_student_cannot_send_notice(client, login):
     login("student1")
     res = client.post("/api/campus/notices", json={"class_name": "資管五忠", "title": "x", "content": "y"})

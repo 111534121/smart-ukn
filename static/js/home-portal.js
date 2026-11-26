@@ -1,10 +1,11 @@
 /* Homepage discovery only: selecting an audience never changes login permissions. */
 const PORTAL_AUDIENCES = [
     {id:'student', name:'在校學生', icon:'01', hint:'上課、申辦與學習進度，快速抵達。', keys:['course-plan','calendar','scholarship','rules','map','links']},
-    {id:'parent', name:'家長', icon:'02', hint:'掌握校園消息與學習資訊；個人資料需登入已綁定的家長帳號。', keys:['calendar','graduation','warning','rules','traffic','map']},
+    {id:'parent', name:'在校生家長', icon:'02', hint:'掌握子女的校園消息與學習資訊；個人資料需登入已綁定的家長帳號。', keys:['calendar','graduation','warning','rules','traffic','map']},
     {id:'staff', name:'教職員', icon:'03', hint:'教學、班級與行政服務；可用功能依實際登入權限提供。', keys:['my-schedule','my-class','notices','calendar','rent','reports']},
     {id:'freshman', name:'準新生', icon:'04', hint:'從認識科系到規劃到校路線，為下一步做好準備。', keys:['faculty','scholarship','traffic','map'], official:true},
-    {id:'visitor', name:'訪客', icon:'05', hint:'認識校園、尋找地點，輕鬆安排來訪。', keys:['map','traffic','calendar','faculty'], official:true}
+    {id:'future_parent', name:'未來家長', icon:'05', hint:'了解科系、費用、住宿與參訪方式；無須在校生家長帳號。', keys:['faculty','scholarship','traffic','map'], official:true},
+    {id:'visitor', name:'一般訪客', icon:'06', hint:'認識校園、尋找地點，輕鬆安排來訪。', keys:['map','traffic','calendar','faculty'], official:true}
 ];
 let portalAudience = 'student';
 let portalCategory = '全部';
@@ -21,7 +22,7 @@ function portalNewsCategory(a) {
 }
 function filterPortalNews(items) {
     return items.filter(a => portalCategory === '全部' || portalNewsCategory(a) === portalCategory)
-        .slice().sort((a,b) => String(b.publish_date).localeCompare(String(a.publish_date)));
+        .slice().sort((a,b) => Number(a.deadline_status === 'expired') - Number(b.deadline_status === 'expired') || String(b.publish_date).localeCompare(String(a.publish_date)));
 }
 function renderPortalNewsFilters() {
     const wrap = document.getElementById('portalNewsFilters');
@@ -96,7 +97,8 @@ function initHomePortal() {
     document.querySelector('.portal-audiences').hidden = isLoggedIn();
     const loginLink = document.querySelector('.portal-login');
     if (isLoggedIn()) loginLink.textContent = '切換登入帳號 ↗';
-    selectPortalAudience(currentUser.role === '家長' ? 'parent' : isStaff() ? 'staff' : currentUser.role === '訪客' ? 'visitor' : 'student');
+    selectPortalAudience(currentUser.role === '家長' ? 'parent' : isStaff() ? 'staff' : currentUser.role === '訪客'
+        ? ({'未來學生':'freshman','未來家長':'future_parent','一般訪客':'visitor'}[currentUser.visitor_type] || 'visitor') : 'student');
     document.getElementById('portalSearchForm').addEventListener('submit', searchPortal);
     document.getElementById('tab-home').addEventListener('click', event => {
         const btn = event.target.closest('button');
@@ -118,4 +120,11 @@ function initHomePortal() {
         document.getElementById('portalResults').hidden = true;
         document.getElementById('portalQuery').focus();
     });
+}
+
+function portalDeadlineHtml(a) {
+    const status = ['expired','soon','open'].includes(a.deadline_status) ? a.deadline_status : 'unknown';
+    const label = {expired:'已截止',soon:'即將截止',open:'尚未截止',unknown:'未標示截止日'}[status];
+    const date = a.deadline_at ? a.deadline_at.slice(0,16).replace('T',' ') : a.deadline_date;
+    return `<span class="portal-deadline portal-deadline-${status}">${label}${date ? ' · ' + escapeHtml(date) : ''}</span>`;
 }

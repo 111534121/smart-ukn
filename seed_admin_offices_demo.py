@@ -20,13 +20,13 @@ def main():
         for person in demo_people:
             existing = app.fetch_db_rows('SELECT username, role, full_name FROM users WHERE username=%s', (person['username'],))
             if existing:
-                if existing[0]['role'] != '教職員' or existing[0]['full_name'] != person['full_name']:
+                if existing[0]['role'] not in ('教職員', person['role']) or existing[0]['full_name'] != person['full_name']:
                     raise RuntimeError('示範帳號名稱與既有使用者衝突：' + person['username'])
-                if person['username'] == 'dorm_demo':
-                    app.db_execute('UPDATE users SET can_manage_dorm=1 WHERE username=%s', ('dorm_demo',))
+                app.db_execute('UPDATE users SET role=%s, can_manage_dorm=%s WHERE username=%s',
+                               (person['role'], 1 if person['username'] == 'dorm_demo' else 0, person['username']))
                 continue
             app.db_execute('INSERT INTO users (username,password_hash,role,full_name,can_manage_dorm) VALUES (%s,%s,%s,%s,%s)',
-                           (person['username'], app._DEMO_PW_123456, '教職員', person['full_name'],
+                           (person['username'], app._DEMO_PW_123456, person['role'], person['full_name'],
                             1 if person['username'] == 'dorm_demo' else 0))
 
     clients = {}
@@ -51,12 +51,16 @@ def main():
     # 僅對本次明確授權的示範帳號設定處室；保留其他真實帳號的分工。
     members.update({'staff1':'教務處', 'dorm_demo':'學生事務處／住宿管理'})
     members.update({p['username']:p['office'] for p in demo_people})
-    api('admin', 'PUT', base + '/config', {'members':members})
+    assistant_depts = dict(config.get('assistant_departments') or {})
+    assistant_depts.update({p['username']:p['dept_id'] for p in demo_people if p.get('type') == 'assistant'})
+    api('admin', 'PUT', base + '/config', {'members':members, 'assistant_departments':assistant_depts})
     existing = api('admin', 'GET', base)['data']
     titles = {c['title'] for c in existing}
     made = []
 
     def action(name, item, verb, **extra):
+        if item.get('signoff_required') and verb in ('advance','complete'):
+            extra.update(signoff_confirmed=True,review_digest=item['review_digest'])
         return api(name, 'POST', f"{base}/{item['id']}", {'action':verb,'revision':item['revision'],**extra})['data']
 
     def scenario(person, kind, label, mode, applicant='student1', answers=None):
@@ -66,9 +70,10 @@ def main():
         spec = config['workflows'][kind]
         if '學生' not in spec['roles']:
             applicant = 'staff1'
+        typed_examples = {'開始日期': cases.today().isoformat(), '結束日期': cases.today().isoformat(), '申請份數': '1'}
         item = api(applicant, 'POST', base, {'kind':kind, 'title':title,
             'detail':'虛構示範資料，僅供切換處室、分派、逐關檢核與補件操作，不代表正式申請。',
-            'answers':{f:(answers or {}).get(f, '【示範】'+f+'：操作練習用') for f in spec['fields']}})['data']
+            'answers':{f:(answers or {}).get(f, typed_examples.get(f, '【示範】'+f+'：操作練習用')) for f in spec['fields']}})['data']
         reviewer = person['username']
         if mode not in ('waiting', 'overdue'):
             item = action(reviewer, item, 'start')

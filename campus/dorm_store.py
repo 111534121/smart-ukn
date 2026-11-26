@@ -65,17 +65,17 @@ def insert(item):
         return saved
 
 
-def save_review(item, previous_stage):
+def save_review(item, previous_stage, previous_status='進行中'):
     if use_db():
         result = deps.db_execute('UPDATE dorm_applications SET stage=%s, status=%s, bed=%s, note=%s, history_json=%s WHERE id=%s AND stage=%s AND status=%s',
-            (item['stage'], item['status'], item['bed'], item['note'], json.dumps(item['history'], ensure_ascii=False), item['id'], previous_stage, '進行中'))
+            (item['stage'], item['status'], item['bed'], item['note'], json.dumps(item['history'], ensure_ascii=False), item['id'], previous_stage, previous_status))
         if result is None:
             raise ConnectionError('宿舍資料庫寫入失敗')
         return result['rowcount'] == 1
     with store.lock:
         items = store.section('dorm_applications', list)
         target = next((a for a in items if a['id'] == item['id']), None)
-        if not target or target['status'] != '進行中' or target['stage'] != previous_stage:
+        if not target or target['status'] != previous_status or target['stage'] != previous_stage:
             return False
         target.update(item); store.save()
         return True

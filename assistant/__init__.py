@@ -20,6 +20,7 @@ from types import SimpleNamespace
 from flask import Blueprint, jsonify, request
 
 from .logic import MAX_QUESTION_LEN, local_answer, retrieve
+from .ollama import chat as ask_ollama, enabled as ollama_enabled
 
 bp = Blueprint("assistant", __name__)
 deps = SimpleNamespace()
@@ -158,7 +159,10 @@ def ask():
         deps.record_unmatched_query(question)
 
     answer, mode = None, "local"
-    if matched and claude_enabled():
+    if matched and ollama_enabled():
+        answer = ask_ollama(SYSTEM_PROMPT, question, _context_text(flows, rules))
+        mode = "ollama" if answer else "local"
+    elif matched and claude_enabled():
         answer = ask_claude(question, flows, rules)
         mode = "claude" if answer else "local"
     if not answer:
@@ -179,4 +183,4 @@ def ask():
 
 @bp.route("/api/assistant/status", methods=["GET"])
 def status():
-    return jsonify({"status": "success", "mode": "claude" if claude_enabled() else "local"}), 200
+    return jsonify({"status": "success", "mode": "ollama" if ollama_enabled() else "claude" if claude_enabled() else "local"}), 200

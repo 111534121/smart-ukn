@@ -11,11 +11,14 @@ const ctx = vm.createContext({console, URL, location:{origin:'http://localhost'}
 });
 vm.runInContext(fs.readFileSync('static/js/home-portal.js','utf8'),ctx);
 (async()=>{
- ctx.initHomePortal(); assert.equal(audienceSection.hidden,false);
+ ctx.initHomePortal(); assert.equal(audienceSection.hidden,true);
  ctx.currentUser.role='老師'; ctx.isStaff=()=>true;
  ctx.initHomePortal(); assert.equal(audienceSection.hidden,true);
  assert.equal(el('tab-home').classList['teacher-home'],true);
  ctx.currentUser.role='學生'; ctx.isStaff=()=>false;
+ assert.match(ctx.portalDeadlineHtml({deadline_status:'expired',deadline_date:'2026-10-20'}),/已截止/);
+ assert.match(ctx.portalDeadlineHtml({}),/未標示截止日/);
+ assert.equal(ctx.filterPortalNews([{publish_date:'2026-10-22',deadline_status:'expired'},{publish_date:'2026-10-01'}])[0].publish_date,'2026-10-01');
  assert.equal(ctx.portalNewsCategory({title:'清寒助學金申請'}),'獎助學金');
  assert.equal(ctx.portalNewsCategory({title:'新生入學公告'}),'招生');
  assert.equal(ctx.portalNewsCategory({title:'期末考試公告'}),'課務');

@@ -77,7 +77,7 @@
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span id="dbModeText">校務資料庫連線正常</span>
                 </div>
-                <a href="/admin-workbench" class="text-xs bg-ukn-800 text-white font-bold px-3.5 py-2 rounded">行政案件工作台 →</a>
+                <a href="/#admin-cases" class="text-xs bg-ukn-800 text-white font-bold px-3.5 py-2 rounded">行政案件工作台 →</a>
                 <a href="/admin/events" class="text-xs bg-ukn-800 text-white font-bold px-3.5 py-2 rounded">活動報名管理 →</a>
                 <a href="/admin/feature-map" target="_blank" class="text-xs border border-ukn-800 text-ukn-800 hover:bg-ukn-50 font-bold px-3.5 py-2 rounded transition whitespace-nowrap">功能對照表 ↗</a>
                 <a href="/" class="text-xs bg-ukn-800 hover:bg-ukn-700 text-white font-bold px-3.5 py-2 rounded transition whitespace-nowrap">開啟學生端前台 ↗</a>
@@ -228,6 +228,7 @@
 
             <!-- 分頁 1: 校規條文 -->
             <div id="panel-rules" class="hidden space-y-3">
+                <a href="/admin-knowledge-documents" class="inline-block bg-ukn-800 text-white rounded px-4 py-2 text-sm font-semibold">上傳／更新校規與表單 PDF 文字 →</a>
                 <div class="overflow-x-auto rounded border border-slate-200">
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
@@ -607,10 +608,11 @@
             <!-- 分頁 9: 修改紀錄 (audit_logs) -->
             <div id="panel-audit" class="hidden space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 border border-slate-200 p-3 rounded text-xs text-slate-600">
-                    <p>後台每次新增、修改、刪除規章、同義詞、申辦流程、期限、校曆與學生專區連結，都會記錄修改者、時間與修改前後內容（最近 200 筆）。點「查看內容」可看改了哪些欄位。</p>
+                    <p>可查線上申辦及後台修改紀錄，顯示操作人、時間與修改前後內容（每次最多 200 筆）。選「線上申辦」可查該類最新紀錄。</p>
                     <div class="flex items-center gap-2 shrink-0">
-                        <select id="auditTableFilter" onchange="renderAuditLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
+                        <select id="auditTableFilter" onchange="loadAuditLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
                             <option value="">全部資料</option>
+                            <option value="online_applications">線上申辦</option>
                         </select>
                         <select id="auditActionFilter" onchange="renderAuditLogs()" class="border border-slate-300 rounded px-2 py-1.5 bg-white">
                             <option value="">全部動作</option>
@@ -1199,7 +1201,7 @@
                         <td class="p-3 font-mono">${c.item_id}</td>
                         <td class="p-3 font-bold text-ukn-700">${c.category_name}</td>
                         <td class="p-3 font-bold text-slate-900">${c.business_name}</td>
-                        <td class="p-3 text-xs text-slate-600">${c.office_location || '康寧樓 2 樓'}</td>
+                        <td class="p-3 text-xs text-slate-600">${c.office_location || '行政大樓 2 樓'}</td>
                         <td class="p-3 text-xs text-slate-600">${c.contact_phone || '分機 310'}</td>
                         <td class="p-3 text-xs text-slate-600 font-semibold">${c.deadline_week_info || '受理中'}</td>
                     `;
@@ -1682,7 +1684,9 @@
         async function loadAuditLogs() {
             const tbody = document.getElementById('auditTableBody');
             try {
-                const res = await fetch('/api/admin/audit-logs');
+                const filter = document.getElementById('auditTableFilter');
+                const selected = filter.value;
+                const res = await fetch('/api/admin/audit-logs' + (selected ? `?table_name=${encodeURIComponent(selected)}` : ''));
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.status !== 'success') {
                     auditCache = [];
@@ -1691,12 +1695,12 @@
                 }
                 auditCache = data.data || [];
                 // 篩選選單只列出有紀錄的資料類別
-                const filter = document.getElementById('auditTableFilter');
-                const current = filter.value;
                 const tables = [...new Set(auditCache.map(l => l.table_name))];
+                if (!tables.includes('online_applications')) tables.push('online_applications');
+                if (selected && !tables.includes(selected)) tables.push(selected);
                 filter.innerHTML = '<option value="">全部資料</option>' + tables.map(t =>
                     `<option value="${escapeHtml(t)}">${escapeHtml(AUDIT_TABLE_LABELS[t] || t)}</option>`).join('');
-                filter.value = tables.includes(current) ? current : '';
+                filter.value = selected;
                 renderAuditLogs();
             } catch (e) {
                 console.error(e);

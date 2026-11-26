@@ -155,6 +155,14 @@
                             <div class="font-bold text-ukn-900">宿舍行政人員</div>
                             <div class="text-[10px] text-slate-500 font-normal">dorm_demo／123456 · 宿舍審核與住宿案件</div>
                         </button>
+                        <button type="button" onclick="fillAccount('demo_assistant_cs', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">資管科科助</div>
+                            <div class="text-[10px] text-slate-500 font-normal">demo_assistant_cs／123456 · 活動與科務案件</div>
+                        </button>
+                        <button type="button" onclick="fillAccount('demo_admissions_admin', '123456')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
+                            <div class="font-bold text-ukn-900">招生與課務知識管理員</div>
+                            <div class="text-[10px] text-slate-500 font-normal">demo_admissions_admin／123456 · 公開 PDF 與同義詞</div>
+                        </button>
                         <button onclick="fillAccount('admin', 'admin123')" class="p-2 rounded bg-slate-50 hover:bg-slate-100 text-slate-800 transition border border-slate-200 text-left">
                             <div class="font-bold text-emerald-900">管理員：系統後台</div>
                             <div class="text-[10px] text-slate-500 font-normal">CMS 規章維護權限</div>
@@ -174,7 +182,7 @@
 
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5 text-xs sm:text-sm">您的身分 *</label>
-                    <div class="grid grid-cols-2 gap-2" id="visitorTypeGroup">
+                    <div class="grid grid-cols-3 gap-2" id="visitorTypeGroup">
                         <button type="button" data-type="未來學生" onclick="selectVisitorType('未來學生')"
                             class="visitor-type-btn py-2 rounded border-2 border-amber-500 bg-amber-50 text-amber-950 font-bold text-xs transition flex items-center justify-center gap-1.5">
                             <span>未來學生</span>
@@ -182,6 +190,10 @@
                         <button type="button" data-type="未來家長" onclick="selectVisitorType('未來家長')"
                             class="visitor-type-btn py-2 rounded border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
                             <span>未來家長</span>
+                        </button>
+                        <button type="button" data-type="一般訪客" onclick="selectVisitorType('一般訪客')"
+                            class="visitor-type-btn py-2 rounded border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs transition flex items-center justify-center gap-1.5 hover:border-slate-300">
+                            <span>一般訪客</span>
                         </button>
                     </div>
                 </div>
@@ -200,7 +212,7 @@
                     </div>
 
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">就讀 / 畢業學校 *</label>
+                        <label id="vSchoolLabel" class="block font-semibold text-slate-700 mb-1">就讀 / 畢業學校 *</label>
                         <input type="text" id="vSchool" list="schoolOptions" placeholder="請選擇或輸入學校名稱" required
                                class="w-full px-3 py-2 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 bg-slate-50 focus:bg-white transition">
                         <datalist id="schoolOptions">
@@ -267,6 +279,13 @@
 
         function selectVisitorType(type) {
             selectedVisitorType = type;
+            const school = document.getElementById('vSchool');
+            school.required = type === '未來學生';
+            document.getElementById('vSchoolLabel').textContent = type === '未來學生' ? '就讀 / 畢業學校 *' : type === '未來家長' ? '子女就讀學校（選填）' : '所屬單位（選填）';
+            school.placeholder = type === '一般訪客' ? '可留空' : '請選擇或輸入學校名稱';
+            const dept = document.getElementById('vTargetDept');
+            dept.disabled = type === '一般訪客';
+            dept.parentElement.classList.toggle('hidden', type === '一般訪客');
             document.querySelectorAll('.visitor-type-btn').forEach(btn => {
                 const active = btn.dataset.type === type;
                 btn.classList.toggle('border-amber-500', active);
@@ -317,7 +336,7 @@
                 const data = await res.json();
 
                 if (res.ok && data.status === 'success') {
-                    window.location.href = data.user.workbench_url || '/';
+                    window.location.href = data.user.role === '科助' ? '/' : (data.user.workbench_url || '/');
                 } else {
                     errBox.textContent = data.message || '帳號或密碼錯誤';
                     errBox.classList.remove('hidden');

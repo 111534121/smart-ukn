@@ -4,7 +4,7 @@
 """
 from flask import Blueprint, request
 
-from .common import deps, error, ok, current_user
+from .common import deps, error, ok, current_user, require
 
 bp = Blueprint("campus_courses", __name__)
 
@@ -61,6 +61,53 @@ def student_passed_ids():
     return None, set(), False
 
 
+def actual_schedule():
+    u = current_user()
+    if not u or u['role'] not in ('學生', '家長') or not u.get('student_id'):
+        return [], None
+    source = deps.get_dashboard_source()
+    return source.list_schedule(u.get('class_name', ''), u['student_id']), source.name
+
+
+def schedule_checks(offering, schedule, allow_self_study=False):
+    issues = []
+    for row in schedule:
+        if offering['weekday'] != row['weekday'] or offering['period_start'] > row['period_end'] or row['period_start'] > offering['period_end']:
+            continue
+        # Only server-owned schedule metadata grants an exception; names/client flags do not.
+        exception = allow_self_study and row.get('activity_type') == 'self_study' and row.get('allow_retake_overlap') in (True, 1)
+        issues.append({'type': 'self_study_exception' if exception else 'schedule_conflict',
+                       'level': 'info' if exception else 'error', 'offering_ids': [offering['offering_id']],
+                       'message': ('自習例外：' if exception else '實際課表衝堂：') + offering['course_name'] + ' 與 ' + row['course_name'] + '（' + slot_text(row) + '）重疊' + ('；此時段已由教務資料允許重補修' if exception else ''),
+                       'schedule_id': row.get('id')})
+    return issues
+
+
+@bp.route('/api/campus/course-plan/recommendations', methods=['GET'])
+@require('學生', '家長')
+def recommendations():
+    passed, failed, _ = student_passed_ids()
+    if passed is None:
+        return error('此帳號尚未綁定學生資料', 403)
+    try:
+        schedule, source = actual_schedule()
+    except Exception:
+        return error('實際課表暫時無法讀取，無法判定可修班別', 503)
+    courses = {c['course_id']: c for c in deps.load_course_map()}
+    result = []
+    for cid in sorted(failed - passed):
+        options = []
+        for o in offerings_with_course():
+            if o['course_id'] != cid:
+                continue
+            checks = schedule_checks(o, schedule, allow_self_study=True)
+            if o.get('prerequisite_id') and o['prerequisite_id'] not in passed:
+                checks.append({'type': 'prerequisite', 'level': 'error', 'message': '先修課尚未及格'})
+            options.append({**o, 'available': not any(c['level'] == 'error' for c in checks), 'checks': checks})
+        result.append({'course_id': cid, 'course_name': courses.get(cid, {}).get('course_name', cid), 'options': options})
+    return ok(data=result, schedule=schedule, source=source, notice='依目前課表與示範開課資料比對；正式選課仍依教務規定。')
+
+
 @bp.route("/api/campus/course-plan/offerings", methods=["GET"])
 def list_offerings():
     return ok(data=offerings_with_course(), min_credits=SEMESTER_MIN_CREDITS, max_credits=SEMESTER_MAX_CREDITS)
@@ -83,7 +130,11 @@ def check_plan():
     if passed is None:
         passed = {str(x) for x in data.get("passed_course_ids", [])}
 
-    issues = []
+    try:
+        schedule, schedule_source = actual_schedule()
+    except Exception:
+        return error('實際課表暫時無法讀取，請稍後重試', 503)
+    issues = [issue for o in chosen for issue in schedule_checks(o, schedule, allow_self_study=o["course_id"] in failed and o["course_id"] not in passed)]
     # 1. 上課時間衝突 (同一天節次重疊)
     for i, a in enumerate(chosen):
         for b in chosen[i + 1:]:
@@ -142,6 +193,8 @@ def check_plan():
 
     return ok(
         from_record=from_record,
+        schedule_source=schedule_source,
+        actual_schedule=schedule,
         chosen=chosen,
         issues=issues,
         retake=[{"offering_id": o["offering_id"], "course_name": o["course_name"]} for o in retake],
@@ -162,6 +215,6 @@ def check_plan():
         verdict=grade,
         timetable=[{"offering_id": o["offering_id"], "course_name": o["course_name"], "weekday": o["weekday"],
                     "period_start": o["period_start"], "period_end": o["period_end"], "classroom": o["classroom"],
-                    "conflict": any(o["offering_id"] in i["offering_ids"] and i["type"] == "time_conflict" for i in issues)}
+                    "conflict": any(o["offering_id"] in i["offering_ids"] and i["type"] in ("time_conflict", "schedule_conflict") for i in issues)}
                    for o in chosen],
     )

@@ -10,12 +10,12 @@ def guide():
     return json.loads(source.removeprefix('window.FEATURE_GUIDE = ').rstrip().removesuffix(';'))
 
 
-def test_guide_assets_and_home_entry(client):
+def test_guide_assets_without_home_entry(client):
     for path in ('/feature-guide.html', '/feature-guide-data.js', '/css/feature-guide.css', '/js/feature-guide.js'):
         response = client.get(path)
         assert response.status_code == 200
         response.close()
-    assert b'/feature-guide.html' in client.get('/').data
+    assert b'/feature-guide.html' not in client.get('/').data
 
 
 def test_guide_covers_registered_business_routes(client):

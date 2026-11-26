@@ -7,6 +7,7 @@
 import json
 import os
 import time
+from datetime import datetime, timedelta, timezone
 import urllib.parse
 import urllib.request
 
@@ -179,4 +180,5 @@ def transport():
     except Exception as e:
         bus_error = str(e)
     return ok(address=CAMPUS_ADDRESS, lat=CAMPUS_LAT, lon=CAMPUS_LON, links=links, bus=bus,
-              bus_configured=bool(os.getenv("TDX_CLIENT_ID")), bus_error=bus_error)
+              bus_configured=bool(os.getenv("TDX_CLIENT_ID") and os.getenv("TDX_CLIENT_SECRET")), bus_error=bus_error,
+              bus_updated_at=datetime.fromtimestamp(_cache['bus_eta'][0],timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M') if bus and 'bus_eta' in _cache else None)

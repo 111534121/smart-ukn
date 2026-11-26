@@ -1,0 +1,461 @@
+{
+  "companies": [
+    {
+      "source_id": "114001",
+      "year": 114,
+      "name": "日盛聯合會計師事務所",
+      "roles": [
+        {
+          "title": "會計資訊助理",
+          "details": "帳務處理、會計系統建置，需要會計丙級"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114002",
+      "year": 114,
+      "name": "優捷勝股份有限公司",
+      "roles": [
+        {
+          "title": "電腦客服專員",
+          "details": "接通0800客服專線，提供客戶服務、協助顧客溝通協調，客戶追蹤案件進度和解決問題"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114003",
+      "year": 114,
+      "name": "威策電腦股份有限公司",
+      "roles": [
+        {
+          "title": "個人電腦-助理工程師",
+          "details": "1電腦維護協助 2外勤專案支援 3交機專案 4如有機車擇優 5可配合一年實習"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114005",
+      "year": 114,
+      "name": "沐光服飾鋪",
+      "roles": [
+        {
+          "title": "美編",
+          "details": "認真負責/上架商品、製圖、理貨"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "11406",
+      "year": 114,
+      "name": "巨匠教育集團",
+      "roles": [
+        {
+          "title": "電腦課程規劃及課輔行政事務",
+          "details": "工作內容: 電腦課程規劃顧問 電話服務及聯繫/班務/排課/開班作業 行政事務級主管交辦事項 協助學員就業輔導/考照 電腦設備維護及基本檢測 班務宣導及執行 主管交班事項 需求條件: 1.排班制，需輪班；早班；08:50~17:50晚班:13:30~22:00，周六可能需要上班 2.電腦基本操作:OFFICC、打字30字/分 3.實習時間需延長到8/31 4-5"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114007",
+      "year": 114,
+      "name": "神通資訊科技股份有限公司",
+      "roles": [
+        {
+          "title": "測試工程師",
+          "details": "系統測試，測試文件撰寫 2-3"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114008",
+      "year": 114,
+      "name": "承心資訊有限公司",
+      "roles": [
+        {
+          "title": "Angular,html.5/css3,java,跨平台APP開發,測試",
+          "details": "開放的學習心態/全端助理工程師(開發/測試/文件撰寫) 1-3"
+        },
+        {
+          "title": "專案工作執行，測試",
+          "details": "對大數據，客群分析，廣告投放及客戶關係有興趣，願與資訊科技結合者 1-2"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114009",
+      "year": 114,
+      "name": "春秋資訊股份有限公司",
+      "roles": [
+        {
+          "title": "維護工程師",
+          "details": "電腦裝修、企業網路規劃/維護、網通設備概念設定即故障排除、企業伺服器建置維護(Exchange、Proxy、AD等...)、用戶端電腦操作及設定問題排除，硬體裝修等。"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114010",
+      "year": 114,
+      "name": "睿思智慧股份有限公司",
+      "roles": [
+        {
+          "title": "後端工程師",
+          "details": "這份工作的核心內容 Responsibilitics】【.NET/ C#】- Intornct 程式設計師 1. 模擬、修正現有網路系統程式。 2. 設計、開發新的網路程式及界面。 3.進行網路程式的需求分析。 4. 開發以網路為基礎的應用程式（Web-bascdapplication) • 【.NBT /C#】- 軟體工程師 1. 負責軟體之分析、設計以及程式撰寫。 2. 規劃執行軟體架構及模組之設計，並控管軟體設計進度。 3. 進行軟體之測試與修改。 4.規劃、執行與維護量產的產品。 5. 協助研發軟體新技術與新工具。 【.NET /C#】-全端工程師 1. 負責前端/後端介面及功能開發 2. 負責系統分析、設計、測試、自動化以及程式撰寫 3. 協同前後端與專案團隊共同合作開發系統介面 4.API 串接與開發 5. 資料庫架構設計 6. 分析和解決前端遇到的各種技術、性能及跨瀏覽器兼容問題 7. 平台系統架構規劃及設計 8. 網際網政公解況劃及 1-2"
+        },
+        {
+          "title": "1. 執行軟體之測試與修改。",
+          "details": "2. 協助軟體系統品質的提升與產品。 3. 協助研發軟體設計與實施進度。 4. 【App/Web】全端工程師： * 負責前端應用程式的開發與維護。 * 負責軟體分析、設計、測試、自動化以及程式撰寫。 * 協同後端團隊或其他團隊共同開發系統軟體產品。 5. 【AI/應用開發】 * 應用系統開發 * 應用系統的分析與規劃 * 進行應用系統實作與測試 * 解決應用系統開發過程中遇到的各種技術、性能及跨瀏覽器兼容問題。 * 撰寫應用系統架構規劃及設計文件。 1-2"
+        },
+        {
+          "title": "1. 協助數據平台基礎架構與數據流程建置及平台維護，包含 Data Pipeline、監管系統和監控工具等。",
+          "details": "2. ETL/ELT 數據流程的設計、開發與優化。 3. Data Schema 設計與資料建模，並確保資料品質。 4. 協作跨職能團隊，包含數據科學家、PM 或專案經理，以支援數據驅動的業務決策。 5. 協助雲平台基礎架構的維護與優化 (AWS/Azure)。 6. 協助 MLOps 系統的開發與維護，以支援模型訓練與部署。 7. 協助數據安全、隱私和合規性相關工作。 8. 熟悉並應用以下技術：Kubernetes、Docker、Python、SQL、雲服務 (AWS/Azure) 和 MLOps 工具等。 9. 協助數據平台性能優化和成本控制。 1. 熟悉並應用 Python、SQL 和 NoSQL。 2. 熟悉 Data Lake、Data Warehouse 和 Data Mart 的概念。 3. 熟悉並應用雲平台技術 (AWS/Azure)。 4. 熟悉並應用容器化技術 (Docker、Kubernetes)。 5. 熟悉 MLOps 的概念與工具。 6. 具備數據平台開發、維護與優化經驗。 7. 具備數據安全、隱私和合規性相關經驗。 8. 具備獨立工作能力，並能與團隊成員有效合作。 9. 具備良好的溝通能力，能清楚地表達複雜的技術概念。 10. 具備良好的問題解決能力，能主動發現並解決問題。 11. 具備良好的學習能力，能快速掌握新技術。 12. 具備良好的英文溝通能力，能閱讀和理解英文技術文檔。 1-2"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114011",
+      "year": 114,
+      "name": "卓航科技有限公司",
+      "roles": [
+        {
+          "title": "自動化開發(軟體測試)",
+          "details": "主要工作內容為軟件系統設計、測試及用例測試。程序測試員也需要負責進行系統及用戶體驗測試，分析測試結果，準備測試報告及根據Bug 的類別呈報給相關團隊。需會編碼(python,c#) 2-3"
+        },
+        {
+          "title": "線上技術客服",
+          "details": "主要工作內容為應對客戶對產品的問題，負責監控應用程序，轉交影響業務無法正常運行的 客戶或監控問題至相關部門並跟進進度。"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114012",
+      "year": 114,
+      "name": "以誠科技股份有限公司",
+      "roles": [
+        {
+          "title": "Java 網頁開發實習生",
+          "details": "1. 須熟悉 Java、JSP 程式語言，及 HTML、Javascript、CSS 等任一標準式語法。 2. 對撰寫程式抱持高度興趣。 3. 邏輯能力強，善於發現問題、解決問題。 4. 自律、積極主動、細心、樂於接受領導、能溝通、樂於助人、習慣團隊合作。 工作內容： 1. 數位應用 Java(JSP)網頁程式維護及開發。 2. 數位典藏 Java(JSP)網頁程式維護及開發。 3. 其他受訓工作事項。"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114013",
+      "year": 114,
+      "name": "朔方科技股份有限公司",
+      "roles": [
+        {
+          "title": "客戶軟硬體維護、硬體設備故障排除",
+          "details": "客戶端電腦維修／資訊軟體維護 熟悉 PC、印表機維修 解決客戶端電腦軟硬體與週邊設備使用時的突發狀況 電腦作業系統及各類軟體安裝更新、電腦及週邊設備故障排除 網路設備搬移、連線問題處理與排除 電腦網路佈線維護與管理"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114014",
+      "year": 114,
+      "name": "山淬股份有限公司",
+      "roles": [
+        {
+          "title": "電商 資料實習生",
+          "details": "1. 實作程式將電商營運資訊化、提升產值/效率（例如：訂單自動化處理）。 2. 串接 API：將各種不同平台資料交換/串接（例如：將 excel 的產品資料，自動化上架到 pchome 上）。 3. **俱備：**對於網頁資訊、智能訂價。 4. **其他應用專業：**影像識別、語意智能判斷及回覆。 5. 協助資料與企劃師做商品銷售企劃。"
+        },
+        {
+          "title": "電商 短影音企劃/剪輯專員",
+          "details": "1. 創意發想及影音腳本撰寫與製作。 2. 影片拍攝與剪輯：能獨立執行拍攝及剪輯、掌握節奏、畫面美感與聲音搭配。 3. 多元內容製作：負責各類型素材，如直播切片、品牌紀錄、商品、口播、流行短影音等。 4. 熟悉網路趨勢與優化：追蹤 TikTok、IG Reels、Threads、小紅書等平台趨勢，並進行優化與建議。 5. 團隊溝通與協作：與產品經理密切合作，確保專案如期完成並符合品牌調性。 6. 與外部團隊合作產生影音內容。"
+        },
+        {
+          "title": "電商 營運行政實習生",
+          "details": "1. 電子商務平台 每日訂單處理。 2. 每日訂單匯整至 ERP 系統、物流作業系統，產生對應所需表單，出貨管理。 3. 商品進退貨協助：處理退貨。 4. 網路銷售的問答、客服信箱窗口、網路賣場事務 協助管理。 5. 倉儲物流報表對帳。 6. 製作各項相關的報表。 7. 協助處理一切廠商進出貨進度。 8.電子商務平台客戶問題、圖片規格編修。 9. 協助處理主管交辦事宜。Excel 熟練、學習能力佳，對電子商務有興趣的人員。"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114015",
+      "year": 114,
+      "name": "埔墘行有限公司",
+      "roles": [
+        {
+          "title": "技術助理",
+          "details": "需庫備料／產線測試／組裝／包裝／DIP 材料加工／插件"
+        },
+        {
+          "title": "資訊助理",
+          "details": "基礎電腦硬體維修、程式設計、資料庫資料維護。"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114016",
+      "year": 114,
+      "name": "智能悅信資訊股份有限公司",
+      "roles": [
+        {
+          "title": "程式研發JavaScript.PHP",
+          "details": "前端程式/介面開發 管理專案進度 有專案管理或企劃安經驗優先，免程式基礎"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114017",
+      "year": 114,
+      "name": "台北榮民總醫院",
+      "roles": [
+        {
+          "title": "資訊室程式開發",
+          "details": "程式設計 大數據資料整理 AI應用"
+        },
+        {
+          "title": "資訊室網路管理",
+          "details": "硬體與設備管理 網路與系統維護 專案與支援"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114018",
+      "year": 114,
+      "name": "中華數位科技有限公司",
+      "roles": [
+        {
+          "title": "客服部助理",
+          "details": "接收客戶報案信件/接聽電話轉到內部系統/回覆簡單操作問題或告知問題排查所需資料"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114019",
+      "year": 114,
+      "name": "唯晶科技股份有限公司",
+      "roles": [
+        {
+          "title": "遊戲測試(QA)",
+          "details": "遊戲測試 遊戲設備維護、更新 玩家體驗協助 其他主管交辦事項"
+        },
+        {
+          "title": "遊戲企劃實習生",
+          "details": "1協助遊戲企劃師運用內部已開發的遊戲編輯器來進行編輯成型 2協助遊戲幕後規劃推廣 3遊戲破壞性測試"
+        },
+        {
+          "title": "財務實習生",
+          "details": "單據憑證資料整理及核對 應付費用立帳/沖帳傳票輸入作業 整理及裝訂傳票、帳冊整理 文書合約資料分類、歸檔"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114020",
+      "year": 114,
+      "name": "財團法人基督教宇宙光全人關懷機構",
+      "roles": [
+        {
+          "title": "資訊",
+          "details": "1.作業系統版本更新 2.病毒碼版本更新 3.資料備份程序檢查 4.障礙處理紀錄 5.作業系統安裝/設定/障礙排除6.office軟體安裝/設定/障礙排除7.防毒軟體安裝/設定/障礙排除及掃毒作業8.網路連線障礙排除9.電子郵件設定/障礙排除10.瀏覽器設定/障礙排除11.驅動程式安裝/設定/障礙排除12.印表機安裝/設定(單機/網路版)13.區域網路設定/障礙排除14.廣域網路障礙排除"
+        },
+        {
+          "title": "會計",
+          "details": "負責帳務處理、收據開立"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114021",
+      "year": 114,
+      "name": "旭海國際科技",
+      "roles": [
+        {
+          "title": "資料輸入員",
+          "details": "中文速度35-50字 英文速度25-40字 主要負責資料整理、輸入與校對工作"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "114022",
+      "year": 114,
+      "name": "啟英學校財團法人",
+      "roles": [
+        {
+          "title": "電腦維護",
+          "details": "電腦維修、網路維護、伺服器系統維護"
+        }
+      ],
+      "source_url": "https://docs.google.com/document/d/1ZnRY7O-yodkmyGR2yvNX1IHZVyeAZVQo/edit"
+    },
+    {
+      "source_id": "roster-rui-shi",
+      "year": 114,
+      "name": "瑞獅旅行社",
+      "roles": [],
+      "source_url": "https://docs.google.com/document/d/1Ltq0zI8t_pq3SVWCFc42UoElQXBLXu8mMh789Ni5d5Y/edit"
+    },
+    {
+      "source_id": "roster-rui-di",
+      "year": 114,
+      "name": "銳俤科技股份有限公司",
+      "roles": [],
+      "source_url": "https://docs.google.com/document/d/1Ltq0zI8t_pq3SVWCFc42UoElQXBLXu8mMh789Ni5d5Y/edit"
+    },
+    {
+      "source_id": "roster-stem-robot",
+      "year": 114,
+      "name": "史丁機器人",
+      "roles": [],
+      "source_url": "https://docs.google.com/document/d/1Ltq0zI8t_pq3SVWCFc42UoElQXBLXu8mMh789Ni5d5Y/edit"
+    }
+  ],
+  "placements": [
+    {
+      "student_name": "黃也哲",
+      "role_hint": "",
+      "company": "啟英學校財團法人",
+      "year": 114
+    },
+    {
+      "student_name": "陳博源",
+      "role_hint": "測試",
+      "company": "承心資訊有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "林琮恩",
+      "role_hint": "測試",
+      "company": "承心資訊有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "陳文新",
+      "role_hint": "專案",
+      "company": "承心資訊有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "李訓易",
+      "role_hint": "",
+      "company": "瑞獅旅行社",
+      "year": 114
+    },
+    {
+      "student_name": "黃宥鴻",
+      "role_hint": "會計",
+      "company": "宇宙光全人關懷機構",
+      "year": 114
+    },
+    {
+      "student_name": "伍柏融",
+      "role_hint": "",
+      "company": "日盛聯合會計師事務所",
+      "year": 114
+    },
+    {
+      "student_name": "吳若瑄",
+      "role_hint": "產品",
+      "company": "銳俤科技股份有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "李宗軒",
+      "role_hint": "",
+      "company": "巨匠教育集團",
+      "year": 114
+    },
+    {
+      "student_name": "張晴茹",
+      "role_hint": "QA",
+      "company": "卓航科技有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "馬宇承",
+      "role_hint": "",
+      "company": "瑞獅旅行社",
+      "year": 114
+    },
+    {
+      "student_name": "游蕓安",
+      "role_hint": "專案",
+      "company": "承心資訊有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "賴思雅",
+      "role_hint": "",
+      "company": "巨匠教育集團",
+      "year": 114
+    },
+    {
+      "student_name": "陳奕臻",
+      "role_hint": "技術",
+      "company": "埔墘行有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "吳安婷",
+      "role_hint": "行政",
+      "company": "山淬股份有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "王博慶",
+      "role_hint": "",
+      "company": "宇宙光全人關懷機構",
+      "year": 114
+    },
+    {
+      "student_name": "林承諺",
+      "role_hint": "",
+      "company": "朔方科技股份有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "吳昆翰",
+      "role_hint": "",
+      "company": "史丁機器人",
+      "year": 114
+    },
+    {
+      "student_name": "黃子恆",
+      "role_hint": "",
+      "company": "啟英學校財團法人",
+      "year": 114
+    },
+    {
+      "student_name": "施心澤",
+      "role_hint": "",
+      "company": "日盛聯合會計師事務所",
+      "year": 114
+    },
+    {
+      "student_name": "楊雅鈞",
+      "role_hint": "",
+      "company": "神通資訊科技股份有限公司",
+      "year": 114
+    },
+    {
+      "student_name": "呂泑禎",
+      "role_hint": "",
+      "company": "巨匠教育集團",
+      "year": 114
+    },
+    {
+      "student_name": "張益誠",
+      "role_hint": "測試",
+      "company": "承心資訊有限公司",
+      "year": 114
+    }
+  ]
+}

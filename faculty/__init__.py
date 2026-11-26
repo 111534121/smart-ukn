@@ -182,6 +182,8 @@ def _save(profile_id, fields, before):
 @bp.route("/api/faculty/me", methods=["GET", "PUT"])
 def my_profile():
     """老師查看 / 修改自己的專長 (姓名、科別、是否公開由後台維護)"""
+    if "username" not in session:
+        return _error("請先登入系統", 401)
     if session.get("role") != "老師":
         return _error("只有老師可以編輯自己的專長資料", 403)
     name = _teacher_name()

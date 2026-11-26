@@ -114,6 +114,10 @@ DORM_NEXT_ACTION = {
 
 def can_manage_dorm(user):
     if user.get("role") == "管理員": return True
+    from .admin_cases import assignments
+    from .office_catalog import canonical
+    if canonical(assignments().get(user.get('username'))) != '學生事務處／住宿管理':
+        return False
     if user.get("role") == "住宿管理員":
         rows = deps.fetch_db_rows("SELECT role FROM users WHERE username=%s", (user.get("username"),))
         return bool(rows and rows[0]['role'] == '住宿管理員') if rows is not None else True
@@ -135,6 +139,49 @@ def dorm_manager_required(fn):
 
 def dorm_apps():
     return dorm_store.all_applications()
+
+
+def dorm_beds():
+    return store.section('dorm_beds', list)
+
+
+@bp.route('/api/campus/dorm/beds', methods=['GET', 'PUT'])
+@require('管理員', '教職員', '住宿管理員')
+@dorm_manager_required
+def dorm_bed_inventory():
+    with store.lock:
+        if request.method == 'PUT':
+            data = request.get_json(silent=True) or {}
+            semester = str(data.get('semester', '')).strip()
+            beds = data.get('beds')
+            if not semester or len(semester) > 20 or not isinstance(beds, list) or len(beds) > 1000:
+                return error('請提供學期與最多 1000 筆床位')
+            normalized = []
+            for bed in beds:
+                if not isinstance(bed, dict):
+                    return error('床位資料格式錯誤')
+                name = str(bed.get('bed', '')).strip()
+                room_type = bed.get('room_type')
+                if not name or len(name) > 20 or room_type not in ('四人房', '六人房'):
+                    return error('每筆床位須有床號與房型（四人房或六人房）')
+                normalized.append({'semester': semester, 'bed': name, 'room_type': room_type})
+            if len({b['bed'].casefold() for b in normalized}) != len(normalized):
+                return error('同一學期的床號不可重複')
+            allocated = {a['bed'].casefold() for a in dorm_apps() if a['semester'] == semester
+                         and a.get('bed') and a['status'] != '未通過'}
+            if not allocated.issubset({b['bed'].casefold() for b in normalized}):
+                return error('已分配的床位不能從清冊移除', 409)
+            current = dorm_beds()
+            current[:] = [b for b in current if b['semester'] != semester] + normalized
+            store.save()
+            deps.write_audit_log('dorm_beds', semester, '修改', after={'beds': normalized})
+        rows = list(dorm_beds())
+    semester = request.args.get('semester') or (data.get('semester') if request.method == 'PUT' else '')
+    if semester:
+        rows = [b for b in rows if b['semester'] == semester]
+    allocated = {(a['semester'], a.get('bed', '').casefold()) for a in dorm_apps()
+                 if a.get('bed') and a['status'] != '未通過'}
+    return ok(data=[{**b, 'occupied': (b['semester'], b['bed'].casefold()) in allocated} for b in rows])
 
 
 @bp.route("/api/campus/dorm/mine", methods=["GET"])
@@ -194,34 +241,48 @@ def dorm_all():
 @dorm_manager_required
 def dorm_update(app_id):
     data = request.get_json(silent=True) or {}
-    if data.get("action") not in ("advance", "reject"):
-        return error("請選擇推進或不通過")
+    if data.get("action") not in ("advance", "reject", "waitlist"):
+        return error("請選擇推進、候補或不通過")
     if data.get("action") == "reject" and not str(data.get("note") or "").strip():
         return error("不通過請填寫原因")
     with store.lock:
         a = next((x for x in dorm_apps() if x["id"] == app_id), None)
         if not a:
             return error("找不到申請", 404)
-        if a["status"] != "進行中":
+        if a["status"] not in ("進行中", "待候補"):
             return error("此申請已結案，無法重複審核", 409)
-        previous_stage = a["stage"]
+        previous_stage, previous_status = a['stage'], a['status']
+        if data['action'] == 'waitlist' and previous_stage != 2:
+            return error('僅床位排序階段可以轉為候補', 409)
         if data["action"] == "advance" and previous_stage >= 2 and not (str(data.get("bed") or "").strip() or a.get("bed")):
             return error("分配床位前請填寫床號")
+        bed = str(data.get("bed") or "").strip()[:20]
+        inventory = [b for b in dorm_beds() if b['semester'] == a['semester']]
+        if bed and inventory and not any(b['bed'].casefold() == bed.casefold() and
+                                         (a['room_type'] == '不限' or b['room_type'] == a['room_type']) for b in inventory):
+            return error('床號不在此學期清冊，或房型與申請不符', 409)
+        if bed and any(other["id"] != a["id"] and other["semester"] == a["semester"]
+                       and other.get("bed", "").strip().casefold() == bed.casefold()
+                       and other["status"] != "未通過" for other in dorm_apps()):
+            return error("這個學期的床號已分配給其他學生", 409)
         snap = lambda: {"name": a.get("student_name"), "student_id": a.get("student_id"), "status": a.get("status"),
                         "stage": DORM_STAGES[a["stage"]] if isinstance(a.get("stage"), int) and a["stage"] < len(DORM_STAGES) else a.get("stage"),
                         "bed": a.get("bed")}
         before = snap()
         if data.get("action") == "reject":
             a["status"], a["note"] = "未通過", str(data.get("note", ""))[:200]
+        elif data.get('action') == 'waitlist':
+            a['status'], a['note'] = '待候補', str(data.get('note', ''))[:200]
         else:
+            a['status'] = '進行中'
             a["stage"] = min(len(DORM_STAGES) - 1, a["stage"] + 1)
-            if data.get("bed"):
-                a["bed"] = str(data["bed"])[:20]
+            if bed:
+                a["bed"] = bed
             if a["stage"] == len(DORM_STAGES) - 1:
                 a["status"] = "已完成"
         a["history"].append({"stage": a["stage"], "at": now_str(), "note": str(data.get("note", ""))[:200],
                              "status": a["status"], "reviewed_by": current_user()["username"]})
-        if not dorm_store.save_review(a, previous_stage):
+        if not dorm_store.save_review(a, previous_stage, previous_status):
             return error("資料已由其他人處理，請重新載入", 409)
     deps.write_audit_log("dorm_applications", app_id, "修改", before=before, after={**snap(), "note": str(data.get("note", ""))[:200]})
     return ok(data=a)

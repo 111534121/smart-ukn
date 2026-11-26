@@ -30,6 +30,8 @@ def test_form_pages_blank_example_and_word(client):
     doc = client.get("/forms/course_withdraw_form?download=doc&example=1")
     assert doc.status_code == 200 and doc.mimetype == "application/msword"
     assert "attachment" in doc.headers["Content-Disposition"]
+    assert "資料結構" in doc.get_data(as_text=True)
+    assert "下載填寫範例 Word 檔" in example
     assert client.get("/forms/no_such_form").status_code == 404
 
 

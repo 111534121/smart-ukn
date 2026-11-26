@@ -12,6 +12,7 @@ from functools import wraps
 from types import SimpleNamespace
 
 from flask import jsonify, session
+from access_policy import role_allowed
 
 DATA_DIR = os.getenv("CAMPUS_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 
@@ -115,14 +116,15 @@ def require(*roles):
             u = current_user()
             if not u:
                 return error("請先登入系統", 401)
-            if roles and u["role"] not in roles:
+            if (not roles and u["role"] in ("訪客", "內容管理員", "系統管理員")) or (roles and not role_allowed(roles)):
                 return error("權限不足，僅限特定身分使用", 403)
             return f(*args, **kwargs)
+        wrapper.access_roles = roles
         return wrapper
     return decorator
 
 
-STAFF_ROLES = ("老師", "教職員", "管理員")
+STAFF_ROLES = ("老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 
 
 def find_student(student_id):

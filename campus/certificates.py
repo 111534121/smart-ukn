@@ -1,4 +1,4 @@
-"""證照、比賽獎狀與作品集上傳：學生上傳 → 班導確認後才算數 → 同年級持有人數統計。
+"""證照、比賽獎狀與作品集上傳：專業證照經班導初審、行政複審後才算數。
 
 資料存放 (T10)：
 - MySQL 的 certificates 已有 review_status 欄位 (執行 init_db.py) → 上傳與審核都存在 certificates 表，
@@ -59,7 +59,7 @@ def exemption_reminder(student_id):
 # =====================================================================
 
 def use_db():
-    if deps.fetch_db_rows("SELECT review_status FROM certificates LIMIT 1") is None:
+    if deps.fetch_db_rows("SELECT review_status, advisor_reviewer FROM certificates LIMIT 1") is None:
         return False
     _import_json_once()
     return True
@@ -77,7 +77,9 @@ def _row_to_item(r):
         "number": r.get("cert_number") or "", "issue_date": str(r.get("issue_date") or "")[:10],
         "award": r.get("award") or "", "description": r.get("description") or "", "files": files,
         "status": r.get("review_status") or "已通過", "reviewer": r.get("reviewer") or "",
-        "review_note": r.get("review_note") or "", "created_at": str(r.get("created_at") or "")[:19],
+        "review_note": r.get("review_note") or "", "advisor_reviewer": r.get("advisor_reviewer") or "",
+        "advisor_note": r.get("advisor_note") or "", "advisor_reviewed_at": str(r.get("advisor_reviewed_at") or "")[:19],
+        "created_at": str(r.get("created_at") or "")[:19],
         "reviewed_at": str(r.get("reviewed_at") or "")[:19],
     }
 
@@ -85,11 +87,14 @@ def _row_to_item(r):
 def _insert_db(item):
     res = deps.db_execute(
         "INSERT INTO certificates (student_id, kind, cert_name, issuing_org, cert_number, issue_date, award, description, "
-        "attachments, review_status, reviewer, review_note, reviewed_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "attachments, review_status, reviewer, review_note, reviewed_at, advisor_reviewer, advisor_note, advisor_reviewed_at) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (item["student_id"], item["kind"], item["name"], item.get("issuer") or "", item.get("number") or None,
          item.get("issue_date") or None, item.get("award") or None, item.get("description") or None,
          json.dumps(item.get("files") or [], ensure_ascii=False), item["status"], item.get("reviewer") or None,
-         item.get("review_note") or None, item.get("reviewed_at") or None))
+         item.get("review_note") or None, item.get("reviewed_at") or None,
+         item.get("advisor_reviewer") or None, item.get("advisor_note") or None,
+         item.get("advisor_reviewed_at") or None))
     return res["lastrowid"]
 
 
@@ -140,15 +145,26 @@ def remove_submission(item_id):
         store.save()
 
 
-def save_review(item_id, status, reviewer, note):
+def save_review(item_id, status, reviewer, note, *, expected_status, advisor=False):
     reviewed_at = now_str()
     if use_db():
-        deps.db_execute("UPDATE certificates SET review_status = %s, reviewer = %s, review_note = %s, reviewed_at = %s "
-                        "WHERE cert_id = %s", (status, reviewer, note or None, reviewed_at, item_id))
+        fields = ("advisor_reviewer = %s, advisor_note = %s, advisor_reviewed_at = %s" if advisor else
+                  "reviewer = %s, review_note = %s, reviewed_at = %s")
+        result = deps.db_execute(f"UPDATE certificates SET review_status = %s, {fields} "
+                                 "WHERE cert_id = %s AND review_status = %s",
+                                 (status, reviewer, note or None, reviewed_at, item_id, expected_status))
+        if not result or result.get('rowcount') != 1:
+            return None
         return next(i for i in submissions() if i["id"] == item_id)
     with store.lock:
         item = next(i for i in _json_submissions() if i["id"] == item_id)
-        item.update(status=status, reviewer=reviewer, review_note=note, reviewed_at=reviewed_at)
+        if item['status'] != expected_status:
+            return None
+        if advisor:
+            item.update(status=status, advisor_reviewer=reviewer, advisor_note=note,
+                        advisor_reviewed_at=reviewed_at)
+        else:
+            item.update(status=status, reviewer=reviewer, review_note=note, reviewed_at=reviewed_at)
         store.save()
     return item
 
@@ -201,12 +217,12 @@ def init_sync():
 
 
 def can_review(u, item):
-    if u["role"] == "教職員":
-        from .admin_cases import is_dorm_staff
-        if is_dorm_staff(u):
-            return False
-    if u["role"] in ("管理員", "教職員"):
-        return True
+    if u["role"] in ("管理員", "教職員", "處室承辦"):
+        from .office_permissions import can_review as office_can_review
+        return office_can_review(u, 'certificates')
+    if u['role'] == '科助':
+        student = find_student(item['student_id']) or {}
+        return bool(u.get('dept_id')) and u['dept_id'] == student.get('dept_id')
     return u["role"] == "老師" and u.get("advised_class") and u["advised_class"] == item["class_name"]
 
 
@@ -251,7 +267,7 @@ def create_cert():
             "files": saved, "status": "待審核", "reviewer": "", "review_note": "", "created_at": now_str(),
             "reviewed_at": "",
     })
-    return ok(message="已送出，等班導確認後就會列入紀錄", data=item)
+    return ok(message="已送出，專業證照須先由班導初審，再由行政／科助複審", data=item)
 
 
 @bp.route("/api/campus/certs/<int:item_id>", methods=["DELETE"])
@@ -268,25 +284,27 @@ def delete_cert(item_id):
 
 
 @bp.route("/api/campus/certs/review", methods=["GET"])
-@require("老師", "教職員", "管理員")
+@require("老師", "教職員", "處室承辦", "科助", "管理員")
 def review_list():
     u = current_user()
-    from .admin_cases import is_dorm_staff
-    if is_dorm_staff(u):
-        return error("住宿管理帳號不能審核證照", 403)
-    status = request.args.get("status", "待審核")
+    from .office_permissions import can_review as office_can_review
+    if u['role'] in ('教職員', '處室承辦') and not office_can_review(u, 'certificates'):
+        return error("此處室沒有證照審核權限", 403)
+    status = request.args.get("status") or ('待審核' if u['role'] == '老師' else '待複審')
     items = [i for i in submissions() if can_review(u, i) and (status == "全部" or i["status"] == status)]
     items.sort(key=lambda x: x["created_at"], reverse=True)
-    return ok(data=items, scope=u.get("advised_class") if u["role"] == "老師" else "全校")
+    scope = (u.get('advised_class') if u['role'] == '老師' else
+             u.get('dept_id') if u['role'] == '科助' else '所屬處室' if u['role'] in ('教職員', '處室承辦') else '全校')
+    return ok(data=items, scope=scope)
 
 
 @bp.route("/api/campus/certs/<int:item_id>/review", methods=["POST"])
-@require("老師", "教職員", "管理員")
+@require("老師", "教職員", "處室承辦", "科助", "管理員")
 def review(item_id):
     u = current_user()
-    from .admin_cases import is_dorm_staff
-    if is_dorm_staff(u):
-        return error("住宿管理帳號不能審核證照", 403)
+    from .office_permissions import can_review as office_can_review
+    if u['role'] in ('教職員', '處室承辦') and not office_can_review(u, 'certificates'):
+        return error("此處室沒有證照審核權限", 403)
     data = request.get_json(silent=True) or {}
     action = data.get("action")
     if action not in ("approve", "reject"):
@@ -298,13 +316,51 @@ def review(item_id):
     if not item:
         return error("找不到這筆資料", 404)
     if not can_review(u, item):
-        return error("只有該班導師可以確認", 403)
+        return error("沒有此學生或處室的證照審核權限", 403)
+    advisor = u['role'] == '老師'
+    expected = '待審核' if advisor or item['kind'] != '證照' else '待複審'
+    if item['kind'] == '證照' and not advisor and item['status'] == '待審核':
+        return error('此證照尚待班導初審', 409)
+    if item['status'] != expected:
+        return error('案件狀態已變更，請重新整理', 409)
+    if item['kind'] == '證照' and not advisor and action == 'approve' and (not item.get('issuer') or not item.get('number')):
+        return error('複審前須確認發照機構與證照字號')
     before = {"name": item.get("name"), "student_id": item.get("student_id"), "status": item["status"]}
-    item = save_review(item_id, "已通過" if action == "approve" else "已退回", u["full_name"], note)
+    next_status = ('待複審' if advisor and item['kind'] == '證照' else '已通過') if action == 'approve' else '已退回'
+    item = save_review(item_id, next_status, u["full_name"], note, expected_status=expected,
+                       advisor=advisor and item['kind'] == '證照')
+    if not item:
+        return error('案件狀態已變更，請重新整理', 409)
     deps.write_audit_log("certificates", item_id, "修改", before=before,
                          after={**before, "status": item["status"], "review_note": note})
     sync_to_graduation(item)
-    return ok(message="已確認" if action == "approve" else "已退回", data=item)
+    message = ('初審通過，待行政／科助複審' if next_status == '待複審' else
+               '複審通過' if next_status == '已通過' and item['kind'] == '證照' else
+               '已確認' if action == 'approve' else '已退回')
+    return ok(message=message, data=item)
+
+
+@bp.route('/api/campus/certs/review/batch', methods=['POST'])
+@require('老師')
+def advisor_batch_review():
+    body = request.get_json(silent=True) or {}
+    ids = body.get('ids')
+    if not isinstance(ids, list) or not 1 <= len(ids) <= 30 or any(not isinstance(i, int) for i in ids) or len(set(ids)) != len(ids):
+        return error('請選擇 1 至 30 筆不重複的證照')
+    note = str(body.get('note') or '已確認學生證照與學習方向，請行政複審。').strip()[:200]
+    u = current_user()
+    pending = {i['id']: i for i in submissions() if i['id'] in ids}
+    if any(i not in pending or pending[i]['kind'] != '證照' or pending[i]['status'] != '待審核' or
+           not can_review(u, pending[i]) for i in ids):
+        return error('部分證照已變更或不屬於您的導師班，請重新整理', 409)
+    reviewed = []
+    for item_id in ids:
+        item = save_review(item_id, '待複審', u['full_name'], note, expected_status='待審核', advisor=True)
+        if item:
+            reviewed.append(item_id)
+            deps.write_audit_log('certificates', item_id, '初審',
+                                 before={'status': '待審核'}, after={'status': '待複審', 'advisor': u['full_name']})
+    return ok(reviewed=reviewed, message=f'已初審 {len(reviewed)} 筆，待行政／科助複審')
 
 
 @bp.route("/api/campus/certs/exemption-reminder", methods=["GET"])
@@ -340,4 +396,4 @@ def stats():
                         "mine": n in mine} for n, s in per_cert[kind].items()), key=lambda r: -r["holders"])
 
     return ok(admission_year=year, cohort_size=total, certificates=rows("證照"), competitions=rows("競賽"),
-              pending_count=sum(1 for i in submissions() if i["status"] == "待審核" and i["student_id"] in sids))
+              pending_count=sum(1 for i in submissions() if i["status"] in ("待審核", "待複審") and i["student_id"] in sids))

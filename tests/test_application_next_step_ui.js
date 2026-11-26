@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const ctx=vm.createContext({escapeHtml:s=>String(s??'').replaceAll('<','&lt;').replaceAll('>','&gt;'),console});
+vm.runInContext(fs.readFileSync('static/js/applications.js','utf8'),ctx);
+const base={stages:[{name:'線上送出'},{name:'導師簽核'},{name:'教務處核備'}],current_stage:1,status:'審核中',can_review:false};
+assert.match(ctx.appNextStep(base),/導師簽核/);assert.match(ctx.appNextStep(base),/教務處核備/);assert.match(ctx.appNextStep(base),/無須重複送件/);
+assert.match(ctx.appNextStep({...base,status:'已退回'}),/修改資料後重新送出/);
+assert.doesNotMatch(ctx.appNextStep({...base,status:'已完成'}),/本關核准後/);
+assert.match(ctx.appNextStep({...base,status:'已撤回'}),/不再送交審核/);
+assert.match(ctx.appNextStep({...base,can_review:true}),/核准或退回/);
+assert.doesNotMatch(ctx.appNextStep({...base,stages:[{name:'<script>'}],current_stage:0}),/<script>/);
+console.log('申請卡片下一步、退回／完成／撤回、簽核角色與內容跳脫檢查通過。');

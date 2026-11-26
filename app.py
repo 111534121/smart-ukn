@@ -4,7 +4,17 @@ try:
 except ImportError:
     load_dotenv = None
 if load_dotenv:
-    load_dotenv()  # 有安裝 python-dotenv 時讀取專案根目錄的 .env
+    load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+else:
+    # XAMPP 本機安裝不一定包含 python-dotenv；仍可讀取本機資料庫與 Ollama 設定。
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.isfile(env_path):
+        with open(env_path, encoding='utf-8-sig') as env_file:
+            for line in env_file:
+                key, separator, value = line.strip().partition('=')
+                if separator and key in {'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD',
+                                         'ASSISTANT_AI', 'OLLAMA_MODEL'}:
+                    os.environ.setdefault(key, value)
 
 from flask import Flask, request, jsonify, session, redirect, send_from_directory, make_response, Response
 from flask_cors import CORS
@@ -191,6 +201,10 @@ def format_updated_at(value):
 # 權限控管裝飾器
 # ==========================================
 
+from access_policy import role_allowed, install_guard
+install_guard(app)
+
+
 def login_required(f):
     """限制僅已登入之使用者存取"""
     @wraps(f)
@@ -207,7 +221,7 @@ def role_required(*allowed_roles):
         def wrapper(*args, **kwargs):
             if "username" not in session:
                 return jsonify({"status": "error", "message": "請先登入系統"}), 401
-            if session.get("role") not in allowed_roles:
+            if not role_allowed(allowed_roles):
                 return jsonify({"status": "error", "message": "權限不足，僅限特定身分存取"}), 403
             return f(*args, **kwargs)
         return wrapper
@@ -221,7 +235,7 @@ def write_roles_required(*allowed_roles):
             if request.method not in ("GET", "HEAD", "OPTIONS"):
                 if "username" not in session:
                     return jsonify({"status": "error", "message": "請先登入系統"}), 401
-                if session.get("role") not in allowed_roles:
+                if not role_allowed(allowed_roles):
                     return jsonify({"status": "error", "message": "權限不足"}), 403
             return f(*args, **kwargs)
         return wrapper
@@ -367,7 +381,7 @@ _DEMO_PW_123456 = "pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c
 _DEMO_PW_ADMIN123 = "pbkdf2:sha256:1000000$2XQfvmmn75wVJUKc$59cac19325e7e89df728fdc0ee86208fc0ae12ab71fc630fbaa890f2f919d14c"
 
 DEMO_USERS = [
-    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True},
+    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "住宿管理員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True},
     {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
@@ -375,7 +389,10 @@ DEMO_USERS = [
     {"user_id": 9, "username": "parent2", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112002", "full_name": "李建國 (美華家長)"},
     {"user_id": 4, "username": "staff1", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "周立威 (教務處職員)"},
     {"user_id": 6, "username": "teacher1", "password_hash": _DEMO_PW_123456, "role": "老師", "student_id": None, "full_name": "彭賓鈺 老師", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "advised_class": "資管五忠"},
-    {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統超級管理員"},
+    {"user_id": 31, "username": "system_admin", "password_hash": _DEMO_PW_ADMIN123, "role": "系統管理員", "student_id": None, "full_name": "系統管理示範員"},
+    {"user_id": 32, "username": "content_admin", "password_hash": _DEMO_PW_ADMIN123, "role": "內容管理員", "student_id": None, "full_name": "內容管理示範員"},
+    {"user_id": 33, "username": "demo_admissions_admin", "password_hash": _DEMO_PW_123456, "role": "內容管理員", "student_id": None, "full_name": "招生與課務知識管理員"},
+    {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統管理員"},
     # 示範學號登入帳號 (密碼 123456，與 seed_data.py 一致)
     {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇"},
     {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔"}
@@ -536,7 +553,7 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "停修申請單紙本、歷年成績單正本",
         "office_hours": "週一至週五 08:30 - 17:00",
-        "office_location": "康寧樓 2 樓 A201 (課務組)",
+        "office_location": "行政大樓 2 樓 A201 (課務組)",
         "contact_phone": "02-2632-1181 分機 310, 312",
         "form_download_url": "/forms/course_withdraw_form",
         "system_url": "http://talk.ukn.edu.tw/class_redi/class.php",
@@ -580,7 +597,7 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "外語檢定成績單正本、影本、抵免申請書",
         "office_hours": "週一至週五 09:00 - 16:30",
-        "office_location": "卓越樓 3 樓 C305 (通識教育中心)",
+        "office_location": "第二教學大樓 3 樓 B305 (通識教育中心)",
         "contact_phone": "02-2632-1181 分機 520, 521",
         "form_download_url": "/forms/english_waiver_form",
         "system_url": "http://203.71.63.13/academic/",
@@ -602,7 +619,7 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "歷年成績單正本、畢業學分預審表、外語通過證明",
         "office_hours": "週一至週五 08:30 - 17:00",
-        "office_location": "康寧樓 2 樓 A202 (註冊組)",
+        "office_location": "行政大樓 2 樓 A202 (註冊組)",
         "contact_phone": "02-2632-1181 分機 321, 322",
         "form_download_url": "/forms/graduation_audit_form",
         "system_url": "http://203.71.63.13/academic/",
@@ -624,7 +641,7 @@ DEMO_CHECKLISTS = [
         ],
         "required_docs": "證照證書影本、郵局存摺封面影本、印領清冊",
         "office_hours": "週一至週五 09:00 - 17:00",
-        "office_location": "圖資大樓 2 樓 研發處實習就業組",
+        "office_location": "圖書館 2 樓 研發處實習就業組",
         "contact_phone": "02-2632-1181 分機 612",
         "form_download_url": "/forms/certificate_reward_form",
         "system_url": "https://oes3.ukn.edu.tw/~license/",
@@ -905,11 +922,11 @@ DEMO_COMPETITIONS = [
 DEMO_VISITOR_LOGS = []
 
 CAMPUS_CONTACT_DIRECTORY = [
-    {"office": "教務處課務組", "location": "康寧樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
-    {"office": "教務處註冊組", "location": "康寧樓 2 樓 A202", "phone": "02-2632-1181 分機 321, 322", "business": "學籍、成績單、畢業學分審查、休退學"},
+    {"office": "教務處課務組", "location": "行政大樓 2 樓 A201", "phone": "02-2632-1181 分機 310, 312", "business": "選課、停修、先修擋修、排課"},
+    {"office": "教務處註冊組", "location": "行政大樓 2 樓 A202", "phone": "02-2632-1181 分機 321, 322", "business": "學籍、成績單、畢業學分審查、休退學"},
     {"office": "學務處生活輔導組", "location": "行政大樓 1 樓", "phone": "02-2632-1181 分機 211, 212", "business": "學生請假、獎懲、學業輔導、宿舍"},
-    {"office": "通識教育中心", "location": "卓越樓 3 樓 C305", "phone": "02-2632-1181 分機 520, 521", "business": "共同外語抵免、通識學分檢核"},
-    {"office": "研發處實習就業組", "location": "圖資大樓 2 樓", "phone": "02-2632-1181 分機 612", "business": "專業證照獎勵、校外實習、就業輔導"}
+    {"office": "通識教育中心", "location": "第二教學大樓 3 樓 B305", "phone": "02-2632-1181 分機 520, 521", "business": "共同外語抵免、通識學分檢核"},
+    {"office": "研發處實習就業組", "location": "圖書館 2 樓", "phone": "02-2632-1181 分機 612", "business": "專業證照獎勵、校外實習、就業輔導"}
 ]
 
 # ==========================================
@@ -1020,7 +1037,7 @@ def auth_login():
         session["dept_name"] = user_record.get("dept_name", "資訊管理科（五專）")
         session["class_name"] = user_record.get("class_name", "")
         session["advised_class"] = user_record.get("advised_class")
-        session["can_manage_dorm"] = bool(user_record.get("can_manage_dorm")) or user_record["role"] == "管理員"
+        session["can_manage_dorm"] = bool(user_record.get("can_manage_dorm")) or user_record["role"] in ("管理員", "住宿管理員")
 
         return jsonify({
             "status": "success",
@@ -1029,12 +1046,13 @@ def auth_login():
                 "user_id": user_record["user_id"],
                 "username": user_record["username"],
                 "role": user_record["role"],
-                "workbench_url": "/admin-workbench" if user_record["role"] in ('處室承辦','科助','住宿管理員') else "/",
+                "workbench_url": "/#admin-cases" if user_record["role"] == '處室承辦' else "/",
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
                 "dept_name": user_record.get("dept_name", "資訊管理科（五專）"),
                 "class_name": user_record.get("class_name", ""),
-                "advised_class": user_record.get("advised_class")
+                "advised_class": user_record.get("advised_class"),
+                "can_manage_dorm": bool(session.get("can_manage_dorm"))
             }
         }), 200
 
@@ -1049,6 +1067,11 @@ def auth_logout():
 @app.route("/api/auth/me", methods=["GET"])
 def auth_me():
     if "username" in session:
+        from campus.admin_cases import assignments
+        from campus.office_catalog import canonical
+        from campus.office_permissions import REVIEW_OFFICES, can_review
+        office = canonical(assignments().get(session['username']))
+        review_tasks = [task for task in REVIEW_OFFICES if can_review(session, task)]
         return jsonify({
             "status": "success",
             "is_authenticated": True,
@@ -1062,6 +1085,8 @@ def auth_me():
                 "class_name": session.get("class_name", ""),
                 "advised_class": session.get("advised_class"),
                 "can_manage_dorm": bool(session.get("can_manage_dorm")),
+                "office": office,
+                "review_tasks": review_tasks,
                 "visitor_type": session.get("visitor_type"),
                 "visitor_name": session.get("visitor_name")
             }
@@ -1076,12 +1101,12 @@ def register_visitor():
     phone = str(data.get("phone", "")).strip()[:30]
     school = str(data.get("school_from", "")).strip()[:100]
     purpose = str(data.get("purpose", "")).strip()[:100]
-    target_dept = str(data.get("target_dept", "")).strip()[:100] or "資訊管理科（五專）"
-    visitor_type = data.get("visitor_type") if data.get("visitor_type") in ("未來學生", "未來家長") else "未來學生"
+    visitor_type = data.get("visitor_type") if data.get("visitor_type") in ("未來學生", "未來家長", "一般訪客") else "未來學生"
+    target_dept = "" if visitor_type == "一般訪客" else (str(data.get("target_dept", "")).strip()[:100] or "資訊管理科（五專）")
     ip = request.remote_addr or "127.0.0.1"
 
-    if not vname or not phone or not school or not purpose:
-        return jsonify({"status": "error", "message": "姓名、手機號碼、畢業學校與來訪目的為必填欄位！"}), 400
+    if not vname or not phone or not purpose or (visitor_type == "未來學生" and not school):
+        return jsonify({"status": "error", "message": "姓名、手機號碼與來訪目的為必填；未來學生另需填寫就讀／畢業學校。"}), 400
     # 防呆：手機號碼至少要有 7 個數字 (容許 -、空白、+、() 等常見格式)，擋掉「abc」這類明顯打錯的輸入
     if len(re.sub(r"\D", "", phone)) < 7:
         return jsonify({"status": "error", "message": "手機號碼格式不正確，請確認後重新輸入"}), 400
@@ -1275,7 +1300,7 @@ def manage_deadlines():
         visible = [r for r in rows if _deadline_visible_to_role(r.get("applies_to_role"), role)]
         return jsonify({"status": "success", "data": [_compute_deadline_status(r, today) for r in visible]}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if not role_allowed(("管理員", "教職員")):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     title = str(data.get("title", "")).strip()
@@ -1622,6 +1647,8 @@ def search_knowledge():
     if not kb_records:
         synonym_map = {s["user_keyword"].lower(): s["official_term"] for s in DEMO_SYNONYMS}
         kb_records = DEMO_KNOWLEDGE_BASE
+    from campus.knowledge_documents import search_records
+    kb_records = [*kb_records, *search_records()]
     checklists = load_checklists()
 
     # 1. 查找同義詞
@@ -1845,9 +1872,22 @@ def convert_unmatched_to_synonym():
 @role_required("管理員", "教職員")
 def get_audit_logs():
     """後台修改紀錄：誰在何時新增/修改/刪除了規章、同義詞、期限、申辦流程、連結 (R5)"""
-    rows = fetch_db_rows("SELECT * FROM audit_logs ORDER BY changed_at DESC, log_id DESC LIMIT 200")
+    table_filter = request.args.get("table_name", "").strip()
+    record_filter = request.args.get("record_id", "").strip()
+    conditions, params = [], []
+    if table_filter:
+        conditions.append("table_name = %s")
+        params.append(table_filter)
+    if record_filter:
+        conditions.append("record_id = %s")
+        params.append(record_filter)
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    rows = fetch_db_rows(f"SELECT * FROM audit_logs{where} ORDER BY changed_at DESC, log_id DESC LIMIT 200", tuple(params))
     if rows is None:
-        rows = sorted(DEMO_AUDIT_LOGS, key=lambda x: x["log_id"], reverse=True)[:200]
+        rows = [r for r in DEMO_AUDIT_LOGS
+                if (not table_filter or r.get("table_name") == table_filter)
+                and (not record_filter or str(r.get("record_id")) == record_filter)]
+        rows = sorted(rows, key=lambda x: x["log_id"], reverse=True)[:200]
     else:
         for r in rows:
             r["changed_at"] = str(r["changed_at"])
@@ -1855,9 +1895,6 @@ def get_audit_logs():
                 if isinstance(r.get(key), str):
                     try: r[key] = json.loads(r[key])
                     except Exception: pass
-    table_filter = request.args.get("table_name")
-    if table_filter:
-        rows = [r for r in rows if r.get("table_name") == table_filter]
     return jsonify({"status": "success", "data": rows}), 200
 
 @app.route("/api/admin/self-check", methods=["POST"])
@@ -2035,7 +2072,7 @@ def check_courses_prerequisites():
     else:
         student_id = current_student_id()
         if not student_id:
-            return jsonify({"status": "error", "message": "請先登入學生帳號，或改用手動模擬模式"}), 401
+            return jsonify({"status": "error", "message": "請先登入學生帳號，或改用手動模擬模式"}), (403 if "username" in session else 401)
         mode = "student"
         passed_ids, failed_ids, latest = summarize_credits(load_student_credits(student_id))
         courses = hide_untaken_demo_courses(courses, latest)
@@ -2105,7 +2142,7 @@ def get_personalized_courses():
     """學號登入自動帶入課程地圖（免手動點選，直接顯示被擋哪幾門、下學期能選什麼）(功能 1)"""
     student_id = current_student_id()
     if not student_id:
-        return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
+        return jsonify({"status": "error", "message": "請先登入學生帳號"}), (403 if "username" in session else 401)
     student = next((s for s in DEMO_STUDENTS if s["student_id"] == student_id),
                    {"student_id": student_id, "full_name": session.get("full_name", ""), "dept_name": session.get("dept_name", "")})
 
@@ -2178,7 +2215,7 @@ def graduation_audit():
     沒有該屆修業科目表時回傳 available=False，前端改顯示擋修試算"""
     role = session.get("role")
     if not role:
-        return jsonify({"status": "error", "message": "請先登入系統"}), 401
+        return jsonify({"status": "error", "message": "請先登入系統"}), (403 if "username" in session else 401)
     student_id, err = _resolve_graduation_target_student(role, session.get("student_id"),
                                                          (request.args.get("student_id") or "").strip().upper() or None)
     if err:
@@ -2783,7 +2820,7 @@ def manage_checklist_progress():
 
     # 只有學生本人可以勾選 (家長僅能查看)
     if not student_id or session.get("role") != "學生":
-        return jsonify({"status": "error", "message": "請先以學生帳號登入，勾選進度才會保存"}), 401
+        return jsonify({"status": "error", "message": "請先以學生帳號登入，勾選進度才會保存"}), (403 if "username" in session else 401)
 
     data = request.get_json(silent=True) or {}
     try:
@@ -2862,7 +2899,7 @@ def manage_privacy_consent():
     """管理學生本人對家長/導師預警推播的個資授權 (功能 6)；家長可查看，只有學生本人可修改"""
     student_id = current_student_id()
     if not student_id:
-        return jsonify({"status": "error", "message": "請先以學生帳號登入"}), 401
+        return jsonify({"status": "error", "message": "請先以學生帳號登入"}), (403 if "username" in session else 401)
 
     if request.method == "GET":
         return jsonify({"status": "success", "student_id": student_id, "settings": load_privacy_settings(student_id)}), 200
@@ -2900,7 +2937,7 @@ def manage_emergency_contact():
     """緊急聯絡電話 (students.parent_phone)：學生與綁定家長皆可查看／自行更新，不需要經過行政單位"""
     student_id = current_student_id()
     if not student_id:
-        return jsonify({"status": "error", "message": "請先以學生或家長帳號登入"}), 401
+        return jsonify({"status": "error", "message": "請先以學生或家長帳號登入"}), (403 if "username" in session else 401)
 
     if request.method == "PUT":
         data = request.get_json(silent=True) or {}
@@ -3002,7 +3039,7 @@ def get_student_early_warning():
         if not student_id:
             return jsonify({"status": "error", "message": "請提供學號 (student_id)"}), 400
     else:
-        return jsonify({"status": "error", "message": "請先登入系統"}), 401
+        return jsonify({"status": "error", "message": "請先登入系統"}), (403 if "username" in session else 401)
 
     student = _load_student_info(student_id) if student_id else None
     if not student:
@@ -3058,7 +3095,7 @@ def manage_checklists():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_checklists()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if not role_allowed(("管理員", "教職員")):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     try:
@@ -3072,7 +3109,7 @@ def manage_checklists():
         "steps_json": data.get("steps_json", []),
         "required_docs": data.get("required_docs", ""),
         "office_hours": data.get("office_hours", "週一至週五 08:30 - 17:00"),
-        "office_location": data.get("office_location", "康寧樓 2 樓"),
+        "office_location": data.get("office_location", "行政大樓 2 樓"),
         "contact_phone": data.get("contact_phone", "02-2632-1181"),
         "form_download_url": data.get("form_download_url", ""),
         "system_url": data.get("system_url", ""),
@@ -3127,7 +3164,7 @@ def manage_synonyms():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_synonyms()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if not role_allowed(("管理員", "教職員")):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     data = request.get_json(silent=True) or {}
     uk = str(data.get("user_keyword", "")).strip()
@@ -3205,7 +3242,7 @@ def manage_rules():
     if request.method == "GET":
         return jsonify({"status": "success", "data": load_rules()}), 200
 
-    if session.get("role") not in ("管理員", "教職員"):
+    if not role_allowed(("管理員", "教職員")):
         return jsonify({"status": "error", "message": "權限不足"}), 403
     item, error = parse_rule_payload(request.get_json(silent=True) or {})
     if error:
@@ -3515,7 +3552,7 @@ def evaluate_scholarship(sch, profile, fail_info, dept_names, today, redact_pers
 def match_scholarships():
     """依登入學生 (家長為其子女) 的資料逐筆比對獎助學金資格；可用 ?date=YYYY-MM-DD 模擬日期"""
     if "username" not in session:
-        return jsonify({"status": "error", "message": "請先登入"}), 401
+        return jsonify({"status": "error", "message": "請先登入"}), (403 if "username" in session else 401)
     student_id = current_student_id()
     if not student_id:
         return jsonify({"status": "error", "message": "獎助學金資格比對僅限學生本人與家長使用"}), 403
@@ -4151,7 +4188,7 @@ def get_my_attendance():
     """登入學生 (或家長) 的缺曠課摘要與扣考警告"""
     student_id = current_student_id()
     if not student_id:
-        return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
+        return jsonify({"status": "error", "message": "請先登入學生帳號"}), (403 if "username" in session else 401)
     records = get_attendance_source().list_records(student_id)
     summary = summarize_attendance(records, course_weekly_hours(), course_semester_hours(), current_attendance_semester())
     return jsonify({
@@ -4317,7 +4354,7 @@ def get_student_dashboard():
     """登入學生 (或家長) 的今日儀表板"""
     student_id = current_student_id()
     if not student_id:
-        return jsonify({"status": "error", "message": "請先登入學生帳號"}), 401
+        return jsonify({"status": "error", "message": "請先登入學生帳號"}), (403 if "username" in session else 401)
     now = parse_dashboard_now()
     if not now:
         return jsonify({"status": "error", "message": "日期時間格式須為 date=YYYY-MM-DD、time=HH:MM"}), 400
@@ -4368,7 +4405,7 @@ def mark_announcement_read(announcement_id):
 
 LEAVE_TYPES = ("病假", "事假", "公假", "喪假", "生理假")
 LEAVE_REVIEW_RESULTS = ("已核准", "已退回")
-LEAVE_REVIEW_ROLES = ("老師", "教職員", "管理員")
+LEAVE_REVIEW_ROLES = ("老師", "教職員", "處室承辦", "管理員")
 LEAVE_NOTIFY_SUBJECT = "【康寧大學】請假審核結果通知"
 LEAVE_NOTIFY_BODY = "您的請假申請已有審核結果，請登入系統查看"
 
@@ -4429,9 +4466,9 @@ def cancel_leave_request(leave_id):
 @app.route("/api/leave-requests/review", methods=["GET"])
 @role_required(*LEAVE_REVIEW_ROLES)
 def list_leave_requests_for_review():
-    from campus import admin_cases
-    if admin_cases.is_dorm_staff():
-        return jsonify({"status": "error", "message": "住宿管理帳號不能審核一般假單"}), 403
+    from campus.office_permissions import can_review as office_can_review
+    if session.get('role') in ('教職員', '處室承辦') and not office_can_review(session, 'leave'):
+        return jsonify({"status": "error", "message": "此處室沒有一般假單審核權限"}), 403
     status = request.args.get("status", "待審核")
     if status == "all":
         status = None
@@ -4448,9 +4485,9 @@ def list_leave_requests_for_review():
 @app.route("/api/leave-requests/<int:leave_id>/review", methods=["POST"])
 @role_required(*LEAVE_REVIEW_ROLES)
 def review_leave_request(leave_id):
-    from campus import admin_cases
-    if admin_cases.is_dorm_staff():
-        return jsonify({"status": "error", "message": "住宿管理帳號不能審核一般假單"}), 403
+    from campus.office_permissions import can_review as office_can_review
+    if session.get('role') in ('教職員', '處室承辦') and not office_can_review(session, 'leave'):
+        return jsonify({"status": "error", "message": "此處室沒有一般假單審核權限"}), 403
     data = request.get_json(silent=True) or {}
     result = str(data.get("status", "")).strip()
     note = str(data.get("review_note", "")).strip()[:255]
@@ -4482,9 +4519,10 @@ def review_leave_request(leave_id):
 # ==========================================
 
 @app.route("/api/staff/alerts", methods=["GET"])
-@role_required("老師", "教職員", "管理員")
+@role_required("老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def staff_alerts():
     from campus import admin_cases, certificates, facilities, services
+    from campus.office_permissions import can_review as office_can_review
     role, advised = session.get("role"), session.get("advised_class")
     names = {s["student_id"]: s["full_name"] for s in list_students()}
     items = []
@@ -4506,14 +4544,15 @@ def staff_alerts():
         return jsonify({"status": "success", "count": len(items), "data": items}), 200
 
     # 1. 待審核假單 (老師：導師班；行政人員：全校)
-    for r in get_dashboard_source().list_leave_requests_for_review(reviewable_student_ids(), "待審核"):
+    for r in (get_dashboard_source().list_leave_requests_for_review(reviewable_student_ids(), "待審核")
+              if role in ('老師', '管理員') or office_can_review(session, 'leave') else []):
         period = r["start_date"] + (f"～{r['end_date']}" if r.get("end_date") and r["end_date"] != r["start_date"] else "")
         items.append({"key": f"leave-{r['id']}", "type": "請假", "goto": "tab-home",
                       "title": f"{names.get(r['student_id'], r['student_id'])} 申請{r.get('leave_type') or '請假'}，等你審核",
                       "detail": f"{period} · {r.get('reason') or ''}", "at": str(r.get("created_at") or r["start_date"])[:16], "due_date": ""})
 
     # 2. 待審核證照 (老師：導師班；行政人員：全校)
-    viewer = {"role": role, "advised_class": advised}
+    viewer = {"role": role, "advised_class": advised, "username": session['username']}
     for c in certificates.submissions():
         if c["status"] == "待審核" and certificates.can_review(viewer, c):
             items.append({"key": f"cert-{c['id']}", "type": "證照", "goto": "tab-certs",
@@ -4538,7 +4577,7 @@ def staff_alerts():
     today = _date.today().isoformat()
     scoped_ids = [s["student_id"] for s in counseling.all_students()
                   if role != "老師" or (advised and s.get("class_name") == advised)]
-    for r in counseling.load_records(scoped_ids):
+    for r in (counseling.load_records(scoped_ids) if role in ('老師', '管理員') else []):
         if r["follow_up"] and not r["follow_up_done"] and r["follow_up_date"] and r["follow_up_date"] <= today:
             items.append({"key": f"care-{r['id']}", "type": "關懷", "goto": "tab-counseling",
                           "title": f"{names.get(r['student_id'], r['student_id'])}：關懷追蹤到期",
@@ -4551,8 +4590,8 @@ def staff_alerts():
                           "detail": n.get("due_date") or "未設定期限", "at": n["created_at"], "due_date": n.get("due_date") or ""})
 
     # 4. 行政人員：教室借用、宿舍申請
-    if role in ("教職員", "管理員"):
-        for b in facilities.bookings():
+    if role in ("教職員", "處室承辦", "住宿管理員", "管理員"):
+        for b in (facilities.bookings() if office_can_review(session, 'room_bookings') else []):
             if b["status"] == "審核中":
                 items.append({"key": f"booking-{b['id']}", "type": "教室借用", "goto": "/admin",
                               "title": f"{b['applicant']} 借用 {b['room_name']}，等你審核",
@@ -4564,7 +4603,7 @@ def staff_alerts():
                               "title": f"{a.get('student_name') or a['student_id']} 送出宿舍申請，等你審查",
                               "detail": f"{a.get('semester', '')} · {a.get('room_type', '')}", "at": str(a.get("created_at", ""))[:16], "due_date": ""})
 
-    if role in ("教職員", "管理員"):
+    if role in ("教職員", "處室承辦", "科助", "住宿管理員", "管理員"):
         from campus import admin_cases
         with admin_cases.store.lock:
             for c in admin_cases.cases():
@@ -4588,7 +4627,13 @@ campus.init_app(app, SimpleNamespace(
     fetch_calendar_events=fetch_calendar_events,
     load_course_map=load_course_map,
     load_student_credits=load_student_credits,
+    attendance_records=lambda student_id=None: get_attendance_source().list_records(student_id),
+    attendance_summary=lambda records: summarize_attendance(records, course_weekly_hours(), course_semester_hours(), current_attendance_semester()),
+    leave_requests_for_review=lambda student_ids: get_dashboard_source().list_leave_requests_for_review(student_ids, None),
     summarize_credits=summarize_credits,
+    load_dept_requirements=_load_dept_requirements,
+    demo_student_credits=DEMO_STUDENT_CREDITS,
+    graduation_cert_requirement=GRADUATION_CERT_REQUIREMENT,
     get_dashboard_source=get_dashboard_source,
     save_uploaded_file=save_uploaded_file,
     write_audit_log=write_audit_log,
@@ -4637,9 +4682,14 @@ def load_synonyms_for_assistant():
     """同義詞轉成 {口語關鍵字: 官方名稱} 字典，供小幫手比對用；資料來源與其他地方共用 load_synonyms()"""
     return {r["user_keyword"]: r["official_term"] for r in load_synonyms()}
 
+def load_knowledge_sources():
+    """管理員維護的規章與 PDF，是各身分問答共同讀取的來源。"""
+    from campus.knowledge_documents import search_records
+    return [*load_rules(), *search_records()]
+
 assistant.init_app(app, SimpleNamespace(
     load_checklists=load_checklists,
-    load_rules=load_rules,
+    load_rules=load_knowledge_sources,
     load_synonyms=load_synonyms_for_assistant,
     log_search=log_search,
     record_unmatched_query=record_unmatched_query,

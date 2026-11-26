@@ -55,6 +55,8 @@ def test_teacher_cannot_review_other_class(client, login):
     assert client.post(f"/api/leave-requests/{leave_id}/review", json={"status": "已核准"}).status_code == 404
 
     login("staff1")
+    assert client.post(f"/api/leave-requests/{leave_id}/review", json={"status": "已核准"}).status_code == 403
+    login("admin", "admin123")
     assert client.post(f"/api/leave-requests/{leave_id}/review", json={"status": "已核准"}).status_code == 200
 
 

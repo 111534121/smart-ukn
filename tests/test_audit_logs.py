@@ -40,3 +40,27 @@ def test_staff_adds_attendance_is_logged(client, login):
     assert res.status_code == 201
     hit = next(l for l in logs(client, login, "attendance_records") if l["after_json"].get("course_name") == "AUDIT-課程")
     assert hit["changed_by_role"] == "教職員" and hit["ip_address"] == "127.0.0.1"
+
+
+def test_online_application_submit_and_signoff_are_queryable(client, login):
+    login("student2")
+    fields = {"phone": "0912-000-000", "semester": "115-1", "course_code": "CS201",
+              "course_name": "資料結構", "credits": "3", "teacher": "林老師", "reason": "跟不上進度"}
+    created = client.post("/api/applications", json={"item_id": 1, "fields": fields})
+    assert created.status_code == 201
+    app_id = created.get_json()["data"]["id"]
+    assert client.get("/api/admin/audit-logs").status_code == 403
+
+    client.post("/api/auth/logout")
+    login("teacher1")
+    assert client.post(f"/api/applications/{app_id}/review", json={"action": "approve"}).status_code == 200
+
+    client.post("/api/auth/logout")
+    login("admin", "admin123")
+    response = client.get(f"/api/admin/audit-logs?table_name=online_applications&record_id={app_id}")
+    assert response.status_code == 200
+    entries = response.get_json()["data"]
+    assert {row["action"] for row in entries} == {"新增", "修改"}
+    assert all(row["table_name"] == "online_applications" and row["record_id"] == str(app_id) for row in entries)
+    assert any(row["changed_by_role"] == "學生" for row in entries)
+    assert any(row["changed_by_role"] == "老師" for row in entries)

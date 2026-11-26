@@ -6,6 +6,7 @@ const FEATURE_GROUPS = ['學習', '校務', '校園生活', '社群'];
 const FEATURES = [
     { key: 'my-schedule', tab: 'tab-myschedule', name: '我的課表', icon: '🗓️', group: '學習', desc: '本週授課、Office Hour 與現在狀態', onlyRoles: ['老師'] },
     { key: 'my-class', tab: 'tab-myclass', name: '我的導師班', icon: '🏫', group: '學習', desc: '全班出缺勤、學業預警、關懷紀錄一次看', onlyRoles: ['老師', '教職員', '管理員'] },
+    { key: 'teacher-smart', tab: 'tab-teacher-smart', name: '待審核中心與教師工作台', icon: '🧑‍🏫', group: '學習', desc: '假單、證照、專題文件與教師工作', onlyRoles: ['老師', '學生'] },
     // 下面四項併入「我的導師班」(上方分頁切換)，老師端選單不再個別列出 (group: '導師班' 不在 FEATURE_GROUPS 裡)
     { key: 'class-attendance', tab: 'tab-classattend', name: '班級出缺勤', icon: '🕒', group: '導師班', desc: '導師班誰曠課、誰快扣考，一鍵提醒', onlyRoles: ['老師', '教職員', '管理員'] },
     { key: 'counseling', tab: 'tab-counseling', name: '導生關懷紀錄', icon: '📝', group: '導師班', desc: '記下和學生談了什麼、要追蹤什麼', onlyRoles: ['老師', '教職員', '管理員'] },
@@ -15,15 +16,21 @@ const FEATURES = [
     { key: 'certs', tab: 'tab-certs', name: '證照與競賽成果', icon: '🏅', group: '學習', desc: '上傳證照獎狀，班導確認', staff: { name: '證照審核', desc: '審核學生上傳的證照與獎狀 (班導只看導師班)' } },
     { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '這學期不及格科目與擋修提醒', staff: { group: '導師班', desc: '導師班誰有科目沒過、誰要特別注意（行政人員可用學號查詢）' } },
     { key: 'self-review', tab: 'tab-selfreview', name: '學期自評表', icon: '📒', group: '學習', desc: '替這學期打分數，下次登入還在', staff: false },
-    { key: 'conduct', tab: 'tab-conduct', name: '我的操行', icon: '🎖️', group: '學習', desc: '操行成績、獎懲與怎麼算的' },
+    { key: 'conduct', tab: 'tab-conduct', name: '我的操行', icon: '🎖️', group: '學習', desc: '操行成績、獎懲與怎麼算的', staff: false },
     { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
     { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
+    { key: 'admissions-consultation', tab: 'tab-admissions-consultation', name: '招生與課務諮詢', icon: '🎓', group: '校務', desc: '查詢官網招生簡章與科目表，附文件頁碼' },
     { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
-    { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
+    { key: 'admin-cases', tab: 'tab-admin-cases', name: '處室案件工作台', icon: '📋', group: '校務', desc: '在校務首頁受理、分派、補件與簽核', onlyRoles: ['教職員', '處室承辦', '科助', '住宿管理員', '管理員'], staff: { roles: ['教職員', '處室承辦', '科助', '住宿管理員', '管理員'] } },
+    { key: 'checklist', tab: 'tab-checklist', name: '線上申辦中心', icon: '📝', group: '校務', desc: '選擇申請類別，送件、補件與看簽核進度', staff: false },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
+    { key: 'admissions', tab: 'tab-admissions', name: '招生諮詢追蹤', icon: '🎓', group: '校務', desc: '記錄招生詢問、回覆與轉介', onlyRoles: ['科助'] },
+    { key: 'internships', tab: 'tab-internships', name: '實習與產學合作', icon: '🏢', group: '校務', desc: '查歷年廠商、職務與實習進度', onlyRoles: ['學生', '科助'] },
     { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合', staff: false },
-    { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查', staff: { name: '宿舍申請審核', desc: '床位申請審核與進度', roles: ['教職員', '管理員'] } },
+    { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查', staff: { name: '宿舍申請審核', desc: '床位申請審核與進度', roles: ['教職員', '住宿管理員', '管理員'] } },
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
+    { key: 'activities', tab: 'tab-activities', href: '/activities', name: '活動與比賽', icon: '🎯', group: '校園生活', desc: '查看活動、下載簡章與回覆參加意願' },
+    { key: 'achievements', tab: 'tab-achievements', name: '資管科成果與榮譽', icon: '🏆', group: '校園生活', desc: '查看成果、投稿與審核' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
@@ -42,8 +49,10 @@ const loadedTabs = new Set();
 function featureByTab(tab) { return FEATURES.find(f => f.tab === tab); }
 function featureByKey(key) { return FEATURES.find(f => f.key === key); }
 function isLoggedIn() { return currentUser && currentUser.role && currentUser.role !== '訪客'; }
-function isStaff() { return ['老師', '教職員', '管理員'].includes(currentUser.role); }
-function isDormStaff() { return currentUser.role === '教職員' && !!currentUser.can_manage_dorm; }
+function isStaff() { return ['老師', '教職員', '處室承辦', '科助', '住宿管理員', '管理員'].includes(currentUser.role); }
+function isDormStaff() { return ['教職員', '住宿管理員'].includes(currentUser.role) &&
+    !!currentUser.can_manage_dorm && currentUser.office === '學生事務處／住宿管理'; }
+function canReviewTask(task) { return currentUser.role === '管理員' || (currentUser.review_tasks || []).includes(task); }
 
 // ---------- 共用小工具 ----------
 
@@ -123,7 +132,7 @@ function renderNav() {
                 <div>
                     <div class="text-[11px] font-bold text-accent-500 tracking-wider px-3 mb-1">${g}</div>
                     <div class="grid grid-cols-2 gap-1">
-                        ${FEATURES.filter(f => f.group === g).map(f => `<button type="button" class="mega-link text-sm" data-tab="${f.tab}" onclick="switchTab('${f.tab}')">${f.icon} ${escapeHtml(f.name)}</button>`).join('')}
+                        ${FEATURES.filter(f => f.group === g).map(f => `<${f.href ? 'a href="' + f.href + '"' : 'button type="button"'} class="mega-link text-sm" data-tab="${f.tab}" ${f.href ? '' : `onclick="switchTab('${f.tab}')"`}>${f.icon} ${escapeHtml(f.name)}</${f.href ? 'a' : 'button'}>`).join('')}
                     </div>
                 </div>`).join('')}
         </div>`;
@@ -132,7 +141,7 @@ function renderNav() {
     cols.forEach((groups, i) => {
         document.getElementById(`footerCol${i + 1}`).innerHTML = groups.map(g => `
             <div class="font-bold mb-1">${g}</div>
-            ${FEATURES.filter(f => f.group === g).map(f => `<button type="button" onclick="switchTab('${f.tab}')" class="block text-white/75 hover:text-white text-xs py-0.5">${escapeHtml(f.name)}</button>`).join('')}`).join('<div class="h-3"></div>');
+            ${FEATURES.filter(f => f.group === g).map(f => `<${f.href ? 'a href="' + f.href + '"' : `button type="button" onclick="switchTab('${f.tab}')"`} class="block text-white/75 hover:text-white text-xs py-0.5">${escapeHtml(f.name)}</${f.href ? 'a' : 'button'}>`).join('')}`).join('<div class="h-3"></div>');
     });
 }
 
@@ -144,10 +153,10 @@ function openMegaPanel(group) {
     panel.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 grid grid-cols-2 lg:grid-cols-4 gap-2">
             ${items.map(f => `
-                <button type="button" class="mega-link text-left" data-tab="${f.tab}" onclick="switchTab('${f.tab}')">
+                <${f.href ? 'a href="' + f.href + '"' : `button type="button" onclick="switchTab('${f.tab}')"`} class="mega-link text-left" data-tab="${f.tab}">
                     <span class="text-2xl">${f.icon}</span>
                     <span><span class="block font-semibold text-sm">${escapeHtml(f.name)}</span><span class="block text-[11px] text-slate-500">${escapeHtml(f.desc)}</span></span>
-                </button>`).join('')}
+                </${f.href ? 'a' : 'button'}>`).join('')}
         </div>`;
     panel.classList.remove('hidden');
     document.querySelectorAll('#megaNav [data-group]').forEach(b => {
@@ -183,6 +192,8 @@ function highlightNav(tabId) {
 
 let currentTabId = HOME_TAB;
 function switchTab(tabId, { updateHash = true } = {}) {
+    const linkedFeature = featureByTab(tabId);
+    if (linkedFeature?.href) { location.href = linkedFeature.href; return; }
     const target = document.getElementById(tabId);
     if (!target) return;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -193,18 +204,21 @@ function switchTab(tabId, { updateHash = true } = {}) {
     toggleMobileMenu(false);
     if (updateHash) {
         const f = featureByTab(tabId);
-        history.replaceState(null, '', f ? `#${f.key}` : location.pathname);
+        history.replaceState(null, '', `${location.pathname}${location.search}${f ? `#${f.key}` : ''}`);
     }
     document.title = `校園智慧官網｜${featureByTab(tabId)?.name || '首頁'} - 康寧大學 ${typeof siteName === 'function' ? siteName() : '學生學習與校務服務系統'}`;
     if (tabLoaders[tabId] && (!loadedTabs.has(tabId) || ['tab-home', 'tab-counseling', 'tab-notices', 'tab-classattend'].includes(tabId))) {
         loadedTabs.add(tabId);
         Promise.resolve(tabLoaders[tabId]()).catch(err => console.error(err));
     }
+    if (tabId === HOME_TAB && typeof refreshStudentLobby === 'function' && currentUser.role === '學生') refreshStudentLobby();
+    if (tabId === 'tab-checklist' && typeof loadStudentCases === 'function') loadStudentCases();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function tabFromHash() {
     const key = decodeURIComponent(location.hash.replace('#', ''));
+    if (key === 'admin-cases' && currentUser?.role === '學生') return 'tab-checklist';
     return featureByKey(key)?.tab || HOME_TAB;
 }
 window.addEventListener('hashchange', () => switchTab(tabFromHash(), { updateHash: false }));
@@ -222,7 +236,7 @@ const HERO_PHOTOS = {
 const HERO_SLIDES = [
     { tab: 'tab-calendar', kicker: '行事曆', title: '假日、申辦期限、我的行程，一張月曆看完', text: '點開事項就知道要準備什麼，已截止的自動變灰。', tint: '0,51,119', photo: 'gate2017', pos: 'center 40%' },
     { tab: 'tab-plan', kicker: '選課檢查', title: '選課前先檢查：學分夠不夠、會不會撞修', text: '以畢業 220 學分試算，衝堂、重複修習、擋修一次抓出來。', tint: '0,29,68', photo: 'gate2012', pos: 'center 55%' },
-    { tab: 'tab-certs', kicker: '證照與競賽', title: '證照獎狀線上上傳，班導確認就算數', text: '還能看看同年級有多少人拿到同一張證照。', tint: '124,45,18', photo: 'gate2016', pos: 'center 55%' },
+    { tab: 'tab-certs', kicker: '證照與競賽', title: '證照獎狀線上上傳，審核進度看得見', text: '專業證照經班導初審與行政複審；通過後再計入畢業門檻。', tint: '124,45,18', photo: 'gate2016', pos: 'center 55%' },
     { tab: 'tab-map', kicker: '新生專區', title: '找教室、找老師，不再迷路', text: '校園地圖搜尋教室代碼，還看得到老師現在有沒有課。', tint: '6,78,59', photo: 'gate2017', pos: 'right 60%' },
 ];
 
@@ -377,14 +391,14 @@ function renderHomeNews() {
     }
     const visibleAnnouncements = typeof filterPortalNews === 'function' ? filterPortalNews(homeAnnouncements) : homeAnnouncements;
     list.innerHTML = visibleAnnouncements.length ? visibleAnnouncements.map(a => `
-        <li class="flex gap-4 px-5 sm:px-6 py-3.5">
+        <li class="flex gap-4 px-5 sm:px-6 py-3.5 ${a.deadline_status === 'expired' ? 'portal-news-expired' : ''}">
             ${newsDateBlock(a.publish_date)}
             <details class="min-w-0 flex-1 group">
                 <summary class="cursor-pointer list-none">
-                    <span class="text-sm font-semibold text-slate-900 group-open:text-ukn-800 hover:text-ukn-700">${escapeHtml(a.title)}</span>
+                    ${typeof portalDeadlineHtml === 'function' ? portalDeadlineHtml(a) : ''}<span class="text-sm font-semibold text-slate-900 group-open:text-ukn-800 hover:text-ukn-700">${escapeHtml(a.title)}</span>
                     <span class="block text-[11px] text-slate-500 mt-0.5">${typeof portalNewsCategory === 'function' ? escapeHtml(portalNewsCategory(a)) + ' · ' : ''}${escapeHtml(a.office)}${a.target_class ? ` · ${escapeHtml(a.target_class)}` : ''}</span>
                 </summary>
-                <p class="text-xs text-slate-700 mt-2 leading-relaxed">${escapeHtml(a.content || '')}</p>
+                <p class="text-xs text-slate-700 mt-2 leading-relaxed">${escapeHtml(a.content || '')}</p><p class="text-xs text-slate-500 mt-2">${a.deadline_source ? '截止資訊來源：' + escapeHtml(a.deadline_source) + '；實際受理情形請洽發布單位。' : '公告未提供明確截止日，請洽發布單位確認。'}</p>
             </details>
             <div class="shrink-0 self-center">
                 ${a.in_my_calendar
@@ -564,6 +578,7 @@ async function pollStaffAlerts() {
 
 function goStaffAlert(goto) {
     closeModal();
+    if (goto === '/admin-workbench') { switchTab('tab-admin-cases'); return; }
     if (goto.startsWith('/')) location.href = goto; else switchTab(goto);
 }
 
@@ -586,9 +601,13 @@ function applyStaffView() {
     // onlyRoles：只有這些身分看得到 (例如「我的課表」只給老師)
     const visible = FEATURES.filter(f => !f.onlyRoles || f.onlyRoles.includes(currentUser.role));
     FEATURES.splice(0, FEATURES.length, ...visible);
-    if (!isStaff()) return;
+    if (!isStaff()) {
+        if (currentUser.role === '學生') Object.assign(featureByKey('teacher-smart') || {},
+            { name: '導師點名與預約', desc: '課堂簽到與導師 Office Hour 預約' });
+        return;
+    }
     if (isDormStaff()) {
-        const keep = FEATURES.filter(f => ['services', 'calendar', 'reports', 'map'].includes(f.key))
+        const keep = FEATURES.filter(f => ['services', 'admin-cases', 'calendar', 'reports', 'map'].includes(f.key))
             .map(f => (f.staff ? { ...f, ...f.staff } : f));
         FEATURES.splice(0, FEATURES.length, ...keep);
         const groups = FEATURE_GROUPS.filter(g => FEATURES.some(f => f.group === g));
@@ -598,7 +617,14 @@ function applyStaffView() {
         HERO_SLIDES.splice(0, HERO_SLIDES.length, ...HERO_SLIDES.filter(s => featureByTab(s.tab)));
         return;
     }
-    const keep = FEATURES.filter(f => (f.key !== 'services' || currentUser.role === '管理員' || currentUser.can_manage_dorm) && f.staff !== false && !(f.staff?.roles && !f.staff.roles.includes(currentUser.role)))
+    const keep = FEATURES.filter(f =>
+        (f.key !== 'admissions' || currentUser.office === '資訊管理科（五專）／科辦公室') &&
+        (f.key !== 'internships' || currentUser.office === '資訊管理科（五專）／科辦公室') &&
+        (f.key !== 'services' || currentUser.role === '管理員' || isDormStaff()) &&
+        (f.key !== 'certs' || currentUser.role === '科助' || canReviewTask('certificates')) &&
+        (f.key !== 'certs' || currentUser.role !== '老師') &&
+        (!['my-class', 'class-attendance', 'counseling', 'graduation', 'warning'].includes(f.key) || ['老師', '管理員'].includes(currentUser.role)) &&
+        f.staff !== false && !(f.staff?.roles && !f.staff.roles.includes(currentUser.role)))
         .map(f => (f.staff ? { ...f, ...f.staff } : f))
         .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
     FEATURES.splice(0, FEATURES.length, ...keep);
@@ -616,8 +642,17 @@ function applyStaffView() {
 }
 
 function campusInit() {
+    if (['系統管理員', '內容管理員'].includes(currentUser?.role)) {
+        document.getElementById('managementHome')?.classList.remove('hidden');
+        document.querySelectorAll('#tab-home > :not(#managementHome)').forEach(el => el.classList.add('hidden'));
+        if (typeof initManagementHome === 'function') initManagementHome(currentUser);
+        renderNav();
+        switchTab('tab-home');
+        return;
+    }
     applyStaffView();
     if (typeof initHomePortal === 'function') initHomePortal();
+    if (typeof initStudentLobby === 'function') initStudentLobby();
     renderNav();
     renderHero();
     loadPinned();
@@ -676,6 +711,7 @@ const VISITOR_WELCOME_CONTENT = {
             { title: '🏅 社團與證照', text: '入學後可以透過系統登錄考到的證照、參加比賽；校內也有多個社團與實習機會。' },
             { title: '🎓 入學方式', text: '甄選入學、申請入學等管道與名額，請以官網「招生專區」最新公告為準。' },
         ],
+        steps: ['先看感興趣的科系與課程特色', '到學校官網確認當年度招生公告及日期', '有疑問可預約參觀，向招生單位確認'],
     },
     '未來家長': {
         subtitle: '幫你快速了解學費、宿舍與聯絡窗口',
@@ -684,6 +720,16 @@ const VISITOR_WELCOME_CONTENT = {
             { title: '🏠 宿舍與校園安全', text: '在學學生可申請住宿，床位依通勤距離與身分排序；校內設有門禁與生活輔導組可協助處理生活問題。' },
             { title: '☎️ 聯絡窗口', text: '對入學、獎助學金或宿舍有疑問，都可以直接致電學校詢問相關承辦單位。' },
         ],
+        steps: ['了解科系、住宿及獎助學金資訊', '到學校官網確認正式費用與申請辦法', '與孩子一起預約參觀或洽詢承辦單位'],
+    },
+    '一般訪客': {
+        subtitle: '查找校園資訊，安排這次來訪',
+        cards: [
+            { title: '🗺️ 校園位置', text: '先確認要前往的單位或活動地點，再規劃交通路線。' },
+            { title: '📅 參觀預約', text: '若要參觀校園，可在下方選擇日期與時段送出預約。' },
+            { title: '☎️ 聯絡窗口', text: '洽公或活動問題可致電學校總機，請總機轉接承辦單位。' },
+        ],
+        steps: ['確認來訪目的與承辦單位', '需要校園參觀時先送出預約', '出發前確認交通及預約狀態'],
     },
 };
 
@@ -706,6 +752,9 @@ async function renderVisitorWelcome() {
     document.getElementById('visitorWelcomeTitle').textContent = `歡迎，${name}！${content.subtitle}`;
     document.getElementById('visitorWelcomeDept').textContent = currentUser.dept_name
         ? `您登記時填寫感興趣的科系：${currentUser.dept_name}` : '';
+    document.getElementById('visitorStepsTitle').textContent = `${currentUser.visitor_type}下一步`;
+    document.getElementById('visitorSteps').innerHTML = content.steps.map((step, i) =>
+        `<li class="rounded bg-white border border-ukn-100 px-3 py-2"><strong class="text-ukn-800">${i + 1}.</strong> ${escapeHtml(step)}</li>`).join('');
 
     let depts = [], faqs = [];
     try { depts = (await (await fetch('/api/departments')).json()).data || []; } catch (e) { /* 離線時略過科系介紹 */ }

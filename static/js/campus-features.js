@@ -27,6 +27,7 @@ function campusFeaturesInit() {
         'tab-classattend': () => loadClassAttendance(),
         'tab-counseling': () => loadCounseling(),
         'tab-myclass': () => loadClassOverview(),
+        'tab-teacher-smart': () => window.loadTeacherSmart?.(),
     });
     setupRuleSuggest();
     loadRulesTree();
@@ -528,6 +529,20 @@ async function loadPlan() {
         </div>
         <div class="lg:col-span-2"><div id="planResult" class="lg:sticky lg:top-40 space-y-4">${planEmptyResult()}</div></div>`;
     renderPlanTimetable([]);
+    if (isStudentLoggedIn()) {
+        const box = document.createElement('section');
+        box.id = 'retakeRecommendations'; box.className = 'lg:col-span-5 rounded border border-slate-200 bg-white p-4';
+        body.prepend(box);
+        try {
+            const result = await api('/api/campus/course-plan/recommendations');
+            box.innerHTML = '<h3 class="font-bold">重補修推薦：比對我的實際課表</h3><p class="text-xs">' + esc(result.notice) + '</p>' +
+                (result.data.length ? result.data.map(c => `<div class="mt-3"><strong>${esc(c.course_name)}</strong>${c.options.length ? c.options.map(o => `<div class="my-2 text-sm">${esc(o.offering_id)} · ${esc(o.slot)} · ${o.available ? '可選班別' : '目前不可選'}<div>${o.checks.map(i => esc(i.message)).join('<br>')}</div>${o.available ? `<button type="button" class="border rounded px-3 py-2" style="min-height:44px" onclick="selectRecommendedOffering('${esc(o.offering_id)}')">加入選課檢查</button>` : ''}</div>`).join('') : '<p>目前沒有開課班別</p>'}</div>`).join('') : '<p>沒有待重修的不及格科目。</p>');
+        } catch(e) { box.textContent = e.message + '；重新開啟選課檢查可重試。'; }
+    }
+}
+function selectRecommendedOffering(id) {
+    const input = document.querySelector('#plan-off-' + id + ' input');
+    if (input) { input.checked = true; togglePlanOffering(id, true); }
 }
 
 function planEmptyResult() {
@@ -551,7 +566,7 @@ async function runPlanCheck() {
         r = await api('/api/campus/course-plan/check', { json: { offering_ids: [...planChosen], passed_course_ids: [...planManualPassed] } });
     } catch (e) { toast(e.message, 'error'); return; }
     const c = r.credits;
-    const errors = r.issues.filter(i => i.level === 'error'), warns = r.issues.filter(i => i.level === 'warn');
+    const errors = r.issues.filter(i => i.level === 'error'), warns = r.issues.filter(i => i.level !== 'error');
     r.issues.forEach(i => i.offering_ids.forEach(id => {
         const card = document.getElementById(`plan-off-${id}`);
         if (!card) return;
@@ -612,7 +627,7 @@ async function loadCerts() {
     const body = document.getElementById('certsBody');
     loadCertStats();
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入學生帳號即可上傳證照與獎狀。'); return; }
-    if (isStaff()) { loadCertReview('待審核'); return; }
+    if (isStaff()) { loadCertReview(currentUser.role === '老師' ? '待審核' : '待複審'); return; }
     if (currentUser.role === '家長') {
         body.innerHTML = `<div class="text-sm text-slate-500">家長帳號可在「畢業進度」查看子女的證照進度。</div>
             <div><h3 class="font-bold text-slate-900 mb-2">🎖️ 子女的獎懲與幹部</h3><div id="myRecordsBox"></div></div>`;
@@ -632,8 +647,8 @@ async function loadCerts() {
             <div id="certAwardRow" class="hidden"><label class="block text-xs font-semibold text-slate-600 mb-1">名次 / 獎項</label><input name="award" maxlength="60" placeholder="例如：全國第二名" class="w-full border border-slate-300 rounded px-3 py-2"></div>
             <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">說明（作品集可寫作品介紹）</label><textarea name="description" rows="2" maxlength="500" class="w-full border border-slate-300 rounded px-3 py-2"></textarea></div>
             <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">證書 / 獎狀照片或 PDF（最多 4 個，證照與競賽必附）</label><input type="file" name="files" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" class="w-full text-sm"></div>
-            <div class="sm:col-span-2 flex items-center justify-between gap-2"><span class="text-[11px] text-slate-500">送出後由班導確認，確認通過才會列入畢業門檻。</span>
-                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出給班導確認</button></div>
+            <div class="sm:col-span-2 flex items-center justify-between gap-2"><span class="text-[11px] text-slate-500">專業證照經班導初審、行政／科助複審後才列入畢業門檻。請填寫發照機構與證號。</span>
+                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出審核</button></div>
         </form>
         <details class="rounded border border-amber-200 bg-amber-50 p-4 text-sm">
             <summary class="cursor-pointer font-bold text-amber-900">💡 小提醒：證照可以怎麼寫進自傳／履歷？</summary>
@@ -692,7 +707,7 @@ function renderRecords(r) {
     return `<div class="space-y-2">${summary}<div class="space-y-1.5">${rows}</div></div>`;
 }
 
-const CERT_TONE = { '已通過': 'green', '待審核': 'amber', '已退回': 'red' };
+const CERT_TONE = { '已通過': 'green', '待審核': 'amber', '待複審': 'blue', '已退回': 'red' };
 
 async function loadMyCerts() {
     try {
@@ -702,7 +717,8 @@ async function loadMyCerts() {
                 <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2"><span class="text-[11px] text-slate-500 border border-slate-200 rounded px-1">${esc(i.kind)}</span><span class="font-semibold text-slate-900">${esc(i.name)}</span>${statusBadge(i.status, CERT_TONE[i.status])}</div>
                     <div class="text-[11px] text-slate-500 mt-0.5">${esc(i.issuer)}${i.issue_date ? ` · ${esc(i.issue_date)}` : ''}${i.award ? ` · ${esc(i.award)}` : ''}${i.reviewer ? ` · 確認：${esc(i.reviewer)}` : ''}</div>
-                    ${i.review_note ? `<div class="text-xs text-rose-700 mt-1">班導意見：${esc(i.review_note)}</div>` : ''}
+                    ${i.advisor_note ? `<div class="text-xs text-slate-700 mt-1">班導意見：${esc(i.advisor_note)}</div>` : ''}
+                    ${i.review_note ? `<div class="text-xs text-rose-700 mt-1">複審意見：${esc(i.review_note)}</div>` : ''}
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">${fileLinks(i.files)}
                     ${i.status !== '已通過' ? `<button type="button" onclick="deleteCert(${Number(i.id)})" class="text-xs text-rose-700 border border-rose-200 rounded px-2 py-1 hover:bg-rose-50">刪除</button>` : ''}</div>
@@ -738,19 +754,22 @@ async function loadCertReview(status) {
         body.innerHTML = `
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="text-sm text-slate-600">確認範圍：<strong>${esc(r.scope || '—')}</strong></div>
-                <div class="flex gap-1 text-xs">${['待審核', '已通過', '已退回', '全部'].map(s => `<button type="button" onclick="loadCertReview('${s}')" class="px-2.5 py-1 rounded border ${s === status ? 'bg-ukn-800 text-white border-ukn-800' : 'border-slate-300'}">${s}</button>`).join('')}</div>
+                <div class="flex gap-1 text-xs">${['待審核', '待複審', '已通過', '已退回', '全部'].map(s => `<button type="button" onclick="loadCertReview('${s}')" class="px-2.5 py-1 rounded border ${s === status ? 'bg-ukn-800 text-white border-ukn-800' : 'border-slate-300'}">${s}</button>`).join('')}</div>
             </div>
+            ${currentUser.role === '老師' && status === '待審核' && r.data.some(i => i.kind === '證照') ? '<div class="rounded border border-ukn-200 bg-ukn-50 p-3 text-sm"><button type="button" onclick="batchReviewCerts()" class="rounded bg-ukn-800 px-3 py-2 text-white">批次初審選取的專業證照</button><span class="ml-2 text-slate-600">僅轉為待複審，不會直接列入畢業門檻。</span></div>' : ''}
             <div class="space-y-3">${r.data.length ? r.data.map(i => `
                 <div class="rounded border border-slate-200 p-4 space-y-2">
-                    <div class="flex flex-wrap items-center gap-2"><span class="font-bold text-slate-900">${esc(i.student_name)}</span><span class="text-xs text-slate-500">${esc(i.student_id)} · ${esc(i.class_name)}</span>${statusBadge(i.status, CERT_TONE[i.status])}</div>
+                    <div class="flex flex-wrap items-center gap-2">${currentUser.role === '老師' && i.kind === '證照' && i.status === '待審核' ? `<input type="checkbox" class="cert-batch-select" value="${Number(i.id)}" aria-label="選取 ${esc(i.student_name)} 的 ${esc(i.name)}">` : ''}<span class="font-bold text-slate-900">${esc(i.student_name)}</span><span class="text-xs text-slate-500">${esc(i.student_id)} · ${esc(i.class_name)}</span>${statusBadge(i.status, CERT_TONE[i.status])}</div>
                     <div class="text-sm"><span class="text-[11px] text-slate-500 border border-slate-200 rounded px-1 mr-1">${esc(i.kind)}</span><strong>${esc(i.name)}</strong> ${esc(i.award)}</div>
                     <div class="text-xs text-slate-500">${esc(i.issuer)} ${i.number ? `· 證號 ${esc(i.number)}` : ''} ${i.issue_date ? `· ${esc(i.issue_date)}` : ''} · 送出 ${esc(i.created_at.slice(0, 16))}</div>
                     ${i.description ? `<p class="text-xs text-slate-700">${esc(i.description)}</p>` : ''}
                     <div class="flex flex-wrap gap-2">${fileLinks(i.files) || '<span class="text-xs text-slate-400">沒有附檔</span>'}</div>
-                    ${i.status === '待審核' ? `
+                    ${i.advisor_reviewer ? `<p class="text-xs text-slate-600">班導初審：${esc(i.advisor_reviewer)} · ${esc(i.advisor_note || '無評語')}</p>` : ''}
+                    ${(currentUser.role === '老師' && i.status === '待審核') || (currentUser.role !== '老師' && (i.status === '待複審' || (i.kind !== '證照' && i.status === '待審核'))) ? `
                         <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                            <input id="certNote-${i.id}" placeholder="退回原因（退回時必填）" class="flex-1 border border-slate-300 rounded px-3 py-1.5 text-sm">
-                            <button type="button" onclick="reviewCert(${i.id}, 'approve')" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded px-4 py-1.5 text-sm">✓ 確認</button>
+                            <input id="certNote-${i.id}" placeholder="${currentUser.role === '老師' ? '關懷評語或退回原因' : '複審說明或退回原因'}" class="flex-1 border border-slate-300 rounded px-3 py-1.5 text-sm">
+                            ${currentUser.role === '老師' ? `<button type="button" onclick="document.getElementById('certNote-${i.id}').value='已確認證照與學習方向，持續加油！'" class="border rounded px-2 py-1 text-xs">快捷評語</button>` : ''}
+                            <button type="button" onclick="reviewCert(${i.id}, 'approve')" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded px-4 py-1.5 text-sm">✓ ${currentUser.role === '老師' && i.kind === '證照' ? '初審通過' : '複審通過'}</button>
                             <button type="button" onclick="reviewCert(${i.id}, 'reject')" class="border border-rose-300 text-rose-700 rounded px-4 py-1.5 text-sm hover:bg-rose-50">退回</button>
                         </div>` : i.review_note ? `<div class="text-xs text-slate-500">意見：${esc(i.review_note)}</div>` : ''}
                 </div>`).join('') : '<div class="text-sm text-slate-500">目前沒有資料。</div>'}</div>`;
@@ -762,8 +781,18 @@ async function reviewCert(id, action) {
     try {
         const r = await api(`/api/campus/certs/${id}/review`, { json: { action, note } });
         toast(r.message);
-        loadCertReview('待審核');
+        loadCertReview(currentUser.role === '老師' ? '待審核' : '待複審');
         loadCertStats();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function batchReviewCerts() {
+    const ids = [...document.querySelectorAll('.cert-batch-select:checked')].map(el => Number(el.value));
+    if (!ids.length) { toast('請先選取證照'); return; }
+    try {
+        const r = await api('/api/campus/certs/review/batch', { json: { ids } });
+        toast(r.message);
+        loadCertReview('待審核');
     } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -783,7 +812,7 @@ async function loadCertStats() {
                     </div>
                 </div>`).join('')}</div>` : `<div class="text-xs text-slate-500">同年級目前還沒有已確認的${label}紀錄。</div>`;
         box.innerHTML = `
-            <p class="text-xs text-slate-500 mb-3">${r.admission_year ? `${r.admission_year} 學年度入學` : '全校'}共 ${r.cohort_size} 人 · 只計算班導已確認的紀錄${r.pending_count ? `（另有 ${r.pending_count} 筆待確認）` : ''}</p>
+            <p class="text-xs text-slate-500 mb-3">${r.admission_year ? `${r.admission_year} 學年度入學` : '全校'}共 ${r.cohort_size} 人 · 只計算最終審核通過的紀錄${r.pending_count ? `（另有 ${r.pending_count} 筆待初審／複審）` : ''}</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div><h4 class="text-xs font-bold text-slate-600 mb-2">證照</h4>${bars(r.certificates, '證照')}</div>
                 <div><h4 class="text-xs font-bold text-slate-600 mb-2">競賽得獎</h4>${bars(r.competitions, '競賽')}</div>
@@ -1367,9 +1396,10 @@ function staffTodoStatus(item, today) {
 function openStaffTodo(index) {
     const item = staffTodoItems[index];
     if (!item) return;
+    if (item.goto === '/admin-workbench') { switchTab('tab-admin-cases'); return; }
     if (item.type === '關懷' && /^care-\d+$/.test(item.key || '')) {
         openCareRecord(Number(item.key.slice(5)));
-    } else if (item.goto === '/admin-workbench' || item.goto === '/admin') {
+    } else if (item.goto === '/admin') {
         location.assign(item.goto);
     } else if (ALERT_TILES.some(tile => tile.type === item.type && tile.goto === item.goto)) {
         switchTab(item.goto);
@@ -1391,17 +1421,19 @@ async function sendLineDemo() {
 }
 
 async function loadStaffHome() {
+    if (currentUser.role === '科助') return loadAssistantHome();
     const box = document.getElementById('staffHome');
     document.getElementById('heroSection')?.classList.add('hidden');
     box.classList.remove('hidden');
     box.innerHTML = '<div class="text-sm text-slate-500">讀取中…</div>';
     const isTeacher = currentUser.role === '老師';
     const dormStaff = isDormStaff();
+    const followUpStaff = isTeacher || currentUser.role === '管理員';
     const [teachers, alerts, overview, care, receipts, lineDemo] = await Promise.all([
         isTeacher ? api('/api/campus/teachers').catch(() => null) : Promise.resolve(null),
         api('/api/staff/alerts').catch(e => ({data: [], error: e.message})),
-        dormStaff ? Promise.resolve(null) : api('/api/teacher/class-overview').catch(() => null),
-        dormStaff ? Promise.resolve(null) : api('/api/campus/counseling').catch(e => ({error: e.message})),
+        followUpStaff ? api('/api/teacher/class-overview').catch(() => null) : Promise.resolve(null),
+        followUpStaff ? api('/api/campus/counseling').catch(e => ({error: e.message})) : Promise.resolve(null),
         dormStaff ? Promise.resolve(null) : api('/api/campus/notices/sent').catch(e => ({error: e.message})),
         isTeacher ? api('/api/line/demo-status').catch(() => ({ready: false})) : Promise.resolve({ready: false}),
     ]);
@@ -1409,7 +1441,7 @@ async function loadStaffHome() {
 
     if (isTeacher && lineDemo?.ready) parts.push(`<section class="bg-white rounded border border-ukn-200 p-4 flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold text-ukn-900">LINE 專題測試</h2><p class="text-xs text-slate-600">只發送一則假資料訊息到預設的測試帳號。</p></div><button id="lineDemoSend" type="button" onclick="sendLineDemo()" class="bg-ukn-800 text-white rounded px-4 py-2 text-sm disabled:opacity-50">傳送測試通知 →</button></section>`);
 
-    if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">${dormStaff ? '住宿行政案件' : '行政人員工作台'}</h2><p class="text-sm text-slate-600">${dormStaff ? '查看住宿異動、設備報修與補件案件。' : '查看所屬處室案件、分派承辦人、要求補件與完成結案。'}</p><a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">${dormStaff ? '查看住宿案件' : '開啟行政案件工作台'} →</a></section>`);
+    if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">${dormStaff ? '住宿行政案件' : '行政人員工作台'}</h2><p class="text-sm text-slate-600">${dormStaff ? '查看住宿異動、設備報修與補件案件。' : '查看所屬處室案件、分派承辦人、要求補件與完成結案。'}</p><a href="/#admin-cases" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">${dormStaff ? '查看住宿案件' : '開啟行政案件工作台'} →</a></section>`);
     // 1. 今天的課
     if (isTeacher && teachers) {
         const me = teachers.data.find(t => t.name === currentUser.full_name.replace(/\s*老師$/, ''));
@@ -1440,13 +1472,20 @@ async function loadStaffHome() {
         const priority = staffTodoStatus(a, today).rank - staffTodoStatus(b, today).rank;
         return priority || (a.due_date || '9999').localeCompare(b.due_date || '9999') || String(b.at || '').localeCompare(String(a.at || ''));
     });
+    const allowedTiles = isTeacher ? ['請假', '證照', '預警', '關懷', '回條']
+        : dormStaff ? ['行政案件', '宿舍']
+        : currentUser.role === '管理員' ? ALERT_TILES.map(t => t.type)
+        : ['行政案件', '回條',
+           ...(canReviewTask('leave') ? ['請假'] : []),
+           ...(canReviewTask('certificates') ? ['證照'] : []),
+           ...(canReviewTask('room_bookings') ? ['教室借用'] : [])];
     const tiles = ALERT_TILES.map(t => ({ ...t, n: items.filter(a => a.type === t.type).length }))
-        .filter(t => dormStaff ? ['行政案件', '宿舍'].includes(t.type) : t.n || (isTeacher ? ['請假', '證照', '預警', '關懷', '回條'] : ['請假', '證照', '教室借用', '宿舍']).includes(t.type));
+        .filter(t => allowedTiles.includes(t.type));
     const go = t => t.goto.startsWith('/') ? `location.assign('${t.goto}')`
         : `switchTab('${t.goto}')${t.anchor ? `; document.getElementById('${t.anchor}')?.scrollIntoView({ behavior: 'smooth' })` : ''}`;
     parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
         ${alerts.error ? `<p class="text-sm text-rose-700">待辦讀取失敗：${esc(alerts.error)}</p>` : ''}
-        <h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>
+        <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>${isTeacher ? '<button type="button" onclick="switchTab(\'tab-teacher-smart\')" class="rounded bg-ukn-800 px-3 py-2 text-sm text-white">打開待審核中心 →</button>' : ''}</div>
         ${isTeacher ? (items.length ? `<p class="text-sm text-slate-600">${tiles.filter(t => t.n).map(t => `${t.label} ${t.n}`).join(' · ')}</p>` : '') : `<div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
             class="text-left rounded border p-4 hover:shadow ${t.n ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-500'}">
             <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>`}
@@ -1470,7 +1509,8 @@ async function loadStaffHome() {
             <button type="button" onclick="switchTab('tab-myclass')" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm whitespace-nowrap self-start sm:self-auto">打開我的導師班 ➔</button>
         </section>`);
     }
-    if ((!isTeacher || alerts.error) && !dormStaff) parts.push(staffFollowUpHtml(care), staffReceiptsHtml(receipts));
+    if (followUpStaff && (!isTeacher || alerts.error)) parts.push(staffFollowUpHtml(care));
+    if ((!isTeacher || alerts.error) && !dormStaff) parts.push(staffReceiptsHtml(receipts));
     box.innerHTML = parts.join('');
 }
 

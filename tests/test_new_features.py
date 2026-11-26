@@ -122,7 +122,7 @@ def test_hidden_profile_not_searchable(client):
 
 
 def test_teacher_edits_own_expertise_only(client, login):
-    assert client.get("/api/faculty/me").status_code == 403
+    assert client.get("/api/faculty/me").status_code == 401
     login("teacher1")
     res = client.put("/api/faculty/me", json={"expertise": "生成式AI、提示工程", "fields": ["人工智慧與資料分析"],
                                               "research_summary": "新方向", "accepts_projects": False, "name": "改名"})

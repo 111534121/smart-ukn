@@ -129,6 +129,23 @@ def defaults():
                   'checks':['確認房號與故障描述','安排維修處理']},
                  {'name':'修繕確認與回覆','office':office,
                   'checks':['記錄修繕結果','通知住宿學生確認']}]}
+    # 學生共用入口：使用同一套案件、補件與逐關審核，並非正式校務系統串接。
+    unified = {
+        '停修申請': ('教務處／課務組', ['學年學期', '課程代碼', '課程名稱', '停修原因'],
+                     ['停修申請表與相關佐證（依課務組公告）'],
+                     [('課務資料初審', ['核對學生與課程資料', '檢查應備文件']),
+                      ('停修審查與登錄', ['確認應取得的導師及相關單位意見', '登錄辦理結果並通知學生'])]),
+        '請假申請': ('學生事務處', ['假別', '開始日期', '結束日期', '請假原因'], ['請假佐證（依承辦要求補交）'],
+                     [('請假資料審核', ['確認請假期間', '核對請假原因與佐證']), ('請假結果登錄', ['確認審核結果', '記錄請假登錄結果'])]),
+        '成績單申請': ('教務處', ['申請用途', '申請份數', '領取方式'], ['身分確認資料（示範免附真實證件）'],
+                       [('成績單資料核對', ['核對申請人學籍', '確認份數與用途']), ('成績單製發與交付', ['確認成績單內容', '記錄交付方式'])]),
+        '場地借用': ('總務處', ['使用場地', '開始日期', '結束日期', '使用時段', '活動用途'], ['活動用途說明'],
+                     [('場地時段審核', ['確認場地與時段', '確認使用用途']), ('場地借用確認', ['記錄核准時段', '告知使用注意事項'])]),
+    }
+    for kind, (office, fields, documents, steps) in unified.items():
+        result[kind] = {'office': office, 'fields': fields, 'documents': documents, 'days': 7,
+                        'roles': ['學生', *WORK_ROLES], 'is_demo': True,
+                        'steps': [{'name': name, 'office': office, 'checks': checks} for name, checks in steps]}
     return result
 
 
@@ -140,4 +157,4 @@ def demo_accounts():
             {'username':'demo_assistant_'+code.lower(),'full_name':name+'科助','office':name+'／科辦公室',
              'role':'科助','type':'assistant','dept_id':code}
             for code,name in DEPARTMENTS] + [
-            {'username':'dorm_demo','full_name':'宿舍管理示範員','office':'學生事務處／住宿管理','role':'教職員','type':'dorm'}]
+            {'username':'dorm_demo','full_name':'宿舍管理示範員','office':'學生事務處／住宿管理','role':'住宿管理員','type':'dorm'}]

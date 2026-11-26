@@ -11,4 +11,6 @@ pytest>=8.0,<9
 
 # Public hosting and locally generated QR Code
 gunicorn>=23,<24; sys_platform != "win32"
-qrcode>=8.2,<9
+qrcode[pil]>=8.2,<9
+reportlab>=4.4,<5
+pypdf>=6.0,<7

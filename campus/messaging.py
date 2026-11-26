@@ -271,7 +271,24 @@ def can_manage(user, cls):
         return True
     if user["role"] == "老師":
         return cls["class_name"] == user.get("advised_class") or cls.get("created_by_username") == user["username"]
+    if user["role"] == "科助":
+        ids = assistant_student_ids(user)
+        return bool(ids) and any(s["student_id"] in ids and s.get("class_name") == cls["class_name"]
+                                 for s in all_students())
     return False
+
+
+def assistant_student_ids(user):
+    """科助只取得已指派科辦的本科學生；未指派時不授權。"""
+    if user["role"] != "科助":
+        return None
+    from .admin_cases import assistant_departments, assignments
+    from .office_catalog import DEPARTMENTS, canonical
+    dept_id = assistant_departments().get(user["username"])
+    dept_name = next((name for code, name in DEPARTMENTS if code == dept_id), None)
+    if not dept_name or canonical(assignments().get(user["username"])) != dept_name + "／科辦公室":
+        return set()
+    return {s["student_id"] for s in all_students() if s.get("dept_id") == dept_id}
 
 
 def my_class_names(student_id):
@@ -289,8 +306,10 @@ def list_classes():
     names = student_names()
     classes = all_classes()
     if u["role"] in STAFF_ROLES:
+        allowed_ids = assistant_student_ids(u)
         return ok(data=[{"class_name": c["class_name"], "is_advised": c["class_name"] == u.get("advised_class"),
-                         "members": [{"student_id": s, "full_name": names.get(s, s)} for s in member_ids(c)]}
+                         "members": [{"student_id": s, "full_name": names.get(s, s)} for s in member_ids(c)
+                                     if allowed_ids is None or s in allowed_ids]}
                         for c in classes if can_manage(u, c)])
     sid = u["student_id"]
     return ok(data=[{"class_name": c["class_name"], "member_count": len(member_ids(c)), "joined": sid in member_ids(c),
@@ -301,6 +320,8 @@ def list_classes():
 @bp.route("/api/campus/classes", methods=["POST"])
 @require(*STAFF_ROLES)
 def create_class():
+    if current_user()["role"] == "科助":
+        return error("科助只能通知本科既有班級", 403)
     data = request.get_json(silent=True) or {}
     name = str(data.get("class_name", "")).strip()[:30]
     password = str(data.get("password", "")).strip()
@@ -318,6 +339,8 @@ def create_class():
 @require(*STAFF_ROLES)
 def reset_password():
     u = current_user()
+    if u["role"] == "科助":
+        return error("科助不可修改班級加入密碼", 403)
     data = request.get_json(silent=True) or {}
     password = str(data.get("password", "")).strip()
     if len(password) < 4:
@@ -384,6 +407,9 @@ def send_notice():
         return error(NOT_YOUR_CLASS, 403)
     recipients = data.get("recipients") or "all"
     members = member_ids(target)
+    allowed_ids = assistant_student_ids(u)
+    if allowed_ids is not None:
+        members = [sid for sid in members if sid in allowed_ids]
     if recipients == "all":
         recipient_ids = members
     else:
@@ -724,3 +750,56 @@ def remind_notice(notice_id):
                        "sender": u["full_name"], "sender_username": u["username"], "due_date": notice.get("due_date", "")})
     deps.write_audit_log("notices", item["id"], "提醒", after={"original_notice_id": notice_id, "count": len(pending)})
     return ok(message=f"已提醒 {len(pending)} 位尚未回覆的學生", count=len(pending))
+
+
+def dispatch_due_receipt_reminders():
+    """Send one in-app reminder on the day before a receipt is due."""
+    from datetime import date, timedelta
+    target_date = (date.today() + timedelta(days=1)).isoformat()
+    sent = 0
+    with store.lock:
+        flags = store.section('auto_receipt_reminders', dict)
+        for notice in load_notices():
+            if not notice.get('reply_required') or notice.get('due_date') != target_date:
+                continue
+            key = str(notice['id'])
+            if flags.get(key):
+                continue
+            pending = [sid for sid in notice['recipients'] if sid not in notice.get('replies', {})]
+            if not pending:
+                flags[key] = now_str()
+                store.save()
+                continue
+            add_notice({'class_name': notice.get('class_name'), 'target_type': notice.get('target_type'),
+                        'target_label': notice.get('target_label'), 'whole_class': False,
+                        'recipients': pending, 'title': ('回條即將截止：' + notice['title'])[:80],
+                        'content': f"原通知「{notice['title']}」的回條明日截止，請至班級通知回覆。",
+                        'priority': '重要', 'sender': notice['sender'],
+                        'sender_username': notice['sender_username'], 'due_date': notice['due_date']})
+            flags[key] = now_str()
+            store.save()
+            sent += len(pending)
+    return sent
+
+
+_receipt_worker_started = False
+_receipt_worker_lock = threading.Lock()
+
+
+def start_receipt_reminder_worker(app):
+    global _receipt_worker_started
+    with _receipt_worker_lock:
+        if _receipt_worker_started:
+            return
+        _receipt_worker_started = True
+
+    def run():
+        while True:
+            time.sleep(300)
+            try:
+                with app.app_context():
+                    dispatch_due_receipt_reminders()
+            except Exception:
+                app.logger.exception('班級回條自動提醒失敗')
+
+    threading.Thread(target=run, name='receipt-reminders', daemon=True).start()

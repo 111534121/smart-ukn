@@ -42,6 +42,17 @@ function appStepper(app, { compact = false } = {}) {
         </ol>`;
 }
 
+function appNextStep(app) {
+    const stage = app.stages?.[app.current_stage];
+    let action;
+    if (app.status === '已完成') action = '流程已完成，可查看簽核紀錄與結果。';
+    else if (app.status === '已撤回') action = '申請已撤回，後續不再送交審核。';
+    else if (app.status === '已退回') action = '請申請人查看退回原因，修改資料後重新送出。';
+    else action = app.can_review ? '請檢查申請資料，填寫意見並核准或退回。' : '等待目前關卡的承辦或簽核人處理，無須重複送件。';
+    const next = app.stages?.[app.current_stage + 1];
+    return `<section class="rounded border border-ukn-200 bg-ukn-50 p-3 text-xs leading-relaxed" aria-label="申辦下一步"><p><strong>目前承辦／簽核：</strong>${escapeHtml(['已完成','已撤回'].includes(app.status) ? app.status : stage?.name || '請洽承辦單位確認')}</p><p class="mt-1"><strong>下一步：</strong>${escapeHtml(action)}</p>${app.status === '審核中' && next ? `<p class="mt-1 text-slate-600">本關核准後：${escapeHtml(next.name)}</p>` : ''}</section>`;
+}
+
 function appCard(app, { compact = false, review = false } = {}) {
     const fields = Object.entries(app.fields || {}).filter(([, v]) => v);
     return `
@@ -55,6 +66,7 @@ function appCard(app, { compact = false, review = false } = {}) {
             </div>
             <div class="overflow-x-auto pb-1">${appStepper(app, { compact })}</div>
             <p class="text-xs ${app.status === '已退回' ? 'text-rose-700 font-semibold' : 'text-slate-600'}">${escapeHtml(app.summary)}</p>
+            ${appNextStep(app)}
             ${compact ? '' : `
             <details class="text-xs text-slate-600">
                 <summary class="cursor-pointer text-ukn-700 font-semibold">申請內容與簽核紀錄</summary>
@@ -154,7 +166,7 @@ async function openApplyModal(itemId, retryOf = null) {
             <div class="flex flex-wrap items-center gap-2">
                 <button type="submit" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">📤 送出申請</button>
                 <button type="button" onclick="fillApplyExample()" class="border border-slate-300 rounded px-3 py-2 text-sm hover:border-ukn-500">帶入範例看看</button>
-                ${f.form_url ? `<a href="${escapeHtml(f.form_url)}?example=1" target="_blank" class="ml-auto text-xs text-ukn-700 hover:underline">看紙本填寫範例 ↗</a>` : ''}
+                ${f.form_url ? `<a href="${escapeHtml(f.form_url)}?example=1" target="_blank" class="text-xs text-ukn-700 hover:underline">看填寫範例 ↗</a><a href="${escapeHtml(f.form_url)}?example=1&amp;download=doc" class="text-xs text-ukn-700 hover:underline">下載範例 Word ↓</a>` : ''}
             </div>
         </form>`);
     const form = document.getElementById('applyForm');

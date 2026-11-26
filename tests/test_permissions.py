@@ -6,9 +6,10 @@
     pytest tests/test_permissions.py -v
 
 矩陣格子的意思：
-    OK    → 不可以被權限擋下 (狀態碼不是 401 / 403；400、404 都算通過，因為測的是權限不是功能)
+    OK    → 不可以被權限擋下 (狀態碼小於 500 且不是 401 / 403；400、404 都算通過，因為測的是權限不是功能)
     401   → 必須回 401（未登入）
     403   → 必須回 403（已登入但身分不對）
+    502/503 → 離線驗收的外部服務不可用，須精確符合預期；不代表連線功能成功
     結尾有 * → 這格是「應該要這樣，但目前程式還沒做到」的已知問題。
               測試會標成 xfail（預期失敗）；等程式修好、這格變成通過時，
               pytest 會報 XPASS 並讓測試失敗，提醒你把 CSV 裡的 * 拿掉。
@@ -33,7 +34,7 @@ sys.path.insert(0, ROOT)
 import app as app_module  # noqa: E402
 
 MATRIX_PATH = os.path.join(HERE, "permission_matrix.csv")
-ROLES = ["未登入", "訪客", "學生", "家長", "老師", "教職員", "管理員"]
+ROLES = ["未登入", "訪客", "學生", "家長", "老師", "教職員", "管理員", "系統管理員", "內容管理員"]
 
 # 每種身分登入後 session 裡會有的內容（照 app.py 的 auth_login / register_visitor 寫的）
 SESSIONS = {
@@ -51,6 +52,9 @@ SESSIONS = {
     "管理員": {"user_id": 5, "username": "admin", "role": "管理員", "full_name": "系統超級管理員", "student_id": None,
                "dept_id": "CS", "dept_name": "資訊管理科（五專）", "class_name": "", "advised_class": None},
 }
+for name, username in [('系統管理員', 'system_admin'), ('內容管理員', 'content_admin')]:
+    SESSIONS[name] = {**SESSIONS['管理員'], 'username': username, 'role': name}
+
 
 
 def load_matrix():
@@ -122,7 +126,7 @@ def test_permission(client, row, role, expected):
     resp = client.open(row["url"], method=method, **kwargs)
 
     if expected == "OK":
-        assert resp.status_code not in (401, 403), \
+        assert resp.status_code < 500 and resp.status_code not in (401, 403), \
             f"{role} 呼叫 {method} {row['url']} 應該可以通過權限檢查，實際回 {resp.status_code}"
     else:
         assert resp.status_code == int(expected), \

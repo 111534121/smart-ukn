@@ -37,7 +37,7 @@ def slots():
 
 
 @bp.route("/api/campus/visits", methods=["GET", "POST"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def visits_route():
     u = current_user()
 
@@ -87,7 +87,7 @@ def visits_route():
 
 
 @bp.route("/api/campus/visits/<int:visit_id>", methods=["POST"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def update_visit(visit_id):
     u = current_user()
     data = request.get_json(silent=True) or {}

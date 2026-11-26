@@ -131,7 +131,7 @@ def send_mail_safely(to_addr, subject, body):
 # ---------- 活動本身 (查詢/建立/編輯/取消活動)：建立與編輯限教職員/管理員 ----------
 
 @bp.route("/api/campus/events", methods=["GET"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def list_events():
     u = current_user()
     q = (request.args.get("q") or "").strip()
@@ -161,7 +161,7 @@ def list_events():
 
 
 @bp.route("/api/campus/events/<int:event_id>", methods=["GET"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def get_event(event_id):
     ev = db.get_event(event_id)
     if not ev:
@@ -278,7 +278,7 @@ def _add_registration(event_id, fields, registered_by_key, registered_by_role, b
 
 
 @bp.route("/api/campus/events/<int:event_id>/register", methods=["POST"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def register_event(event_id):
     u = current_user()
     data = request.get_json(silent=True) or {}
@@ -325,7 +325,7 @@ def _notify_promoted(ev, promoted):
 
 
 @bp.route("/api/campus/events/<int:event_id>/registrations/<int:reg_id>/cancel", methods=["POST"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def cancel_registration(event_id, reg_id):
     u = current_user()
     promoted = None
@@ -479,7 +479,7 @@ def send_reminders():
 # ---------- 活動結束後的滿意度評分 ----------
 
 @bp.route("/api/campus/events/<int:event_id>/feedback", methods=["POST"])
-@require()
+@require("訪客", "學生", "家長", "老師", "教職員", "處室承辦", "科助", "住宿管理員", "管理員")
 def submit_feedback(event_id):
     data = request.get_json(silent=True) or {}
     try:

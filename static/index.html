@@ -170,7 +170,10 @@
         .cal-ev.expired { background: #f1f5f9 !important; border-left-color: #cbd5e1 !important; color: #94a3b8 !important; text-decoration: line-through; }
         @media (prefers-reduced-motion: reduce) { #heroTrack { transition: none; } }
     </style>
-    <link rel="stylesheet" href="/css/home-portal.css?v=49">
+    <link rel="stylesheet" href="/css/student-lobby.css?v=57">
+    <link rel="stylesheet" href="/css/case-signoff.css?v=57">
+    <link rel="stylesheet" href="/css/student-services.css?v=57">
+    <link rel="stylesheet" href="/css/home-portal.css?v=20261109-topbar">
     <link rel="stylesheet" href="/css/campus-access.css?v=46">
 </head>
 
@@ -258,7 +261,6 @@
                         </div>
                         <div class="text-[11px] text-slate-500 hidden md:block" id="userSubInfo"></div>
                     </div>
-                    <a href="/feature-guide.html" class="text-xs text-ukn-700 hover:text-ukn-900 whitespace-nowrap">功能對照說明</a>
                     <button type="button" id="logoutBtn" onclick="logoutUser()" class="hidden text-xs border border-slate-300 text-slate-600 hover:border-ukn-700 hover:text-ukn-800 px-3 py-1.5 rounded transition whitespace-nowrap">登出</button>
                     <button type="button" id="mobileMenuBtn" onclick="toggleMobileMenu()" class="lg:hidden border border-slate-300 rounded px-2.5 py-1.5 text-slate-700" aria-label="開啟選單" aria-expanded="false">☰</button>
                 </div>
@@ -279,12 +281,33 @@
         <!-- 首頁 (版型參考臺大官網：大圖輪播 → 常用服務 → 公告 / 行事曆 / 天氣) -->
         <!-- ======================================================== -->
         <div id="tab-home" class="tab-content space-y-6">
+            <section id="managementHome" class="hidden max-w-6xl mx-auto space-y-5" aria-labelledby="managementHomeTitle">
+                <header class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7"><p class="text-sm font-semibold text-ukn-700">校務首頁 · 管理工作區</p><h1 id="managementHomeTitle" class="ukn-title text-2xl font-bold text-slate-900">管理工作台</h1><p id="managementHomeIntro" class="text-slate-600 mt-2"></p></header>
+                <div id="contentManagement" class="hidden space-y-5">
+                    <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7 space-y-3"><h2 class="text-xl font-bold">校規內容維護</h2><label class="block">選擇規章<select id="managementRules" class="block w-full border rounded p-2 mt-1"></select></label><label class="block">內容<textarea id="managementRuleContent" rows="7" class="block w-full border rounded p-2 mt-1"></textarea></label><button id="managementSaveRule" type="button" class="bg-ukn-800 text-white rounded px-4 py-2">儲存修改</button><p id="managementRuleStatus" role="status"></p></section>
+                    <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7 space-y-3"><h2 class="text-xl font-bold">校務知識文件</h2><p class="text-slate-600">上傳可選取文字的正式 PDF；招生與課務文件可供公開諮詢引用。</p><form id="managementDocumentForm" class="grid gap-3"><label>文件名稱<input name="title" maxlength="100" required class="block w-full border rounded p-2 mt-1"></label><label>類型<select name="kind" class="block w-full border rounded p-2 mt-1"><option>招生</option><option>課務</option><option>校規</option><option>表單</option></select></label><label>PDF 檔案<input name="file" type="file" accept=".pdf" required class="block w-full border rounded p-2 mt-1"></label><button type="submit" class="bg-ukn-800 text-white rounded px-4 py-2 justify-self-start">上傳並加入搜尋</button></form><p id="managementDocumentStatus" role="status"></p><div id="managementDocumentList" class="divide-y" aria-label="已上傳文件"></div></section>
+                </div>
+                <div id="systemManagement" class="hidden space-y-5">
+                    <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7 space-y-3"><h2 class="text-xl font-bold">帳號查詢與密碼重設</h2><p>依姓名、帳號或學號查詢。系統不顯示原密碼。</p><div class="flex gap-2"><input id="managementAccountQuery" class="border rounded p-2 flex-1" placeholder="至少輸入 2 個字"><button id="managementAccountSearch" class="bg-ukn-800 text-white rounded px-4" type="button">查詢</button></div><p id="managementAccountStatus" role="status"></p><div id="managementAccountResults"></div><p id="managementResetResult" role="status"></p></section>
+                    <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7 space-y-3"><h2 class="text-xl font-bold">系統維護</h2><div class="flex gap-2"><button id="managementAudit" type="button" class="border rounded px-4 py-2">讀取修改紀錄</button><button id="managementCheck" type="button" class="border rounded px-4 py-2">執行系統檢查</button></div><pre id="managementResult" role="status" class="whitespace-pre-wrap break-all text-sm"></pre></section>
+                </div>
+            </section>
+            <section id="studentLobby" class="student-lobby" hidden aria-labelledby="studentLobbyTitle">
+                <header class="lobby-heading"><p class="lobby-kicker">SMART UKN · 每天的校園入口</p><h1 id="studentLobbyTitle">康寧快捷行動大廳</h1><p id="lobbyGreeting"></p><div class="lobby-tools"><button type="button" id="lobbyRefresh">更新今日資訊</button><button type="button" id="lobbySearch">搜尋服務與公告</button></div><p id="lobbyUpdated" role="status" aria-live="polite"></p></header>
+                <section class="lobby-panel lobby-services" aria-labelledby="lobbyServiceTitle"><div class="lobby-panel-heading"><h2 id="lobbyServiceTitle">線上申辦中心</h2><a href="#checklist">全部申辦進度 →</a></div><div id="lobbyServiceButtons" class="lobby-service-grid"></div><p class="lobby-muted">選擇申請類別後，可在同一頁送件、補件與查看進度。</p></section>
+                <div class="lobby-columns"><section class="lobby-panel" aria-labelledby="lobbyScheduleTitle"><div class="lobby-panel-heading"><h2 id="lobbyScheduleTitle">今日課表</h2><span id="lobbyScheduleSource" class="lobby-badge"></span></div><div id="lobbySchedule" aria-live="polite">正在載入課表…</div><button type="button" class="lobby-text-button" data-lobby-tab="tab-calendar">查看行事曆 →</button></section>
+                <section class="lobby-panel" aria-labelledby="lobbyTodoTitle"><div class="lobby-panel-heading"><h2 id="lobbyTodoTitle">今日待辦</h2><span id="lobbyTodoCount" class="lobby-badge"></span></div><p class="lobby-muted">今天到期、逾期、待補件與需要你處理的專題事項。</p><div id="lobbyTasks" aria-live="polite">正在整理待辦…</div></section></div>
+                <section class="lobby-panel lobby-transport" aria-labelledby="lobbyTransportTitle"><div class="lobby-panel-heading"><h2 id="lobbyTransportTitle">上學交通</h2><span id="lobbyTransportMode" class="lobby-badge">讀取中</span></div><div id="lobbyTransport" aria-live="polite">正在讀取交通資訊…</div><p id="lobbyTransportTime" class="lobby-muted"></p><button type="button" class="lobby-text-button" data-lobby-tab="tab-traffic">交通路線與官方資訊 →</button></section>
+                <p class="lobby-footer-note">先看今天，再處理下一步。資料以學校正式系統與交通單位公告為準。</p>
+            </section>
 
             <!-- 教職員登入後優先顯示今日工作台 -->
             <div id="staffHome" class="hidden space-y-4"></div>
 
             <section class="portal-welcome" aria-labelledby="portalTitle">
-                <div class="portal-intro"><div><p class="portal-eyebrow">UKN CAMPUS · 校園服務入口</p><h1 id="portalTitle">你的校園日常，從這裡開始。</h1><p>找資訊、辦事情、掌握最新消息，一個入口就能出發。</p></div><a class="portal-login" href="/login">登入個人服務 ↗</a></div>
+                <div class="portal-intro"><div><p class="portal-eyebrow">UKN CAMPUS · 校園服務入口</p><h1 id="portalTitle">你的校園日常，從這裡開始。</h1><p>找資訊、辦事情、掌握最新消息，一個入口就能出發。</p><button type="button" onclick="switchTab('tab-achievements')" class="text-ukn-800 font-semibold underline">🏆 資管科成果與榮譽</button></div><a class="portal-login" href="/login">登入個人服務 ↗</a></div>
+                <button type="button" onclick="switchTab('tab-admissions-consultation')" class="mt-5 rounded bg-white text-ukn-800 px-4 py-2 font-semibold">招生與課務文件諮詢 →</button>
+                <section class="rounded-xl border border-amber-200 bg-white p-4 mt-4" aria-labelledby="achievementPreviewTitle"><div class="flex flex-wrap justify-between gap-2"><h2 id="achievementPreviewTitle" class="font-bold text-slate-900">🏆 資管科最新成果</h2><button type="button" onclick="switchTab('tab-achievements')" class="text-ukn-800 font-semibold underline">查看歷年成果 →</button></div><div id="achievementPreview" class="grid sm:grid-cols-3 gap-3 mt-3 text-sm text-slate-600">成果載入中…</div></section>
                 <form id="portalSearchForm" class="portal-search" role="search" aria-label="整合搜尋">
                     <label for="portalQuery">今天想找什麼？</label>
                     <div class="portal-search-row"><input id="portalQuery" type="search" enterkeyhint="search" maxlength="100" required placeholder="搜尋服務、公告、校規，例如：請假、獎學金" autocomplete="off"><button type="submit">搜尋 →</button></div>
@@ -314,6 +337,10 @@
                     <p id="visitorWelcomeDept" class="text-xs text-slate-500 mt-1"></p>
                 </div>
                 <div id="visitorWelcomeCards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm"></div>
+                <div class="rounded border border-ukn-200 bg-ukn-50 p-4">
+                    <h3 id="visitorStepsTitle" class="text-sm font-bold text-ukn-900"></h3>
+                    <ol id="visitorSteps" class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-700"></ol>
+                </div>
                 <details class="rounded border border-slate-200">
                     <summary class="cursor-pointer px-4 py-3 font-bold text-slate-900 text-sm">🔎 看看本校有哪些科系</summary>
                     <div id="visitorDeptBrowser" class="px-4 pb-4 space-y-4 text-sm"></div>
@@ -573,6 +600,81 @@
         </div>
 
 
+        <div id="tab-admin-cases" class="tab-content hidden space-y-4">
+            <section class="bg-white border border-slate-200 rounded-xl p-5 sm:p-7"><p class="text-xs font-bold text-ukn-700">校務首頁 · 行政服務</p><h1 class="ukn-title text-2xl font-bold text-slate-900 mt-1">處室案件工作台</h1><p class="text-slate-600 mt-2">受理、分派、補件與簽核都在此頁操作。</p></section>
+            <iframe id="adminCasesFrame" title="處室案件操作區" class="w-full bg-white border border-slate-200 rounded-xl" style="min-height:900px" loading="lazy"></iframe>
+        </div>
+
+        <div id="tab-admissions" class="tab-content hidden space-y-6">
+<section id="assistantAdmissions" class="rounded-xl border border-ukn-200 bg-white p-5 space-y-5"><div><p class="text-xs font-bold text-ukn-700">資管科招生工作區</p><h2 class="font-bold text-xl">招生諮詢追蹤</h2><p class="text-sm text-slate-600">記錄家長或學生的詢問、回覆進度與轉介；正式招生資格與期限請以招生中心公告為準。</p><p id="assistantAdmissionsSummary" class="text-sm font-semibold text-ukn-800 mt-2"></p></div><form id="assistantAdmissionForm" class="grid sm:grid-cols-2 gap-3"><label class="text-sm">聯絡稱呼<input name="contact" required maxlength="100" class="block w-full border rounded p-2 mt-1" placeholder="家長或學生稱呼"></label><label class="text-sm">諮詢管道<select name="channel" class="block w-full border rounded p-2 mt-1"><option>電話</option><option>現場</option><option>電子郵件</option><option>社群</option><option>其他</option></select></label><label class="text-sm sm:col-span-2">諮詢主題<input name="topic" required maxlength="100" class="block w-full border rounded p-2 mt-1" placeholder="例如：入學管道、參訪、科系課程"></label><label class="text-sm sm:col-span-2">問題內容<textarea name="question" required maxlength="2000" rows="3" class="block w-full border rounded p-2 mt-1"></textarea></label><button class="bg-ukn-800 text-white rounded px-4 py-2 justify-self-start">新增諮詢紀錄</button></form><div id="assistantAdmissionsList" class="space-y-3"></div></section>
+        </div>
+
+        <div id="tab-internships" class="tab-content hidden space-y-5">
+            <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <h2 class="font-bold text-xl">歷年實習廠商參考</h2>
+                <p class="text-sm text-slate-600 mt-2">保留各學年度曾提供的職務與工作內容，方便學弟妹了解與請教學長姐。歷年資料不代表今年仍有名額；詳情請向科辦確認。</p>
+                <div class="flex flex-wrap gap-3 mt-4">
+                    <label class="text-sm">學年度<select id="internshipHistoryYear" class="block border rounded p-2 mt-1"><option value="114">114 學年度</option></select></label>
+                    <label class="text-sm">領域分類<select id="internshipHistoryCategory" class="block border rounded p-2 mt-1"><option value="">全部分類</option></select></label>
+                    <label class="text-sm flex-1 min-w-[180px]">搜尋廠商或職務<input id="internshipHistorySearch" class="block w-full border rounded p-2 mt-1" placeholder="輸入公司名稱或工作內容"></label>
+                </div>
+                <p id="internshipHistorySummary" class="text-sm text-slate-600 mt-3"></p>
+                <div id="internshipHistoryList" class="grid lg:grid-cols-2 gap-3 mt-3">正在讀取…</div>
+                <form id="internshipStudentShareForm" class="hidden border-t mt-5 pt-4 grid sm:grid-cols-2 gap-3 text-sm">
+                    <h3 class="font-bold sm:col-span-2">五年級學生分享實習經驗</h3>
+                    <p class="text-slate-600 sm:col-span-2">寫下自己的實際經驗，經科助確認後提供學弟妹參考。</p>
+                    <label>實習廠商<select name="company" required id="internshipShareCompany" class="block border rounded p-2 w-full mt-1"></select></label>
+                    <label>實習學年度<select name="year" required id="internshipShareYear" class="block border rounded p-2 w-full mt-1"></select></label>
+                    <label class="sm:col-span-2">實際工作內容<textarea name="work_description" required maxlength="1000" rows="3" class="block border rounded p-2 w-full mt-1"></textarea></label>
+                    <label class="sm:col-span-2">給學弟妹的經驗與提醒<textarea name="advice" required maxlength="1000" rows="3" class="block border rounded p-2 w-full mt-1"></textarea></label>
+                    <button class="bg-ukn-800 text-white rounded px-3 py-2 justify-self-start">送交科助確認</button>
+                    <p id="internshipShareMessage" role="status" class="sm:col-span-2"></p>
+                </form>
+                <form id="internshipCompanyCreateForm" class="hidden border-t mt-5 pt-4 grid sm:grid-cols-2 gap-3 text-sm">
+                    <h3 class="font-bold sm:col-span-2">新增其他年度廠商</h3>
+                    <label>學年度<input name="year" type="number" min="100" max="200" required class="block border rounded p-2 w-full mt-1"></label>
+                    <label>廠商名稱<input name="name" required maxlength="120" class="block border rounded p-2 w-full mt-1"></label>
+                    <label>實習職務<input name="title" required maxlength="120" class="block border rounded p-2 w-full mt-1"></label>
+                    <label>領域分類<select name="category" required class="block border rounded p-2 w-full mt-1"><option value="">請選擇分類</option><option>資訊技術</option><option>行銷與設計</option><option>行政與客服</option><option>商管與會計</option><option>教育與培訓</option><option>旅遊服務</option><option>待補充</option></select></label>
+                    <label class="sm:col-span-2">工作內容<textarea name="details" maxlength="2000" rows="2" class="block border rounded p-2 w-full mt-1"></textarea></label>
+                    <button class="bg-ukn-800 text-white rounded px-3 py-2 justify-self-start">新增歷年廠商</button>
+                </form>
+            </section>
+            <div id="internshipAssistantPanel" class="space-y-5">
+            <section class="rounded-xl border border-slate-200 bg-white p-5">
+                <h2 class="font-bold text-lg">待確認的學長姐分享</h2>
+                <div id="internshipShareReviewList" class="space-y-3 mt-3"></div>
+            </section>
+            <section class="rounded-xl border border-ukn-200 bg-white p-5 sm:p-6">
+                <p class="text-xs font-bold text-ukn-700">資管科科助工作區</p>
+                <h1 class="ukn-title text-2xl font-bold text-ukn-900 mt-1">實習與產學合作</h1>
+                <p class="text-sm text-slate-600 mt-2">追蹤本科五年級學生與實習單位、指導老師之間的媒合、合約、週記和訪視安排。正式實習認定以學校承辦單位資料為準。</p>
+                <p id="internshipMessage" role="status" class="text-sm mt-2"></p>
+            </section>
+            <section class="rounded-xl border border-slate-200 bg-white p-5">
+                <h2 class="font-bold text-lg">建立實習紀錄</h2>
+                <form id="internshipCreateForm" class="grid sm:grid-cols-2 gap-3 mt-3">
+                    <label class="text-sm">五年級學生<select name="student_id" required id="internshipStudentSelect" class="block w-full border rounded p-2 mt-1"></select></label>
+                    <label class="text-sm">實習單位<input name="company" required maxlength="120" class="block w-full border rounded p-2 mt-1" placeholder="填寫實際媒合單位"></label>
+                    <label class="text-sm sm:col-span-2">指導老師<input name="teacher" maxlength="100" class="block w-full border rounded p-2 mt-1" placeholder="尚未確認可留白"></label>
+                    <button class="bg-ukn-800 text-white rounded px-4 py-2 justify-self-start">建立紀錄</button>
+                </form>
+            </section>
+            <section class="rounded-xl border border-slate-200 bg-white p-5">
+                <div class="flex flex-wrap justify-between gap-2"><h2 class="font-bold text-lg">學生實習追蹤</h2><span id="internshipSummary" class="text-sm text-slate-600"></span></div>
+                <div id="internshipList" class="space-y-4 mt-3">正在讀取…</div>
+            </section>
+            </div>
+        </div>
+
+        <div id="tab-achievements" class="tab-content hidden space-y-6">
+            <style>#tab-achievements .entry{border-top:1px solid #e2e8f0;padding:14px 0}#tab-achievements .entry:first-child{border-top:0}#tab-achievements .tag{display:inline-block;background:#e8f1fa;color:#174f7e;border-radius:20px;padding:2px 10px;font-size:12px}#tab-achievements .muted{color:#64748b;font-size:13px}#tab-achievements .notice{background:#fff6df;border-radius:8px;padding:10px;margin:8px 0}#tab-achievements .error{color:#b91c1c}#tab-achievements .entry label{display:block;margin:9px 0}#tab-achievements .entry input,#tab-achievements .entry textarea{width:100%;border:1px solid #cbd5e1;border-radius:7px;padding:8px}#tab-achievements .entry textarea{min-height:70px}#tab-achievements .entry button{background:#073a69;color:white;border-radius:7px;padding:7px 12px;margin:4px}#tab-achievements .entry button.danger{background:#9f343f}#tab-achievements .entry a{text-decoration:underline;color:#075985}</style>
+            <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-7"><p class="text-xs font-bold text-ukn-800">資訊管理科（五專）</p><h1 class="ukn-title text-2xl font-bold text-slate-900">成果與榮譽</h1><p class="text-sm text-slate-600">學生、老師投稿 → 科助核對佐證 → 發布到首頁。此頁就在同一個校園網站內。</p><p id="message" role="status" class="text-sm mt-2"></p></section>
+            <div class="grid lg:grid-cols-2 gap-4"><section class="bg-white rounded-xl border border-slate-200 p-5"><h2 class="font-bold text-lg">近期與歷年成果</h2><label class="block text-sm mt-3">得獎年度<select id="year" class="block w-full border rounded p-2 mt-1"><option value="">全部年度</option></select></label><div id="publicList" class="mt-4">載入中…</div></section>
+            <div class="space-y-4"><section id="submitPanel" class="bg-white rounded-xl border border-slate-200 p-5" hidden><h2 class="font-bold text-lg">投稿得獎消息</h2><form id="submitForm" class="space-y-3 mt-3"><label class="block text-sm">分類<select name="kind" class="block w-full border rounded p-2 mt-1"><option>競賽</option><option>證照</option><option>專題</option><option>其他</option></select></label><label class="block text-sm">比賽或成果名稱<input name="contest_name" required maxlength="120" class="block w-full border rounded p-2 mt-1"></label><label class="block text-sm">獎項<input name="award" required maxlength="120" class="block w-full border rounded p-2 mt-1"></label><label class="block text-sm">得獎日期<input name="award_date" type="date" required class="block w-full border rounded p-2 mt-1"></label><label class="block text-sm">補充說明<textarea name="description" maxlength="2000" class="block w-full border rounded p-2 mt-1"></textarea></label><label class="block text-sm">佐證資料（PDF、JPG、PNG，10 MB 內）<input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="block w-full mt-1"></label><button class="bg-ukn-800 text-white rounded px-4 py-2">送交科助審核</button></form><h3 class="font-bold mt-5">我的投稿</h3><div id="mineList"></div></section>
+            <section id="reviewPanel" class="bg-white rounded-xl border border-slate-200 p-5" hidden><h2 class="font-bold text-lg">待審核成果</h2><div id="reviewList">載入中…</div><h3 class="font-bold mt-5">分類更新提醒</h3><div id="reminders"></div><h3 class="font-bold mt-5">已發布成果維護</h3><div id="publishedManage"></div></section></div></div>
+        </div>
+
         <!-- ======================================================== -->
         <!-- 模組 1: 校務規章檢索、口語對照與問答查詢 (Tab 1) -->
         <!-- ======================================================== -->
@@ -682,7 +784,7 @@
                                 <div class="font-bold flex items-center gap-1.5">
                                     <span id="relatedChecklistTitle">對應行政申辦流程：課程停修申請</span>
                                 </div>
-                                <p class="text-ukn-800 mt-0.5" id="relatedChecklistOffice">承辦單位：課務組 (康寧樓 2 樓 A201) · 校內分機 #310</p>
+                                <p class="text-ukn-800 mt-0.5" id="relatedChecklistOffice">承辦單位：課務組 (行政大樓 2 樓 A201) · 校內分機 #310</p>
                             </div>
                             <button id="jumpChecklistBtn" onclick="jumpToRelatedChecklist()" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-4 py-2 rounded text-xs transition whitespace-nowrap flex items-center gap-1">
                                 <span>前往申辦步驟與表單下載 ➔</span>
@@ -710,8 +812,8 @@
                         </p>
                         <div class="bg-white p-4 rounded border border-amber-200 text-xs text-slate-700 space-y-1.5">
                             <div class="font-bold text-slate-900">若有急切申辦需求，歡迎直接洽詢各專責處室：</div>
-                            <div>• 課務組 (選課、停修、先修課程)：康寧樓 2 樓 A201 (分機 310, 312)</div>
-                            <div>• 註冊組 (學籍、成績、學分抵免)：康寧樓 2 樓 A202 (分機 321, 322)</div>
+                            <div>• 課務組 (選課、停修、先修課程)：行政大樓 2 樓 A201 (分機 310, 312)</div>
+                            <div>• 註冊組 (學籍、成績、學分抵免)：行政大樓 2 樓 A202 (分機 321, 322)</div>
                             <div>• 生輔組 (請假、獎懲、學業預警)：行政大樓 1 樓 (分機 211)</div>
                         </div>
                     </div>
@@ -869,6 +971,20 @@
         <!-- 模組 3: 行政申辦流程指引與進度保存 (Tab 3) -->
         <!-- ======================================================== -->
         <div id="tab-checklist" class="tab-content hidden space-y-6">
+<section id="studentCasesSection" hidden class="student-services" aria-labelledby="studentServicesTitle">
+    <h2 id="studentServicesTitle">線上申辦中心</h2>
+    <p>請假、成績單、場地借用與設備報修，從送件到補件、下一步與結果都在這裡。</p>
+    <p class="service-demo-note">專題示範流程，未連接正式請假登錄、成績製發或場地排程；請勿上傳真實個資。</p>
+    <div id="studentServiceChoices" class="service-choices" aria-label="選擇申辦服務"></div>
+    <div id="studentRequestPanel" hidden></div>
+    <div class="service-list-heading"><h3>我的申辦進度</h3><button type="button" onclick="loadStudentCases()">更新進度</button></div>
+    <p id="studentCasesMessage" role="status" aria-live="polite"></p>
+    <div id="studentCaseNotifications" role="status" aria-live="polite"></div>
+    <div class="service-filters"><label>申辦類型<select id="studentCaseKind"><option value="">全部類型</option></select></label><label>案件狀態<select id="studentCaseStatus"><option value="">全部狀態</option><option>待受理</option><option>待補件</option><option>重新送審</option><option>處理中</option><option>已完成</option><option>已退件</option></select></label></div>
+    <p id="studentCaseSummary" role="status"></p>
+    <div id="studentCaseDetail"></div>
+    <details open><summary>選擇申請類別與案件</summary><div id="studentCasesList" class="service-case-list"></div></details>
+</section>
 
             <!-- 線上申請進度 (applications.js)：每一關用圖示顯示跑到哪 -->
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
@@ -1278,7 +1394,7 @@
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                         <h2 class="ukn-title text-xl font-bold text-slate-900">證照、競賽與作品集</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">上傳證照、比賽獎狀或作品，班導按「確認」後才會列入紀錄與畢業門檻。</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">專業證照由班導初審、行政／科助複審；複審通過後才列入畢業門檻。競賽與作品依原審核流程辦理。</p>
                     </div>
                 </div>
                 <div id="certsBody" class="space-y-6"></div>
@@ -1318,7 +1434,7 @@
             <section class="bg-white rounded border border-slate-200 p-6 space-y-3">
                 <h2 class="ukn-title text-xl font-bold text-slate-900">行政申請與補件</h2>
                 <p class="text-sm text-slate-500">送出行政申請、查看承辦進度與補件要求；行政人員可依處室受理及分派案件。</p>
-                <a href="/admin-workbench" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">開啟行政案件工作台 →</a>
+                <a href="#checklist" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">查看我的進度與補件 →</a>
             </section>
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3">
@@ -1472,6 +1588,15 @@
         </div>
 
         <!-- 我的導師班：總覽 (campus-features.js loadClassOverview) -->
+        <div id="tab-teacher-smart" class="tab-content hidden space-y-6">
+            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
+                <div><h2 class="ukn-title text-xl font-bold text-slate-900">待審核中心與教師工作台</h2>
+                    <p class="text-sm text-slate-600 mt-1">在校務首頁處理假單、證照初審、專題文件、點名與預約。</p></div>
+                <div id="teacherSmartBody"></div>
+            </section>
+        </div>
+
+        <!-- 我的導師班：總覽 (campus-features.js loadClassOverview) -->
         <div id="tab-myclass" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
@@ -1560,6 +1685,14 @@
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">用一句話描述你的狀況，小幫手會從學校的申辦流程與規章資料庫找出要辦什麼、步驟、要帶的文件和去哪裡辦。</p>
                 </div>
                 <div id="assistantBody"></div>
+            </section>
+        </div>
+
+        <div id="tab-admissions-consultation" class="tab-content hidden space-y-6">
+            <section class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-3" aria-labelledby="admissionsConsultTitle">
+                <div><p class="text-xs font-semibold text-ukn-700">訪客／新生服務</p><h2 id="admissionsConsultTitle" class="text-xl font-bold text-slate-900">招生與課務文件諮詢</h2><p class="text-sm text-slate-600">用自己的話提問。回答只引用已索引的公開文件段落，並附上文件與頁碼；找不到依據時會明確告知。</p></div>
+                <form id="admissionsConsultForm" class="flex flex-col sm:flex-row gap-2"><label for="admissionsConsultInput" class="sr-only">招生或課務問題</label><input id="admissionsConsultInput" maxlength="200" required class="flex-1 border border-slate-300 rounded px-3 py-2" placeholder="例如：資管科招生名額是多少？"><button class="bg-ukn-800 text-white rounded px-5 py-2 font-semibold" type="submit">查詢文件</button></form>
+                <div id="admissionsConsultResult" role="status" aria-live="polite"></div>
             </section>
         </div>
 
@@ -2019,7 +2152,7 @@
         }
 
         // 線上請假 (學生) 與請假審核 (老師/教職員/管理員)
-        const LEAVE_REVIEW_ROLES = ['老師', '教職員', '管理員'];
+        const LEAVE_REVIEW_ROLES = ['老師', '教職員', '處室承辦', '管理員'];
 
         function toggleLeaveForm() {
             const form = document.getElementById('leaveForm');
@@ -2069,7 +2202,11 @@
 
         async function loadLeaveReview() {
             const section = document.getElementById('homeLeaveReview');
-            if (!LEAVE_REVIEW_ROLES.includes(currentUser.role)) return;
+            if (!LEAVE_REVIEW_ROLES.includes(currentUser.role) ||
+                (currentUser.role !== '老師' && !canReviewTask('leave'))) {
+                section.classList.add('hidden');
+                return;
+            }
             const status = document.getElementById('leaveReviewFilter').value;
             try {
                 const res = await fetch(`/api/leave-requests/review?status=${encodeURIComponent(status)}`);
@@ -2180,7 +2317,10 @@
                 const adminBtn = document.getElementById('adminEntryLink');
                 if (data.is_authenticated && data.user) {
                     currentUser = data.user;
-                    document.getElementById('userFullName').textContent = currentUser.full_name.replace(new RegExp(`\\s*${currentUser.role}$`), ''); // 旁邊已有身分標籤，名字後面的「老師」不重複顯示
+                    const displayName = currentUser.role === '管理員' && currentUser.full_name === '系統超級管理員'
+                        ? '系統管理員' : currentUser.role === '老師'
+                            ? currentUser.full_name.replace(/\s*老師$/, '') : currentUser.full_name;
+                    document.getElementById('userFullName').textContent = displayName;
                     document.getElementById('userRoleTag').textContent = currentUser.role;
                     document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (currentUser.dept_name || '');
                     if (adminBtn) {
@@ -3833,16 +3973,24 @@
 
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
-    <script src="/js/campus-shell.js?v=20261022-dorm2"></script>
-    <script src="/js/home-portal.js?v=49"></script>
+    <script src="/js/student-lobby.js?v=57"></script>
+    <script src="/js/management-home.js?v=20261109-home"></script>
+    <script src="/js/campus-shell.js?v=20261111-review-center"></script>
+    <script src="/js/admin-cases-home.js?v=20261109"></script>
+    <script src="/js/home-portal.js?v=57"></script>
     <script src="/js/campus-access.js?v=46"></script>
-    <script src="/js/campus-features.js?v=20261022-dorm2"></script>
-    <script src="/js/campus-life.js"></script>
+    <script src="/js/campus-features.js?v=20261111-review-center"></script>
+    <script src="/js/teacher-smart.js?v=20261111-review-center"></script>
+    <script src="/js/assistant-home.js?v=20261105-compact-assistant"></script>
+    <script src="/js/assistant-internships.js?v=20261105-alumni-share-2"></script>
+    <script src="/js/campus-life.js?v=20261104-assistant-notices"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js"></script>
     <script src="/js/self-review.js"></script>
     <script src="/js/reports.js"></script>
-    <script src="/js/applications.js"></script>
+    <script src="/js/case-signoff.js?v=57"></script>
+    <script src="/js/student-cases.js?v=57"></script>
+    <script src="/js/applications.js?v=t38-20261022"></script>
     <script src="/js/conduct.js"></script>
     <script src="/js/assistant.js"></script>
     <script src="/js/tour.js"></script>
@@ -3880,6 +4028,9 @@
         document.title = document.title.replace(/(學生學習與校務服務系統|教職員校務服務系統)/, name);
     }
 </script>
+    <script src="/js/admissions-consultation.js"></script>
+    <script src="/js/achievement-preview.js?v=3"></script>
+    <script src="/js/achievements.js?v=4"></script>
     <dialog id="campusAccessDialog" aria-labelledby="campusAccessTitle"><div class="campus-access-dialog-heading"><h2 id="campusAccessTitle"></h2><form method="dialog"><button type="submit" aria-label="關閉">×</button></form></div><div id="campusAccessBody"></div></dialog>
 </body>
 

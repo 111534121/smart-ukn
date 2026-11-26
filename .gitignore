@@ -2,9 +2,8 @@ __pycache__/
 *.pyc
 db_backups/
 data/
-.pytest_cache/
-.pytest-tmp-admin-*/
-.pytest-tmp-*/
+.pytest*
+*.log
 static/forms/
 .env
 
@@ -20,3 +19,8 @@ static/uploads/report_*
 static/uploads/*
 !static/uploads/demo_*
 tools/weekly_log_draft.json
+
+# 本機 PDF / QR 驗收相依與瀏覽器暫存
+.preview-deps/
+evidence/browser-downloads/
+tmp/pdfs/

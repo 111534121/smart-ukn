@@ -1,0 +1,40 @@
+const {chromium}=require('C:/Users/Lulu/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {spawn}=require('node:child_process');const readline=require('node:readline');const assert=require('node:assert/strict');
+(async()=>{const worker=spawn('python',['tests/unified_browser_bridge.py'],{stdio:['pipe','pipe','inherit']});const pending=new Map();let id=0;
+readline.createInterface({input:worker.stdout}).on('line',l=>{try{const r=JSON.parse(l);const p=pending.get(r.id);if(p){pending.delete(r.id);r.error?p.reject(Error(r.error)):p.resolve(r)}}catch{}});
+const send=req=>new Promise((resolve,reject)=>{pending.set(++id,{resolve,reject});worker.stdin.write(JSON.stringify({id,...req})+'\n')});
+const api=async(path,method='GET',json,as='admin')=>{const r=await send({path,method,json,as});const b=JSON.parse(Buffer.from(r.body,'base64'));assert.equal(r.status,200,JSON.stringify(b));return b.data;};
+const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+ await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.hostname!=='127.0.0.1')return route.fulfill({contentType:u.hostname==='cdn.tailwindcss.com'?'application/javascript':'text/css',body:u.hostname==='cdn.tailwindcss.com'?'window.tailwind={};':''});const r=await send({path:u.pathname+u.search,method:req.method(),body:req.postDataBuffer()?.toString('base64'),contentType:req.headers()['content-type']});return route.fulfill({status:r.status,contentType:r.type,body:Buffer.from(r.body,'base64')});});
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8014/?preview=54#checklist');await page.addStyleTag({content:'.hidden{display:none!important}'});
+ await page.getByRole('button',{name:'跳過導覽',exact:true}).click();
+ await page.locator('#footerCol1').getByRole('button',{name:'線上申辦與進度',exact:true}).click();
+ await page.locator('[data-new-service="設備報修申請"]').tap();
+ await page.getByLabel('設備位置',{exact:true}).fill('【示範】資訊教室 A101');
+ await page.getByLabel('故障情形',{exact:true}).fill('示範投影設備無法開機');
+ await page.getByLabel('申請說明',{exact:true}).fill('【完整流程驗收】虛構設備，請勿派工。');
+ await page.getByRole('button',{name:'送出設備報修',exact:true}).tap();
+ const detail=page.locator('#studentCaseDetail');await detail.getByText('待受理',{exact:true}).first().waitFor();
+ let item=(await api('/api/campus/admin-cases','GET',undefined,'student1'))[0];const cid=item.id;
+ const act=async(action,extra={})=>{item=await api(`/api/campus/admin-cases/${cid}`,'POST',{action,revision:item.revision,...extra});};
+ await act('start');await act('supplement',{requirements:['請補充可維修時段'],due_date:'2026-11-05',note:'【示範】確認可維修時間'});
+ await page.getByRole('button',{name:'更新進度',exact:true}).tap();
+ await detail.getByText('待補件',{exact:true}).first().waitFor();
+ await detail.getByLabel('請補充可維修時段',{exact:true}).check();await detail.getByLabel('補件說明',{exact:true}).fill('【示範】週三下午可維修，不需真實派工。');
+ await page.locator('#studentCasesSection').screenshot({path:'evidence/unified-service-supplement.png'});
+ await detail.getByRole('button',{name:'補件完成，重新送審',exact:true}).tap();
+ await detail.getByText('重新送審',{exact:true}).first().waitFor();assert.equal(await page.locator('#studentSupplementForm').count(),0);
+ item=await api(`/api/campus/admin-cases/${cid}`,'GET',undefined,'student1');
+ for(let i=0;i<item.workflow.length;i++){await act('start');await act(i<item.workflow.length-1?'advance':'complete',{checked_steps:item.workflow[i].checks,note:'【示範】修繕與驗收完成'});}
+ await page.getByRole('button',{name:'更新進度',exact:true}).tap();await detail.getByText('已完成',{exact:true}).first().waitFor();
+ assert.match(await detail.textContent(),/已結案/);assert.equal(await page.locator('#studentSupplementForm').count(),0);
+ for(const kind of ['請假申請','成績單申請','場地借用']) {await page.locator(`[data-new-service="${kind}"]`).tap();assert.equal(await page.locator('#studentRequestForm').count(),1);await page.getByRole('button',{name:'取消填寫',exact:true}).tap();}
+ await page.locator('#studentCaseStatus').selectOption('待補件');assert.match(await page.locator('#studentCasesList').textContent(),/沒有符合條件/);
+ await page.locator('#studentCaseStatus').selectOption('已完成');assert.match(await page.locator('#studentCasesList').textContent(),/設備報修/);
+ await detail.getByText('查看處理紀錄與結果',{exact:true}).click();assert.match(await detail.textContent(),/補件重新送審/);
+ await page.locator('#studentCasesSection').screenshot({path:'evidence/unified-service-complete.png'});
+ assert.deepEqual(errors,[]);console.log('PASS: mobile create, supplement, resubmit, staff review, completion, filters and four service forms');
+ await context.close();
+}finally{await browser.close();worker.kill();}})().catch(e=>{console.error(e);process.exit(1)});

@@ -75,6 +75,25 @@ def test_visitor_register_defaults_to_prospective_student(client):
     assert user["visitor_type"] == "未來學生"
 
 
+def test_general_visitor_has_distinct_type_without_school_or_department(client):
+    res = client.post("/api/visitor/register", json={
+        "visitor_name": "校外訪客", "phone": "0912345678",
+        "purpose": "洽公與交流活動", "visitor_type": "一般訪客"
+    })
+    assert res.status_code == 201
+    user = client.get("/api/auth/me").get_json()["user"]
+    assert user["visitor_type"] == "一般訪客"
+    assert user["dept_name"] == ""
+
+
+def test_prospective_student_still_requires_school(client):
+    res = client.post("/api/visitor/register", json={
+        "visitor_name": "準新生", "phone": "0912345678",
+        "purpose": "升學諮詢", "visitor_type": "未來學生"
+    })
+    assert res.status_code == 400
+
+
 def test_anonymous_user_has_no_visitor_type(client):
     """沒登記過的使用者 (純瀏覽) 不應該被當成已登記的訪客顯示客製化首頁內容"""
     data = client.get("/api/auth/me").get_json()
@@ -115,10 +134,19 @@ def test_visitor_logs_require_staff(client, login):
     assert client.get("/api/admin/visitor-logs").status_code == 403
 
 
-def test_forms_block_path_traversal(client):
+def test_forms_block_path_traversal(client, monkeypatch, tmp_path):
+    import applications
+    forms = tmp_path / 'forms'
+    forms.mkdir()
+    monkeypatch.setattr(applications.deps, 'forms_folder', str(forms))
     assert client.get("/forms/..%2Fapp.py").status_code == 404
     assert client.get("/forms/notes.txt").status_code == 404
     # 舊的 .pdf 網址轉到新的表單頁
     old = client.get("/forms/leave_application_form.pdf")
     assert old.status_code == 302 and old.headers["Location"].endswith("/forms/leave_application_form")
     assert client.get("/forms/leave_application_form").status_code == 200
+    # 正式檔存在時應直接下載，測試不可受本機既有 static/forms 影響。
+    (forms / 'leave_application_form.pdf').write_bytes(b'%PDF-1.4 isolated fixture')
+    response = client.get('/forms/leave_application_form.pdf')
+    assert response.status_code == 200 and response.data == b'%PDF-1.4 isolated fixture'
+    response.close()

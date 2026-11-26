@@ -102,11 +102,14 @@ function updateScholarship(id) {
 // 宿舍床位申請與進度
 // =====================================================================
 
+let dormAdminApps = [];
+const dormServiceLinks = `<div class="flex flex-wrap gap-2 mt-4"><a href="/admin-workbench?kind=${encodeURIComponent('住宿設備報修')}" class="inline-block border border-ukn-300 text-ukn-800 rounded px-3 py-2 text-sm font-semibold">宿舍設備報修 →</a><a href="/admin-workbench?kind=${encodeURIComponent('住宿異動申請')}" class="inline-block border border-ukn-300 text-ukn-800 rounded px-3 py-2 text-sm font-semibold">入住／換房／退宿申請 →</a></div>`;
+
 async function loadDorm() {
     const body = document.getElementById('dormBody');
     if (!isLoggedIn()) { body.innerHTML = loginPrompt('登入學生帳號即可線上申請宿舍床位。'); return; }
     if (isStaff()) {
-        if (currentUser.role === '管理員' || (currentUser.role === '教職員' && currentUser.can_manage_dorm)) loadDormAdmin();
+        if (currentUser.role === '管理員' || isDormStaff()) loadDormAdmin();
         else body.innerHTML = '<div class="text-sm text-slate-500">宿舍管理僅限行政人員與管理員。</div>';
         return;
     }
@@ -127,7 +130,7 @@ async function loadDorm() {
                     <div class="sm:col-span-2 text-right"><button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-5 py-2">送出申請</button></div>
                 </form>
             </details>`;
-        body.innerHTML = (active ? dormProgressHtml(active) : (isParent ? '<div class="text-sm text-slate-500">子女目前沒有進行中的宿舍申請。</div>' : '')) + applyForm;
+        body.innerHTML = (active ? dormProgressHtml(active) : (isParent ? '<div class="text-sm text-slate-500">子女目前沒有進行中的宿舍申請。</div>' : '')) + applyForm + (isParent ? '' : dormServiceLinks);
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
@@ -160,26 +163,72 @@ async function loadDormAdmin() {
     const body = document.getElementById('dormBody');
     try {
         const r = await api('/api/campus/dorm/applications');
-        const canEdit = currentUser.role === '管理員' || (currentUser.role === '教職員' && currentUser.can_manage_dorm);
-        body.innerHTML = r.data.length ? `<div class="overflow-x-auto"><table class="w-full text-sm text-left">
+        dormAdminApps = r.data;
+        const canEdit = currentUser.role === '管理員' || isDormStaff();
+        const inventory = await api('/api/campus/dorm/beds');
+        const beds = inventory.data;
+        const inventoryHtml = `<div class="mb-4 rounded border border-slate-200 p-3 text-sm"><div class="flex justify-between items-center gap-2"><strong>床位清冊</strong><button type="button" onclick="editDormBeds()" class="text-ukn-800 underline">編輯清冊</button></div><p class="text-slate-500 mt-1">${beds.length ? `${beds.length} 筆床位，${beds.filter(b => !b.occupied).length} 筆尚未分配` : '尚未設定清冊；可先新增床位。'}</p></div>`;
+        body.innerHTML = inventoryHtml + (r.data.length ? `<div class="overflow-x-auto"><table class="w-full text-sm text-left">
             <thead><tr class="text-xs text-slate-500 bg-slate-50"><th class="p-2">學生</th><th class="p-2">學期 / 房型</th><th class="p-2">通勤</th><th class="p-2">目前進度</th><th class="p-2"></th></tr></thead>
             <tbody class="divide-y divide-slate-100">${r.data.map(a => `<tr>
                 <td class="p-2">${esc(a.student_name)}<div class="text-[11px] text-slate-500">${esc(a.student_id)}</div></td>
-                <td class="p-2">${esc(a.semester)} · ${esc(a.room_type)}</td><td class="p-2">${a.commute_minutes} 分</td>
+                <td class="p-2">${esc(a.semester)} · ${esc(a.room_type)}${a.bed ? `<div class="text-xs">床位：${esc(a.bed)}</div>` : ''}</td><td class="p-2">${a.commute_minutes} 分</td>
                 <td class="p-2">${statusBadge(a.status === '進行中' ? r.stages[a.stage] : a.status, a.status === '進行中' ? 'blue' : a.status === '已完成' ? 'green' : 'red')}</td>
-                <td class="p-2 text-right whitespace-nowrap">${canEdit && a.status === '進行中' ? `<button type="button" onclick="advanceDorm(${a.id})" class="text-xs bg-ukn-800 text-white rounded px-2 py-1">推進到下一步</button>
+                <td class="p-2 text-right whitespace-nowrap">${canEdit && ['進行中', '待候補'].includes(a.status) ? `<button type="button" onclick="advanceDorm(${a.id})" class="text-xs bg-ukn-800 text-white rounded px-2 py-1">審核下一步</button>
+                    ${a.stage === 2 && a.status === '進行中' ? `<button type="button" onclick="waitlistDorm(${a.id})" class="text-xs border rounded px-2 py-1">列入候補</button>` : ''}
                     <button type="button" onclick="advanceDorm(${a.id}, true)" class="text-xs border border-rose-300 text-rose-700 rounded px-2 py-1">不通過</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
-            : '<div class="text-sm text-slate-500">目前沒有宿舍申請。</div>';
+            : '<div class="text-sm text-slate-500">目前沒有宿舍申請。</div>');
     } catch (e) { body.innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; }
 }
 
-async function advanceDorm(id, reject = false) {
-    const note = prompt(reject ? '不通過原因：' : '備註（選填，分配床位時可填床號，例如：床號 S305-2）：') ?? null;
-    if (note === null) return;
-    if (reject && !note.trim()) { toast('不通過請填寫原因', 'error'); return; }
-    const bed = /床號\s*(\S+)/.exec(note)?.[1] || '';
-    try { await api(`/api/campus/dorm/applications/${id}`, { json: { action: reject ? 'reject' : 'advance', note, bed } }); loadDormAdmin(); }
-    catch (e) { toast(e.message, 'error'); }
+function advanceDorm(id, reject = false) {
+    const item = dormAdminApps.find(a => a.id === id);
+    if (!item || !['進行中', '待候補'].includes(item.status)) return;
+    const allocating = !reject && item.stage >= 2 && !item.bed;
+    openModal(reject ? '宿舍申請不通過' : '審核宿舍申請', `<form onsubmit="submitDormReview(event, ${id}, ${reject})" class="space-y-3">
+        <p>${esc(item.student_name)} · ${esc(item.semester)} · ${esc(item.room_type)}</p>
+        ${allocating ? `<label class="block font-semibold">分配床號 *<input name="bed" maxlength="20" required placeholder="例如 S305-2" class="block w-full border rounded px-3 py-2 mt-1"></label>` : ''}
+        <label class="block font-semibold">${reject ? '不通過原因 *' : '處理備註（選填）'}<textarea name="note" maxlength="200" ${reject ? 'required' : ''} rows="3" class="block w-full border rounded px-3 py-2 mt-1"></textarea></label>
+        <button type="submit" class="bg-ukn-800 text-white rounded px-4 py-2">${reject ? '確認不通過' : allocating ? '分配床號並推進' : '確認推進下一步'}</button>
+    </form>`);
+}
+
+async function waitlistDorm(id) {
+    try {
+        await api(`/api/campus/dorm/applications/${id}`, { json: { action: 'waitlist', note: '候補床位' } });
+        await loadDormAdmin();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function editDormBeds() {
+    const semester = prompt('請輸入學期，例如 115-2');
+    if (!semester) return;
+    try {
+        const existing = await api(`/api/campus/dorm/beds?semester=${encodeURIComponent(semester)}`);
+        const lines = prompt('每行一個床位，格式：床號,房型（四人房或六人房）', existing.data.map(b => `${b.bed},${b.room_type}`).join('\n'));
+        if (lines === null) return;
+        const beds = lines.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+            const [bed, room_type] = line.split(',').map(part => part.trim());
+            return { bed, room_type };
+        });
+        await api('/api/campus/dorm/beds', { method: 'PUT', json: { semester, beds } });
+        await loadDormAdmin();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function submitDormReview(event, id, reject) {
+    event.preventDefault();
+    const form = event.target, button = form.querySelector('button[type="submit"]');
+    const note = form.elements.note.value.trim();
+    const bed = form.elements.bed?.value.trim() || '';
+    if (reject && !note) { toast('不通過請填寫原因', 'error'); return; }
+    button.disabled = true;
+    try {
+        await api(`/api/campus/dorm/applications/${id}`, { json: { action: reject ? 'reject' : 'advance', note, bed } });
+        closeModal();
+        await loadDormAdmin();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { button.disabled = false; }
 }
 
 // =====================================================================
@@ -418,22 +467,24 @@ function renderMap(infoHtml) {
         <div class="lg:col-span-2">
             <svg viewBox="0 0 100 72" class="w-full h-auto rounded border border-slate-200 bg-emerald-50/40" role="img" aria-label="康寧大學校園示意地圖">
                 <rect x="0" y="64" width="100" height="8" fill="#e2e8f0"/><text x="3" y="69.5" font-size="2.4" fill="#64748b">康寧路三段75巷</text>
-                <path d="M50 64 L50 60" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="1 1"/>
+                <text x="43" y="24.5" font-size="2" fill="#64748b" font-weight="700">康寧大道</text>
+                <path d="M2 42 L2 64" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="1 1"/>
                 ${b.map(x => {
                     const on = mapHighlight === x.code;
+                    const sub = x.floors >= 2 ? `${x.code} 棟 · ${x.floors}F` : '戶外空間';
                     return `<g role="button" tabindex="0" onclick="selectBuilding('${x.code}')" onkeydown="if(event.key==='Enter')selectBuilding('${x.code}')" style="cursor:pointer">
                         <rect x="${x.x}" y="${x.y}" width="${x.w}" height="${x.h}" rx="1.2" fill="${on ? '#ff5511' : '#003c9d'}" fill-opacity="${on ? 0.9 : 0.14}" stroke="${on ? '#c2410c' : '#003c9d'}" stroke-width="${on ? 0.6 : 0.3}"/>
-                        <text x="${x.x + x.w / 2}" y="${x.y + x.h / 2 - 0.5}" text-anchor="middle" font-size="2.8" font-weight="700" fill="${on ? '#fff' : '#00295f'}">${esc(x.name)}</text>
-                        <text x="${x.x + x.w / 2}" y="${x.y + x.h / 2 + 3}" text-anchor="middle" font-size="2.2" fill="${on ? '#fff' : '#475569'}">${x.code} 棟 · ${x.floors}F</text>
+                        <text x="${x.x + x.w / 2}" y="${x.y + x.h / 2 - 0.5}" text-anchor="middle" font-size="2.3" font-weight="700" fill="${on ? '#fff' : '#00295f'}">${esc(x.name)}</text>
+                        <text x="${x.x + x.w / 2}" y="${x.y + x.h / 2 + 2.6}" text-anchor="middle" font-size="1.9" fill="${on ? '#fff' : '#475569'}">${sub}</text>
                         ${on ? `<text x="${x.x + x.w / 2}" y="${x.y - 1}" text-anchor="middle" font-size="4">📍</text>` : ''}
                     </g>`;
                 }).join('')}
-                <circle cx="${mapData.gate.x}" cy="${mapData.gate.y - 5}" r="1.5" fill="#ff5511"/><text x="${mapData.gate.x + 2.5}" y="${mapData.gate.y - 4.3}" font-size="2.3" fill="#9a3412">校門口</text>
+                <circle cx="${mapData.gate.x}" cy="${mapData.gate.y}" r="1.5" fill="#ff5511"/><text x="${mapData.gate.x + 2.5}" y="${mapData.gate.y + 0.8}" font-size="2.3" fill="#9a3412">${esc(mapData.gate.name.split('(')[0].trim())}</text>
             </svg>
             <p class="text-[11px] text-slate-400 mt-1">校園配置示意圖（非實際比例），點建築物可查看裡面有什麼。</p>
         </div>
         <div id="mapInfo" class="space-y-3">${infoHtml || `<div class="text-sm text-slate-500">點地圖上的建築物，或在上方搜尋教室代碼、處室、老師。</div>
-            <div class="text-xs text-slate-600 space-y-1"><div class="font-bold">教室代碼怎麼看？</div><div>第一個字母是大樓，第一個數字是樓層：A402 = 康寧樓 (A) 4 樓。</div></div>`}</div>`;
+            <div class="text-xs text-slate-600 space-y-1"><div class="font-bold">教室代碼怎麼看？</div><div>第一個字母是大樓，第一個數字是樓層：A402 = 第一教學大樓 (A) 4 樓。</div></div>`}</div>`;
 }
 
 function selectBuilding(code) {
@@ -464,7 +515,7 @@ async function findOnMap(text) {
     } catch (e) { toast(e.message, 'error'); }
 }
 
-// 其他頁面「在地圖上看」：傳入辦公室位置文字，例如「康寧樓 2 樓 A201 (課務組)」
+// 其他頁面「在地圖上看」：傳入辦公室位置文字，例如「行政大樓 2 樓 A201 (課務組)」
 async function showOnMap(locationText) {
     closeModal();
     switchTab('tab-map');
@@ -746,7 +797,12 @@ let broadcastTargets = null;
 async function loadNoticesTeacher() {
     const body = document.getElementById('noticesBody');
     try {
-        const [cls, sent, targets, advisorMsgs] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets'), api('/api/campus/advisor-messages')]);
+        const assistant = currentUser.role === '科助';
+        document.getElementById('noticesSubtitle').textContent = assistant
+            ? '通知本科班級或個別學生，並追蹤已讀與回條。'
+            : '班導可以通知導師班或個別學生，也能對自己任教的課程廣播。';
+        const [cls, sent, targets, advisorMsgs] = await Promise.all([api('/api/campus/classes'), api('/api/campus/notices/sent'), api('/api/campus/broadcast/targets'),
+            assistant ? Promise.resolve({data: []}) : api('/api/campus/advisor-messages')]);
         noticeClasses = cls.data;
         broadcastTargets = targets.data;
         noticeSelectedClass = noticeSelectedClass || (noticeClasses.find(c => c.is_advised) || noticeClasses[0])?.class_name;
@@ -756,21 +812,21 @@ async function loadNoticesTeacher() {
                     <h3 class="font-bold text-slate-900 text-sm">選擇班級</h3>
                     ${noticeClasses.map(c => `<button type="button" onclick="noticeSelectedClass='${esc(c.class_name)}'; loadNoticesTeacher()" class="w-full text-left rounded border px-3 py-2 text-sm ${c.class_name === noticeSelectedClass ? 'border-ukn-700 bg-ukn-50 font-bold text-ukn-900' : 'border-slate-200 hover:border-ukn-300'}">
                         ${esc(c.class_name)}${c.is_advised ? ' <span class="text-[10px] text-accent-500">導師班</span>' : ''}<span class="block text-[11px] font-normal text-slate-500">${c.members.length} 位學生</span></button>`).join('')}
-                    <details class="rounded border border-dashed border-slate-300 p-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-600">＋ 建立班級 / 重設密碼</summary>
+                    ${assistant ? '' : `<details class="rounded border border-dashed border-slate-300 p-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-600">＋ 建立班級 / 重設密碼</summary>
                         <form onsubmit="createClass(event)" class="space-y-2 mt-2">
                             <input name="class_name" placeholder="班級名稱" class="w-full border border-slate-300 rounded px-2 py-1.5">
                             <input name="password" placeholder="加入密碼 (至少 4 碼)" class="w-full border border-slate-300 rounded px-2 py-1.5">
                             <div class="flex gap-2"><button class="flex-1 bg-ukn-800 text-white rounded py-1.5 text-xs font-bold">建立新班級</button>
                                 <button type="button" onclick="resetClassPassword(this.form)" class="flex-1 border border-slate-300 rounded py-1.5 text-xs">重設所選班級密碼</button></div>
-                        </form></details>
+                        </form></details>`}
                 </div>
                 <div class="lg:col-span-3 space-y-4">
                     <div class="inline-flex rounded border border-slate-300 overflow-hidden text-sm" role="tablist">
                         <button type="button" onclick="noticeMode='class'; loadNoticesTeacher()" class="px-4 py-1.5 ${noticeMode === 'class' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">發給班級</button>
-                        <button type="button" onclick="noticeMode='broadcast'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'broadcast' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">${broadcastTargets.school !== null ? '課程／全校廣播' : '課程廣播'}</button>
+                        ${assistant ? '' : `<button type="button" onclick="noticeMode='broadcast'; loadNoticesTeacher()" class="px-4 py-1.5 border-l border-slate-300 ${noticeMode === 'broadcast' ? 'bg-ukn-800 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-50'}">${broadcastTargets.school !== null ? '課程／全校廣播' : '課程廣播'}</button>`}
                     </div>
-                    ${noticeMode === 'broadcast' ? broadcastComposeHtml() : noticeComposeHtml()}
-                    <div><h3 class="font-bold text-slate-900 mb-2">家長留言 ${advisorMsgs.data.filter(m => m.status === '待回覆').length ? `<span class="text-xs text-accent-500">(${advisorMsgs.data.filter(m => m.status === '待回覆').length} 則待回覆)</span>` : ''}</h3>
+                    ${noticeMode === 'broadcast' && !assistant ? broadcastComposeHtml() : noticeComposeHtml()}
+                    ${assistant ? '' : `<div><h3 class="font-bold text-slate-900 mb-2">家長留言 ${advisorMsgs.data.filter(m => m.status === '待回覆').length ? `<span class="text-xs text-accent-500">(${advisorMsgs.data.filter(m => m.status === '待回覆').length} 則待回覆)</span>` : ''}</h3>
                         ${advisorMsgs.data.length ? `<div class="space-y-2">${advisorMsgs.data.map(m => `
                             <div class="rounded border ${m.status === '待回覆' ? 'border-accent-500/50 bg-accent-50/30' : 'border-slate-200'} px-4 py-3 space-y-1.5">
                                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -782,7 +838,7 @@ async function loadNoticesTeacher() {
                                 ${m.reply ? `<div class="text-sm bg-white border border-slate-200 rounded px-3 py-2"><span class="text-xs font-bold text-ukn-700">導師回覆：</span>${esc(m.reply)}</div>`
                                     : `<form onsubmit="replyAdvisorMessage(event, ${m.id})" class="flex gap-2"><input name="reply" required placeholder="回覆家長..." class="flex-1 border border-slate-300 rounded px-3 py-1.5 text-sm"><button class="bg-ukn-800 hover:bg-ukn-900 text-white text-xs font-bold rounded px-3">回覆</button></form>`}
                             </div>`).join('')}</div>` : '<div class="text-sm text-slate-500">目前沒有家長留言。</div>'}
-                    </div>
+                    </div>`}
                     <div><h3 class="font-bold text-slate-900 mb-2">已發送</h3>
                         ${sent.data.length ? `<div class="space-y-2">${sent.data.map(n => `
                             <details class="rounded border border-slate-200 px-4 py-3"><summary class="cursor-pointer list-none">
@@ -800,7 +856,7 @@ async function loadNoticesTeacher() {
 
 function noticeComposeHtml() {
     const c = noticeClasses.find(x => x.class_name === noticeSelectedClass);
-    if (!c) return '<div class="text-sm text-slate-500">請先建立班級。</div>';
+    if (!c) return `<div class="text-sm text-slate-500">${currentUser.role === '科助' ? '目前沒有可通知的本科班級。' : '請先建立班級。'}</div>`;
     return `
         <form onsubmit="sendNotice(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-3 text-sm">
             <div class="flex flex-wrap items-center gap-4">

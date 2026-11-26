@@ -2,6 +2,7 @@
 (() => {
     const $ = id => document.getElementById(id);
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const displayTitle = value => String(value ?? '').replaceAll('示範', '測試');
     let user, config, rows = [], selected = null;
     const active = c => ['待受理','處理中','待補件','重新送審'].includes(c.status);
     const option = (v, label = v, chosen = '') => `<option value="${esc(v)}" ${v === chosen ? 'selected' : ''}>${esc(label)}</option>`;
@@ -31,7 +32,7 @@
             && (!$('officeFilter').value || c.office === $('officeFilter').value)
             && (!$('mine').checked || c.assignee === user.username)
             && (!$('overdue').checked || c.overdue));
-        $('caseList').innerHTML = list.length ? list.map(c => `<button class="case-row" type="button" data-case="${c.id}"><div><strong>#${c.id} · ${esc(c.title)}</strong><small>${esc(c.student_name)} · ${esc(c.student_id || c.applicant_username)} · ${esc(c.office)}<br>${c.workflow.length ? '目前步驟：'+esc(c.workflow[c.workflow_index].name)+' · ' : ''}承辦：${esc(c.assignee || '待分派')} · ${c.status === '待補件' ? '補件' : '辦理'}期限 ${esc(c.due_date)}</small></div><span class="badge ${c.overdue || c.status === '待補件' ? 'warn' : ''}">${esc(c.status)}${c.overdue ? ' · 逾期' : ''}</span></button>`).join('') : '<p class="muted">目前沒有符合條件的案件。</p>';
+        $('caseList').innerHTML = list.length ? list.map(c => `<button class="case-row" type="button" data-case="${c.id}"><div><strong>#${c.id} · ${esc(displayTitle(c.title))}</strong><small>${esc(c.student_name)} · ${esc(c.student_id || c.applicant_username)} · ${esc(c.office)}<br>${c.workflow.length ? '目前步驟：'+esc(c.workflow[c.workflow_index].name)+' · ' : ''}承辦：${esc(c.assignee || '待分派')} · ${c.status === '待補件' ? '補件' : '辦理'}期限 ${esc(c.due_date)}</small></div><span class="badge ${c.overdue || c.status === '待補件' ? 'warn' : ''}">${esc(c.status)}${c.overdue ? ' · 逾期' : ''}</span></button>`).join('') : '<p class="muted">目前沒有符合條件的案件。</p>';
         renderOfficeInfo();
     }
     async function refresh() {
@@ -60,13 +61,13 @@
         } else if (staff && active(c)) {
             controls = `<h3>辦理案件</h3><div class="actions">${['待受理','重新送審'].includes(c.status) ? '<button type="button" id="start" class="primary">受理並由我承辦</button>' : ''}</div>
             ${step && c.status === '處理中' ? `<div id="stepChecks" class="step-checks"><h3>本步驟檢核：${esc(step.name)}</h3>${step.checks.map(v => `<label class="check"><input type="checkbox" data-stage-check value="${esc(v)}">${esc(v)}</label>`).join('')}</div>` : ''}
-            <form id="actionForm"><label>辦理動作<select name="action" id="action">${c.status !== '待補件' ? '<option value="supplement">要求補件</option>' : ''}<option value="assign">分派／轉交</option>${c.status === '處理中' ? (lastStep ? '<option value="complete">完成結案</option>' : '<option value="advance">完成本步驟，送下一關</option>') + '<option value="reject">退件結案</option>' : ''}</select></label>
+            <form id="actionForm"><label>辦理動作<select name="action" id="action">${c.status !== '待補件' ? '<option value="supplement">要求補件</option>' : ''}<option value="assign">分派／轉交</option>${c.status === '處理中' ? (lastStep ? `<option value="complete">${c.signoff_required ? '核准並結案，產生示範證明' : '完成結案'}</option>` : '<option value="advance">完成本步驟，送下一關</option>') + '<option value="reject">退件結案</option>' : ''}</select></label>
             <div id="supplementFields"><label>應補資料（每行一項，最多 15 項）<textarea id="requirements" rows="3" maxlength="2264"></textarea></label><label>補件期限<input type="date" id="due" value="${esc(c.due_date)}"></label></div>
             <div id="assignFields" hidden class="formgrid"><label>承辦處室<select id="targetOffice">${offices(c.office)}</select></label><label>承辦人<select id="assignee"></select></label></div>
-            <label>辦理原因／轉交說明／結案結果<textarea name="note" rows="3" maxlength="2000" required></textarea></label><button class="primary" type="submit">確認執行</button></form>`;
+            ${c.signoff_required ? `<div id="signoffFields" hidden><p>本次核對：${esc(step?.name || c.status)} · 案件版本 ${c.revision}</p><label class="check"><input id="signoffConfirm" type="checkbox">我已核對本版本申請內容、補件與附件，同意以本人帳號留下線上簽核紀錄。</label><p class="muted">此為專題簽核示範，非憑證數位簽章。</p></div>` : ''}<label>辦理原因／轉交說明／結案結果<textarea name="note" rows="3" maxlength="2000" required></textarea></label><button class="primary" type="submit">確認執行</button></form>`;
         }
         $('detail').hidden = false;
-        $('detail').innerHTML = `<div class="sectionhead"><h2>#${c.id} · ${esc(c.title)}</h2><span class="badge">${esc(c.status)}</span></div><p class="muted">${esc(c.student_name)} · ${esc(c.student_id || c.applicant_username)}｜${esc(c.office)}｜承辦 ${esc(c.assignee || '待分派')}｜期限 ${esc(c.due_date)}</p>${step ? `<h3>${esc(c.kind)}${c.is_demo_workflow ? ' · 示範流程' : ''}</h3><ol class="workflow-track">${c.workflow.map((s,i) => `<li class="${i === c.workflow_index ? 'current' : ''}"><b>${i+1}. ${esc(s.name)}</b><small>${esc(s.office)}${i < c.workflow_index || c.status === '已完成' ? ' · 已完成' : i === c.workflow_index ? ' · 目前步驟' : ' · 待辦理'}</small></li>`).join('')}</ol>` : ''}<div class="prose">${esc(c.detail)}</div>${Object.keys(c.answers || {}).length ? '<h3>此申辦類型的必要欄位</h3><dl class="answer-list">'+Object.entries(c.answers).map(([k,v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')+'</dl>' : ''}${attachments ? `<h3>申請與補件附件</h3><ul>${attachments}</ul>` : ''}${c.requirements.length ? `<h3>最近一次應補資料</h3><ul>${c.requirements.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}${controls}<h3>完整處理紀錄</h3><ol class="timeline">${[...c.history].reverse().map(h => `<li><strong>${esc(h.action)}</strong> · ${esc(h.actor)}<p class="prose">${esc(h.note || (h.action === '送出申請' ? '已送出申請' : '已更新案件狀態'))}</p><small>${esc(h.at)} · ${esc(h.office)} · ${esc(h.status)}${h.assignee ? ' · 承辦 '+esc(h.assignee) : ''}</small></li>`).join('')}</ol>`;
+        $('detail').innerHTML = `<div class="sectionhead"><h2>#${c.id} · ${esc(displayTitle(c.title))}</h2><span class="badge">${esc(c.status)}</span></div><p class="muted">${esc(c.student_name)} · ${esc(c.student_id || c.applicant_username)}｜${esc(c.office)}｜承辦 ${esc(c.assignee || '待分派')}｜期限 ${esc(c.due_date)}</p>${c.progress ? `<section class="case-next-step" aria-label="申辦下一步"><h3>目前進度與下一步</h3><dl><div><dt>目前處理單位</dt><dd>${esc(c.progress.current_office)}</dd></div><div><dt>目前步驟</dt><dd>${esc(c.progress.current_step)}</dd></div><div><dt>目前輪到</dt><dd>${esc(c.progress.responsible)}</dd></div><div><dt>${esc(c.progress.deadline_kind)}</dt><dd>${esc(c.progress.due_date || '未設定')}</dd></div></dl><p><strong>下一步：</strong>${esc(c.progress.next_action)}</p>${c.progress.requires_supplement ? `<h4>待補資料</h4><ul>${c.progress.supplement_items.map(v => `<li>${esc(v)}</li>`).join('')}</ul>` : ''}${c.is_demo_workflow ? '<p class="muted">此為測試流程，實際規定請以承辦單位公告為準。</p>' : ''}</section>` : ''}${step ? `<h3>${esc(c.kind)}${c.is_demo_workflow ? ' · 測試流程' : ''}</h3><ol class="workflow-track">${c.workflow.map((s,i) => `<li class="${i === c.workflow_index ? 'current' : ''}"><b>${i+1}. ${esc(s.name)}</b><small>${esc(s.office)}${i < c.workflow_index || c.status === '已完成' ? ' · 已完成' : i === c.workflow_index ? ' · 目前步驟' : ' · 待辦理'}</small></li>`).join('')}</ol>` : ''}<div class="prose">${esc(c.detail)}</div>${Object.keys(c.answers || {}).length ? '<h3>此申辦類型的必要欄位</h3><dl class="answer-list">'+Object.entries(c.answers).map(([k,v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')+'</dl>' : ''}${attachments ? `<h3>申請與補件附件</h3><ul>${attachments}</ul>` : ''}${c.requirements.length ? `<h3>最近一次應補資料</h3><ul>${c.requirements.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}${window.caseSignoffHtml ? window.caseSignoffHtml(c) : ''}${controls}<h3>完整處理紀錄</h3><ol class="timeline">${[...c.history].reverse().map(h => `<li><strong>${esc(h.action)}</strong> · ${esc(h.actor)}<p class="prose">${esc(h.note || (h.action === '送出申請' ? '已送出申請' : '已更新案件狀態'))}</p><small>${esc(h.at)} · ${esc(h.office)} · ${esc(h.status)}${h.assignee ? ' · 承辦 '+esc(h.assignee) : ''}</small></li>`).join('')}</ol>`;
         $('start')?.addEventListener('click', e => busy(e.target, () => mutate({action:'start'})));
         $('action')?.addEventListener('change', updateAction);
         $('targetOffice')?.addEventListener('change', renderAssignees);
@@ -83,6 +84,12 @@
         if (focus) { $('detail').scrollIntoView({behavior:'smooth',block:'start'}); $('detail').focus({preventScroll:true}); }
     }
     function updateAction() {
+        const needsSignoff = selected.signoff_required && ['advance','complete'].includes($('action').value);
+        if ($('signoffFields')) {
+            $('signoffFields').hidden = !needsSignoff;
+            $('signoffConfirm').required = needsSignoff;
+            $('signoffConfirm').checked = false;
+        }
         $('supplementFields').hidden = $('action').value !== 'supplement';
         $('assignFields').hidden = $('action').value !== 'assign';
         $('requirements').required = $('due').required = $('action').value === 'supplement';
@@ -96,6 +103,7 @@
         const form = e.target, action = form.elements.action.value;
         const data = {action, note:form.elements.note.value};
         if (['advance', 'complete'].includes(action)) data.checked_steps = [...document.querySelectorAll('[data-stage-check]:checked')].map(el => el.value);
+        if (['advance','complete'].includes(action) && selected.signoff_required) Object.assign(data, {signoff_confirmed:$('signoffConfirm').checked,review_digest:selected.review_digest});
         if (action === 'supplement') Object.assign(data, {requirements:$('requirements').value.split('\n').map(s => s.trim()).filter(Boolean), due_date:$('due').value});
         if (action === 'assign') Object.assign(data, {office:$('targetOffice').value, assignee:$('assignee').value});
         busy(form.querySelector('button'), () => mutate(data));
@@ -114,15 +122,28 @@
         user = me.user;
         config = await api('/api/campus/admin-cases/config');
         const student = user.role === '學生';
-        const dormStaff = user.role === '教職員' && user.can_manage_dorm && config.office === '學生事務處／住宿管理';
+        const dormStaff = ['教職員', '住宿管理員'].includes(user.role) &&
+            user.can_manage_dorm && config.office === '學生事務處／住宿管理';
         $('identity').textContent = `${user.full_name} · ${user.role}`;
         $('heading').textContent = student ? '我的行政申請' : user.role === '管理員' ? '全校處室工作台' : config.office ? config.office + '工作台' : '行政人員工作台';
         $('intro').textContent = student ? '送出申請、追蹤進度，補齊資料後直接重新送審。' : '先處理待辦，再把每一件申請穩穩往前推進。';
         $('scope').textContent = student ? '僅顯示自己的申請與處理紀錄。' : user.role === '管理員' ? '管理員可查看全處室案件。' : config.office ? `可查看 ${config.office} 案件與自己提出的申請。` : '尚未指定處室，請聯絡管理員設定後再重新整理。';
-        $('newRequest').hidden = dormStaff; $('shortcuts').hidden = student || dormStaff; $('legacy').hidden = student || dormStaff;
+        const reviews = user.review_tasks || [];
+        $('reviewLeaveLink').hidden = !reviews.includes('leave');
+        $('reviewCertLink').hidden = !reviews.includes('certificates');
+        $('reviewRoomLink').hidden = !reviews.includes('room_bookings');
+        $('newRequest').hidden = dormStaff;
+        $('shortcuts').hidden = student || dormStaff || reviews.length === 0;
+        $('legacy').hidden = student || dormStaff || !reviews.includes('room_bookings');
         $('mine').parentElement.hidden = student;
         $('kind').innerHTML = option('', '請選擇申請類別') + Object.entries(config.workflows).filter(([,v]) => v.roles.includes(user.role)).map(([k,v]) => option(k, `${v.office} · ${k}`)).join('');
         $('requestFields').innerHTML = ''; $('requestGuide').innerHTML = '';
+        const requestedKind = new URLSearchParams(location.search).get('kind');
+        if (requestedKind && config.workflows[requestedKind]?.roles.includes(user.role)) {
+            $('kind').value = requestedKind;
+            renderRequestFields();
+            $('newRequest').open = true;
+        }
         $('officeFilter').innerHTML = option('', '全部處室') + offices();
         if (!student && user.role !== '管理員' && config.office) $('officeFilter').value = config.office;
         $('officeSettings').hidden = user.role !== '管理員';
@@ -187,7 +208,28 @@
         $('status').value = ''; $('search').value = ''; $('mine').checked = false; $('overdue').checked = false;
         renderOfficeCards(); renderList();
     });
-    $('kind').addEventListener('change', renderRequestFields);
+    let routeTimer, routeVersion = 0, manuallySelectedKind = false;
+    $('kind').addEventListener('change', () => { manuallySelectedKind = Boolean($('kind').value); renderRequestFields(); });
+    async function previewRoute() {
+        const version = ++routeVersion;
+        const form = $('createForm');
+        const title = form.elements.title.value.trim(), detail = form.elements.detail.value.trim();
+        if (!title && !detail) { $('routePreview').textContent = '輸入標題與說明後，系統會建議既有申辦類別；送件前請確認。'; return; }
+        try {
+            const response = await api('/api/campus/admin-cases/route-preview', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title,detail})});
+            if (version !== routeVersion) return;
+            const route = response.data;
+            $('routePreview').textContent = route.kind ? `建議：${route.office} · ${route.kind}。${route.reason}` : route.reason;
+            if (route.confidence === 'high' && route.kind && !manuallySelectedKind && !$('kind').value) {
+                $('kind').value = route.kind;
+                renderRequestFields();
+            }
+        } catch (error) { if (version === routeVersion) $('routePreview').textContent = '暫時無法取得類別建議，請自行選擇申辦類別。'; }
+    }
+    ['title','detail'].forEach(name => $('createForm').elements[name].addEventListener('input', () => {
+        clearTimeout(routeTimer);
+        routeTimer = setTimeout(previewRoute, 300);
+    }));
     $('demoAccount').addEventListener('change', updateDemoLogin);
     $('editOffice').addEventListener('change', renderWorkflowChoices);
     $('editWorkflow').addEventListener('change', loadWorkflowEditor);
@@ -235,7 +277,9 @@
             document.querySelectorAll('[data-answer]').forEach(el => { answers[el.dataset.answer] = el.value; });
             body.set('answers',JSON.stringify(answers));
             const result = await api('/api/campus/admin-cases', {method:'POST', body});
-            form.reset(); renderRequestFields(); message(result.message); await refresh(); await openCase(result.data.id);
+            form.reset(); manuallySelectedKind = false; ++routeVersion; renderRequestFields();
+            $('routePreview').textContent = '輸入標題與說明後，系統會建議既有申辦類別；送件前請確認。';
+            message(result.message); await refresh(); await openCase(result.data.id);
         });
     });
     $('settingsForm').addEventListener('submit', e => {

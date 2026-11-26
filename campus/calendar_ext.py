@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, request
 
 from preferences import scope_filter
+from .announcement_status import deadline_info
 
 from .common import DATA_DIR, deps, error, ok, require, store, next_id, now_str, user_key, current_user, all_students, STAFF_ROLES
 
@@ -471,6 +472,7 @@ def list_announcements():
             if hasattr(a.get(k), "isoformat"):
                 a[k] = a[k].isoformat()
         a["publish_date"] = str(a.get("publish_date", ""))[:10]
+        a.update(deadline_info(a))
         a["suggested_date"] = guess_announcement_date(a.get("title"), a["publish_date"])
         a["in_my_calendar"] = f"announcement-{a['id']}" in added
         items.append(a)

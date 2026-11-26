@@ -190,7 +190,7 @@ class MySQLDashboardSource(DashboardSource):
 
     def list_schedule(self, class_name, student_id):
         return self._query("""
-            SELECT id, class_name, student_id, weekday, period_start, period_end, course_name, classroom, teacher
+            SELECT id, class_name, student_id, weekday, period_start, period_end, course_name, classroom, teacher, activity_type, allow_retake_overlap
             FROM class_schedule
             WHERE class_name = %s OR student_id = %s
             ORDER BY weekday, period_start

@@ -1,26 +1,37 @@
 // Smart UKN Service Worker：讓網站可加到手機桌面，並在斷線時仍能開啟首頁外殼
 // 更新頁面或靜態檔後請遞增版本號，舊快取會在 activate 時清除
-const CACHE_VERSION = 'smart-ukn-v48';
+const CACHE_VERSION = 'smart-ukn-v82-review-center';
 const APP_SHELL = [
     '/',
     '/login',
     '/manifest.json',
+    '/css/student-lobby.css?v=57',
+    '/js/student-lobby.js?v=57',
+    '/js/case-signoff.js?v=57',
+    '/css/case-signoff.css?v=57',
+    '/css/student-services.css?v=57',
     '/js/campus-access.js?v=46',
     '/css/campus-access.css?v=46',
     '/img/ukn-logo.png',
     '/img/icon-192.png',
     '/img/icon-512.png',
     '/img/hero/campus-gate-2017.jpg',
-    '/js/campus-shell.js',
-    '/js/home-portal.js?v=46',
-    '/css/home-portal.css?v=44',
-    '/js/campus-features.js',
-    '/js/campus-life.js',
+    '/js/campus-shell.js?v=20261110-teacher-smart-2',
+    '/js/home-portal.js?v=57',
+    '/css/home-portal.css?v=20261105-compact-assistant',
+    '/js/campus-features.js?v=20261110-cert-review-2',
+    '/js/teacher-smart.js?v=20261110-2',
+    '/js/assistant-home.js?v=20261105-compact-assistant',
+    '/js/achievement-preview.js?v=3',
+    '/js/achievements.js?v=4',
+    '/js/assistant-internships.js?v=20261105-internships',
+    '/js/campus-life.js?v=20261104-assistant-notices',
     '/js/anniversary.js',
     '/js/dept-scope.js',
     '/js/faculty.js',
     '/js/self-review.js',
-    '/js/applications.js',
+    '/js/applications.js?v=57',
+    '/js/student-cases.js?v=57',
     '/js/conduct.js',
     '/js/assistant.js',
     '/js/tour.js'
@@ -60,7 +71,7 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(req.url);
 
     // API 含個人資料 (缺曠、成績等)，一律不快取，避免共用裝置上被他人看到
-    if (url.origin === self.location.origin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/'))) return;
+    if (url.origin === self.location.origin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || ['/management', '/admin-knowledge-documents'].includes(url.pathname))) return;
 
     // 頁面：網路優先，離線時退回快取的首頁
     if (req.mode === 'navigate') {

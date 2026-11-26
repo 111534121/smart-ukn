@@ -79,3 +79,34 @@ def test_dorm_requires_bed_before_allocation(client, login):
         assert client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance'}).status_code == 200
     assert client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance'}).status_code == 400
     assert client.post(f'/api/campus/dorm/applications/{aid}', json={'action': 'advance', 'bed': 'DEMO-01'}).status_code == 200
+
+
+def test_dorm_bed_cannot_be_allocated_twice_in_same_semester(client, login):
+    login('student1'); first = apply(client, '床位防重測試').get_json()['data']['id']
+    login('student2'); second = apply(client, '床位防重測試').get_json()['data']['id']
+    login('dorm_demo')
+    for app_id in (first, second):
+        for _ in range(2):
+            assert client.post(f'/api/campus/dorm/applications/{app_id}', json={'action': 'advance'}).status_code == 200
+    assert client.post(f'/api/campus/dorm/applications/{first}', json={'action': 'advance', 'bed': 'S305-2'}).status_code == 200
+    denied = client.post(f'/api/campus/dorm/applications/{second}', json={'action': 'advance', 'bed': 's305-2'})
+    assert denied.status_code == 409
+    assert client.post(f'/api/campus/dorm/applications/{second}', json={'action': 'advance', 'bed': 'S305-3'}).status_code == 200
+
+
+def test_dorm_inventory_and_waitlist(client, login):
+    semester = '清冊與候補測試'
+    login('student1')
+    app_id = apply(client, semester).get_json()['data']['id']
+    assert client.get('/api/campus/dorm/beds').status_code == 403
+    login('dorm_demo')
+    path = '/api/campus/dorm/beds'
+    assert client.put(path, json={'semester': semester, 'beds': [{'bed': 'T101-1', 'room_type': '四人房'}]}).status_code == 200
+    for _ in range(2):
+        assert client.post(f'/api/campus/dorm/applications/{app_id}', json={'action': 'advance'}).status_code == 200
+    assert client.post(f'/api/campus/dorm/applications/{app_id}', json={'action': 'waitlist'}).get_json()['data']['status'] == '待候補'
+    assert client.post(f'/api/campus/dorm/applications/{app_id}', json={'action': 'advance', 'bed': 'T102-1'}).status_code == 409
+    assert client.post(f'/api/campus/dorm/applications/{app_id}', json={'action': 'advance', 'bed': 'T101-1'}).get_json()['data']['status'] == '進行中'
+    beds = client.get(path + '?semester=' + semester).get_json()['data']
+    assert beds[0]['occupied'] is True
+    assert client.put(path, json={'semester': semester, 'beds': []}).status_code == 409

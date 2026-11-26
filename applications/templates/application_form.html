@@ -44,7 +44,7 @@
     <a href="/forms/{{ code }}" class="{{ '' if example else 'on' }}">空白表單</a>
     <a href="/forms/{{ code }}?example=1" class="{{ 'on' if example else '' }}">👀 填寫範例</a>
     <button type="button" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
-    <a href="/forms/{{ code }}?download=doc{{ '&example=1' if example else '' }}">⬇️ 下載 Word 檔</a>
+    <a href="/forms/{{ code }}?download=doc{{ '&example=1' if example else '' }}">⬇️ 下載{{ '填寫範例' if example else '空白表單' }} Word 檔</a>
     {% if item %}<a href="/#checklist" title="不用印出來，直接在系統送出並追蹤進度">📤 改用線上申請</a>{% endif %}
 </div>
 {% endif %}
