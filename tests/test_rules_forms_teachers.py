@@ -1,7 +1,5 @@
-"""AI 智慧校規「我不確定，幫我問」的官網規章題庫、表單下載查詢與常用表單、老師辦公室名錄與審核"""
+"""官網規章題庫、表單下載查詢與常用表單、老師辦公室名錄與審核"""
 import io
-
-import pytest
 
 from campus.official_rules import OFFICIAL_RULES, OFFICIAL_SYNONYMS
 
@@ -18,31 +16,6 @@ def test_rules_have_official_sources_and_unique_terms():
     words = [w for _, w, _ in OFFICIAL_SYNONYMS]
     assert len(words) == len(set(words))
     assert {t for _, _, t in OFFICIAL_SYNONYMS} <= set(terms)
-
-
-@pytest.mark.parametrize("question, rule", [
-    ("多益要幾分", "英文能力畢業門檻"),
-    ("生病不能上課怎麼辦", "學生請假辦法"),
-    ("缺課太多會怎樣", "缺曠課扣考規定"),
-    ("期中考沒去考", "期中期末補考規定"),
-    ("被當了怎麼辦", "學期成績不及格處理"),
-    ("暑修要怎麼報", "重補修與寒暑修規定"),
-    ("一學期最多修幾學分", "每學期修課學分數"),
-    ("被記小過可以消掉嗎", "學生獎懲規定"),
-    ("宿舍幾點要回去", "宿舍門禁與外出請假"),
-    ("遲到幾分鐘算曠課", "上課遲到與曠課認定"),
-    ("操行怎麼算", "操行成績計算"),
-    ("想轉科", "轉系科規定"),
-])
-def test_guide_first_candidate_is_the_right_rule(client, question, rule):
-    data = client.get("/api/campus/rules/candidates", query_string={"q": question}).get_json()["data"]
-    assert data[0]["title"] == rule
-    assert data[0]["question"].startswith(f"你是不是想問「{rule}」")
-
-
-def test_english_threshold_answer_has_score_table(client):
-    card = client.get("/api/campus/rules/candidates", query_string={"q": "多益要幾分"}).get_json()["data"][0]
-    assert "225" in card["content"] and "550" in card["content"] and card["source_url"].startswith("https://lc.ukn.edu.tw")
 
 
 # ---------- 表單下載 ----------

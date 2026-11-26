@@ -82,8 +82,6 @@ DELETE,/api/campus/my-events/<int:event_id>,/api/campus/my-events/999999,,刪除
 GET,/api/campus/announcements,/api/campus/announcements,,最新公告,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/course-plan/offerings,/api/campus/course-plan/offerings,,開課清單,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/campus/course-plan/check,/api/campus/course-plan/check,,選課檢查,OK,OK,OK,OK,OK,OK,OK,
-GET,/api/campus/rules/suggest,/api/campus/rules/suggest?q=請假,,校規輸入提示,OK,OK,OK,OK,OK,OK,OK,
-GET,/api/campus/rules/candidates,/api/campus/rules/candidates?q=請假,,校規候選,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/rules/tree,/api/campus/rules/tree,,校規分類樹,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/certs/mine,/api/campus/certs/mine,,我的證照,401,403,OK,OK,403,403,403,
 GET,/api/campus/records/mine,/api/campus/records/mine,,【獎懲與幹部】我的紀錄,401,403,OK,OK,403,403,403,家長看綁定子女的紀錄

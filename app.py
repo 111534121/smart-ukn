@@ -1672,7 +1672,8 @@ def load_unmatched_queries():
                 r[key] = r[key].strftime("%Y-%m-%d %H:%M:%S")
     return rows
 
-# 【功能：AI 智慧校規】①「我知道要查什麼」：先把口語換成正式名稱 (同義詞)，再依關鍵字/名稱/分類/內文命中給分，取最高分的規章
+# 【功能：首頁快速搜尋】先把口語換成正式名稱 (同義詞)，再依關鍵字/名稱/分類/內文命中給分，取最高分的規章
+# (原「AI 智慧校規」頁面已併入「申請問題小幫手」；這支 API 現由首頁快速搜尋 home-portal.js 使用)
 @app.route("/api/search", methods=["POST"])
 def search_knowledge():
     data = request.get_json(silent=True) or {}

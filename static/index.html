@@ -437,21 +437,6 @@
             border-bottom-color: #ff5511;
         }
 
-        .rules-mode {
-            border: 1px solid #cbd5e1;
-            border-radius: 9999px;
-            padding: .4rem .9rem;
-            color: #475569;
-            background: #fff;
-        }
-
-        .rules-mode.active {
-            background: #003377;
-            border-color: #003377;
-            color: #fff;
-            font-weight: 700;
-        }
-
         .service-tile {
             position: relative;
             display: flex;
@@ -1118,190 +1103,6 @@
 
         </div>
 
-
-        <!-- ======================================================== -->
-        <!-- 模組 1: 校務規章檢索、口語對照與問答查詢 (Tab 1) -->
-        <!-- ======================================================== -->
-        <div id="tab-ai" class="tab-content hidden space-y-6">
-            <!-- 查詢卡片 -->
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h1 class="ukn-title text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        AI 智慧校規查詢
-                    </h1>
-                    <p class="text-slate-500 text-xs sm:text-sm mt-1">
-                        知道要查什麼就直接打字（打第一個字就有選項）；不確定的話用自己的話描述，系統會一步步問你「是不是想問…」；也可以直接看所有申辦流程。
-                    </p>
-                </div>
-
-                <!-- 三種查詢方式 -->
-                <div class="flex flex-wrap gap-2 text-sm" role="tablist">
-                    <button type="button" data-rules-mode="search" onclick="setRulesMode('search')"
-                        class="rules-mode active">🔎 我知道要查什麼</button>
-                    <button type="button" data-rules-mode="guide" onclick="setRulesMode('guide')" class="rules-mode">🤔
-                        我不確定，幫我問</button>
-                    <button type="button" data-rules-mode="process" onclick="setRulesMode('process')"
-                        class="rules-mode">📋 看完整申請步驟</button>
-                </div>
-
-                <!-- 模式 1：輸入第一個字就出現選項 + 大分類 -->
-                <div id="rulesModeSearch" class="space-y-4">
-                    <div class="relative">
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="text" id="searchInput" autocomplete="off" role="combobox"
-                                aria-autocomplete="list" aria-controls="ruleSuggestList" aria-expanded="false"
-                                placeholder="輸入第一個字就會出現選項，例如：停、病、證、擋…"
-                                class="flex-grow px-4 py-2.5 rounded border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-ukn-500 text-sm">
-                            <button onclick="handleSearch()"
-                                class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-6 py-2.5 rounded transition text-sm whitespace-nowrap">搜尋規章</button>
-                        </div>
-                        <ul id="ruleSuggestList" role="listbox"
-                            class="hidden absolute z-30 left-0 right-0 sm:right-28 mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-72 overflow-y-auto text-sm">
-                        </ul>
-                    </div>
-
-                    <div>
-                        <div class="text-xs font-semibold text-slate-600 mb-2">或從大分類找：</div>
-                        <div id="ruleCategoryChips" class="flex flex-wrap gap-2"></div>
-                        <div id="ruleCategoryItems"
-                            class="hidden mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
-                    </div>
-                </div>
-
-                <!-- 模式 2：大概描述 → 逐一詢問『你是不是想問…』 -->
-                <div id="rulesModeGuide" class="hidden space-y-4">
-                    <div class="bg-slate-50 border border-slate-200 rounded p-4 space-y-3">
-                        <label for="guideInput"
-                            class="block text-sm font-semibold text-slate-800">用自己的話大概說一下遇到什麼事：</label>
-                        <textarea id="guideInput" rows="2" placeholder="例如：這門課快被當了不想上、生病沒去上課、考到多益想少修英文…"
-                            class="w-full px-3 py-2 rounded border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-ukn-500"></textarea>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <select id="guideCategory"
-                                class="text-sm border border-slate-300 rounded px-2 py-2 bg-white">
-                                <option value="">不確定是哪一類</option>
-                            </select>
-                            <button type="button" onclick="startGuide()"
-                                class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-5 py-2 rounded text-sm">幫我找</button>
-                        </div>
-                    </div>
-                    <div id="guideDialog" class="space-y-3"></div>
-                </div>
-
-                <!-- 模式 3：所有流程下拉選單 -->
-                <div id="rulesModeProcess" class="hidden space-y-4">
-                    <label for="processSelect" class="block text-sm font-semibold text-slate-800">選擇要辦理的事項：</label>
-                    <select id="processSelect" onchange="showProcessDetail(this.value)"
-                        class="w-full sm:w-2/3 bg-slate-50 text-slate-800 px-3.5 py-2.5 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-ukn-500 text-sm">
-                        <option value="">請選擇…</option>
-                    </select>
-                    <div id="processDetail"></div>
-                </div>
-
-                <div class="flex items-center flex-wrap gap-2 text-xs pt-2 border-t border-slate-100">
-                    <span class="text-slate-400 font-medium">常見問題：</span>
-                    <button onclick="quickSearch('棄修')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">棄修
-                        (停修申請)</button>
-                    <button onclick="quickSearch('英文抵免')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">英文可免修
-                        (多益)</button>
-                    <button onclick="quickSearch('擋修')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">先修擋修規定</button>
-                    <button onclick="quickSearch('病假')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">學生請假辦法</button>
-                    <button onclick="quickSearch('證照補助')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">專業證照獎勵金</button>
-                    <button onclick="quickSearch('學業退學規定')"
-                        class="bg-slate-100 hover:bg-ukn-50 hover:text-ukn-800 text-slate-700 px-3 py-1 rounded border border-slate-200 transition font-medium">成績不及格與退學</button>
-                </div>
-
-                <!-- 搜尋結果展示區 -->
-                <div id="resultSection" class="hidden pt-2 space-y-4">
-
-                    <!-- 同義詞對應提示 -->
-                    <div id="synonymBadge"
-                        class="hidden bg-slate-50 border border-slate-300 text-slate-800 px-4 py-2.5 rounded flex items-center justify-between">
-                        <div class="text-xs sm:text-sm flex items-center gap-2">
-                            <span>口語詞彙「<strong id="searchedTermText"
-                                    class="text-ukn-800 font-bold"></strong>」已為您自動對應官方標準術語「<strong id="officialTermText"
-                                    class="text-ukn-800 underline font-bold"></strong>」。</span>
-                        </div>
-                        <span
-                            class="text-xs bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded">詞彙自動對應</span>
-                    </div>
-
-                    <!-- 搜尋解答主卡片 -->
-                    <div id="successResultCard" class="bg-white border border-slate-300 rounded p-6 space-y-4">
-                        <div
-                            class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                            <div>
-                                <span id="resultCategoryBadge"
-                                    class="text-[11px] bg-ukn-100 text-ukn-900 font-bold px-2 py-0.5 rounded">教務規章</span>
-                                <h3 class="ukn-title text-lg font-bold text-slate-900 mt-1" id="resultCardTitle">
-                                    官方規章條文內容</h3>
-                            </div>
-                            <div class="text-xs text-slate-500 sm:text-right">
-                                <div id="resultSourceInfo">出處：康寧大學學生學則</div>
-                                <div id="resultLastUpdated" class="text-slate-400 mt-0.5"></div>
-                            </div>
-                        </div>
-
-                        <!-- 答案內文 -->
-                        <div id="resultAnswerBody"
-                            class="text-sm text-slate-800 leading-relaxed bg-slate-50 p-4 rounded border border-slate-200">
-                        </div>
-
-                        <!-- 關聯申辦清單導航按鈕 -->
-                        <div id="relatedChecklistAction"
-                            class="hidden bg-ukn-50 border border-ukn-200 p-4 rounded flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div class="text-xs text-ukn-950">
-                                <div class="font-bold flex items-center gap-1.5">
-                                    <span id="relatedChecklistTitle">對應行政申辦流程：課程停修申請</span>
-                                </div>
-                                <p class="text-ukn-800 mt-0.5" id="relatedChecklistOffice">承辦單位：教務處課程與教學組 (行政大樓 2 樓) ·
-                                    校內分機 323</p>
-                            </div>
-                            <button id="jumpChecklistBtn" onclick="jumpToRelatedChecklist()"
-                                class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold px-4 py-2 rounded text-xs transition whitespace-nowrap flex items-center gap-1">
-                                <span>前往申辦步驟與表單下載 ➔</span>
-                            </button>
-                        </div>
-
-                        <!-- 答案滿意度回饋 -->
-                        <div
-                            class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                            <div class="text-slate-600 font-medium">這個答案有幫助嗎？</div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="sendFeedback(1)" id="btnHelpfulYes" title="有幫助" aria-label="有幫助"
-                                    class="bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 px-3 py-1.5 rounded transition text-base leading-none disabled:opacity-50 disabled:cursor-not-allowed">👍</button>
-                                <button onclick="sendFeedback(0)" id="btnHelpfulNo" title="沒幫助" aria-label="沒幫助"
-                                    class="bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-500 px-3 py-1.5 rounded transition text-base leading-none disabled:opacity-50 disabled:cursor-not-allowed">👎</button>
-                                <span id="feedbackToast" class="hidden text-emerald-700 font-bold ml-2">✓ 感謝您的回饋！</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 查無結果卡片 -->
-                    <div id="noResultCard" class="hidden bg-amber-50 border border-amber-200 rounded p-6 space-y-3">
-                        <div class="flex items-center gap-2 text-amber-900 font-bold text-base">
-                            <span>⚠️</span> <span>法規資料庫目前未檢索到相關條文</span>
-                        </div>
-                        <p class="text-xs sm:text-sm text-amber-950 leading-relaxed">
-                            系統已將您查詢的關鍵字記錄於後台待補清單中，管理人員將盡速補齊相關規章與常見問答。
-                        </p>
-                        <div class="bg-white p-4 rounded border border-amber-200 text-xs text-slate-700 space-y-1.5">
-                            <div class="font-bold text-slate-900">若有急切申辦需求，歡迎直接洽詢各專責處室：</div>
-                            <div>• 課程與教學組 (選課、停修、先修課程)：行政大樓 2 樓教務處 (分機 323, 325)</div>
-                            <div>• 註冊組 (學籍、成績、學分抵免)：行政大樓 2 樓教務處 (分機 324, 312, 313)</div>
-                            <div>• 生輔組 (請假、獎懲、二一預警)：行政大樓 1 樓學務處 (分機 464, 412)</div>
-                        </div>
-                    </div>
-
-                </div>
-
-            </section>
-
-        </div>
 
         <!-- ======================================================== -->
         <!-- 模組 2: 個人修課進度、先修擋修與影響試算 (Tab 2) -->
@@ -3039,128 +2840,6 @@
             }
         }
 
-        // 3~4. 分類瀏覽與引導式查詢：見 campus-features.js (AI 智慧校規)
-
-        // 5. 搜尋功能 (含同義詞、查無結果記錄與回饋)
-        async function handleSearch() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (!query) return;
-
-            try {
-                const res = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
-                });
-                const data = await res.json();
-
-                const resultSection = document.getElementById('resultSection');
-                resultSection.classList.remove('hidden');
-
-                if (data.status === 'success' && data.matched) {
-                    document.getElementById('successResultCard').classList.remove('hidden');
-                    document.getElementById('noResultCard').classList.add('hidden');
-
-                    // 同義詞提醒
-                    const synonymBadge = document.getElementById('synonymBadge');
-                    if (data.is_synonym_matched && data.search_term) {
-                        synonymBadge.classList.remove('hidden');
-                        document.getElementById('searchedTermText').textContent = query;
-                        document.getElementById('officialTermText').textContent = data.search_term;
-                    } else {
-                        synonymBadge.classList.add('hidden');
-                    }
-
-                    // 將 /api/search 回傳欄位轉為 displayRuleResult 所需格式
-                    const chk = data.related_checklist;
-                    displayRuleResult({
-                        rule_id: data.kb_id,
-                        title: data.official_term || data.subcategory,
-                        category_name: data.category_name,
-                        office_name: chk ? chk.category_name : '',
-                        office_phone: chk ? chk.contact_phone : '',
-                        content: data.answer,
-                        related_checklist_id: chk ? chk.item_id : null,
-                        checklist_title: chk ? chk.business_name : '',
-                        source_doc: data.source_doc,
-                        page_num: data.page_num,
-                        source_url: data.source_url,
-                        last_updated: data.last_updated
-                    }, query);
-                } else {
-                    document.getElementById('successResultCard').classList.add('hidden');
-                    document.getElementById('synonymBadge').classList.add('hidden');
-                    document.getElementById('noResultCard').classList.remove('hidden');
-                }
-            } catch (e) {
-                console.error('Search error:', e);
-            }
-        }
-
-        function quickSearch(keyword) {
-            document.getElementById('searchInput').value = keyword;
-            handleSearch();
-        }
-
-        let currentActiveRuleId = null;
-        let currentSearchQuery = '';
-        function displayRuleResult(rule, query) {
-            currentActiveRuleId = rule.rule_id;
-            currentSearchQuery = query || rule.title || '';
-            document.getElementById('resultSection').classList.remove('hidden');
-            document.getElementById('successResultCard').classList.remove('hidden');
-            document.getElementById('noResultCard').classList.add('hidden');
-
-            document.getElementById('resultCardTitle').textContent = rule.title;
-            document.getElementById('resultCategoryBadge').textContent = rule.category_name || '校務規章';
-            const sourceLabel = rule.source_doc
-                ? `出處：${rule.source_doc}${rule.page_num ? `（第 ${rule.page_num} 頁）` : ''}`
-                : `主管處室：${rule.office_name || '教務處'} · 法規編號 #${rule.rule_id}`;
-            const sourceInfoEl = document.getElementById('resultSourceInfo');
-            if (rule.source_url) {
-                sourceInfoEl.innerHTML = `${sourceLabel} <a href="${rule.source_url}" target="_blank" rel="noopener" class="text-ukn-700 underline hover:text-ukn-900">查看原文 ↗</a>`;
-            } else {
-                sourceInfoEl.textContent = sourceLabel;
-            }
-            document.getElementById('resultLastUpdated').textContent = rule.last_updated ? `最後更新日期：${rule.last_updated}` : '';
-            document.getElementById('resultAnswerBody').innerHTML = (rule.content || '').replace(/\n/g, '<br>');
-
-            // 關聯申辦流程導航
-            const relatedBox = document.getElementById('relatedChecklistAction');
-            if (rule.related_checklist_id) {
-                relatedBox.classList.remove('hidden');
-                document.getElementById('relatedChecklistTitle').textContent = `對應行政申辦流程：${rule.checklist_title || '查看申辦清單'}`;
-                document.getElementById('relatedChecklistOffice').textContent = `承辦單位：${rule.office_name || '教務處'} · 分機 ${rule.office_phone || '323'}`;
-            } else {
-                relatedBox.classList.add('hidden');
-            }
-
-            // 重置反饋狀態
-            document.getElementById('btnHelpfulYes').disabled = false;
-            document.getElementById('btnHelpfulNo').disabled = false;
-            document.getElementById('feedbackToast').classList.add('hidden');
-        }
-
-        async function sendFeedback(isHelpful) {
-            if (!currentActiveRuleId) return;
-            try {
-                await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: currentSearchQuery || '規章檢索',
-                        rule_id: currentActiveRuleId,
-                        helpful: isHelpful
-                    })
-                });
-                document.getElementById('btnHelpfulYes').disabled = true;
-                document.getElementById('btnHelpfulNo').disabled = true;
-                document.getElementById('feedbackToast').classList.remove('hidden');
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
         // 6. 個人化課程地圖
         function isStudentLoggedIn() {
             return !!currentUser.student_id && ['學生', '家長'].includes(currentUser.role);
@@ -4219,10 +3898,6 @@
             }
         }
 
-        function jumpToRelatedChecklist() {
-            switchTab('tab-checklist');
-        }
-
         function jumpToChecklist(id) {
             switchTab('tab-checklist');
             setTimeout(() => {
@@ -4732,10 +4407,10 @@
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
     <script src="/js/field-validate.js"></script>
-    <script src="/js/campus-shell.js?v=20261126-linebind-role"></script>
-    <script src="/js/home-portal.js?v=50"></script>
+    <script src="/js/campus-shell.js?v=20261126-merge-rules"></script>
+    <script src="/js/home-portal.js?v=51"></script>
     <script src="/js/campus-access.js?v=48"></script>
-    <script src="/js/campus-features.js?v=20261116-merge"></script>
+    <script src="/js/campus-features.js?v=20261126-merge-rules"></script>
     <script src="/js/campus-life.js?v=20261121-coursechange"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js?v=20261029"></script>
@@ -4745,8 +4420,8 @@
     <script src="/js/retake.js?v=20261109"></script>
     <script src="/js/forms-finder.js?v=20261029"></script>
     <script src="/js/meetings.js?v=20261029b"></script>
-    <script src="/js/assistant.js"></script>
-    <script src="/js/tour.js"></script>
+    <script src="/js/assistant.js?v=20261126-merge-rules"></script>
+    <script src="/js/tour.js?v=20261126-merge-rules"></script>
     <script src="/js/anniversary.js"></script>
     <script>
         // PWA：註冊 Service Worker (需 https 或 localhost 才會生效)

@@ -17,8 +17,7 @@ const FEATURES = [
     { key: 'retake', tab: 'tab-retake', name: '重補修推薦', icon: '🔁', group: '學習', desc: '沒過的科目哪班可以補、會不會衝堂' },
     { key: 'conduct', tab: 'tab-conduct', name: '我的操行', icon: '🎖️', group: '學習', desc: '操行成績、獎懲與怎麼算的' },
     { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
-    { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦', staff: false },
-    { key: 'rules', tab: 'tab-ai', name: 'AI 智慧校規', icon: '💬', group: '校務', desc: '打一個字就有選項、引導式詢問' },
+    { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦，或直接瀏覽全部規章與流程', staff: false },
     { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
     { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合', staff: false },
@@ -303,8 +302,8 @@ async function loadPinned() {
             pinnedKeys = (await api('/api/campus/prefs')).data.pinned;
         } catch (e) { pinnedKeys = []; }
     } else {
-        try { pinnedKeys = JSON.parse(localStorage.getItem(PIN_STORAGE) || 'null') || ['calendar', 'rules', 'course-plan', 'map']; }
-        catch (e) { pinnedKeys = ['calendar', 'rules', 'course-plan', 'map']; }
+        try { pinnedKeys = JSON.parse(localStorage.getItem(PIN_STORAGE) || 'null') || ['calendar', 'assistant', 'course-plan', 'map']; }
+        catch (e) { pinnedKeys = ['calendar', 'assistant', 'course-plan', 'map']; }
     }
     pinnedKeys = pinnedKeys.filter(k => featureByKey(k));
     renderServices();
