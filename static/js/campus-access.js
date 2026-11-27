@@ -2,6 +2,16 @@
 let publicSiteConfig = null;
 let lineOaConfig = null;
 let pendingCampusInstall = null;
+const CAMPUS_ACCESS_USED_KEY = 'campus_access_used';
+function collapseCampusAccess() {
+    document.getElementById('campusAccessSection').classList.add('collapsed');
+    document.getElementById('campusAccessFab').hidden = false;
+    try { localStorage.setItem(CAMPUS_ACCESS_USED_KEY, '1'); } catch (e) { /* 無痕模式 */ }
+}
+function expandCampusAccess() {
+    document.getElementById('campusAccessSection').classList.remove('collapsed');
+    document.getElementById('campusAccessFab').hidden = true;
+}
 window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     pendingCampusInstall = event;
@@ -68,6 +78,7 @@ async function installCampusHome() {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (standalone) {
         showCampusAccessDialog('已從主畫面開啟', '<p>你已經在使用校園智慧官網的主畫面捷徑。</p>');
+        collapseCampusAccess();
         return;
     }
     if (pendingCampusInstall) {
@@ -77,6 +88,7 @@ async function installCampusHome() {
             await prompt.prompt();
             const result = await prompt.userChoice;
             document.getElementById('campusAccessStatus').textContent = result.outcome === 'accepted' ? '已接受加入主畫面，請依瀏覽器提示完成。' : '已取消加入，仍可隨時透過網址開啟。';
+            collapseCampusAccess();
             return;
         } catch { /* Fall back to manual browser instructions. */ }
     }
@@ -88,6 +100,7 @@ async function installCampusHome() {
     html += isApple ? '<ol><li>使用 Safari 開啟網站。</li><li>點選「分享」按鈕。</li><li>選擇「加入主畫面」，再點「加入」。</li></ol>' : '<ol><li>在 Chrome 或 Edge 開啟網站。</li><li>點選瀏覽器選單。</li><li>選擇「加入主畫面」或「安裝應用程式」，依畫面提示完成。</li></ol>';
     html += '<p class="campus-access-note">各版本瀏覽器的選單名稱可能不同。個人服務仍需登入，離線時無法查詢即時資料。</p>';
     showCampusAccessDialog('加入手機主畫面', html);
+    collapseCampusAccess();
 }
 function initCampusAccess() {
     document.getElementById('campusQr').addEventListener('click', showCampusQr);
@@ -97,6 +110,10 @@ function initCampusAccess() {
     document.getElementById('campusAccessDialog').addEventListener('click', event => {
         if (event.target === event.currentTarget) event.currentTarget.close();
     });
+    document.getElementById('campusAccessFab').addEventListener('click', expandCampusAccess);
+    let usedBefore = false;
+    try { usedBefore = localStorage.getItem(CAMPUS_ACCESS_USED_KEY) === '1'; } catch (e) { /* 無痕模式 */ }
+    if (usedBefore) collapseCampusAccess();
     loadCampusSharing();
     loadLineOa();
 }

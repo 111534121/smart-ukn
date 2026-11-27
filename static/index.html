@@ -548,7 +548,7 @@
         }
     </style>
     <link rel="stylesheet" href="/css/home-portal.css?v=49">
-    <link rel="stylesheet" href="/css/campus-access.css?v=46">
+    <link rel="stylesheet" href="/css/campus-access.css?v=47">
 </head>
 
 <body class="min-h-screen flex flex-col font-sans antialiased selection:bg-ukn-700 selection:text-white">
@@ -852,7 +852,7 @@
                 </div>
             </section>
 
-            <section class="campus-access" aria-labelledby="campusAccessHeading">
+            <section id="campusAccessSection" class="campus-access" aria-labelledby="campusAccessHeading">
                 <div>
                     <h2 id="campusAccessHeading">把校園智慧官網帶著走</h2>
                     <p id="campusAccessStatus" role="status" aria-live="polite">正在準備分享與主畫面捷徑…</p><button
@@ -864,6 +864,7 @@
                         type="button">加入手機主畫面</button><a id="campusLineOa" class="campus-line" hidden target="_blank"
                         rel="noopener noreferrer">加 LINE 好友 ↗</a></div>
             </section>
+            <button id="campusAccessFab" type="button" hidden aria-label="展開分享與加入主畫面">📲</button>
 
             <!-- 主視覺輪播 (老師、教職員不顯示) -->
             <section id="heroSection" class="hero -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 relative overflow-hidden"
@@ -4404,7 +4405,7 @@
     <script src="/js/field-validate.js"></script>
     <script src="/js/campus-shell.js?v=20261127-merge-faculty"></script>
     <script src="/js/home-portal.js?v=51"></script>
-    <script src="/js/campus-access.js?v=48"></script>
+    <script src="/js/campus-access.js?v=49"></script>
     <script src="/js/campus-features.js?v=20261126-merge-rules"></script>
     <script src="/js/campus-life.js?v=20261127-merge-faculty"></script>
     <script src="/js/dept-scope.js?v=20261126-mapmerge"></script>
