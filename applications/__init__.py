@@ -41,8 +41,17 @@ ROOT =os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---- 上傳自己的申請表 ----
 UPLOAD_ITEM_ID, UPLOAD_FORM_CODE = 0, "upload"
-UPLOAD_MAX_FILE_MB, UPLOAD_MAX_FILES, UPLOAD_MAX_TOTAL_MB = 5, 3, 15
+UPLOAD_MAX_FILE_MB, UPLOAD_MAX_FILES, UPLOAD_MAX_TOTAL_MB = 5, 3, 15  # UPLOAD_MAX_FILES：「其他附件」最多幾個
 UPLOAD_SIGNATURES = {"pdf": b"%PDF", "png": b"\x89PNG", "jpg": b"\xff\xd8\xff", "jpeg": b"\xff\xd8\xff"}
+# 上傳分成三格，每格只收該收的格式，學生沒辦法拿一張隨便的照片充當申請表：
+#   form       申請表本身：只收 PDF (紙本用手機「掃描文件」存成 PDF)
+#   photo      證件照：只收 JPG / PNG，只有 UPLOAD_TYPES 有列 photos 的申請種類才要 (而且必交)
+#   attachment 其他附件 (同意書、證明…)：PDF / JPG / PNG 都可以，選交
+UPLOAD_SLOTS = {
+    "form": {"label": "申請表", "exts": ("pdf",), "types": "PDF"},
+    "photo": {"label": "證件照", "exts": ("jpg", "jpeg", "png"), "types": "JPG、PNG"},
+    "attachment": {"label": "附件", "exts": ("pdf", "jpg", "jpeg", "png"), "types": "PDF、JPG、PNG"},
+}
 UPLOAD_FIELDS = [
     {"key": "title", "label": "申請項目"},
     {"key": "reason", "label": "申請事項說明"},
@@ -73,7 +82,8 @@ UPLOAD_TYPES = [
     {"key": "makeup_exam", "name": "補考申請", "route": ["teacher", "academic"]},
     {"key": "gen_ed_credit", "name": "通識課程學分抵免", "route": ["general_edu", "academic"]},
     {"key": "enrollment_cert", "name": "在學證明 / 成績單申請", "route": ["registry"]},
-    {"key": "student_card", "name": "學生證補發申請", "route": ["registry", "cashier"]},
+    # photos：這個申請一定要附的照片 (一項一張，只收 JPG / PNG)；其他申請種類不會出現照片欄
+    {"key": "student_card", "name": "學生證補發申請", "route": ["registry", "cashier"], "photos": ["2 吋證件照"]},
     {"key": "tuition_defer", "name": "學雜費緩繳申請", "route": ["advisor", "student_affairs", "cashier"]},
     {"key": "club_event", "name": "社團活動申請", "route": ["activities"]},
     {"key": "venue", "name": "場地 / 器材借用申請", "route": ["activities", "general_affairs"]},
@@ -154,7 +164,7 @@ def upload_form_template(code):
                for k in t["route"]]
     return {"title": t["name"] + ("表" if not t["name"].endswith("表") else ""),
             "office": signers[-1]["name"],
-            "intro": "填好後拍照或存成 PDF，回到系統「上傳自己的申請表」送出，各關會線上蓋章。",
+            "intro": "填好後掃描或存成 PDF，回到系統「上傳自己的申請表」送出，各關會線上蓋章。",
             "fields": [{**f, "example": f.get("example", "")} for f in fields],
             "signers": signers, "attachments": attachments,
             "notes": ["簽核欄不用自己找老師蓋，線上送出後系統會依序送到每一關。"]}
@@ -347,7 +357,9 @@ def describe(app, student=None):
     total = len(stages) - 1
     stamps = stamps_of(app)
     finished_at, keep_until = retention(app)
-    files = [{"name": f["name"], "size": f["size"], "url": f"/api/applications/{app['id']}/files/{i}"}
+    files = [{"name": f["name"], "size": f["size"], "url": f"/api/applications/{app['id']}/files/{i}",
+              # 改版前上傳的檔案沒有 slot，標成「檔案」
+              "slot": f.get("slot"), "label": f.get("label") or UPLOAD_SLOTS.get(f.get("slot"), {}).get("label", "檔案")}
              for i, f in enumerate(app["fields"].get("_files") or [])]
     return {
         **app, "fields": {k: v for k, v in app["fields"].items() if not k.startswith("_")}, "files": files,
@@ -525,34 +537,69 @@ def insert_application(student_id, item_id, code, business_name, fields, stages)
 def upload_options():
     """上傳申請表時可以選的申請種類 (各自帶好簽章關卡) 與檔案限制"""
     types = [{"key": t["key"], "name": t["name"], "stages": [ROUTE_BY_KEY[k] for k in t["route"]],
-              "form_url": f"/forms/{upload_form_code(t['key'])}"} for t in UPLOAD_TYPES]
+              "form_url": f"/forms/{upload_form_code(t['key'])}",
+              "photos": t.get("photos", []),
+              # 證件照有自己的上傳欄，不重複列在「其他附件」的提示裡
+              "attachments": [a for a in UPLOAD_FORM_FIELDS.get(t["key"], ([], []))[1]
+                              if not any(a.startswith(p) for p in t.get("photos", []))]}
+             for t in UPLOAD_TYPES]
     return jsonify({"status": "success", "types": types,
                     "limits": {"max_mb": UPLOAD_MAX_FILE_MB, "max_files": UPLOAD_MAX_FILES,
-                               "max_total_mb": UPLOAD_MAX_TOTAL_MB, "types": "PDF、JPG、PNG"}}), 200
+                               "max_total_mb": UPLOAD_MAX_TOTAL_MB, "types": "PDF、JPG、PNG",
+                               "slots": {k: {"label": s["label"], "types": s["types"],
+                                             "accept": ",".join("." + e for e in s["exts"])}
+                                         for k, s in UPLOAD_SLOTS.items()}}}), 200
 
 
-def check_upload_files(files):
-    """回傳 (錯誤訊息, None) 或 (None, [(檔名, 副檔名, 內容), ...])"""
-    files = [f for f in files if f and f.filename]
-    if not files:
-        return "請上傳申請表 (PDF 或照片)", None
-    if len(files) > UPLOAD_MAX_FILES:
-        return f"最多上傳 {UPLOAD_MAX_FILES} 個檔案", None
+def _check_one_file(f, slot):
+    """回傳 (錯誤訊息, None) 或 (None, (檔名, 副檔名, 內容))；副檔名與檔頭都要符合這一格收的格式"""
+    name = os.path.basename(f.filename)
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    rule = UPLOAD_SLOTS[slot]
+    if ext not in rule["exts"]:
+        if slot == "form" and ext in UPLOAD_SIGNATURES:
+            return (f"「{name}」是照片，申請表只收 PDF。請用手機「掃描文件」把填好的申請表存成 PDF 再上傳"
+                    "（iPhone：檔案 App → 掃描文件；Android：Google 雲端硬碟 → 掃描）"), None
+        if slot == "photo" and ext == "pdf":
+            return f"「{name}」是 PDF，證件照請上傳 JPG 或 PNG 照片檔", None
+        return f"「{name}」格式不支援，{rule['label']}只能上傳 {rule['types']}", None
+    data = f.read()
+    if not data:
+        return f"「{name}」是空檔案", None
+    if len(data) > UPLOAD_MAX_FILE_MB * 1024 * 1024:
+        return f"「{name}」超過 {UPLOAD_MAX_FILE_MB} MB（目前 {len(data) / 1024 / 1024:.1f} MB），請壓縮後再上傳", None
+    if not data.startswith(UPLOAD_SIGNATURES[ext]):
+        return f"「{name}」內容不是真的 {ext.upper()} 檔，請重新存檔後再上傳", None
+    return None, (name, ext, data)
+
+
+def check_upload_files(form_files, photo_files=(), attachment_files=(), photos_needed=()):
+    """依三格分別檢查。回傳 (錯誤訊息, None) 或 (None, [(格, 標籤, 檔名, 副檔名, 內容), ...])"""
+    form_files = [f for f in form_files if f and f.filename]
+    photo_files = [f for f in photo_files if f and f.filename]
+    attachment_files = [f for f in attachment_files if f and f.filename]
+    if not form_files:
+        return "請上傳填好的申請表 (PDF)", None
+    if len(form_files) > 1:
+        return "申請表只能上傳 1 個 PDF；其他文件請放在「其他附件」", None
+    if photos_needed and len(photo_files) < len(photos_needed):
+        return f"這項申請要附「{'、'.join(photos_needed)}」，請在照片欄上傳 JPG 或 PNG", None
+    if not photos_needed and photo_files:
+        return "這項申請不用附證件照，其他文件請放在「其他附件」", None
+    if len(photo_files) > len(photos_needed):
+        return f"照片只要 {len(photos_needed)} 張（{'、'.join(photos_needed)}）", None
+    if len(attachment_files) > UPLOAD_MAX_FILES:
+        return f"其他附件最多 {UPLOAD_MAX_FILES} 個", None
+    jobs = [("form", "申請表", f) for f in form_files] + \
+           [("photo", label, f) for label, f in zip(photos_needed, photo_files)] + \
+           [("attachment", "附件", f) for f in attachment_files]
     checked = []
-    for f in files:
-        name = os.path.basename(f.filename)
-        ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
-        if ext not in UPLOAD_SIGNATURES:
-            return f"「{name}」格式不支援，只能上傳 PDF、JPG、PNG", None
-        data = f.read()
-        if not data:
-            return f"「{name}」是空檔案", None
-        if len(data) > UPLOAD_MAX_FILE_MB * 1024 * 1024:
-            return f"「{name}」超過 {UPLOAD_MAX_FILE_MB} MB（目前 {len(data) / 1024 / 1024:.1f} MB），請壓縮後再上傳", None
-        if not data.startswith(UPLOAD_SIGNATURES[ext]):
-            return f"「{name}」內容不是真的 {ext.upper()} 檔，請重新存檔後再上傳", None
-        checked.append((name, ext, data))
-    if sum(len(d) for _, _, d in checked) > UPLOAD_MAX_TOTAL_MB * 1024 * 1024:
+    for slot, label, f in jobs:
+        message, item = _check_one_file(f, slot)
+        if message:
+            return message, None
+        checked.append((slot, label, *item))
+    if sum(len(c[-1]) for c in checked) > UPLOAD_MAX_TOTAL_MB * 1024 * 1024:
         return f"檔案合計超過 {UPLOAD_MAX_TOTAL_MB} MB，請壓縮後再上傳", None
     return None, checked
 
@@ -576,17 +623,26 @@ def submit_upload():
     if len(reason) > FIELD_MAX or len(phone) > 30:
         return _error(f"說明最多 {FIELD_MAX} 字")
     route = kind["route"]  # 簽章關卡由申請種類決定，學生不能自己改
-    message, checked = check_upload_files(request.files.getlist("files"))
+    files = request.files
+    form_files = files.getlist("form")
+    attachment_files = files.getlist("attachments")
+    if not form_files and files.getlist("files"):
+        # 舊版頁面 (瀏覽器快取) 只有一格 files：第一個當申請表，其餘當附件，一樣要過申請表只收 PDF 的檢查
+        legacy = files.getlist("files")
+        form_files, attachment_files = legacy[:1], legacy[1:] + attachment_files
+    message, checked = check_upload_files(form_files, files.getlist("photo"), attachment_files,
+                                          kind.get("photos", []))
     if message:
         return _error(message)
 
     os.makedirs(deps.upload_dir, exist_ok=True)
     saved = []
-    for name, ext, data in checked:
+    for slot, label, name, ext, data in checked:
         stored = f"app_{secure_filename(student_id)}_{datetime.now():%Y%m%d%H%M%S}_{uuid.uuid4().hex[:8]}.{ext}"
         with open(os.path.join(deps.upload_dir, stored), "wb") as fh:
             fh.write(data)
-        saved.append({"name": name, "stored": stored, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+        saved.append({"name": name, "stored": stored, "size": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+                      "slot": slot, "label": label})
     fields = {"title": title, "type": kind["key"], "reason": reason, "phone": phone, "_files": saved}
     stages = [{"name": "線上送出", "icon": "📤", "role": "學生"}] + \
              [dict(ROUTE_BY_KEY[k]) for k in route] + [{"name": "完成", "icon": "✅", "role": None}]

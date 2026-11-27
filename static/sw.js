@@ -1,6 +1,6 @@
 // Smart UKN Service Worker：讓網站可加到手機桌面，並在斷線時仍能開啟首頁外殼
 // 更新頁面或靜態檔後請遞增版本號，舊快取會在 activate 時清除
-const CACHE_VERSION = 'smart-ukn-v65';
+const CACHE_VERSION = 'smart-ukn-v68';
 const APP_SHELL = [
     '/',
     '/login',
@@ -17,7 +17,6 @@ const APP_SHELL = [
     '/js/campus-features.js',
     '/js/campus-life.js',
     '/js/anniversary.js',
-    '/js/dept-scope.js',
     '/js/faculty.js',
     '/js/applications.js',
     '/js/conduct.js',

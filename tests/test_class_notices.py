@@ -178,3 +178,19 @@ def test_roster_students_get_class_notice_without_joining(client, login):
     assert res.status_code == 200, res.get_json()
     login("S112005")
     assert res.get_json()["data"]["id"] in {n["id"] for n in client.get("/api/campus/notices/inbox").get_json()["data"]}
+
+
+def test_sent_and_inbox_show_teachers_current_name(client, login, monkeypatch):
+    """老師改名 (例如換成真實師資姓名) 後，以前發的通知也顯示新名字；已發送清單看得到是誰發的"""
+    from campus.common import deps
+    login("teacher1")
+    assert send(client, "資管五忠").status_code == 200
+    sent = client.get("/api/campus/notices/sent").get_json()["data"][0]
+    teacher = next(u for u in deps.users if u["username"] == "teacher1")
+    assert sent["sender"] == teacher["full_name"]
+
+    monkeypatch.setitem(teacher, "full_name", "新來的老師")
+    assert client.get("/api/campus/notices/sent").get_json()["data"][0]["sender"] == "新來的老師"
+    login("student1")
+    inbox = client.get("/api/campus/notices/inbox").get_json()["data"]
+    assert inbox[0]["sender"] == "新來的老師"

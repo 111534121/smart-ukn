@@ -527,32 +527,32 @@ def affairs_submit():
 # 市府／就業／升學／出國四筆為政府既有計畫的示範條目，金額與期限請以各主辦機關最新公告為準，
 # 本系統不提供線上申請連結，僅作為「有這個管道」的提醒，實際申請請洽對應單位或研發處實習就業組。
 SCHOLARSHIPS = [
-    {"id": "SCH01", "name": "校內學業優秀獎學金", "category": "校內", "amount": "5,000 元", "deadline": "2026-10-16", "office": "學務處生輔組",
+    {"id": "SCH01", "prepare": ["上學期成績單", "獎學金申請表"], "name": "校內學業優秀獎學金", "category": "校內", "amount": "5,000 元", "deadline": "2026-10-16", "office": "學務處生輔組",
      "criteria": [{"id": "avg", "text": "前一學期學業平均 80 分以上", "auto": "avg_80"},
                   {"id": "conduct", "text": "前一學期未受記過以上處分"},
                   {"id": "credits", "text": "前一學期修習 12 學分以上"}]},
-    {"id": "SCH02", "name": "清寒助學金", "category": "校內", "amount": "10,000 元", "deadline": "2026-10-16", "office": "學務處生輔組",
+    {"id": "SCH02", "prepare": ["家庭年所得證明 (國稅局所得清單)", "戶口名簿影本", "上學期成績單", "獎學金申請表"], "name": "清寒助學金", "category": "校內", "amount": "10,000 元", "deadline": "2026-10-16", "office": "學務處生輔組",
      "criteria": [{"id": "income", "text": "家庭年所得 70 萬元以下"},
                   {"id": "avg", "text": "前一學期學業平均 60 分以上", "auto": "avg_60"},
                   {"id": "other", "text": "本學期未領取其他政府助學金"}]},
-    {"id": "SCH03", "name": "專業證照獎勵金", "category": "校內", "amount": "3,000 – 10,000 元", "deadline": "2026-10-09", "office": "研發處實習就業組",
+    {"id": "SCH03", "prepare": ["證照影本 (正反面)", "郵局存摺封面影本", "獎勵金申請表"], "name": "專業證照獎勵金", "category": "校內", "amount": "3,000 – 10,000 元", "deadline": "2026-10-09", "office": "研發處實習就業組",
      "criteria": [{"id": "cert", "text": "在學期間取得乙級以上技術士或國際認證", "auto": "has_cert"},
                   {"id": "first", "text": "同一張證照未曾申請過獎勵"}]},
-    {"id": "SCH04", "name": "工讀助學金", "category": "校內", "amount": "時薪 190 元", "deadline": "2026-10-02", "office": "學務處生輔組",
+    {"id": "SCH04", "prepare": ["本學期課表 (排可工讀時段)", "工讀申請表"], "name": "工讀助學金", "category": "校內", "amount": "時薪 190 元", "deadline": "2026-10-02", "office": "學務處生輔組",
      "criteria": [{"id": "time", "text": "每週可排 4 小時以上工讀時段"},
                   {"id": "avg", "text": "前一學期沒有不及格科目", "auto": "no_warning"}]},
-    {"id": "SCH05", "name": "臺北市希望助學金", "category": "市府", "amount": "依核定金額發給（參考金額，依公告為準）", "deadline": "2026-10-20", "office": "臺北市政府社會局（可洽學務處生輔組協助）",
+    {"id": "SCH05", "prepare": ["戶口名簿影本 (設籍臺北市證明)", "低收／中低收入戶證明", "在學證明"], "name": "臺北市希望助學金", "category": "市府", "amount": "依核定金額發給（參考金額，依公告為準）", "deadline": "2026-10-20", "office": "臺北市政府社會局（可洽學務處生輔組協助）",
      "criteria": [{"id": "residence", "text": "學生本人或監護人設籍臺北市"},
                   {"id": "need", "text": "符合低收入戶、中低收入戶或特殊境遇家庭等經濟弱勢資格"},
                   {"id": "enrolled", "text": "現為在學學生，無休學"}]},
-    {"id": "SCH06", "name": "勞動部青年就業讚計畫", "category": "就業", "amount": "依穩定就業情形核發獎勵金（依公告為準）", "deadline": "2026-11-30", "office": "勞動部勞動力發展署（可洽研發處實習就業組）",
+    {"id": "SCH06", "prepare": ["畢業證書影本", "勞保投保證明", "就業服務機構媒合紀錄"], "name": "勞動部青年就業讚計畫", "category": "就業", "amount": "依穩定就業情形核發獎勵金（依公告為準）", "deadline": "2026-11-30", "office": "勞動部勞動力發展署（可洽研發處實習就業組）",
      "criteria": [{"id": "grad", "text": "應屆畢業或畢業未滿 1 年"},
                   {"id": "match", "text": "經公立就業服務機構媒合並受僱"},
                   {"id": "stay", "text": "於同一雇主連續在職達規定月數"}]},
-    {"id": "SCH07", "name": "青年教育與就業儲蓄帳戶方案", "category": "升學", "amount": "每月定額存款＋政府相對提撥（依公告為準）", "deadline": "2026-12-31", "office": "教育部青年發展署",
+    {"id": "SCH07", "prepare": ["畢業證書或在學證明", "體驗學習計畫書"], "name": "青年教育與就業儲蓄帳戶方案", "category": "升學", "amount": "每月定額存款＋政府相對提撥（依公告為準）", "deadline": "2026-12-31", "office": "教育部青年發展署",
      "criteria": [{"id": "age", "text": "高中職畢業或在學應屆畢業，15–20 歲"},
                   {"id": "plan", "text": "規劃以體驗學習銜接未來升學或就業方向"}]},
-    {"id": "SCH08", "name": "教育部學海飛颺獎學金（海外研修）", "category": "出國", "amount": "依研修期間核給（參考金額，依公告為準）", "deadline": "2026-09-15", "office": "教育部國際及兩岸教育司（可洽研發處國際交流窗口）",
+    {"id": "SCH08", "prepare": ["歷年成績單", "外語能力證明", "研修計畫書", "系所推薦函"], "name": "教育部學海飛颺獎學金（海外研修）", "category": "出國", "amount": "依研修期間核給（參考金額，依公告為準）", "deadline": "2026-09-15", "office": "教育部國際及兩岸教育司（可洽研發處國際交流窗口）",
      "criteria": [{"id": "grade", "text": "大二以上在學學生，學業成績達一定標準"},
                   {"id": "school", "text": "已取得國外姊妹校或合作學校研修名額"},
                   {"id": "plan", "text": "完成研修計畫書並經系所推薦"}]},
@@ -578,16 +578,57 @@ def auto_answers(student_id):
     }
 
 
-@bp.route("/api/campus/scholarships", methods=["GET"])
-def scholarships():
-    u = current_user()
-    auto = auto_answers(u["student_id"]) if u and u.get("student_id") else None
-    today = date.today().isoformat()
+SCHOLARSHIP_BY_ID = {s["id"]: s for s in SCHOLARSHIPS}
+
+
+# ---------- 收藏獎學金：收藏後會貼在證照牆上，首頁「必做事項」提醒要準備什麼 ----------
+# 存在 data/campus_store.json 的 scholarship_favs (不用資料庫)：{學號: [獎學金 id, ...]}
+
+def favorite_scholarships(student_id):
+    favs = store.section("scholarship_favs", dict).get(student_id) or []
+    return [i for i in favs if i in SCHOLARSHIP_BY_ID]
+
+
+def scholarship_items(student_id=None, with_favs=False):
+    """前台用的獎學金清單：帶系統判斷、是否截止、剩幾天、是否收藏 (只有學生本人有收藏)"""
+    auto = auto_answers(student_id) if student_id else None
+    favs = set(favorite_scholarships(student_id)) if student_id and with_favs else set()
+    today = date.today()
     items = []
     for s in SCHOLARSHIPS:
         crit = []
         for c in s["criteria"]:
             val = auto.get(c["auto"]) if auto and c.get("auto") else None
             crit.append({**c, "auto_value": val})
-        items.append({**s, "criteria": crit, "expired": s["deadline"] < today})
+        days_left = (date.fromisoformat(s["deadline"]) - today).days
+        items.append({**s, "criteria": crit, "expired": days_left < 0, "days_left": days_left,
+                      "favorited": s["id"] in favs})
+    return items, auto
+
+
+@bp.route("/api/campus/scholarships", methods=["GET"])
+def scholarships():
+    u = current_user()
+    items, auto = scholarship_items(u.get("student_id") if u else None, with_favs=bool(u) and u.get("role") == "學生")
     return ok(data=items, auto=auto, is_demo=True)
+
+
+@bp.route("/api/campus/scholarships/<sch_id>/favorite", methods=["POST"])
+@require("學生")
+def toggle_scholarship_favorite(sch_id):
+    """body {"on": true/false}；已截止的不能新收藏，但可以取消"""
+    s = SCHOLARSHIP_BY_ID.get(sch_id)
+    if not s:
+        return error("找不到這項獎學金", 404)
+    on = bool((request.get_json(silent=True) or {}).get("on", True))
+    if on and s["deadline"] < date.today().isoformat():
+        return error("這項獎學金已經截止，不能收藏")
+    sid = current_user()["student_id"]
+    with store.lock:
+        favs = [i for i in favorite_scholarships(sid) if i != sch_id]
+        if on:
+            favs.append(sch_id)
+        store.section("scholarship_favs", dict)[sid] = favs
+        store.save()
+    return ok(message=f"已收藏「{s['name']}」，會貼在證照牆上並提醒你準備文件" if on else f"已取消收藏「{s['name']}」",
+              favorited=on)

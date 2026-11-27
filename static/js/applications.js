@@ -66,7 +66,7 @@ function appCard(app, { compact = false, review = false } = {}) {
                     ${app.history.map(h => `<li><span class="text-slate-400">${escapeHtml(h.at)}</span> ${escapeHtml(app.stages[h.stage]?.name || '')} · <b>${escapeHtml(h.action)}</b> · ${escapeHtml(h.by)}${h.note ? `：${escapeHtml(h.note)}` : ''}${h.stamp ? ` <span class="text-rose-700">🔴 已蓋章 <span class="font-mono">${escapeHtml(h.stamp.code)}</span></span>` : ''}</li>`).join('')}
                 </ol>
             </details>`}
-            ${(app.files || []).length ? `<div class="flex flex-wrap gap-2 text-xs">${app.files.map(f => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener" class="border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">📎 ${escapeHtml(f.name)}</a>`).join('')}</div>` : ''}
+            ${(app.files || []).length ? `<div class="flex flex-wrap gap-2 text-xs">${app.files.map(f => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener" class="border border-slate-300 rounded px-2 py-1 hover:border-ukn-500">📎 <span class="text-slate-500">${escapeHtml(f.label || '檔案')}：</span>${escapeHtml(f.name)}</a>`).join('')}</div>` : ''}
             <div class="flex flex-wrap gap-2">
                 ${app.can_withdraw && !review ? `<button type="button" onclick="withdrawOnlineApp(${Number(app.id)})" class="text-xs border border-slate-300 rounded px-2.5 py-1 hover:border-rose-400 text-slate-600">撤回申請</button>` : ''}
                 ${app.status === '已退回' && currentUser.role === '學生' && !review ? `<button type="button" onclick="${app.is_upload ? `openUploadModal(${Number(app.id)})` : `openApplyModal(${Number(app.item_id)}, ${Number(app.id)})`}"class="text-xs bg-ukn-800 text-white rounded px-2.5 py-1">修改後重新送出</button>` : ''}
@@ -249,7 +249,7 @@ async function openUploadModal(retryOf = null) {
         <form id="uploadForm" class="space-y-4">
             <ol class="text-xs text-slate-600 bg-ukn-50/60 border border-ukn-100 rounded p-3 space-y-1 list-decimal list-inside">
                 <li>選要申請什麼，系統會自動排好要給誰蓋章</li>
-                <li>沒有紙本表單可以在下方下載空白表填寫，再拍照或存成 PDF 上傳</li>
+                <li>沒有紙本表單可以在下方下載空白表填寫，再用手機「掃描文件」存成 PDF 上傳</li>
                 <li>送出後每一關線上蓋章，自動送到下一關，不用再拿紙本跑</li>
             </ol>
             <div class="space-y-1">
@@ -269,10 +269,11 @@ async function openUploadModal(retryOf = null) {
                 <textarea name="reason" rows="2" maxlength="300" placeholder="例：申請寒假到○○公司實習兩個月" class="w-full border border-slate-300 rounded px-2 py-1.5 text-sm">${escapeHtml(prev?.fields.reason || '')}</textarea>
             </label>
             <label class="block space-y-1">
-                <span class="text-xs font-semibold text-slate-700">申請表檔案 <span class="text-rose-600">*</span></span>
-                <input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-xs">
-                <span class="block text-[11px] text-slate-500">💡 ${escapeHtml(lim.types)}，每個 ${Number(lim.max_mb)} MB 以內，最多 ${Number(lim.max_files)} 個${prev ? '；重新送出要再上傳一次' : ''}</span>
+                <span class="text-xs font-semibold text-slate-700">填好的申請表 <span class="text-rose-600">*</span> <span class="font-normal text-slate-400">(只收 PDF)</span></span>
+                <input type="file" name="form" required accept="${escapeHtml(lim.slots.form.accept)},application/pdf" data-slot="form" onchange="checkUploadSlot(this)" class="block w-full text-xs">
+                <span class="block text-[11px] text-slate-500">💡 紙本請用手機「掃描文件」存成 PDF（iPhone：檔案 App → 掃描文件；Android：Google 雲端硬碟 → 掃描），不收一般照片。每個 ${Number(lim.max_mb)} MB 以內${prev ? '；重新送出要再上傳一次' : ''}</span>
             </label>
+            <div id="uploadExtraSlots" class="space-y-4"></div>
             <p id="uploadError" class="hidden text-xs text-rose-700"></p>
             <button type="submit" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">📤 上傳並送出</button>
         </form>`);
@@ -298,6 +299,7 @@ function refreshUploadRoute() {
     // 選了申請項目才顯示會經過哪幾關（唯讀，學生不能改）
     const kind = uploadOptions.types.find(t => t.key === document.getElementById('uploadType').value);
     const box = document.getElementById('uploadPreview');
+    renderUploadExtraSlots(kind);
     if (!kind) { box.innerHTML = ''; return; }
     const steps = [{ name: '線上送出', icon: '📤' }, ...kind.stages, { name: '完成', icon: '✅' }]
         .map((s, i) => ({ ...s, state: i === 0 ? 'current' : 'pending' }));
@@ -311,6 +313,48 @@ function refreshUploadRoute() {
             <a href="${url}?example=1" target="_blank" rel="noopener" class="${link}">👀 填寫範例</a>
         </div>
         <div class="text-[11px] text-slate-500 mt-2">送出後會依序經過：</div>${appStepper({ steps }, { compact: true })}`;
+}
+
+// 依申請種類多出來的上傳欄：要證件照的申請才有照片欄 (必交、只收 JPG/PNG)；其他附件 (同意書、證明) 選交
+function renderUploadExtraSlots(kind) {
+    const box = document.getElementById('uploadExtraSlots');
+    if (!box) return;
+    const slots = uploadOptions.limits.slots;
+    const photos = kind?.photos || [];
+    const docs = kind?.attachments || [];
+    box.innerHTML = photos.map(label => `
+        <label class="block space-y-1">
+            <span class="text-xs font-semibold text-slate-700">${escapeHtml(label)} <span class="text-rose-600">*</span> <span class="font-normal text-slate-400">(只收 ${escapeHtml(slots.photo.types)} 照片)</span></span>
+            <input type="file" name="photo" required accept="${escapeHtml(slots.photo.accept)}" data-slot="photo" onchange="checkUploadSlot(this)" class="block w-full text-xs">
+        </label>`).join('') + `
+        <label class="block space-y-1">
+            <span class="text-xs font-semibold text-slate-700">其他附件 <span class="font-normal text-slate-400">(選填，${escapeHtml(slots.attachment.types)}，最多 ${Number(uploadOptions.limits.max_files)} 個)</span></span>
+            <input type="file" name="attachments" multiple accept="${escapeHtml(slots.attachment.accept)}" data-slot="attachment" onchange="checkUploadSlot(this)" class="block w-full text-xs">
+            ${docs.length ? `<span class="block text-[11px] text-slate-500">📎 這項申請通常要附：${docs.map(escapeHtml).join('、')}</span>` : ''}
+        </label>`;
+}
+
+// 選完檔案馬上檢查格式，不用等按送出才被後端擋 (後端一樣會再檢查)
+function checkUploadSlot(input) {
+    const slot = uploadOptions.limits.slots[input.dataset.slot];
+    const allowed = slot.accept.split(',');
+    const err = document.getElementById('uploadError');
+    const bad = [...input.files].find(f => !allowed.includes('.' + (f.name.split('.').pop() || '').toLowerCase()));
+    if (bad) {
+        err.textContent = input.dataset.slot === 'form'
+            ? `「${bad.name}」不是 PDF。申請表只收 PDF，請用手機「掃描文件」把填好的申請表存成 PDF；照片請放在下方的照片或附件欄。`
+            : `「${bad.name}」格式不對，${slot.label}只收 ${slot.types}。`;
+        err.classList.remove('hidden');
+        input.value = '';
+        return;
+    }
+    if (input.dataset.slot === 'attachment' && input.files.length > uploadOptions.limits.max_files) {
+        err.textContent = `其他附件最多 ${uploadOptions.limits.max_files} 個。`;
+        err.classList.remove('hidden');
+        input.value = '';
+        return;
+    }
+    err.classList.add('hidden');
 }
 
 // ---------- 老師 / 行政人員：我的印章 ----------

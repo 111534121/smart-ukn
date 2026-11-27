@@ -27,6 +27,14 @@ def test_student_sees_own_class_changes(client, login):
     assert _changes(client) == []
 
 
+def test_roster_class_counts_without_class_group(client, login):
+    """班級群組裡還沒有資管五忠 (舊的 campus_store.json)：照學籍班級也看得到"""
+    from campus.common import store
+    store.data["classes"] = []
+    login("student1")
+    assert {c["course_name"] for c in _changes(client)} == {"統計學", "AI應用精準管理"}
+
+
 def test_add_to_calendar_once(client, login):
     login("student1")
     c = next(x for x in _changes(client) if x["kind"] == "調課")

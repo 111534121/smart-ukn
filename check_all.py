@@ -165,8 +165,8 @@ def check_self_check():
     code, out = run([sys.executable, "-c", (
         "import json, self_check; r = self_check.run_all(); "
         "print('@@JSON@@' + json.dumps(r, ensure_ascii=False, default=str))")], timeout=600)
-    m = re.search(r"@@JSON@@(.*)$", out, re.S)
-    if not m:
+    m = re.search(r"^@@JSON@@([^\r\n]*)$", out, re.M)
+    if code != 0 or not m:
         tail = "\n".join(out.strip().splitlines()[-15:])
         return {"name": "全站功能檢測", "ok": False, "summary": "self_check.py 執行失敗", "details": [tail]}
     import json

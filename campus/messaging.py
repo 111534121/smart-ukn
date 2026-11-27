@@ -204,8 +204,21 @@ def add_notice(item):
     return full
 
 
+def staff_names():
+    """{帳號: 目前姓名}：老師改名 (例如換成真實師資) 後，舊通知也顯示新名字"""
+    rows = deps.fetch_db_rows("SELECT username, full_name FROM users WHERE role IN ('老師', '教職員', '管理員', '系統管理員')")
+    source = rows if rows is not None else [u for u in (deps.users or []) if u.get("role") in STAFF_ROLES]
+    return {u["username"]: u["full_name"] for u in source if u.get("full_name")}
+
+
 def load_notices(sender_username=None, student_id=None):
-    """取得通知 (含 recipients、read_by)；可依發送者或收件學生篩選"""
+    """取得通知 (含 recipients、read_by)；可依發送者或收件學生篩選。sender 一律換成發送帳號目前的姓名"""
+    names = staff_names()
+    return [{**n, "sender": names.get(n.get("sender_username"), n.get("sender") or "")}
+            for n in _load_notices(sender_username, student_id)]
+
+
+def _load_notices(sender_username=None, student_id=None):
     if use_db():
         where, params = [], []
         if sender_username:
