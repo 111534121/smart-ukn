@@ -237,7 +237,8 @@ def teacher_portfolio():
     name = str(u['full_name']).replace(' 老師', '')
     schedule = facilities.load_schedule()
     periods = sum(int(s['period_end']) - int(s['period_start']) + 1 for s in schedule
-                  if s.get('teacher') == name)
+                  if s.get('teacher') == name and not any(word in str(s.get('course_name') or '')
+                  for word in ('班會', '導師時間', '自習', '社團活動')))
     student_ids = {s['student_id'] for s in _students() if s.get('class_name') == u.get('advised_class')}
     cared = [r for r in counseling.load_records(list(student_ids)) if r.get('counselor_username') == u['username']]
     initial_reviews = [i for i in certificates.submissions() if i.get('advisor_reviewer') == u['full_name']]

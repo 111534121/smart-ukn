@@ -11,11 +11,13 @@
 - 還沒建表或連不上 → data/campus_store.json (示範模式，第一次使用時放入下方 DEMO_RECORDS)
 """
 from datetime import date
+import re
 
 from flask import Blueprint, request
 
 from .common import all_students, current_user, deps, error, next_id, ok, require, store
-from .counseling import scope_class, student_in_scope
+from .counseling import class_names, scope_class, student_in_scope
+from .facilities import load_schedule
 
 bp = Blueprint("campus_records", __name__)
 
@@ -56,6 +58,45 @@ def use_db():
 
 def _json_items():
     return store.section("student_records", lambda: [dict(r) for r in DEMO_RECORDS])
+
+
+def custom_positions(class_name, semester):
+    return [r["position"] for r in store.section("class_custom_positions", list)
+            if r["class_name"] == class_name and r["semester"] == semester]
+
+
+@bp.route("/api/campus/records/cadre-positions", methods=["POST", "DELETE"])
+@require(*CADRE_ROLES)
+def manage_cadre_position():
+    u = current_user()
+    data = request.get_json(silent=True) or {}
+    requested_class = str(data.get("class_name") or "").strip()
+    class_name, _ = scope_class(u, requested_class)
+    if not requested_class or not class_name or class_name not in class_names():
+        return error("只能管理自己的導師班", 403)
+    name = str(data.get("position") or "").strip()
+    if name in CLASS_POSITIONS or not re.fullmatch(r"[\u4e00-\u9fff]{2,10}股長", name):
+        return error("請選擇職位，或輸入完整的「○○股長」；不能有數字或符號")
+    semester = current_semester()
+    with store.lock:
+        positions = store.section("class_custom_positions", list)
+        exists = any(r["class_name"] == class_name and r["semester"] == semester and r["position"] == name for r in positions)
+        if request.method == "POST":
+            if name in CLASS_POSITIONS or exists:
+                return error("這個股長職位已經存在")
+            positions.append({"class_name": class_name, "semester": semester, "position": name})
+        else:
+            if not exists:
+                return error("找不到這個自訂股長職位", 404)
+            positions[:] = [r for r in positions if not (r["class_name"] == class_name and r["semester"] == semester and r["position"] == name)]
+        store.save()
+    if request.method == "DELETE":
+        classmates = [s["student_id"] for s in all_students() if s.get("class_name") == class_name]
+        for record in load_records(classmates):
+            if record["kind"] == "幹部" and record["semester"] == semester and record["item"] == name:
+                delete_record(record["id"])
+                _audit("刪除", record)
+    return ok(message="已新增股長職位" if request.method == "POST" else "已移除股長職位")
 
 
 def load_records(student_ids):
@@ -150,8 +191,36 @@ def class_cadres():
     names = {s["student_id"]: s["full_name"] for s in students}
     cadres = [{**r, "full_name": names.get(r["student_id"], r["student_id"])}
               for r in load_records(list(names)) if r["kind"] == "幹部" and r["semester"] == semester]
-    return ok(class_name=class_name, classes=classes, semester=semester, positions=list(CLASS_POSITIONS),
+    return ok(class_name=class_name, classes=classes, semester=semester,
+              positions=list(CLASS_POSITIONS) + custom_positions(class_name, semester), custom_positions=custom_positions(class_name, semester),
               students=students, cadres=sorted(cadres, key=lambda r: (POSITIONS.index(r["item"]) if r["item"] in POSITIONS else 99, r["reason"])))
+
+
+def taught_courses(u):
+    name = str(u.get("full_name") or "").removesuffix(" 老師").strip()
+    return sorted({(str(s.get("class_name") or ""), str(s.get("course_name") or ""))
+                   for s in load_schedule() if s.get("teacher") == name and s.get("class_name")
+                   and s.get("course_name") and not any(word in s["course_name"] for word in ("班會", "導師時間", "自習"))})
+
+
+@bp.route("/api/campus/records/course-tutors", methods=["GET"])
+@require(*CADRE_ROLES)
+def course_tutors():
+    u = current_user()
+    courses = taught_courses(u) if u["role"] == "老師" else sorted({
+        (str(s.get("class_name") or ""), str(s.get("course_name") or "")) for s in load_schedule()
+        if s.get("class_name") and s.get("course_name") and not any(word in s["course_name"] for word in ("班會", "導師時間", "自習"))})
+    students = all_students()
+    result = []
+    for class_name, course_name in courses:
+        classmates = [s for s in students if s.get("class_name") == class_name]
+        records = [r for r in load_records([s["student_id"] for s in classmates])
+                   if r["kind"] == "幹部" and r["item"] == TUTOR and r["reason"] == course_name
+                   and r["semester"] == current_semester()]
+        result.append({"class_name": class_name, "course_name": course_name,
+                       "students": [{"student_id": s["student_id"], "full_name": s["full_name"]} for s in classmates],
+                       "tutor": records[0] if records else None})
+    return ok(data=result)
 
 
 @bp.route("/api/campus/records/cadres", methods=["POST"])
@@ -163,16 +232,20 @@ def set_cadre():
     student_id = str(data.get("student_id", "")).strip()
     item = str(data.get("item", "")).strip()
     reason = str(data.get("reason", "")).strip()[:50]
-    if item not in POSITIONS:
-        return error(f"職位只能是：{'、'.join(POSITIONS)}")
+    if item != TUTOR and item not in CLASS_POSITIONS and item not in custom_positions(u.get("advised_class") if u["role"] == "老師" else next((s.get("class_name") for s in all_students() if s["student_id"] == student_id), ""), current_semester()):
+        return error("這個班級沒有設定此幹部職位")
     if item == TUTOR and not reason:
         return error("小老師請填寫負責的科目")
     if not student_id:
         return error("請選擇學生")
-    student = student_in_scope(u, student_id)
+    student = next((s for s in all_students() if s["student_id"] == student_id), None) if item == TUTOR else student_in_scope(u, student_id)
     if not student:
         exists = any(s["student_id"] == student_id for s in all_students())
         return error("只能設定自己導師班的學生", 403) if exists else error("查無此學生", 404)
+    if item == TUTOR:
+        permitted = taught_courses(u) if u["role"] == "老師" else [(s.get("class_name"), s.get("course_name")) for s in load_schedule()]
+        if (student.get("class_name"), reason) not in permitted:
+            return error("只能設定自己任課班級的課程小老師", 403)
     semester = current_semester()
     classmates = [s["student_id"] for s in all_students() if s.get("class_name") == student.get("class_name")]
     replaced = [r for r in load_records(classmates) if r["kind"] == "幹部" and r["semester"] == semester and r["item"] == item
@@ -192,7 +265,12 @@ def remove_cadre(record_id):
     """取消幹部；獎懲由學務處管理，不能從這裡刪"""
     u = current_user()
     record = find_record(record_id)
-    if not record or record["kind"] != "幹部" or not student_in_scope(u, record["student_id"]):
+    student = next((s for s in all_students() if s["student_id"] == record["student_id"]), None) if record else None
+    can_remove = student_in_scope(u, record["student_id"]) if record else None
+    if record and record["item"] == TUTOR and student:
+        can_remove = (student.get("class_name"), record["reason"]) in (taught_courses(u) if u["role"] == "老師" else
+                     [(s.get("class_name"), s.get("course_name")) for s in load_schedule()])
+    if not record or record["kind"] != "幹部" or not can_remove:
         return error("找不到這筆幹部紀錄，或不是你導師班的學生", 404)
     delete_record(record_id)
     _audit("刪除", record)

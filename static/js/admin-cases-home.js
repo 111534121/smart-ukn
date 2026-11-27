@@ -3,7 +3,7 @@ tabLoaders['tab-admin-cases'] = () => {
     const frame = document.getElementById('adminCasesFrame');
     if (!frame || frame.src) return;
     const kind = new URLSearchParams(location.search).get('kind');
-    frame.src = '/admin-workbench?embedded=1' + (kind ? '&kind=' + encodeURIComponent(kind) : '');
+    frame.src = '/admin-workbench?embedded=1&v=20261127' + (kind ? '&kind=' + encodeURIComponent(kind) : '');
 };
 window.addEventListener('message', event => {
     const frame = document.getElementById('adminCasesFrame');

@@ -323,16 +323,18 @@ def create_class():
     if current_user()["role"] == "科助":
         return error("科助只能通知本科既有班級", 403)
     data = request.get_json(silent=True) or {}
-    name = str(data.get("class_name", "")).strip()[:30]
+    name = str(data.get("class_name", "")).strip()
     password = str(data.get("password", "")).strip()
-    if not name or len(password) < 4:
-        return error("請輸入班級名稱與至少 4 碼的加入密碼")
+    if not 2 <= len(name) <= 30 or name.isdecimal() or any(ord(ch) < 32 for ch in name):
+        return error("班級名稱請填 2 至 30 字，不能只有數字或控制字元")
+    if not 4 <= len(password) <= 64:
+        return error("加入密碼請填 4 至 64 碼")
     if find_class(name):
         return error("已有同名班級", 409)
     u = current_user()
     add_class(name, generate_password_hash(password), u)
     deps.write_audit_log("classes", name, "新增", after={"class_name": name, "created_by": u["full_name"]})
-    return ok(message=f"已建立「{name}」，請把密碼告訴學生")
+    return ok(message=f"已建立「{name}」，目前 0 位學生；請學生用加入密碼加入後再發通知")
 
 
 @bp.route("/api/campus/classes/password", methods=["POST"])
@@ -343,8 +345,8 @@ def reset_password():
         return error("科助不可修改班級加入密碼", 403)
     data = request.get_json(silent=True) or {}
     password = str(data.get("password", "")).strip()
-    if len(password) < 4:
-        return error("密碼至少 4 碼")
+    if not 4 <= len(password) <= 64:
+        return error("加入密碼請填 4 至 64 碼")
     target = find_class(data.get("class_name"))
     if not target:
         return error("找不到班級", 404)
@@ -417,7 +419,7 @@ def send_notice():
             return error("收件人須為學號清單")
         recipient_ids = list(dict.fromkeys(s for s in recipients if s in members))
     if not recipient_ids:
-        return error("這個班級沒有可以通知的學生")
+        return error("此班級目前沒有可通知的學生；新群組請先讓學生用加入密碼加入")
     item = add_notice({"class_name": class_name, "whole_class": recipients == "all", "recipients": recipient_ids,
                        "title": title, "content": content, "priority": priority, "sender": u["full_name"],
                        "sender_username": u["username"], "due_date": due_date, "reply_required": data.get("reply_required") is True})

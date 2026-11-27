@@ -173,8 +173,9 @@
     <link rel="stylesheet" href="/css/student-lobby.css?v=57">
     <link rel="stylesheet" href="/css/case-signoff.css?v=57">
     <link rel="stylesheet" href="/css/student-services.css?v=57">
-    <link rel="stylesheet" href="/css/home-portal.css?v=20261109-topbar">
+    <link rel="stylesheet" href="/css/home-portal.css?v=20261127-schedule-colors">
     <link rel="stylesheet" href="/css/campus-access.css?v=46">
+    <link rel="stylesheet" href="/css/activities-embedded.css?v=20261127">
 </head>
 
 <body class="min-h-screen flex flex-col font-sans antialiased selection:bg-ukn-700 selection:text-white">
@@ -1545,6 +1546,30 @@
             </section>
         </div>
 
+        <!-- 活動與比賽：與主站共用頁首及分頁導覽 -->
+        <div id="tab-activities" class="tab-content hidden activity-workspace">
+<section class="hero"><div><p class="eyebrow" id="roleEyebrow">CAMPUS ACTIVITIES</p><h1 id="pageTitle">活動與比賽</h1><p class="muted" id="pageIntro">查看活動、下載簡章、回覆意願。</p></div><span id="roleChip" class="role-chip"></span></section><p id="activityMessage" class="notice" role="status" aria-live="polite"></p>
+<section id="assistantDashboard" class="card" hidden><div class="section-head"><div><p class="eyebrow">科助工作總覽</p><h2>今天要處理的活動</h2></div><button type="button" class="secondary" onclick="document.getElementById('createSection').scrollIntoView({behavior:'smooth'})">＋ 建立活動</button></div><div id="assistantStats" class="stat-grid"></div><p class="muted small">催辦會更新老師的站內待辦提醒。LINE、簡訊、Email 尚未接入，系統不會顯示為已送達。</p></section>
+<section id="createSection" class="card" hidden><h2>建立新活動</h2><form id="createForm"><div class="grid">
+<label>類型<select name="kind"><option>活動</option><option>比賽</option></select></label>
+<label>活動／比賽名稱<input name="title" required maxlength="100" placeholder="例如：機器人比賽"></label>
+<label>對象<select name="target" id="targetSelect" required></select></label>
+<label>活動日期<input name="event_date" type="date" required></label>
+<label>活動時間<input name="event_time" type="time" required></label>
+<label>活動地點<input name="location" required maxlength="100" placeholder="例如：資訊管理科專題教室"></label>
+<label>回覆期限<input name="reply_deadline" type="date" required></label>
+<label>名額（0 表示不限）<input name="capacity" type="number" min="0" value="0"></label>
+<label>限定年級（0 表示不限）<select name="grade"><option value="0">不限</option><option value="1">一年級</option><option value="2">二年級</option><option value="3">三年級</option><option value="4">四年級</option><option value="5">五年級</option></select></label>
+<label>收費方式<select name="fee_mode" id="feeMode"><option>免費</option><option>付費</option></select></label>
+<label>費用（元）<input name="fee_amount" type="number" min="0" value="0"></label>
+<label>訪客報名<span class="inline-option"><input name="visitor_allowed" type="checkbox"> 開放已登記訪客報名</span></label>
+<label>排除學號（選填，以逗號分隔）<input name="excluded_student_ids" maxlength="2100" placeholder="例如 S112001,S112002"></label>
+<label>簡章／空白報名表（選填，最多 10 MB）<input name="attachment" type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt"></label>
+</div><p class="muted small">付費活動可先設定金額；虛擬帳號與自動對帳待學校金流服務接入，接入前無法接受付費報名。</p><label>活動說明<textarea name="description" required maxlength="2000"></textarea></label><div class="actions"><button type="submit">建立活動</button></div></form></section>
+<section id="teacherTasks" class="card teacher-tasks" hidden><div class="section-head"><div><p class="eyebrow">請優先處理</p><h2>審核待辦 <span id="teacherBadge" class="badge"></span></h2></div></div><p class="muted small">開啟此頁會記錄為「已開啟」。請在每筆事項選擇核准或退回。</p><div id="teacherTaskList"></div></section>
+<section><h2 id="listTitle">活動清單</h2><div id="activityList">載入中…</div></section>
+        </div>
+
         <!-- 班級通知 -->
         <div id="tab-notices" class="tab-content hidden space-y-6">
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
@@ -1605,7 +1630,7 @@
                         <p class="text-xs sm:text-sm text-slate-500 mt-1">需要關心的學生排在最前面；點學生名字可以一次看他的出缺勤、成績和關懷紀錄。</p>
                     </div>
                     <div class="flex gap-2 self-start sm:self-auto">
-                        <button type="button" onclick="openCadreEditor()" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-bold rounded px-3 py-2 text-sm whitespace-nowrap">🎖️ 設定幹部與小老師</button>
+                        <button type="button" onclick="openCadreEditor()" class="border border-ukn-300 text-ukn-800 hover:bg-ukn-50 font-bold rounded px-3 py-2 text-sm whitespace-nowrap">🎖️ 設定班級幹部</button>
                         <select id="classOverviewPicker" onchange="loadClassOverview(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white"></select>
                     </div>
                 </div>
@@ -1619,7 +1644,7 @@
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                         <h2 class="ukn-title text-xl font-bold text-slate-900" id="classAttendTitle">班級出缺勤</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">依最新官網學則核對缺曠課門檻；列出預警、實際或估算時數與請假紀錄。達門檻仍須由任課教師及教務處確認，可一鍵提醒學生。</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">先看今日已登錄的出缺勤，再查看學期累計與扣考預警；正式結果仍須由任課教師及教務處確認。</p>
                     </div>
                     <select id="classAttendPicker" onchange="loadClassAttendance(this.value)" class="hidden border border-slate-300 rounded px-3 py-2 text-sm bg-white self-start sm:self-auto"></select>
                 </div>
@@ -3975,15 +4000,16 @@
     </script>
     <script src="/js/student-lobby.js?v=57"></script>
     <script src="/js/management-home.js?v=20261109-home"></script>
-    <script src="/js/campus-shell.js?v=20261111-review-center"></script>
-    <script src="/js/admin-cases-home.js?v=20261109"></script>
-    <script src="/js/home-portal.js?v=57"></script>
+    <script src="/js/campus-shell.js?v=20261127-assistant-nav"></script>
+    <script src="/js/admin-cases-home.js?v=20261127-assistant-embed"></script>
+    <script src="/js/home-portal.js?v=20261127-assistant-nav"></script>
     <script src="/js/campus-access.js?v=46"></script>
-    <script src="/js/campus-features.js?v=20261111-review-center"></script>
-    <script src="/js/teacher-smart.js?v=20261111-review-center"></script>
-    <script src="/js/assistant-home.js?v=20261105-compact-assistant"></script>
+    <script src="/js/campus-features.js?v=20261127-teacher-review-schedule"></script>
+    <script src="/js/teacher-smart.js?v=20261127-review-center"></script>
+    <script src="/js/activities.js?v=20261127-embedded"></script>
+    <script src="/js/assistant-home.js?v=20261127-assistant-nav"></script>
     <script src="/js/assistant-internships.js?v=20261105-alumni-share-2"></script>
-    <script src="/js/campus-life.js?v=20261104-assistant-notices"></script>
+    <script src="/js/campus-life.js?v=20261127-empty-group"></script>
     <script src="/js/dept-scope.js"></script>
     <script src="/js/faculty.js"></script>
     <script src="/js/self-review.js"></script>
@@ -4018,9 +4044,9 @@
     }
     showFontSize();
 
-    // 系統名稱：老師、教職員、管理員看到「教職員校務服務系統」，學生、家長、訪客看到「學生學習與校務服務系統」
+    // 校內工作人員使用教職員名稱；學生、家長、訪客使用學生服務名稱。
     function siteName() {
-        return ['老師', '教職員', '管理員'].includes(currentUser && currentUser.role) ? '教職員校務服務系統' : '學生學習與校務服務系統';
+        return ['老師', '教職員', '處室承辦', '科助', '住宿管理員', '管理員'].includes(currentUser && currentUser.role) ? '教職員校務服務系統' : '學生學習與校務服務系統';
     }
     function applySiteName() {
         const name = siteName();

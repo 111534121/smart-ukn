@@ -835,8 +835,12 @@ async function loadMySchedule() {
         const periods = Object.entries(r.periods).map(([p, [s, e]]) => ({ p: Number(p), s, e }));
         const today = new Date().getDay() || 7;
         const days = [1, 2, 3, 4, 5];
-        const hours = me.timetable.reduce((n, c) => n + c.period_end - c.period_start + 1, 0);
-        const classes = [...new Set(me.timetable.map(c => c.class_name))];
+        const advisorEntries = me.timetable.filter(c => /班會|導師時間|自習|社團活動/.test(c.course_name || ''));
+        const teachingEntries = me.timetable.filter(c => !advisorEntries.includes(c));
+        const hours = teachingEntries.reduce((n, c) => n + c.period_end - c.period_start + 1, 0);
+        const courseCount = new Set(teachingEntries.map(c => `${c.class_name}\u0000${c.course_name}`)).size;
+        const advisorHours = advisorEntries.reduce((n, c) => n + c.period_end - c.period_start + 1, 0);
+        const classes = [...new Set(teachingEntries.map(c => c.class_name))];
         const isOfficeHour = (d, per) => me.office_hours.some(o => o.weekday === d && o.start <= per.s && per.e <= o.end);
         const stateTone = { '上課中': 'bg-rose-100 text-rose-800', '可以找老師': 'bg-emerald-100 text-emerald-800' }[me.status.state] || 'bg-slate-100 text-slate-700';
         const rows = periods.map(per => `<tr>
@@ -844,11 +848,13 @@ async function loadMySchedule() {
             ${days.map(d => {
                 const c = me.timetable.find(x => x.weekday === d && x.period_start <= per.p && per.p <= x.period_end);
                 if (c && c.period_start !== per.p) return '';
-                const todayCls = d === today ? ' bg-ukn-50/40' : '';
-                if (c) return `<td rowspan="${c.period_end - c.period_start + 1}" class="p-2 align-top border border-slate-200 bg-ukn-50${todayCls}">
+                const todayCls = d === today ? ' teacher-schedule-today' : '';
+                const advisor = c && /班會|導師時間|自習/.test(c.course_name || '');
+                if (c) return `<td rowspan="${c.period_end - c.period_start + 1}" class="p-2 align-top teacher-schedule-cell ${advisor ? 'teacher-schedule-advisor' : 'teacher-schedule-course'}${todayCls}">
                     <div class="text-sm font-bold text-ukn-900">${esc(c.course_name)}</div>
                     <div class="text-[11px] text-slate-600 mt-0.5">${esc(c.class_name)} · ${esc(c.classroom)}</div></td>`;
-                return `<td class="p-2 align-top border border-slate-200${todayCls}">${isOfficeHour(d, per) ? `<span class="text-[11px] text-emerald-700 font-semibold">Office Hour</span><div class="text-[10px] text-slate-500">${esc(me.office)}</div>` : ''}</td>`;
+                const officeHour = isOfficeHour(d, per);
+                return `<td class="p-2 align-top teacher-schedule-cell ${officeHour ? 'teacher-schedule-office' : 'teacher-schedule-empty'}${todayCls}">${officeHour ? `<span class="text-xs text-emerald-900 font-bold">Office Hour</span><div class="text-[11px] text-emerald-800">${esc(me.office)}</div>` : ''}</td>`;
             }).join('')}</tr>`).join('');
         body.innerHTML = `
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -856,11 +862,12 @@ async function loadMySchedule() {
                     <div class="mt-1"><span class="font-bold px-2 py-0.5 rounded ${stateTone}">${esc(me.status.state)}</span></div>
                     <div class="text-slate-600 mt-1">${esc(me.status.detail)}</div></div>
                 <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">本週授課</div>
-                    <div class="text-lg font-bold text-slate-800 mt-0.5">${hours} 節 · ${me.timetable.length} 門課</div>
-                    <div class="text-slate-600">${classes.map(esc).join('、') || '—'}</div></div>
+                    <div class="text-lg font-bold text-slate-800 mt-0.5">${hours} 節 · ${courseCount} 門課</div>
+                    <div class="text-slate-600">${classes.map(esc).join('、') || '—'}</div>${advisorHours ? `<div class="mt-1 text-amber-800">班會／導師時間等另計 ${advisorHours} 節</div>` : ''}</div>
                 <div class="bg-slate-50 p-3 rounded border border-slate-200"><div class="text-slate-500">Office Hour · ${esc(me.office)}</div>
                     ${me.office_hours.map(o => `<div class="text-slate-800 mt-0.5">週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}</div>`).join('') || '<div class="text-slate-500 mt-0.5">尚未設定</div>'}</div>
             </div>
+            <div class="flex justify-end"><button type="button" onclick="openCourseTutorEditor()" class="rounded border border-ukn-300 px-3 py-2 text-sm font-semibold text-ukn-800 hover:bg-ukn-50">設定課程小老師</button></div>
             <div class="overflow-x-auto"><table class="w-full min-w-[640px] border-collapse text-left">
                 <thead><tr><th class="p-2 bg-slate-50 border border-slate-200 w-20"></th>${days.map(d => `<th class="p-2 text-xs text-center border border-slate-200 ${d === today ? 'bg-ukn-800 text-white' : 'bg-slate-50 text-slate-700'}">週${WEEKDAY_TEXT[d]}${d === today ? '（今天）' : ''}</th>`).join('')}</tr></thead>
                 <tbody>${rows}</tbody></table></div>`;
@@ -911,6 +918,8 @@ function setAttendFilter(kind) {
 
 function renderClassAttendance() {
     const d = classAttendData, s = d.summary;
+    const today = d.today_summary || { record_count: 0, student_count: 0, by_type: {} };
+    const todayStudents = d.students.filter(st => st.today_records?.length);
     const counts = Object.fromEntries(Object.entries(ATTEND_FILTERS).map(([k, f]) => [k, d.students.filter(f.test).length]));
     const tile = (kind, label, value, tone) => {
         const on = attendFilter.kind === kind;
@@ -920,6 +929,16 @@ function renderClassAttendance() {
             <div class="text-2xl font-bold mt-1">${value}</div></button>`;
     };
     document.getElementById('classAttendBody').innerHTML = `
+        <section class="rounded border border-ukn-200 bg-ukn-50 p-4 space-y-3" aria-labelledby="todayAttendanceTitle">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 id="todayAttendanceTitle" class="font-bold text-ukn-900">今日出缺勤 · ${esc(d.today_date || taipeiToday())}</h3>
+                <span class="text-sm text-ukn-800">${today.student_count} 位學生 · ${today.record_count} 筆紀錄</span>
+            </div>
+            ${today.record_count ? `<div class="flex flex-wrap gap-2 text-sm">${Object.entries(today.by_type).map(([kind, count]) => `<span class="rounded bg-white border border-ukn-200 px-3 py-1">${esc(kind)} ${count}</span>`).join('')}</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${todayStudents.map(st => `<div class="rounded border border-slate-200 bg-white p-3 text-sm"><button type="button" onclick="openStudentCard('${esc(st.student_id)}')" class="font-bold text-ukn-800 hover:underline">${esc(st.full_name)}</button><span class="text-slate-500"> · ${esc(st.student_id)}</span><div class="mt-1 text-slate-700">${st.today_records.map(r => `${esc(r.course_name || '未標示課程')}：${esc(r.type)}${r.hours == null ? '' : `（${esc(r.hours)} 小時）`}`).join('、')}</div></div>`).join('')}</div>`
+                : '<p class="text-sm text-slate-600">目前沒有今日缺曠課紀錄；這不代表全班已完成點名。</p>'}
+            <p class="text-xs text-slate-500">僅顯示已登錄的紀錄；正式出席結果仍以學校點名資料為準。</p>
+        </section>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
             ${tile('banned', '已達扣考', `${s.banned} 人`, s.banned ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-700')}
             ${tile('warning', '快扣考', `${s.warning} 人`, s.warning ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 text-slate-700')}
@@ -1217,15 +1236,14 @@ function renderClassOverview() {
 //   班級幹部每個職位一人 (換人自動取代)；小老師一科一位
 async function openCadreEditor() {
     const className = classOverviewData?.class_name || '';
-    openModal('設定幹部與小老師', '<div class="text-sm text-slate-500">讀取中…</div>', true);
+    openModal('設定班級幹部', '<div class="text-sm text-slate-500">讀取中…</div>', true);
     let d;
     try { d = await api('/api/campus/records/cadres' + (className ? `?class_name=${encodeURIComponent(className)}` : '')); }
     catch (e) { document.getElementById('uiModalBody').innerHTML = `<div class="text-sm text-rose-700">${esc(e.message)}</div>`; return; }
-    document.getElementById('uiModalTitle').textContent = `設定幹部與小老師：${d.class_name}（${d.semester} 學期）`;
+    document.getElementById('uiModalTitle').textContent = `設定班級幹部：${d.class_name}（${d.semester} 學期）`;
     const options = (selected) => `<option value="">（還沒選）</option>` + d.students.map(s =>
         `<option value="${esc(s.student_id)}" ${s.student_id === selected ? 'selected' : ''}>${esc(s.full_name)}（${esc(s.student_id)}）</option>`).join('');
     const holder = item => d.cadres.find(c => c.item === item);
-    const tutors = d.cadres.filter(c => c.item === '課程小老師');
     const select = 'border border-slate-300 rounded px-2 py-1.5 text-sm bg-white w-full';
     document.getElementById('uiModalBody').innerHTML = `<div class="space-y-6">
         <section class="space-y-2">
@@ -1235,21 +1253,72 @@ async function openCadreEditor() {
                 const h = holder(p);
                 return `<label class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2">
                     <span class="w-20 shrink-0 text-sm font-semibold">${esc(p)}</span>
-                    <select onchange="saveCadre(this.value, '${esc(p)}', '', ${h ? h.id : 'null'})" class="${select}">${options(h?.student_id)}</select></label>`;
+                    <select onchange="saveCadre(this.value, '${esc(p)}', '', ${h ? h.id : 'null'})" class="${select}">${options(h?.student_id)}</select>${d.custom_positions?.includes(p) ? `<button type="button" title="移除${esc(p)}" onclick="removeCustomCadrePosition('${esc(p)}')" class="shrink-0 text-xs text-rose-700">移除</button>` : ''}</label>`;
             }).join('')}</div>
-        </section>
-        <section class="space-y-2">
-            <h3 class="font-bold text-slate-900">課程小老師</h3>
-            ${tutors.length ? `<div class="space-y-1.5">${tutors.map(t => `<div class="flex items-center gap-2 rounded border border-slate-200 px-3 py-2 text-sm">
-                <span class="font-semibold">${esc(t.reason)}</span><span class="text-slate-600">${esc(t.full_name)}</span>
-                <button type="button" onclick="removeCadre(${t.id})" class="ml-auto text-xs border border-slate-300 hover:bg-slate-50 rounded px-2 py-1">取消</button></div>`).join('')}</div>`
-                : '<div class="text-sm text-slate-500">還沒有設定小老師</div>'}
-            <form onsubmit="event.preventDefault(); saveCadre(this.student.value, '課程小老師', this.course.value.trim(), null)" class="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
-                <input name="course" required maxlength="50" placeholder="科目，例如：資料結構" class="border border-slate-300 rounded px-2 py-1.5 text-sm">
-                <select name="student" required class="${select}">${options('')}</select>
-                <button class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-1.5 text-sm">新增小老師</button>
-            </form>
-        </section></div>`;
+            <form onsubmit="event.preventDefault(); addCustomCadrePosition(this)" class="flex flex-wrap gap-2 border-t pt-3"><input name="position" required minlength="4" maxlength="12" pattern="[\u4e00-\u9fff]{2,10}股長" title="請輸入完整名稱，例如手機股長；不能有數字或符號" placeholder="新增職位，例如：手機股長" class="min-w-0 flex-1 rounded border border-slate-300 px-3 py-2 text-sm"><button class="rounded bg-ukn-800 px-4 py-2 text-sm font-semibold text-white">新增職位</button></form>
+        </section><div class="border-t pt-3 text-sm text-slate-600">課程小老師由任課老師設定。<button type="button" onclick="openCourseTutorEditor()" class="ml-2 font-semibold text-ukn-800 underline">前往選擇課程與學生</button></div></div>`;
+}
+
+async function addCustomCadrePosition(form) {
+    if (form.dataset.submitting === 'true') return;
+    const className = classOverviewData?.class_name || '';
+    const position = form.elements.namedItem('position').value.trim();
+    form.dataset.submitting = 'true';
+    const submit = form.querySelector('button[type="submit"], button:not([type])');
+    if (submit) submit.disabled = true;
+    try { toast((await api('/api/campus/records/cadre-positions', {method: 'POST', json: {class_name: className, position}})).message); openCadreEditor(); }
+    catch (error) { toast(error.message, 'error'); }
+    finally { form.dataset.submitting = 'false'; if (submit) submit.disabled = false; }
+}
+
+async function removeCustomCadrePosition(position) {
+    if (!window.confirm(`確定移除「${position}」？該職位目前的學生指派也會取消。`)) return;
+    const className = classOverviewData?.class_name || '';
+    try { toast((await api('/api/campus/records/cadre-positions', {method: 'DELETE', json: {class_name: className, position}})).message); openCadreEditor(); }
+    catch (error) { toast(error.message, 'error'); }
+}
+
+async function openCourseTutorEditor() {
+    openModal('設定課程小老師', '<div class="text-sm text-slate-500">讀取課程中…</div>', true);
+    try {
+        const result = await api('/api/campus/records/course-tutors');
+        const courses = result.data || [];
+        const body = document.getElementById('uiModalBody');
+        if (!courses.length) { body.innerHTML = '<p class="text-sm text-slate-600">目前沒有可設定的任課課程。</p>'; return; }
+        const options = courses.map((c, i) => `<option value="${i}">${esc(c.class_name)} · ${esc(c.course_name)}</option>`).join('');
+        body.innerHTML = `<div class="space-y-3"><p class="text-sm text-slate-600">任課老師可為自己教授的班級選一位課程小老師。</p>
+            <form id="courseTutorForm" class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"><select name="course" required class="border rounded px-2 py-2 text-sm bg-white" onchange="updateCourseTutorStudents()">${options}</select>
+            <select name="student" required class="border rounded px-2 py-2 text-sm bg-white"></select><button class="bg-ukn-800 text-white rounded px-4 py-2 text-sm font-bold">指定小老師</button></form>
+            <div class="space-y-2">${courses.filter(c => c.tutor).map(c => `<div class="flex items-center gap-2 rounded border px-3 py-2 text-sm"><span class="font-semibold">${esc(c.class_name)} · ${esc(c.course_name)}</span><span>${esc(c.students.find(s => s.student_id === c.tutor.student_id)?.full_name || c.tutor.student_id)}</span><button type="button" class="ml-auto border rounded px-2 py-1" onclick="removeCourseTutor(${c.tutor.id})">取消</button></div>`).join('') || '<p class="text-sm text-slate-500">尚未指定小老師。</p>'}</div></div>`;
+        window.courseTutorCourses = courses;
+        updateCourseTutorStudents();
+        body.querySelector('#courseTutorForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const course = courses[Number(form.elements.namedItem('course').value)];
+            if (!course) return;
+            const submit = form.querySelector('button');
+            if (submit.disabled) return;
+            submit.disabled = true;
+            try { toast((await api('/api/campus/records/cadres', {method: 'POST', json: {student_id: form.elements.namedItem('student').value, item: '課程小老師', reason: course.course_name}})).message); openCourseTutorEditor(); }
+            catch (error) { toast(error.message, 'error'); }
+            finally { submit.disabled = false; }
+        });
+    } catch (error) { document.getElementById('uiModalBody').innerHTML = `<p class="text-sm text-rose-700">${esc(error.message)}</p>`; }
+}
+
+function updateCourseTutorStudents() {
+    const form = document.getElementById('courseTutorForm');
+    if (!form) return;
+    const course = window.courseTutorCourses?.[Number(form.elements.namedItem('course').value)];
+    form.elements.namedItem('student').innerHTML = '<option value="">選擇學生</option>' + (course?.students || []).map(s =>
+        `<option value="${esc(s.student_id)}" ${s.student_id === course.tutor?.student_id ? 'selected' : ''}>${esc(s.full_name)}（${esc(s.student_id)}）</option>`).join('');
+}
+
+async function removeCourseTutor(id) {
+    if (!window.confirm('確定取消這位課程小老師？')) return;
+    try { await api(`/api/campus/records/${id}`, {method: 'DELETE'}); toast('已取消'); openCourseTutorEditor(); }
+    catch (error) { toast(error.message, 'error'); }
 }
 
 async function saveCadre(studentId, item, course, currentId) {
@@ -1259,8 +1328,8 @@ async function saveCadre(studentId, item, course, currentId) {
         } else {
             toast((await api('/api/campus/records/cadres', { method: 'POST', json: { student_id: studentId, item, reason: course } })).message);
         }
+        openCadreEditor();
     } catch (e) { toast(e.message, 'error'); }
-    openCadreEditor();
 }
 
 async function removeCadre(id) {
@@ -1379,7 +1448,7 @@ const ALERT_TILES = [
     { type: '證照', icon: '🏅', label: '待審證照', goto: 'tab-certs' },
     { type: '關懷', icon: '📝', label: '追蹤到期', goto: 'tab-counseling' },
     { type: '回條', icon: '📩', label: '待收回條', goto: 'tab-notices' },
-    { type: '預警', icon: '⚠️', label: '學業預警', goto: 'tab-myclass' },
+    { type: '預警', icon: '⚠️', label: '學業預警', goto: 'tab-warning' },
     { type: '教室借用', icon: '🔑', label: '待審教室借用', goto: '/admin' },
     { type: '宿舍', icon: '🏢', label: '待審宿舍申請', goto: 'tab-services' },
 ];
@@ -1402,9 +1471,14 @@ function openStaffTodo(index) {
     } else if (item.goto === '/admin') {
         location.assign(item.goto);
     } else if (ALERT_TILES.some(tile => tile.type === item.type && tile.goto === item.goto)) {
-        switchTab(item.goto);
-        if (item.type === '請假') document.getElementById('homeLeaveReview')?.scrollIntoView({behavior: 'smooth'});
+        switchTab(item.type === '請假' && currentUser.role === '老師' ? 'tab-teacher-smart' : item.goto);
+        if (item.type === '請假' && currentUser.role !== '老師') document.getElementById('homeLeaveReview')?.scrollIntoView({behavior: 'smooth'});
     }
+}
+
+function openTeacherReviews(sectionId) {
+    document.getElementById('tab-home')?.classList.add('teacher-review-open');
+    if (sectionId) document.getElementById(sectionId)?.scrollIntoView({behavior: 'smooth'});
 }
 
 async function sendLineDemo() {
@@ -1437,9 +1511,9 @@ async function loadStaffHome() {
         dormStaff ? Promise.resolve(null) : api('/api/campus/notices/sent').catch(e => ({error: e.message})),
         isTeacher ? api('/api/line/demo-status').catch(() => ({ready: false})) : Promise.resolve({ready: false}),
     ]);
-    const parts = [`<section class="rounded border border-ukn-200 bg-ukn-50 p-5 flex flex-wrap justify-between gap-3"><div><h2 class="text-xl font-bold text-ukn-900">${isTeacher ? '老師今日工作台' : dormStaff ? '宿舍行政工作台' : '今日工作台'}</h2><p class="text-sm mt-1">${esc(currentUser.full_name)} · ${taipeiToday()}${currentUser.advised_class ? ' · 導師班 ' + esc(currentUser.advised_class) : dormStaff ? ' · 住宿管理' : ' · 校務與授課事項'}</p></div><button type="button" onclick="loadStaffHome()" class="border rounded px-3 py-2 bg-white text-sm">重新整理</button></section>`];
+    const parts = isTeacher ? [] : [`<section class="rounded border border-ukn-200 bg-ukn-50 p-5 flex flex-wrap justify-between gap-3"><div><h2 class="text-xl font-bold text-ukn-900">${dormStaff ? '宿舍行政工作台' : '今日工作台'}</h2><p class="text-sm mt-1">${esc(currentUser.full_name)} · ${taipeiToday()}${dormStaff ? ' · 住宿管理' : ' · 校務與授課事項'}</p></div><button type="button" onclick="loadStaffHome()" class="border rounded px-3 py-2 bg-white text-sm">重新整理</button></section>`];
 
-    if (isTeacher && lineDemo?.ready) parts.push(`<section class="bg-white rounded border border-ukn-200 p-4 flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold text-ukn-900">LINE 專題測試</h2><p class="text-xs text-slate-600">只發送一則假資料訊息到預設的測試帳號。</p></div><button id="lineDemoSend" type="button" onclick="sendLineDemo()" class="bg-ukn-800 text-white rounded px-4 py-2 text-sm disabled:opacity-50">傳送測試通知 →</button></section>`);
+    const lineDemoHtml = isTeacher && lineDemo?.ready ? `<details class="bg-white rounded border border-ukn-200 p-4"><summary class="cursor-pointer font-semibold text-ukn-900">LINE 專題測試</summary><div class="mt-3 flex flex-wrap items-center justify-between gap-3"><p class="text-xs text-slate-600">只發送一則假資料訊息到預設的測試帳號。</p><button id="lineDemoSend" type="button" onclick="sendLineDemo()" class="bg-ukn-800 text-white rounded px-4 py-2 text-sm disabled:opacity-50">傳送測試通知 →</button></div></details>` : '';
 
     if (!isTeacher) parts.push(`<section class="bg-white rounded border border-ukn-200 p-5 space-y-3"><h2 class="text-lg font-bold">${dormStaff ? '住宿行政案件' : '行政人員工作台'}</h2><p class="text-sm text-slate-600">${dormStaff ? '查看住宿異動、設備報修與補件案件。' : '查看所屬處室案件、分派承辦人、要求補件與完成結案。'}</p><a href="/#admin-cases" class="inline-block bg-ukn-800 text-white rounded px-4 py-2">${dormStaff ? '查看住宿案件' : '開啟行政案件工作台'} →</a></section>`);
     // 1. 今天的課
@@ -1449,7 +1523,10 @@ async function loadStaffHome() {
             const today = new Date(taipeiToday() + 'T12:00:00Z').getUTCDay() || 7;
             const per = teachers.periods;
             const hm = new Intl.DateTimeFormat('en-GB', {timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(new Date());
-            const list = me.timetable.filter(c => c.weekday === today).sort((a, b) => a.period_start - b.period_start);
+            const todaySchedule = me.timetable.filter(c => c.weekday === today).sort((a, b) => a.period_start - b.period_start);
+            const isAdvisorTime = c => /班會|導師時間/.test(c.course_name || '');
+            const list = todaySchedule.filter(c => !isAdvisorTime(c));
+            const advisorTimes = todaySchedule.filter(isAdvisorTime);
             const start = c => per[c.period_start][0], end = c => per[c.period_end][1];
             const now = list.find(c => start(c) <= hm && hm <= end(c));
             const next = list.find(c => start(c) > hm);
@@ -1460,7 +1537,11 @@ async function loadStaffHome() {
                 <div class="flex items-end justify-between gap-2"><h2 class="ukn-title text-lg font-bold text-slate-900">今天的課 · 週${WEEKDAY_TEXT[today]}</h2>
                     <button type="button" onclick="switchTab('tab-myschedule')" class="text-sm text-ukn-700 hover:underline">整週課表 ➔</button></div>
                 ${list.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">${list.map(c => chip(c, c === now ? '現在' : c === next ? '下一堂' : '')).join('')}</div>`
-                    : `<div class="text-sm text-slate-600">今天沒有課。${me.office_hours.length ? `Office Hour：${me.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')} · ${esc(me.office)}` : ''}</div>`}
+                    : `<div class="text-sm text-slate-600">今天沒有授課。${me.office_hours.length ? `Office Hour：${me.office_hours.map(o => `週${WEEKDAY_TEXT[o.weekday]} ${o.start}–${o.end}`).join('、')} · ${esc(me.office)}` : ''}</div>`}
+                ${advisorTimes.length ? `<div class="border-t border-slate-100 pt-3 space-y-2"><h3 class="text-sm font-bold text-slate-700">導師時間（非授課）</h3>${advisorTimes.map(c => {
+                    const conflicts = list.filter(other => other.period_start <= c.period_end && c.period_start <= other.period_end);
+                    return `<div class="text-sm text-slate-700">${start(c)}–${end(c)} · ${esc(c.course_name)} · ${esc(c.class_name)} · ${esc(c.classroom)}${conflicts.length ? `<span class="block text-amber-800 font-semibold">⚠ 與「${conflicts.map(x => esc(x.course_name)).join('、')}」時段重疊，請核對課表資料。</span>` : ''}</div>`;
+                }).join('')}</div>` : ''}
             </section>`);
         }
     }
@@ -1469,6 +1550,11 @@ async function loadStaffHome() {
     const items = alerts.data || [];
     const today = taipeiToday();
     staffTodoItems = items.slice().sort((a, b) => {
+        if (isTeacher) {
+            const aDate = a.due_date || a.at || '';
+            const bDate = b.due_date || b.at || '';
+            return String(bDate).localeCompare(String(aDate)) || String(a.key || '').localeCompare(String(b.key || ''));
+        }
         const priority = staffTodoStatus(a, today).rank - staffTodoStatus(b, today).rank;
         return priority || (a.due_date || '9999').localeCompare(b.due_date || '9999') || String(b.at || '').localeCompare(String(a.at || ''));
     });
@@ -1485,7 +1571,7 @@ async function loadStaffHome() {
         : `switchTab('${t.goto}')${t.anchor ? `; document.getElementById('${t.anchor}')?.scrollIntoView({ behavior: 'smooth' })` : ''}`;
     parts.push(`<section class="bg-white rounded border border-slate-200 p-5 space-y-3">
         ${alerts.error ? `<p class="text-sm text-rose-700">待辦讀取失敗：${esc(alerts.error)}</p>` : ''}
-        <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>${isTeacher ? '<button type="button" onclick="switchTab(\'tab-teacher-smart\')" class="rounded bg-ukn-800 px-3 py-2 text-sm text-white">打開待審核中心 →</button>' : ''}</div>
+        <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="ukn-title text-lg font-bold text-slate-900">今天要處理 ${items.length ? `<span class="text-sm text-rose-700">${items.length} 件</span>` : ''}</h2>${isTeacher ? '<button type="button" onclick="switchTab(\'tab-teacher-smart\')" class="rounded bg-ukn-800 px-3 py-2 text-sm text-white">待審核中心 →</button>' : ''}</div>
         ${isTeacher ? (items.length ? `<p class="text-sm text-slate-600">${tiles.filter(t => t.n).map(t => `${t.label} ${t.n}`).join(' · ')}</p>` : '') : `<div class="grid grid-cols-2 lg:grid-cols-${Math.min(tiles.length, 5)} gap-3">${tiles.map(t => `<button type="button" onclick="${go(t)}"
             class="text-left rounded border p-4 hover:shadow ${t.n ? 'border-rose-300 bg-rose-50 text-rose-800' : 'border-slate-200 text-slate-500'}">
             <div class="text-sm font-semibold">${t.icon} ${t.label}</div><div class="text-2xl font-bold mt-1">${t.n}</div></button>`).join('')}</div>`}
@@ -1511,6 +1597,7 @@ async function loadStaffHome() {
     }
     if (followUpStaff && (!isTeacher || alerts.error)) parts.push(staffFollowUpHtml(care));
     if ((!isTeacher || alerts.error) && !dormStaff) parts.push(staffReceiptsHtml(receipts));
+    if (lineDemoHtml) parts.push(lineDemoHtml);
     box.innerHTML = parts.join('');
 }
 

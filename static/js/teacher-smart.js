@@ -56,11 +56,14 @@
             `送件 ${r.submitted_at}`,
             action('project', r.id, 'approve', '核准', 'bg-emerald-700 text-white') +
             action('project', r.id, 'reject', '退回修改', 'border border-rose-300 text-rose-700'))).join('') : '<p class="text-sm text-slate-500">目前沒有待審專題文件。</p>';
-        target.innerHTML = `<div class="flex flex-wrap justify-between gap-2"><div><h3 class="text-lg font-bold text-ukn-900">待審核中心</h3><p class="text-sm text-slate-600">假單 ${leaves.length} · 證照與競賽初審 ${certs.length} · 專題文件 ${projects.length}</p></div><button type="button" id="smartRefreshReviews" class="rounded border px-3 py-2 text-sm">更新待辦</button></div>${failure}
+        target.innerHTML = `<div class="flex flex-wrap justify-between gap-2"><div><h3 class="text-lg font-bold text-ukn-900">待審核中心</h3><p class="text-sm text-slate-600">假單 ${leaves.length} · 證照與競賽初審 ${certs.length} · 專題文件 ${projects.length}</p></div><div class="flex flex-wrap gap-2"><button type="button" onclick="document.getElementById('homeAppReview')?.scrollIntoView({behavior:'smooth'})" class="rounded border px-3 py-2 text-sm">線上申辦審核 ↓</button><button type="button" id="smartRefreshReviews" class="rounded border px-3 py-2 text-sm">更新待辦</button></div></div>${failure}
             <div class="grid gap-4 lg:grid-cols-3">${panel('假單', leaveHtml)}${panel('證照與競賽初審', batch + (certRows || '<p class="text-sm text-slate-500">目前沒有待審證照或競賽成果。</p>'))}${panel('專題文件', projectHtml)}</div>`;
     }
 
     function teacherView() {
+        const applicationReview = document.getElementById('homeAppReview');
+        const teacherTab = document.getElementById('tab-teacher-smart');
+        if (applicationReview && teacherTab && applicationReview.parentElement !== teacherTab) teacherTab.appendChild(applicationReview);
         root().innerHTML = `<section id="smartReviewCenter" class="mb-5 rounded border border-ukn-200 bg-ukn-50 p-4 space-y-3"><p class="text-sm">讀取待審核項目中…</p></section><div class="grid gap-4 lg:grid-cols-2">
             ${panel('1. 快速點名與缺曠預警', `<p class="text-sm text-slate-600">產生 10 分鐘有效的 QR Code；學生在校務首頁掃描簽到。缺曠風險沿用導師班資料。</p>
                 <button type="button" id="smartCreateAttendance" class="rounded bg-ukn-800 px-3 py-2 text-white text-sm">開始導師班點名</button>${button('查看出缺勤預警', 'tab-classattend')}<div id="smartSessions"></div><div id="smartSessionDetail" class="text-sm"></div>`)}
@@ -86,6 +89,7 @@
         refreshOffice().catch(showError);
         refreshTopics().catch(showError);
         refreshReviews().catch(showError);
+        if (applicationReview && typeof loadAppReview === 'function') loadAppReview();
     }
 
     function studentView() {

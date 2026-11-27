@@ -96,11 +96,42 @@ def test_set_position_replaces_old_holder(client, login):
 def test_tutor_needs_course_and_one_per_course(client, login):
     login("teacher1")
     assert client.post("/api/campus/records/cadres", json={"student_id": "S112001", "item": "課程小老師"}).status_code == 400
-    client.post("/api/campus/records/cadres", json={"student_id": "S112001", "item": "課程小老師", "reason": "資料結構"})
-    client.post("/api/campus/records/cadres", json={"student_id": "S112005", "item": "課程小老師", "reason": "資料結構"})
+    assert client.post("/api/campus/records/cadres", json={"student_id": "S112001", "item": "課程小老師", "reason": "資料結構"}).status_code == 403
+    client.post("/api/campus/records/cadres", json={"student_id": "S112001", "item": "課程小老師", "reason": "資料庫系統概論"})
+    client.post("/api/campus/records/cadres", json={"student_id": "S112005", "item": "課程小老師", "reason": "資料庫系統概論"})
     tutors = [c for c in client.get("/api/campus/records/cadres").get_json()["cadres"]
-              if c["item"] == "課程小老師" and c["reason"] == "資料結構"]
+              if c["item"] == "課程小老師" and c["reason"] == "資料庫系統概論"]
     assert [c["student_id"] for c in tutors] == ["S112005"]
+
+
+def test_course_teacher_can_set_tutor_in_other_class(client, login):
+    login("teacher1")
+    courses = client.get("/api/campus/records/course-tutors").get_json()["data"]
+    assert {c["class_name"] for c in courses} >= {"資管五忠", "資管四孝"}
+    assert client.post("/api/campus/records/cadres", json={"student_id": "S112004", "item": "課程小老師", "reason": "資料庫系統概論"}).status_code == 200
+    assert client.post("/api/campus/records/cadres", json={"student_id": "S112004", "item": "班長"}).status_code == 403
+    assert client.post("/api/campus/records/cadres", json={"student_id": "S112004", "item": "課程小老師", "reason": "資料結構"}).status_code == 403
+
+
+def test_teacher_adds_class_specific_cadre_position(client, login):
+    login("teacher1")
+    path = "/api/campus/records/cadre-positions"
+    for invalid in ("環保1股長", "環保123", "環保-股長", "班長"):
+        assert client.post(path, json={"class_name": "資管五忠", "position": invalid}).status_code == 400
+    assert client.post(path, json={"class_name": "資管四孝", "position": "環保股長"}).status_code == 403
+    assert client.post(path, json={"class_name": "不存在的班級", "position": "環保股長"}).status_code == 403
+    assert client.post(path, json={"class_name": "資管五忠", "position": "環保股長"}).status_code == 200
+    assert client.post(path, json={"class_name": "資管五忠", "position": "環保股長"}).status_code == 400
+    assert client.post(path, json={"class_name": "資管五忠", "position": "手機"}).status_code == 400
+    assert client.post(path, json={"class_name": "資管五忠", "position": "手機股長"}).status_code == 200
+    assert "手機股長" in client.get("/api/campus/records/cadres").get_json()["positions"]
+    assert client.post(path, json={"class_name": "資管五忠", "position": "手機股長"}).status_code == 400
+    assert "環保股長" in client.get("/api/campus/records/cadres").get_json()["positions"]
+    assert client.post("/api/campus/records/cadres", json={"student_id": "S112001", "item": "環保股長"}).status_code == 200
+    assert client.delete(path, json={"class_name": "資管五忠", "position": "環保股長"}).status_code == 200
+    cadres = client.get("/api/campus/records/cadres").get_json()
+    assert "環保股長" not in cadres["positions"]
+    assert all(c["item"] != "環保股長" for c in cadres["cadres"])
 
 
 def test_remove_cadre_but_not_punishment(client, login):

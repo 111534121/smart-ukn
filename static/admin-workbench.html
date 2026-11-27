@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<script>fetch('/api/auth/me').then(r=>r.json()).then(data=>{if(data.user?.role==='科助')location.replace('/');}).catch(()=>{});</script>
+<script>if(new URLSearchParams(location.search).get('embedded')!=='1')fetch('/api/auth/me').then(r=>r.json()).then(data=>{if(data.user?.role==='科助')location.replace('/');}).catch(()=>{});</script>
 <title>行政案件工作台｜康寧大學</title><link rel="stylesheet" href="/css/admin-workbench.css?v=20261109-embedded"><link rel="stylesheet" href="/css/case-signoff.css?v=56"><script>if(new URLSearchParams(location.search).get('embedded')==='1')document.documentElement.classList.add('embedded');</script></head>
 <body>
 <header><a href="/">康寧大學 <span>UKN</span></a><nav><a href="/">返回校務首頁</a><a href="/admin" id="legacy" hidden>管理後台</a><span id="identity"></span></nav></header>
@@ -11,7 +11,7 @@
 <section class="card" id="officePortal"><div class="sectionhead"><div><h2>依處室辦理</h2><p class="muted">處室名稱依學校官網建立，申辦步驟為可編修的測試流程。</p></div><a href="https://web.ukn.edu.tw/m/412-1000-377.php" target="_blank" rel="noopener">官網行政單位 ↗</a></div><div id="officeCards" class="office-grid"></div><div id="officeWorkflowInfo"></div></section>
 <details class="card" id="demoTools"><summary>切換測試身分</summary><p class="muted">每個處室都有自己的測試承辦帳號；學生可練習補件。測試密碼為 123456，切換後請按登入。</p><div class="actions"><select id="demoAccount" aria-label="測試帳號"></select><a id="demoLogin" href="/login">切換並登入 →</a></div></details>
 <section id="shortcuts" class="card" hidden><h2>所屬處室審核入口</h2><p class="muted">下方案件清單管理本工作台送出的申請；其他審核業務依處室權限顯示。</p><div class="actions"><a id="reviewLeaveLink" href="/#home" hidden>一般假單審核</a><a id="reviewCertLink" href="/#certs" hidden>證照審核</a><a id="reviewRoomLink" href="/admin" hidden>教室借用審核</a></div></section>
-<section id="assistantTools" class="card" hidden><h2>科助工作入口</h2><p class="muted" id="assistantScope"></p><div class="actions"><a href="/activities">建立本科活動／比賽、廣播與查看回覆</a><a id="csProjectLink" href="/graduation-projects" hidden>資管科畢業專題與導師媒合</a><a href="#caseList">審核本科申辦案件</a></div><p class="muted" id="assistantRoster"></p></section>
+<section id="assistantTools" class="card" hidden><h2>科助工作入口</h2><p class="muted" id="assistantScope"></p><div class="actions"><a href="/#activities">建立本科活動／比賽、廣播與查看回覆</a><a id="csProjectLink" href="/graduation-projects" hidden>資管科畢業專題與導師媒合</a><a href="#caseList">審核本科申辦案件</a></div><p class="muted" id="assistantRoster"></p></section>
 <section id="officeResources" class="card"><h2>處室 SOP 與表單範例</h2><p class="muted">可下載各處室公開的作業說明與空白範例；承辦人可維護所屬處室文件。</p><form id="resourceForm" hidden><div class="formgrid"><label>文件名稱<input name="title" maxlength="100" required></label><label>類型<select name="kind"><option>SOP</option><option>表單範例</option></select></label><label id="resourceOfficeLabel" hidden>所屬處室<select name="office" id="resourceOffice"></select></label><label>檔案<input name="file" type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" required></label></div><label>說明<textarea name="description" maxlength="500"></textarea></label><button type="submit">上傳文件</button></form><p id="resourceMessage" role="status"></p><div id="resourceList">載入中…</div></section>
 <section id="stats" class="stats" aria-label="案件摘要"></section>
 <details id="newRequest" class="card" hidden><summary>新增行政申請</summary><p class="muted">選擇類別後，系統會送交對應處室。既有請假、宿舍與報帳請使用原本申請頁面。</p>

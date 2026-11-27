@@ -1,9 +1,13 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>活動與比賽｜康寧大學</title>
-<link rel="stylesheet" href="/css/activities.css?v=20261029-role-ui"><style>.inline-option{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:400}.inline-option input{width:auto;margin:0}</style></head><body>
-<header><strong>康寧大學 · 活動與比賽</strong><nav class="actions"><a id="projectLink" href="/graduation-projects" hidden>資管科畢業專題</a><a href="/">回首頁</a></nav></header>
-<main><section class="hero"><div><p class="eyebrow" id="roleEyebrow">CAMPUS ACTIVITIES</p><h1 id="pageTitle">活動與比賽</h1><p class="muted" id="pageIntro">查看活動、下載簡章、回覆意願。</p></div><span id="roleChip" class="role-chip"></span></section><p id="message" class="notice" role="status" aria-live="polite"></p>
+<title>活動與比賽｜校園智慧服務平台</title>
+<link rel="stylesheet" href="/css/activities.css?v=20261029-role-ui"><link rel="stylesheet" href="/css/activities-shell.css?v=20261127"><style>.inline-option{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:400}.inline-option input{width:auto;margin:0}</style></head><body>
+<div class="activity-topbar">校園智慧服務平台 <span>· 康寧大學</span></div>
+<header class="activity-header">
+  <a class="activity-brand" href="/" aria-label="校園智慧服務平台首頁"><img src="/img/ukn-logo.png" alt="康寧大學"><span><strong>校園智慧服務平台</strong><small>校園智慧官網 · UKN Campus Services</small></span></a>
+  <nav class="activity-nav" aria-label="活動頁導覽"><a href="/">← 回校園首頁</a><span aria-current="page">活動與比賽</span><a id="projectLink" href="/graduation-projects" hidden>資管科畢業專題</a></nav>
+</header>
+<main><section class="hero"><div><p class="eyebrow" id="roleEyebrow">CAMPUS ACTIVITIES</p><h1 id="pageTitle">活動與比賽</h1><p class="muted" id="pageIntro">查看活動、下載簡章、回覆意願。</p></div><span id="roleChip" class="role-chip"></span></section><p id="activityMessage" class="notice" role="status" aria-live="polite"></p>
 <section id="assistantDashboard" class="card" hidden><div class="section-head"><div><p class="eyebrow">科助工作總覽</p><h2>今天要處理的活動</h2></div><a href="#createSection">＋ 建立活動</a></div><div id="assistantStats" class="stat-grid"></div><p class="muted small">催辦會更新老師的站內待辦提醒。LINE、簡訊、Email 尚未接入，系統不會顯示為已送達。</p></section>
 <section id="createSection" class="card" hidden><h2>建立新活動</h2><form id="createForm"><div class="grid">
 <label>類型<select name="kind"><option>活動</option><option>比賽</option></select></label>
@@ -23,4 +27,4 @@
 </div><p class="muted small">付費活動可先設定金額；虛擬帳號與自動對帳待學校金流服務接入，接入前無法接受付費報名。</p><label>活動說明<textarea name="description" required maxlength="2000"></textarea></label><div class="actions"><button type="submit">建立活動</button></div></form></section>
 <section id="teacherTasks" class="card teacher-tasks" hidden><div class="section-head"><div><p class="eyebrow">請優先處理</p><h2>審核待辦 <span id="teacherBadge" class="badge"></span></h2></div></div><p class="muted small">開啟此頁會記錄為「已開啟」。請在每筆事項選擇核准或退回。</p><div id="teacherTaskList"></div></section>
 <section><h2 id="listTitle">活動清單</h2><div id="activityList">載入中…</div></section>
-</main><script src="/js/activities.js?v=20261029-visitor-flow"></script></body></html>
+</main><script src="/js/activities.js?v=20261127-embedded"></script></body></html>

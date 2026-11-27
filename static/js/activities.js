@@ -1,6 +1,7 @@
 'use strict';
 (() => {
-    const $ = id => document.getElementById(id);
+    const root = document.getElementById('tab-activities') || document;
+    const $ = id => root.querySelector(`#${id}`);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     let user = null;
     async function api(url, options) {
@@ -9,7 +10,7 @@
         if (!response.ok || body.status !== 'success') throw new Error(body.message || '操作失敗');
         return body;
     }
-    function message(text) { $('message').textContent = text; }
+    function message(text) { $('activityMessage').textContent = text; }
     function fileLink(id, kind, name) {
         return `<a href="/api/campus/activity-campaigns/${id}/files/${encodeURIComponent(kind)}">📎 ${esc(name)}</a>`;
     }
@@ -55,7 +56,8 @@
         const auth = await api('/api/auth/me');
         user = auth.user;
         if (!user || !['學生', '訪客', '老師', '教職員', '處室承辦', '科助', '管理員'].includes(user.role)) { message('請先登入學生、訪客或教職員帳號。'); $('activityList').textContent = ''; return; }
-        $('projectLink').hidden = !(user.role === '管理員' || user.dept_name === '資訊管理科（五專）' || user.role === '學生' && String(user.class_name || '').startsWith('資管') || user.role === '科助' && user.office === '資訊管理科（五專）／科辦公室');
+        const projectLink = $('projectLink');
+        if (projectLink) projectLink.hidden = !(user.role === '管理員' || user.dept_name === '資訊管理科（五專）' || user.role === '學生' && String(user.class_name || '').startsWith('資管') || user.role === '科助' && user.office === '資訊管理科（五專）／科辦公室');
         const copy = user.role === '科助' ? [`${user.office || '科助'} · 活動管理`,'掌握老師審核、學生與訪客報名及名額。','科助工作台','我的活動'] : user.role === '老師' ? ['老師待辦與活動','待審事項會優先顯示在下方，完成審核後可查看活動。','老師','活動清單'] : user.role === '學生' ? ['活動報名','查看活動資訊、回覆意願並追蹤自己的名額與繳費狀態。','學生','可報名活動'] : user.role === '訪客' ? ['訪客活動報名','查看開放訪客參加的活動與名額。','訪客','可報名活動'] : ['活動管理','建立活動並查看報名與簽到。',user.role,'活動清單'];
         $('pageTitle').textContent = copy[0]; $('pageIntro').textContent = copy[1]; $('roleChip').textContent = copy[2]; $('listTitle').textContent = copy[3];
         if (['老師', '教職員', '處室承辦', '科助', '管理員'].includes(user.role)) {
@@ -70,7 +72,7 @@
         if (['學生','訪客'].includes(user.role) && params.has('checkin') && params.has('token')) {
             try { const result = await api(`/api/campus/activity-campaigns/${encodeURIComponent(params.get('checkin'))}/self-checkin`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:params.get('token')})}); message(result.message); await load(); }
             catch (error) { message(error.message); }
-            history.replaceState(null, '', '/activities');
+            history.replaceState(null, '', root === document ? '/activities' : '/#activities');
         }
     }
     $('createForm').addEventListener('submit', async event => {

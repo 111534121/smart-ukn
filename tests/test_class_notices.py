@@ -36,6 +36,9 @@ def test_whole_flow_teacher_to_student(client, login):
     login("teacher1")
     assert client.post("/api/campus/classes", json={"class_name": "專題小組A", "password": "abcd1234"}).status_code == 200
     assert "專題小組A" in class_names(client)
+    empty = send(client, "專題小組A")
+    assert empty.status_code == 400
+    assert "先讓學生" in empty.get_json()["message"]
 
     login("student1")
     wrong = client.post("/api/campus/classes/join", json={"class_name": "專題小組A", "password": "wrong"})

@@ -24,6 +24,7 @@ assert.ok(!dorm.includes('conduct'));
 const assistant = featuresFor({role: '科助', office: '資訊管理科（五專）／科辦公室', review_tasks: []});
 assert.ok(!assistant.includes('conduct'));
 assert.ok(assistant.includes('activities'));
+assert.deepEqual(Array.from(assistant).sort(), ['notices', 'admin-cases', 'calendar', 'reports', 'activities'].sort());
 
 const registration = featuresFor({role: '處室承辦', office: '教務處／註冊組', review_tasks: ['certificates']});
 assert.ok(registration.includes('certs'));
@@ -33,6 +34,13 @@ assert.ok(!registration.includes('conduct'));
 
 const teacher = featuresFor({role: '老師', advised_class: '資管五忠'});
 assert.ok(!teacher.includes('conduct'));
+for (const key of ['admissions-consultation', 'faculty', 'rules', 'reports', 'achievements', 'map']) {
+    assert.ok(!teacher.includes(key), `老師選單不應顯示 ${key}`);
+}
+for (const key of ['teacher-smart', 'my-class', 'my-schedule', 'notices', 'activities']) {
+    assert.ok(teacher.includes(key), `老師選單應保留 ${key}`);
+}
+assert.ok(assistant.includes('reports'));
 
 const student = featuresFor({role: '學生'});
 assert.ok(student.includes('conduct'));

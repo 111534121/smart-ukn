@@ -31,6 +31,17 @@ def test_teacher_can_reset_own_class_password(client, login):
     assert res.status_code == 200
 
 
+def test_class_group_name_and_password_guards(client, login):
+    login("teacher1")
+    for name in ("0", "12345", "A", "X" * 31):
+        assert client.post("/api/campus/classes", json={"class_name": name, "password": "abcd"}).status_code == 400
+    assert client.post("/api/campus/classes", json={"class_name": "機器人競賽組", "password": "123"}).status_code == 400
+    assert client.post("/api/campus/classes", json={"class_name": "機器人競賽組", "password": "abcd"}).status_code == 200
+    assert client.post("/api/campus/classes", json={"class_name": "機器人競賽組", "password": "abcd"}).status_code == 409
+    assert client.post("/api/campus/classes/password", json={"class_name": "資管五忠", "password": "123"}).status_code == 400
+    assert client.post("/api/campus/classes/password", json={"class_name": "資管五忠", "password": "a" * 65}).status_code == 400
+
+
 def test_staff_can_notify_any_class(client, login):
     login("staff1")
     res = client.post("/api/campus/notices", json={

@@ -29,7 +29,7 @@ const FEATURES = [
     { key: 'scholarship', tab: 'tab-scholarship', name: '獎助學金檢核', icon: '💰', group: '校務', desc: '勾選看看自己符不符合', staff: false },
     { key: 'services', tab: 'tab-services', name: '宿舍與總務申請', icon: '🏢', group: '校務', desc: '床位申請進度、報帳檢查', staff: { name: '宿舍申請審核', desc: '床位申請審核與進度', roles: ['教職員', '住宿管理員', '管理員'] } },
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
-    { key: 'activities', tab: 'tab-activities', href: '/activities', name: '活動與比賽', icon: '🎯', group: '校園生活', desc: '查看活動、下載簡章與回覆參加意願' },
+    { key: 'activities', tab: 'tab-activities', name: '活動與比賽', icon: '🎯', group: '校園生活', desc: '查看活動、下載簡章與回覆參加意願' },
     { key: 'achievements', tab: 'tab-achievements', name: '資管科成果與榮譽', icon: '🏆', group: '校園生活', desc: '查看成果、投稿與審核' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
@@ -618,6 +618,8 @@ function applyStaffView() {
         return;
     }
     const keep = FEATURES.filter(f =>
+        (currentUser.role !== '老師' || !['admissions-consultation', 'faculty', 'rules', 'reports', 'achievements', 'map'].includes(f.key)) &&
+        (currentUser.role !== '科助' || ['notices', 'admin-cases', 'calendar', 'reports', 'activities'].includes(f.key)) &&
         (f.key !== 'admissions' || currentUser.office === '資訊管理科（五專）／科辦公室') &&
         (f.key !== 'internships' || currentUser.office === '資訊管理科（五專）／科辦公室') &&
         (f.key !== 'services' || currentUser.role === '管理員' || isDormStaff()) &&
@@ -628,6 +630,13 @@ function applyStaffView() {
         .map(f => (f.staff ? { ...f, ...f.staff } : f))
         .map(f => (f.otherStaffName && currentUser.role !== '老師' ? { ...f, name: f.otherStaffName, desc: '依學號查詢學生的學分與證照進度' } : f));
     FEATURES.splice(0, FEATURES.length, ...keep);
+    if (currentUser.role === '老師') {
+        Object.assign(featureByKey('teacher-smart'), { name: '待辦事項', desc: '查看待審核案件與教師工作' });
+        const taskHeading = document.getElementById('tab-teacher-smart')?.querySelector('h2');
+        if (taskHeading) taskHeading.textContent = '待辦事項';
+    }
+    if (['老師', '科助'].includes(currentUser.role))
+        document.querySelectorAll(".topbar-quick[onclick*='tab-map']").forEach(el => el.remove());
     // 行政人員沒有導師班：同一頁叫「班級總覽」，可切換班級
     const myClass = featureByKey('my-class');
     if (myClass && currentUser.role !== '老師') Object.assign(myClass, { name: '班級總覽', desc: '任選班級看出缺勤、學業預警、關懷紀錄' });

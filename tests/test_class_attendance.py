@@ -3,6 +3,10 @@
 示範資料 (app.py DEMO_ATTENDANCE_RECORDS)：資管五忠的 S112001 王小明「程式設計(一)」曠課 4 次，風險最高；
 teacher1 = 資管五忠班導；staff1 = 教職員 (可切換班級)
 """
+from datetime import datetime, timedelta, timezone
+
+import app as app_module
+from attendance.sources import MemoryAttendanceSource
 
 
 def test_homeroom_teacher_sees_own_class_sorted_by_risk(client, login):
@@ -24,6 +28,21 @@ def test_homeroom_teacher_sees_own_class_sorted_by_risk(client, login):
 def test_homeroom_teacher_cannot_see_other_class(client, login):
     login("teacher1")
     assert client.get("/api/teacher/class-attendance?class_name=資管四孝").status_code == 403
+
+
+def test_today_attendance_only_counts_dated_records(client, login, monkeypatch):
+    today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
+    records = [
+        {"id": 1, "student_id": "S112001", "date": today, "course_name": "程式設計(一)", "type": "曠課", "notified": False},
+        {"id": 2, "student_id": "S112001", "date": "2026-09-14", "course_name": "程式設計(一)", "type": "遲到", "notified": False},
+    ]
+    monkeypatch.setattr(app_module, "get_attendance_source", lambda: MemoryAttendanceSource(records))
+    login("teacher1")
+    data = client.get("/api/teacher/class-attendance").get_json()
+    assert data["today_date"] == today
+    assert data["today_summary"] == {"record_count": 1, "student_count": 1, "by_type": {"曠課": 1}}
+    student = next(s for s in data["students"] if s["student_id"] == "S112001")
+    assert student["today_records"] == [{"type": "曠課", "course_name": "程式設計(一)", "hours": None}]
 
 
 def test_staff_can_switch_class(client, login):

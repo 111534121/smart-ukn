@@ -811,14 +811,17 @@ async function loadNoticesTeacher() {
                 <div class="space-y-2">
                     <h3 class="font-bold text-slate-900 text-sm">選擇班級</h3>
                     ${noticeClasses.map(c => `<button type="button" onclick="noticeSelectedClass='${esc(c.class_name)}'; loadNoticesTeacher()" class="w-full text-left rounded border px-3 py-2 text-sm ${c.class_name === noticeSelectedClass ? 'border-ukn-700 bg-ukn-50 font-bold text-ukn-900' : 'border-slate-200 hover:border-ukn-300'}">
-                        ${esc(c.class_name)}${c.is_advised ? ' <span class="text-[10px] text-accent-500">導師班</span>' : ''}<span class="block text-[11px] font-normal text-slate-500">${c.members.length} 位學生</span></button>`).join('')}
-                    ${assistant ? '' : `<details class="rounded border border-dashed border-slate-300 p-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-600">＋ 建立班級 / 重設密碼</summary>
+                        ${esc(c.class_name)}${c.is_advised ? ' <span class="text-[10px] text-accent-500">導師班</span>' : ''}<span class="block text-[11px] font-normal ${c.members.length ? 'text-slate-500' : 'text-amber-800'}">${c.members.length ? `${c.members.length} 位學生` : '尚無成員 · 暫不能發通知'}</span></button>`).join('')}
+                    ${assistant ? '' : `<details class="rounded border border-dashed border-slate-300 p-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-600">＋ 建立通知群組</summary>
                         <form onsubmit="createClass(event)" class="space-y-2 mt-2">
-                            <input name="class_name" placeholder="班級名稱" class="w-full border border-slate-300 rounded px-2 py-1.5">
-                            <input name="password" placeholder="加入密碼 (至少 4 碼)" class="w-full border border-slate-300 rounded px-2 py-1.5">
-                            <div class="flex gap-2"><button class="flex-1 bg-ukn-800 text-white rounded py-1.5 text-xs font-bold">建立新班級</button>
-                                <button type="button" onclick="resetClassPassword(this.form)" class="flex-1 border border-slate-300 rounded py-1.5 text-xs">重設所選班級密碼</button></div>
-                        </form></details>`}
+                            <input name="class_name" required minlength="2" maxlength="30" placeholder="群組名稱（不能只有數字）" class="w-full border border-slate-300 rounded px-2 py-1.5">
+                            <input name="password" type="password" required minlength="4" maxlength="64" autocomplete="new-password" placeholder="加入密碼（4 至 64 碼）" class="w-full border border-slate-300 rounded px-2 py-1.5">
+                            <button class="w-full bg-ukn-800 text-white rounded py-1.5 text-xs font-bold">建立群組</button>
+                        </form></details>
+                        <details class="rounded border border-dashed border-slate-300 p-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-600">重設加入密碼</summary>
+                            <form onsubmit="resetClassPassword(event)" class="space-y-2 mt-2"><p class="text-xs text-slate-600">目前選取：${esc(noticeSelectedClass || '尚未選擇班級')}</p>
+                            <input name="password" type="password" required minlength="4" maxlength="64" autocomplete="new-password" placeholder="新密碼（4 至 64 碼）" class="w-full border border-slate-300 rounded px-2 py-1.5">
+                            <button class="w-full border border-slate-300 rounded py-1.5 text-xs">重設所選班級密碼</button></form></details>`}
                 </div>
                 <div class="lg:col-span-3 space-y-4">
                     <div class="inline-flex rounded border border-slate-300 overflow-hidden text-sm" role="tablist">
@@ -857,6 +860,7 @@ async function loadNoticesTeacher() {
 function noticeComposeHtml() {
     const c = noticeClasses.find(x => x.class_name === noticeSelectedClass);
     if (!c) return `<div class="text-sm text-slate-500">${currentUser.role === '科助' ? '目前沒有可通知的本科班級。' : '請先建立班級。'}</div>`;
+    if (!c.members.length) return `<div class="rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><strong>${esc(c.class_name)}目前沒有學生，暫時無法發送通知。</strong><p class="mt-1">請先把群組名稱與加入密碼告訴學生，讓學生登入後加入；有成員後再發通知。</p></div>`;
     return `
         <form onsubmit="sendNotice(event)" class="rounded border border-slate-200 bg-slate-50 p-4 space-y-3 text-sm">
             <div class="flex flex-wrap items-center gap-4">
@@ -921,6 +925,7 @@ async function sendBroadcast(event) {
 
 async function sendNotice(event) {
     event.preventDefault();
+    if (!noticeClasses.find(c => c.class_name === noticeSelectedClass)?.members.length) { toast('目前沒有可通知的學生，請先讓學生加入群組', 'error'); return; }
     const fd = new FormData(event.target);
     const recipients = fd.get('scope') === 'all' ? 'all' : fd.getAll('recipients');
     if (recipients !== 'all' && !recipients.length) { toast('請勾選要通知的學生', 'error'); return; }
@@ -940,13 +945,28 @@ async function replyAdvisorMessage(event, id) {
 
 async function createClass(event) {
     event.preventDefault();
-    try { const r = await api('/api/campus/classes', { json: Object.fromEntries(new FormData(event.target)) }); toast(r.message); loadNoticesTeacher(); }
+    const form = event.currentTarget;
+    const name = form.elements.namedItem('class_name').value.trim();
+    if (/^\d+$/.test(name)) { toast('群組名稱不能只有數字', 'error'); return; }
+    const submit = form.querySelector('button');
+    if (submit.disabled) return;
+    submit.disabled = true;
+    try { const r = await api('/api/campus/classes', { json: {class_name: name, password: form.elements.namedItem('password').value} }); noticeSelectedClass = name; noticeMode = 'class'; toast(r.message); await loadNoticesTeacher(); }
     catch (e) { toast(e.message, 'error'); }
+    finally { submit.disabled = false; }
 }
 
-async function resetClassPassword(form) {
-    try { const r = await api('/api/campus/classes/password', { json: { class_name: noticeSelectedClass, password: form.password.value } }); toast(`${noticeSelectedClass}：${r.message}`); }
+async function resetClassPassword(event) {
+    event.preventDefault();
+    if (!noticeSelectedClass) { toast('請先選擇班級', 'error'); return; }
+    if (!window.confirm(`確定重設「${noticeSelectedClass}」的加入密碼？舊密碼將無法使用。`)) return;
+    const form = event.currentTarget;
+    const submit = form.querySelector('button');
+    if (submit.disabled) return;
+    submit.disabled = true;
+    try { const r = await api('/api/campus/classes/password', { json: { class_name: noticeSelectedClass, password: form.elements.namedItem('password').value } }); toast(`${noticeSelectedClass}：${r.message}`); form.reset(); }
     catch (e) { toast(e.message, 'error'); }
+    finally { submit.disabled = false; }
 }
 
 

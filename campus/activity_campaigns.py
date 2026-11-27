@@ -8,7 +8,7 @@ from io import StringIO
 from pathlib import Path
 from uuid import uuid4
 
-from flask import Blueprint, current_app, request, send_file
+from flask import Blueprint, current_app, redirect, request, send_file
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from .common import STAFF_ROLES, all_students, current_user, deps, error, next_id, now_str, ok, require, store
@@ -144,7 +144,8 @@ def view(item, user):
 
 @bp.route('/activities')
 def page():
-    return current_app.send_static_file('activities.html')
+    query = request.query_string.decode('utf-8')
+    return redirect('/' + ('?' + query if query else '') + '#activities')
 
 
 @bp.route('/api/campus/activity-campaigns', methods=['GET'])
@@ -268,7 +269,7 @@ def broadcast(campaign_id):
     notice = messaging.add_notice({'class_name': item['target'] if item['target_type'] == '班級' else None,
         'target_type': item['target_type'], 'target_label': item['target'], 'whole_class': True,
         'recipients': item['recipients'], 'title': f"活動報名：{item['title']}",
-        'content': f"{item['description']}\n活動：{item['event_date']} {item['event_time']}\n回覆期限：{item['reply_deadline']}\n前往活動頁：/activities",
+        'content': f"{item['description']}\n活動：{item['event_date']} {item['event_time']}\n回覆期限：{item['reply_deadline']}\n前往活動頁：/#activities",
         'priority': '重要', 'sender': user['full_name'], 'sender_username': user['username'],
         'due_date': item['reply_deadline'], 'reply_required': False})
     deps.write_audit_log('activity_campaigns', campaign_id, '廣播', after={'notice_id': notice['id']})
@@ -573,7 +574,7 @@ def checkin_qr(campaign_id):
     if not item or not manager(item, user):
         return error('找不到可管理的活動', 404)
     token = URLSafeTimedSerializer(current_app.secret_key, salt='activity-checkin').dumps(campaign_id)
-    url = request.url_root.rstrip('/') + f'/activities?checkin={campaign_id}&token={token}'
+    url = request.url_root.rstrip('/') + f'/?checkin={campaign_id}&token={token}#activities'
     buffer = BytesIO()
     qrcode.make(url, image_factory=SvgPathFillImage).save(buffer)
     buffer.seek(0)

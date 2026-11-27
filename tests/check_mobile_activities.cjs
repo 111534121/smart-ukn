@@ -24,25 +24,26 @@ const fs=require('node:fs');
    console.log('width',width,'opening home');
    await page.goto('http://127.0.0.1:8014/?preview=53#home');
    await page.addStyleTag({content:'.hidden{display:none!important}#megaNav{display:none}#mobileMenu{max-height:75vh;overflow-y:auto}#mobileMenu .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}'});
-   await page.waitForFunction(()=>document.querySelector('#mobileMenu a[href="/activities"]'));
-   assert.equal(await page.locator('header a[href="/activities"]').filter({hasText:'活動與比賽'}).count(),1); // Only nested mobile menu, no independent header shortcut.
+   await page.waitForFunction(()=>document.querySelector('#mobileMenu button[data-tab="tab-activities"]'));
+   assert.equal(await page.locator('#mobileMenu button[data-tab="tab-activities"]').count(),1);
 
    const skip = page.getByRole('button',{name:'跳過導覽',exact:true});
    await skip.waitFor({state:'visible'}); await skip.tap();
    await page.getByRole('button',{name:'開啟選單',exact:true}).tap();
    await page.locator('#mobileMenu').getByText('校園生活',{exact:true}).waitFor({state:'visible'});
-   const link=page.locator('#mobileMenu a[href="/activities"]');
+   const link=page.locator('#mobileMenu button[data-tab="tab-activities"]');
    assert.equal(await link.textContent(),'🎯 活動與比賽');
    console.log('width',width,'tapping activity link');
    await link.tap();
-   await page.getByRole('heading',{name:'活動與比賽',exact:true}).waitFor();
-   await page.getByRole('heading',{name:'活動清單',exact:true}).waitFor();
+   await page.locator('#tab-activities #pageTitle').waitFor({state:'visible'});
+   await page.locator('#tab-activities #listTitle').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.querySelector('#activityList').textContent!=='載入中…');
-   assert.equal(new URL(page.url()).pathname,'/activities');
+   assert.equal(new URL(page.url()).pathname,'/');
+   assert.equal(new URL(page.url()).hash,'#activities');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-   assert.equal(await page.locator('#message').textContent(),'');
+   assert.equal(await page.locator('#activityMessage').textContent(),'');
    await page.screenshot({path:`evidence/mobile-activities-${width}.png`,fullPage:true});
-   results.push({width,status:'passed',path:'/activities',horizontalOverflow:false});
+   results.push({width,status:'passed',path:'/#activities',horizontalOverflow:false});
    await context.close();
   }
   fs.writeFileSync('evidence/mobile-activities-check.json',JSON.stringify({mode:'isolated Flask transport; navigation utility CSS supplied because external CDN is blocked',results},null,2));

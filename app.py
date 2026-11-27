@@ -34,7 +34,7 @@ import threading
 import time
 from collections import deque
 from io import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from attendance.sources import MemoryAttendanceSource, MySQLAttendanceSource, VALID_TYPES as ATTENDANCE_TYPES
 from attendance.policy import summarize_attendance
 from attendance.notify import send_pending_notifications, get_mailer, campus_email
@@ -374,7 +374,8 @@ DEMO_STUDENTS = [
     {"student_id": "S112002", "full_name": "李美華", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0922-333-444"},
     {"student_id": "S112003", "full_name": "張建華", "dept_id": "NUR", "dept_name": "護理科（五專）", "admission_year": 112, "class_name": "護理四忠", "parent_phone": "0933-555-666"},
     {"student_id": "S112004", "full_name": "陳冠宇", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管四孝", "parent_phone": "0955-222-111"},
-    {"student_id": "S112005", "full_name": "林雨潔", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0966-777-888"}
+    {"student_id": "S112005", "full_name": "林雨潔", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 112, "class_name": "資管五忠", "parent_phone": "0966-777-888"},
+    {"student_id": "DEMO-ZHANG", "full_name": "張晴茹", "dept_id": "CS", "dept_name": "資訊管理科（五專）", "admission_year": 111, "class_name": "資管五忠", "parent_phone": None}
 ]
 
 _DEMO_PW_123456 = "pbkdf2:sha256:1000000$1pZH4zsCrzpTUDpY$56c22c83158361bc754b4c140e89c0812713d8c5b1277ffd02fe410f12c6149c"
@@ -395,7 +396,9 @@ DEMO_USERS = [
     {"user_id": 5, "username": "admin", "password_hash": _DEMO_PW_ADMIN123, "role": "管理員", "student_id": None, "full_name": "系統管理員"},
     # 示範學號登入帳號 (密碼 123456，與 seed_data.py 一致)
     {"user_id": 7, "username": "S112004", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112004", "full_name": "陳冠宇"},
-    {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔"}
+    {"user_id": 8, "username": "S112005", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112005", "full_name": "林雨潔"},
+    {"user_id": 21, "username": "111534117", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "DEMO-ZHANG", "full_name": "張晴茹"},
+    {"user_id": 22, "username": "941108", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "DEMO-ZHANG", "full_name": "張晴茹家長（示範）"}
 ]
 
 # 虛構的處室操作帳號；正式資料庫需執行 seed_admin_offices_demo.py 才會建立。
@@ -2549,6 +2552,7 @@ def teacher_class_attendance():
     names = {s["student_id"]: s["full_name"] for s in list_students()}
     hours = course_weekly_hours()
     source = get_attendance_source()
+    today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     rank = {"ok": 0, "warning": 1, "banned": 2}
     students = []
@@ -2556,6 +2560,10 @@ def teacher_class_attendance():
     leave_rows = get_dashboard_source().list_leave_requests_for_review(class_ids, None)
     for sid in class_ids:
         records = source.list_records(sid)
+        today_records = [
+            {"type": r["type"], "course_name": r.get("course_name", ""), "hours": r.get("hours")}
+            for r in records if str(r["date"])[:10] == today
+        ]
         leaves = [r for r in leave_rows if r["student_id"] == sid]
         summary = summarize_attendance(records, hours, course_semester_hours(), current_attendance_semester())
         students.append({
@@ -2567,16 +2575,28 @@ def teacher_class_attendance():
                              for c in summary["courses"] if c["level"] != "ok"],
             "recent_absent": sum(1 for r in records if r["type"] == "曠課" and str(r["date"])[:10] >= week_ago),
             "last_date": max((str(r["date"])[:10] for r in records), default=""),
+            "today_records": today_records,
             "leaves": {"pending": sum(r["status"] == "待審核" for r in leaves),
                        "approved": sum(r["status"] == "已核准" for r in leaves),
                        "rejected": sum(r["status"] == "已退回" for r in leaves),
                        "items": [{k: r.get(k) for k in ("id", "leave_type", "start_date", "end_date", "periods", "status", "review_note")} for r in leaves]},
         })
     students.sort(key=lambda x: (-rank[x["level"]], -x["totals"]["曠課"], x["student_id"]))
+    today_types = {}
+    for student in students:
+        for record in student["today_records"]:
+            kind = record["type"]
+            today_types[kind] = today_types.get(kind, 0) + 1
     return jsonify({
         "status": "success",
         "class_name": class_name,
         "classes": classes,
+        "today_date": today,
+        "today_summary": {
+            "record_count": sum(today_types.values()),
+            "student_count": sum(bool(student["today_records"]) for student in students),
+            "by_type": today_types,
+        },
         "summary": {
             "student_count": len(students),
             "banned": sum(1 for x in students if x["level"] == "banned"),

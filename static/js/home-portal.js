@@ -39,7 +39,12 @@ function selectPortalAudience(id) {
     document.getElementById('portalAudienceButtons').innerHTML = PORTAL_AUDIENCES.map(a => `<button type="button" data-audience="${a.id}" aria-pressed="${a.id === audience.id}"><span>${a.icon}</span>${a.name}<span aria-hidden="true">↗</span></button>`).join('');
     document.getElementById('portalAudienceName').textContent = `${audience.name}，歡迎來到康寧`;
     document.getElementById('portalAudienceHint').textContent = audience.hint;
-    const available = audience.keys.map(featureByKey).filter(Boolean);
+    const keys = audience.id === 'staff' && currentUser.role === '老師'
+        ? ['teacher-smart', 'my-class', 'my-schedule', 'notices', 'activities', 'calendar']
+        : audience.id === 'staff' && currentUser.role === '科助'
+        ? ['admin-cases', 'activities', 'notices', 'calendar', 'reports']
+        : audience.keys;
+    const available = keys.map(featureByKey).filter(Boolean);
     document.getElementById('portalAudienceLinks').innerHTML = available.map(f => `<button type="button" data-portal-tab="${f.tab}">${escapeHtml(f.name)} →</button>`).join('') + (audience.official ? '<a href="https://www.ukn.edu.tw" target="_blank" rel="noopener noreferrer">學校官網與招生資訊 ↗</a>' : '') + (!available.length ? '<a href="/login">登入對應身分帳號 →</a>' : '');
     document.getElementById('portalRecommended').innerHTML = (available.length ? available : FEATURES.slice(0,6)).map(portalFeatureButton).join('');
 }
@@ -93,6 +98,7 @@ async function searchPortal(event) {
 function initHomePortal() {
     if (typeof initCampusAccess === 'function') initCampusAccess();
     document.getElementById('tab-home').classList.toggle('teacher-home', currentUser.role === '老師');
+    if (['老師', '科助'].includes(currentUser.role)) document.querySelector('.portal-intro button[onclick*="tab-achievements"]')?.remove?.();
     // 身分導覽只供公開首頁探索；登入後使用自己的服務入口。
     document.querySelector('.portal-audiences').hidden = isLoggedIn();
     const loginLink = document.querySelector('.portal-login');
