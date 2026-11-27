@@ -278,3 +278,86 @@ def test_student_and_non_admin_features_isolated_and_unaffected(client, login):
     # 4. 學生不可存取管理員帳密查詢功能 (401/403 隔離)
     res_hack_cred = client.get("/api/admin/credentials/query")
     assert res_hack_cred.status_code == 403
+
+
+def test_user_management_restore_default_password_flow(client, login):
+    """驗證管理員帳號管理頁面的「恢復預設密碼」完整流程（含狀態切換、重登驗證、稽核日誌、權限隔離與前端入口）"""
+    import pathlib
+
+    login("admin", "admin123")
+
+    # 1. 建立一名測試教師（自訂密碼）與一名測試系統管理員（自訂密碼）
+    res_t = client.post("/api/admin/users", json={
+        "username": "forgot_teacher_01",
+        "role": "老師",
+        "full_name": "忘記密碼測試老師",
+        "password": "ForgottenSecret999"
+    })
+    assert res_t.status_code == 201
+    t_id = res_t.get_json()["user_id"]
+
+    res_a = client.post("/api/admin/users", json={
+        "username": "forgot_admin_01",
+        "role": "系統管理員",
+        "full_name": "忘記密碼副管理員",
+        "password": "AdminSecret999"
+    })
+    assert res_a.status_code == 201
+    a_id = res_a.get_json()["user_id"]
+
+    # 2. 帳號管理列表 GET /api/admin/users 應正確回報 is_default_password=False、不洩漏 password_hash
+    users = client.get("/api/admin/users").get_json()["data"]
+    t_row = next(u for u in users if u["user_id"] == t_id)
+    a_row = next(u for u in users if u["user_id"] == a_id)
+    assert "password_hash" not in t_row
+    assert t_row["is_default_password"] is False
+    assert t_row["system_default_password"] == "123456"
+    assert a_row["is_default_password"] is False
+    assert a_row["system_default_password"] == "admin123"
+
+    # 3. 管理員一鍵恢復預設密碼（一般師生 -> 123456；系統管理員 -> admin123）
+    r_t = client.post(f"/api/admin/users/{t_id}/reset-password", json={"mode": "default"})
+    assert r_t.status_code == 200
+    jt = r_t.get_json()
+    assert jt["is_default"] is True
+    assert jt["new_password"] == "123456"
+    assert "恢復預設密碼" in jt["message"]
+
+    r_a = client.post(f"/api/admin/users/{a_id}/reset-password", json={"mode": "default"})
+    assert r_a.status_code == 200
+    ja = r_a.get_json()
+    assert ja["is_default"] is True
+    assert ja["new_password"] == "admin123"
+
+    # 4. 列表立即切換回 is_default_password=True，且稽核日誌留存「恢復預設密碼」
+    users_after = client.get("/api/admin/users").get_json()["data"]
+    assert next(u for u in users_after if u["user_id"] == t_id)["is_default_password"] is True
+    assert next(u for u in users_after if u["user_id"] == a_id)["is_default_password"] is True
+
+    logs = admin_db.query_db(
+        "SELECT action, after_json FROM audit_logs WHERE table_name = 'users' AND record_id = %s ORDER BY log_id DESC",
+        (str(t_id),)
+    )
+    assert any(l["action"] == "恢復預設密碼" for l in logs)
+
+    # 5. 使用者改用預設密碼登入成功，舊忘記的密碼應遭拒絕
+    client.post("/api/auth/logout")
+    bad_login = client.post("/api/auth/login", json={"username": "forgot_teacher_01", "password": "ForgottenSecret999"})
+    assert bad_login.status_code == 401
+    ok_login = client.post("/api/auth/login", json={"username": "forgot_teacher_01", "password": "123456"})
+    assert ok_login.status_code == 200
+
+    # 6. 非系統管理員（學生／老師）不可呼叫恢復預設密碼 API (403)
+    forbidden = client.post(f"/api/admin/users/{a_id}/reset-password", json={"mode": "default"})
+    assert forbidden.status_code == 403
+
+    # 7. 驗證管理員雙後台 HTML 與 JS 均包含「恢復預設密碼」按鈕與編輯彈窗按鈕
+    for html_path in ("static/admin.html", "static/admin-core.html"):
+        html = pathlib.Path(html_path).read_text(encoding="utf-8")
+        assert 'id="mResetDefaultPwdBtn"' in html
+        assert "resetEditingUserDefaultPassword()" in html
+        assert "恢復預設密碼" in html
+    js = pathlib.Path("static/js/admin-core.js").read_text(encoding="utf-8")
+    assert "function resetEditingUserDefaultPassword()" in js
+    assert "quickResetDefaultPassword(" in js
+    assert "恢復預設密碼" in js

@@ -701,19 +701,20 @@ def _seed_sqlite_data(cur, conn):
     pw_std = generate_password_hash("123456")
     pw_adm = generate_password_hash("admin123")
     users_data = [
-        (1, 'student1', pw_std, '學生', 'S112001', '王小明', None, 0),
-        (2, 'student2', pw_std, '學生', 'S112002', '李美華', None, 0),
-        (3, 'parent1', pw_std, '家長', 'S112001', '王大明 (王小明家長)', None, 0),
-        (4, 'staff1', pw_std, '教職員', None, '周立威 (教務處課務組)', None, 0),
-        (5, 'admin', pw_adm, '系統管理員', None, '系統總管理員', None, 1),
-        (6, 'teacher1', pw_std, '老師', None, '彭賓鈺 老師', '資管五忠', 0),
-        (7, 'S112004', pw_std, '學生', 'S112004', '陳冠宇', None, 0),
-        (8, 'S112005', pw_std, '學生', 'S112005', '林雨潔', None, 0),
-        (9, 'parent2', pw_std, '家長', 'S112002', '李建國 (李美華家長)', None, 0),
-        (10, 'S112003', pw_std, '學生', 'S112003', '張建華', None, 0),
-        (20, 'dorm_demo', pw_std, '教職員', None, '宿舍管理員 (生輔組)', None, 1)
+        (1, 'student1', pw_std, '學生', 'S112001', '王小明', None, 0, '', '查看'),
+        (2, 'student2', pw_std, '學生', 'S112002', '李美華', None, 0, '', '查看'),
+        (3, 'parent1', pw_std, '家長', 'S112001', '王大明 (王小明家長)', None, 0, '', '查看'),
+        (4, 'staff1', pw_std, '教職員', None, '周立威 (教務處課務組)', None, 0, '教務處', '查看,建立,修改'),
+        (5, 'admin', pw_adm, '系統管理員', None, '系統總管理員', None, 1, '', '查看,建立,修改,帳號管理,權限設定,系統檢測'),
+        (6, 'teacher1', pw_std, '老師', None, '彭賓鈺 老師', '資管五忠', 0, '', '查看'),
+        (7, 'S112004', pw_std, '學生', 'S112004', '陳冠宇', None, 0, '', '查看'),
+        (8, 'S112005', pw_std, '學生', 'S112005', '林雨潔', None, 0, '', '查看'),
+        (9, 'parent2', pw_std, '家長', 'S112002', '李建國 (李美華家長)', None, 0, '', '查看'),
+        (10, 'S112003', pw_std, '學生', 'S112003', '張建華', None, 0, '', '查看'),
+        (20, 'dorm_demo', pw_std, '教職員', None, '宿舍管理示範員', None, 1, '學生事務處／住宿管理', '查看,建立,修改'),
+        (21, 'staff_admin', pw_std, '內容管理人員', None, '林怡君 (校務行政人員)', None, 0, '教務處', '查看,建立,修改')
     ]
-    cur.executemany("INSERT OR REPLACE INTO users (user_id, username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", users_data)
+    cur.executemany("INSERT OR REPLACE INTO users (user_id, username, password_hash, role, student_id, full_name, advised_class, can_manage_dorm, office, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", users_data)
 
     # 4. course_map
     courses_data = [

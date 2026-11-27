@@ -26,7 +26,7 @@ from .logic import (
 bp = Blueprint("anniversary", __name__)
 deps = SimpleNamespace()
 
-ADMIN_ROLES = ("管理員", "系統管理員", "教職員")
+ADMIN_ROLES = ("管理員", "系統管理員", "教職員", "內容管理人員", "處室承辦", "科助")
 MARQUEE_WISH_LIMIT = 30
 # 同一來源 10 分鐘內最多送 3 則 (只存在記憶體，不寫入資料庫)
 RATE_LIMIT, RATE_WINDOW_SECONDS = 3, 600

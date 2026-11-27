@@ -2880,16 +2880,28 @@
                 const adminBtn = document.getElementById('adminEntryLink');
                 if (data.is_authenticated && data.user) {
                     currentUser = data.user;
-                    // 管理員無前台，登入後一律直接導向後台 (/admin)
-                    if (['管理員', '系統管理員', '內容管理人員'].includes(currentUser.role)) {
+                    // 系統管理員導向 /admin；行政人員直達專屬行政人員後台 /staff-admin；宿舍行政人員留在首頁宿舍專區
+                    if (['管理員', '系統管理員'].includes(currentUser.role)) {
                         window.location.replace('/admin');
                         return;
                     }
+                    const isDormOnlyStaff = currentUser.role === '住宿管理員' || (currentUser.role === '教職員' && Boolean(currentUser.can_manage_dorm));
+                    if (['內容管理人員', '處室承辦', '科助'].includes(currentUser.role) && !isDormOnlyStaff) {
+                        window.location.replace('/staff-admin');
+                        return;
+                    }
                     document.getElementById('userFullName').textContent = currentUser.full_name.replace(new RegExp(`\\s*${currentUser.role}$`), ''); // 旁邊已有身分標籤，名字後面的「老師」不重複顯示
-                    document.getElementById('userRoleTag').textContent = currentUser.role;
-                    document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (currentUser.dept_name || '');
+                    document.getElementById('userRoleTag').textContent = isDormOnlyStaff ? '宿舍行政人員' : currentUser.role;
+                    document.getElementById('userSubInfo').textContent = (currentUser.student_id ? `學號 ${currentUser.student_id} · ` : '') + (isDormOnlyStaff ? '學生事務處／住宿管理' : (currentUser.dept_name || ''));
                     if (adminBtn) {
-                        if (currentUser.role === '管理員' || (currentUser.role === '教職員' && !currentUser.can_manage_dorm)) {
+                        if (!isDormOnlyStaff && ['教職員', '處室承辦', '科助', '內容管理人員'].includes(currentUser.role)) {
+                            adminBtn.href = '/staff-admin';
+                            adminBtn.textContent = '行政管理後台 ↗';
+                            adminBtn.classList.remove('hidden');
+                            adminBtn.classList.add('flex');
+                        } else if (['管理員', '系統管理員'].includes(currentUser.role)) {
+                            adminBtn.href = '/admin';
+                            adminBtn.textContent = '系統管理後台 ↗';
                             adminBtn.classList.remove('hidden');
                             adminBtn.classList.add('flex');
                         } else {

@@ -101,6 +101,30 @@
         .no-scrollbar {
             scrollbar-width: none;
         }
+
+        /* 帳號管理表格上方同步橫向拉條：清楚易拖曳且不佔多餘高度 */
+        #usersTableTopScroll {
+            scrollbar-width: auto;
+            scrollbar-color: #94a3b8 #f1f5f9;
+        }
+
+        #usersTableTopScroll::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        #usersTableTopScroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        #usersTableTopScroll::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 6px;
+            border: 2px solid #f1f5f9;
+        }
+
+        #usersTableTopScroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
     </style>
 </head>
 
@@ -373,14 +397,6 @@
                 </div>
                 <!-- 常用快捷按鈕組 -->
                 <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick="openUserModal('add')"
-                        class="bg-ukn-800 hover:bg-ukn-900 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow-xs">
-                        <span>+ 新增帳號</span>
-                    </button>
-                    <button onclick="openDeptModal('add')"
-                        class="bg-indigo-700 hover:bg-indigo-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow-xs">
-                        <span>+ 新增科系</span>
-                    </button>
                     <button onclick="openCourseModal('add')"
                         class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow-xs">
                         <span>+ 新增課程</span>
@@ -677,7 +693,7 @@
                             <div class="font-bold flex items-center gap-1.5 text-indigo-900 text-sm">
                                 <span>👥 系統帳號與權限管理 (users)：</span>
                             </div>
-                            <p class="text-indigo-800">管理全校使用者的帳號登入、角色分配（學生、老師、教職員、管理員、家長）以及特殊權限（如宿舍管理權限）。密碼經安全雜湊儲存。</p>
+                            <p class="text-indigo-800">管理全校使用者的帳號登入、角色分配（學生、老師、教職員、管理員、家長）以及特殊權限（如宿舍管理權限）。若使用者忘記密碼，可直接點擊「恢復預設密碼」一鍵還原（一般師生 123456、系統管理員 admin123）。</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="openCredentialQueryModal()"
@@ -721,23 +737,31 @@
                             class="border border-slate-300 text-slate-600 hover:bg-slate-100 px-2.5 py-1.5 rounded transition">清除重設</button>
                     </div>
 
-                    <!-- 帳號清單表格 -->
-                    <div class="overflow-x-auto rounded border border-slate-200 bg-white">
-                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                                    <th class="p-3 w-16">ID</th>
-                                    <th class="p-3">登入帳號</th>
-                                    <th class="p-3">使用者姓名</th>
-                                    <th class="p-3">角色分配</th>
-                                    <th class="p-3">關聯學號 / 導師班級</th>
-                                    <th class="p-3">特殊權限</th>
-                                    <th class="p-3">建立時間</th>
-                                    <th class="p-3 text-center w-28">管理操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
-                        </table>
+                    <!-- 帳號清單表格（完整顯示不截斷，表格上方提供同步橫向拉條） -->
+                    <div class="rounded border border-slate-200 bg-white overflow-hidden">
+                        <div id="usersTableTopScroll"
+                            class="overflow-x-auto overflow-y-hidden border-b border-slate-200 bg-slate-50 hidden"
+                            title="可於表格上方直接左右拖曳捲動查看右側欄位與操作按鈕">
+                            <div id="usersTableTopScrollInner" style="height: 1px;"></div>
+                        </div>
+                        <div id="usersTableScrollWrap" class="overflow-x-auto bg-white">
+                            <table id="usersTable" class="w-full text-left border-collapse text-xs sm:text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 border-b border-slate-200 whitespace-nowrap">
+                                        <th class="p-3 w-14">ID</th>
+                                        <th class="p-3">帳號 / 狀態</th>
+                                        <th class="p-3">使用者姓名</th>
+                                        <th class="p-3">角色 / 處室</th>
+                                        <th class="p-3">密碼狀態</th>
+                                        <th class="p-3">操作權限</th>
+                                        <th class="p-3">關聯學號 / 導師班級</th>
+                                        <th class="p-3">建立時間</th>
+                                        <th class="p-3 text-center">管理操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -2308,7 +2332,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">登入密碼</label>
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <label class="block font-semibold text-slate-700">登入密碼</label>
+                        <button type="button" id="mResetDefaultPwdBtn" onclick="resetEditingUserDefaultPassword()"
+                            class="hidden bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-0.5 rounded text-xs font-bold transition shadow-sm"
+                            title="忘記密碼時可一鍵將此帳號密碼恢復為系統預設密碼">🔄 恢復預設密碼</button>
+                    </div>
                     <input type="password" id="mPassword" placeholder="••••••••"
                         class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
                     <span id="mPasswordHint" class="text-[11px] text-slate-500 mt-0.5 block">預設密碼：123456</span>
@@ -4056,7 +4085,7 @@
             }
         }
     </script>
-    <script src="/js/admin-core.js?v=20261126"></script>
+    <script src="/js/admin-core.js?v=20261127-staffaccount"></script>
 </body>
 
 </html>

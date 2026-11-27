@@ -110,6 +110,8 @@ async function refreshDbStatus() {
             if (statSynonyms) statSynonyms.textContent = data.table_counts.synonym_dictionary || 0;
             const statUnmatched = document.getElementById('statUnmatched');
             if (statUnmatched) statUnmatched.textContent = data.table_counts.unmatched_queries || 0;
+            const statMeetings = document.getElementById('statMeetings');
+            if (statMeetings) statMeetings.textContent = data.table_counts.meetings || 0;
 
             const uBadge = document.getElementById('usersCountBadge');
             if (uBadge) uBadge.textContent = data.table_counts.users || 0;
@@ -127,6 +129,8 @@ async function refreshDbStatus() {
             if (aBadge) aBadge.textContent = data.table_counts.audit_logs || 0;
             const umBadge = document.getElementById('unmatchedBadge');
             if (umBadge) umBadge.textContent = data.table_counts.unmatched_queries || 0;
+            const mtgBadge = document.getElementById('meetingCountBadge');
+            if (mtgBadge && data.table_counts.meetings !== undefined) mtgBadge.textContent = data.table_counts.meetings;
         }
     } catch (e) {
         console.warn('DB 狀態取得失敗:', e);
@@ -134,24 +138,41 @@ async function refreshDbStatus() {
 }
 
 let currentAdminUser = null;
+const SYS_ADMIN_ROLES_JS = ['管理員', '系統管理員'];
+const STAFF_ADMIN_ROLES_JS = ['教職員', '內容管理人員', '處室承辦', '科助'];
+
+function isDormOnlyUser(u) {
+    if (!u) return false;
+    if (SYS_ADMIN_ROLES_JS.includes(u.role)) return false;
+    return u.role === '住宿管理員' || Boolean(u.can_manage_dorm);
+}
+
+function getAdminPageMode() {
+    return window.ADMIN_PAGE_MODE || 'legacy';
+}
 
 function isCurrentSysAdmin() {
-    return ['管理員', '系統管理員'].includes(currentAdminUser?.role);
+    return SYS_ADMIN_ROLES_JS.includes(currentAdminUser?.role);
+}
+
+function isCurrentStaffAdmin() {
+    return STAFF_ADMIN_ROLES_JS.includes(currentAdminUser?.role) && !isDormOnlyUser(currentAdminUser);
 }
 
 function applyRolePermissionUI() {
     const idBadge = document.getElementById('adminIdentityBadge');
     if (idBadge) {
         if (!currentAdminUser) {
-            idBadge.textContent = '尚未登入管理帳號';
+            idBadge.textContent = getAdminPageMode() === 'staff' ? '尚未登入行政帳號' : '尚未登入管理帳號';
         } else if (isCurrentSysAdmin()) {
             // 系統管理員代表全校系統總後台，不需多餘的處室或重複身分標籤 (移除多餘的「(管理員 · 圖書資訊中心)」)
             idBadge.textContent = currentAdminUser.full_name || '系統管理員';
         } else {
+            const roleLabel = currentAdminUser.role === '內容管理人員' ? '行政人員' : currentAdminUser.role;
             const officeText = currentAdminUser.office ? ` · ${currentAdminUser.office}` : '';
-            idBadge.textContent = `${currentAdminUser.full_name} (${currentAdminUser.role}${officeText})`;
+            idBadge.textContent = `${currentAdminUser.full_name} (${roleLabel}${officeText})`;
         }
-        idBadge.className = 'font-bold text-ukn-900';
+        idBadge.className = getAdminPageMode() === 'staff' ? 'font-bold text-emerald-900' : 'font-bold text-ukn-900';
     }
 }
 
@@ -201,25 +222,30 @@ async function submitAdminLoginModal(event) {
             showAdminToast(data.message || '帳號或密碼錯誤', 'error');
             return;
         }
-        if (!['管理員', '系統管理員', '內容管理人員'].includes(data.user?.role)) {
-            showAdminToast('此帳號沒有管理後台權限', 'error');
+        const mode = getAdminPageMode();
+        const role = data.user?.role;
+        if (isDormOnlyUser(data.user)) {
+            showAdminToast('宿舍行政人員與一般行政人員權限已區分，請由校務首頁辦理宿舍審核業務', 'error');
+            return;
+        }
+        const allowed = mode === 'staff'
+            ? [...SYS_ADMIN_ROLES_JS, ...STAFF_ADMIN_ROLES_JS]
+            : (mode === 'sysadmin' ? [...SYS_ADMIN_ROLES_JS, ...STAFF_ADMIN_ROLES_JS] : [...SYS_ADMIN_ROLES_JS, '內容管理人員']);
+        if (!allowed.includes(role)) {
+            showAdminToast(mode === 'staff' ? '此帳號沒有行政人員管理後台權限' : '此帳號沒有管理後台權限', 'error');
+            return;
+        }
+        // 若在系統管理員後台登入了行政人員帳號，自動導向專屬的行政人員後台 (/staff-admin)
+        if (mode === 'sysadmin' && STAFF_ADMIN_ROLES_JS.includes(role)) {
+            showAdminToast(`已登入行政身分「${data.user.full_name}」，為您導向行政人員校務管理後台…`, 'success');
+            window.location.href = '/staff-admin';
             return;
         }
         currentAdminUser = data.user;
         applyRolePermissionUI();
         closeAdminLoginModal();
         showAdminToast(`已登入：${data.user.full_name} (${data.user.role_display || data.user.role})`, 'success');
-        if (isCurrentSysAdmin()) {
-            loadUsers();
-        } else {
-            const usersPanel = document.getElementById('panel-users');
-            const selfPanel = document.getElementById('panel-selfcheck');
-            if ((usersPanel && !usersPanel.classList.contains('hidden')) ||
-                (selfPanel && !selfPanel.classList.contains('hidden'))) {
-                switchAdminCoreTab('rules');
-            }
-        }
-        refreshDbStatus();
+        await loadPageInitialData();
     } catch (e) {
         showAdminToast('登入失敗：' + e.message, 'error');
     }
@@ -238,14 +264,14 @@ async function loadUsers() {
     if (!tbody) return;
 
     if (!isCurrentSysAdmin()) {
-        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-rose-600 font-semibold">🔒 權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-rose-600 font-semibold">🔒 權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作。</td></tr>';
         return;
     }
 
     const role = document.getElementById('filterUserRole')?.value || '';
     const search = document.getElementById('filterUserSearch')?.value || '';
 
-    tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">載入帳號資料中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-slate-400">載入帳號資料中...</td></tr>';
     try {
         const params = new URLSearchParams();
         if (role) params.set('role', role);
@@ -257,22 +283,27 @@ async function loadUsers() {
         if (countSpan) countSpan.textContent = coreDataCache.users.length;
 
         if (coreDataCache.users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">查無符合條件的使用者帳號</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-slate-400">查無符合條件的使用者帳號</td></tr>';
             return;
         }
 
         tbody.innerHTML = coreDataCache.users.map(u => {
             const rawRole = u.role_display || u.role || '';
+            const isDormAccount = !SYS_ADMIN_ROLES_JS.includes(u.role) && (u.role === '住宿管理員' || Boolean(u.can_manage_dorm));
             const roleDisp = (rawRole === '管理員' || rawRole === '系統管理員')
                 ? '系統管理員'
-                : ((rawRole === '內容管理人員' || rawRole === '教職員') ? '處室承辦' : rawRole);
+                : (isDormAccount
+                    ? '宿舍行政人員'
+                    : (u.role === '內容管理人員' ? '行政人員' : (rawRole === '教職員' ? '處室承辦' : rawRole)));
             const roleColors = {
                 '系統管理員': 'bg-rose-100 text-rose-800 border-rose-300',
+                '行政人員': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                '宿舍行政人員': 'bg-purple-100 text-purple-800 border-purple-300',
                 '處室承辦': 'bg-amber-100 text-amber-800 border-amber-300',
                 '科助': 'bg-amber-100 text-amber-800 border-amber-300',
                 '住宿管理員': 'bg-purple-100 text-purple-800 border-purple-300',
                 '老師': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-                '學生': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                '學生': 'bg-teal-100 text-teal-800 border-teal-300',
                 '家長': 'bg-sky-100 text-sky-800 border-sky-300'
             };
             const isActive = (u.is_active === undefined || u.is_active === null) ? 1 : Number(u.is_active);
@@ -304,48 +335,102 @@ async function loadUsers() {
                 ? `<button disabled title="防呆保護：不可刪除主管理員或自己目前登入的帳號" class="border border-slate-200 text-slate-300 bg-slate-50 px-2 py-1 rounded text-xs font-semibold cursor-not-allowed">刪除</button>`
                 : `<button onclick="deleteUser(${u.user_id}, '${escapeHtml(u.username)}')" class="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2 py-1 rounded text-xs font-semibold">刪除</button>`;
 
-            const defPwd = u.default_password || ((u.role === '系統管理員' || u.role === '管理員') ? 'admin123' : '123456');
-            const pwdStatusHtml = (defPwd === '123456' || defPwd === 'admin123')
-                ? `<span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-xs font-mono font-bold" title="系統預設密碼：${defPwd}">🔑 預設 ${defPwd}</span>`
-                : `<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-xs" title="使用者已自訂新密碼 (安全雜湊保護)">🛡️ 自訂密碼</span>`;
+            const sysDefPwd = u.system_default_password || ((u.role === '系統管理員' || u.role === '管理員') ? 'admin123' : '123456');
+            const isAtDefault = (typeof u.is_default_password === 'boolean')
+                ? u.is_default_password
+                : (u.default_password === sysDefPwd);
+            const pwdStatusHtml = isAtDefault
+                ? `<span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-xs font-mono font-bold" title="目前使用系統預設密碼：${escapeHtml(sysDefPwd)}">🔑 預設 ${escapeHtml(sysDefPwd)}</span>`
+                : `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded text-xs font-semibold" title="使用者已自訂密碼，忘記密碼可按「恢復預設密碼」還原為 ${escapeHtml(sysDefPwd)}">🛡️ 自訂密碼</span>`;
+
+            const resetDefBtn = isAtDefault
+                ? `<button type="button" onclick="quickResetDefaultPassword(${u.user_id}, '${escapeHtml(u.username)}', '${escapeHtml(sysDefPwd)}')" class="border border-amber-400 text-amber-800 hover:bg-amber-50 px-2 py-1 rounded text-xs font-semibold" title="重新將此帳號密碼恢復為預設密碼 (${escapeHtml(sysDefPwd)})">恢復預設密碼</button>`
+                : `<button type="button" onclick="quickResetDefaultPassword(${u.user_id}, '${escapeHtml(u.username)}', '${escapeHtml(sysDefPwd)}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs font-semibold shadow-sm" title="忘記密碼時一鍵恢復為系統預設密碼 (${escapeHtml(sysDefPwd)})">🔑 恢復預設密碼</button>`;
 
             return `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${isActive ? '' : 'opacity-60 bg-rose-50/30'}">
-                    <td class="p-3 font-mono text-slate-500 whitespace-nowrap">${u.user_id}</td>
-                    <td class="p-3 whitespace-nowrap">
-                        <div class="flex items-center gap-2">
+                    <td class="p-2.5 font-mono text-slate-500 whitespace-nowrap">${u.user_id}</td>
+                    <td class="p-2.5 whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
                             <span class="font-bold text-slate-900">${escapeHtml(u.username)}</span>
                             ${activeBadge}
                             ${protectedBadge}
                         </div>
                     </td>
-                    <td class="p-3 text-slate-800 font-medium whitespace-nowrap">${escapeHtml(u.full_name)}</td>
-                    <td class="p-3 whitespace-nowrap">
+                    <td class="p-2.5 text-slate-800 font-medium whitespace-nowrap">${escapeHtml(u.full_name)}</td>
+                    <td class="p-2.5 whitespace-nowrap">
                         <div class="flex items-center gap-1.5">
                             ${roleBadge}
                             ${officeHtml}
                         </div>
                     </td>
-                    <td class="p-3 whitespace-nowrap">${pwdStatusHtml}</td>
-                    <td class="p-3 text-xs whitespace-nowrap">
+                    <td class="p-2.5 whitespace-nowrap">${pwdStatusHtml}</td>
+                    <td class="p-2.5 text-xs whitespace-nowrap">
                         <div class="flex items-center gap-1">
                             ${permsBadges}${dormBadge}
                         </div>
                     </td>
-                    <td class="p-3 text-xs whitespace-nowrap">${extraInfo}</td>
-                    <td class="p-3 text-xs text-slate-400 font-mono whitespace-nowrap">${escapeHtml(String(u.created_at || '').substring(0, 16))}</td>
-                    <td class="p-3 text-center space-x-1 whitespace-nowrap">
+                    <td class="p-2.5 text-xs whitespace-nowrap">${extraInfo}</td>
+                    <td class="p-2.5 text-xs text-slate-400 font-mono whitespace-nowrap">${escapeHtml(String(u.created_at || '').substring(0, 16))}</td>
+                    <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
                         <button onclick="openUserModal('edit', ${u.user_id})" class="bg-ukn-800 hover:bg-ukn-700 text-white px-2.5 py-1 rounded text-xs font-semibold">編輯</button>
-                        <button onclick="openCredentialQueryForUser('${escapeHtml(u.username)}')" class="border border-indigo-300 text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded text-xs font-semibold" title="查詢該帳號之密碼與設定狀態">帳密</button>
+                        ${resetDefBtn}
                         ${toggleBtn}
                         ${deleteBtn}
                     </td>
                 </tr>
             `;
         }).join('');
+        initUsersTableTopScroll();
+        requestAnimationFrame(syncUsersTableTopScroll);
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-rose-600">載入失敗：${escapeHtml(e.message)}</td></tr>`;
     }
+}
+
+let _usersTopScrollInitialized = false;
+function syncUsersTableTopScroll() {
+    const topBar = document.getElementById('usersTableTopScroll');
+    const topInner = document.getElementById('usersTableTopScrollInner');
+    const wrap = document.getElementById('usersTableScrollWrap');
+    const table = document.getElementById('usersTable');
+    if (!topBar || !topInner || !wrap || !table) return;
+    const needsScroll = table.scrollWidth > wrap.clientWidth + 1;
+    if (needsScroll) {
+        topInner.style.width = `${table.scrollWidth}px`;
+        topBar.classList.remove('hidden');
+        topBar.scrollLeft = wrap.scrollLeft;
+    } else {
+        topBar.classList.add('hidden');
+    }
+}
+
+function initUsersTableTopScroll() {
+    if (_usersTopScrollInitialized) return;
+    const topBar = document.getElementById('usersTableTopScroll');
+    const wrap = document.getElementById('usersTableScrollWrap');
+    const table = document.getElementById('usersTable');
+    if (!topBar || !wrap || !table) return;
+    _usersTopScrollInitialized = true;
+
+    let syncingFromTop = false;
+    let syncingFromWrap = false;
+    topBar.addEventListener('scroll', () => {
+        if (syncingFromWrap) { syncingFromWrap = false; return; }
+        syncingFromTop = true;
+        wrap.scrollLeft = topBar.scrollLeft;
+    });
+    wrap.addEventListener('scroll', () => {
+        if (syncingFromTop) { syncingFromTop = false; return; }
+        syncingFromWrap = true;
+        topBar.scrollLeft = wrap.scrollLeft;
+    });
+    if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => syncUsersTableTopScroll());
+        ro.observe(wrap);
+        ro.observe(table);
+    }
+    window.addEventListener('resize', syncUsersTableTopScroll);
 }
 
 function onUserRoleSelectChange(roleVal) {
@@ -418,19 +503,22 @@ function openUserModal(mode, id = null) {
     if (roleSelect) roleSelect.disabled = false;
     if (activeSelect) activeSelect.disabled = false;
 
+    const resetBtn = document.getElementById('mResetDefaultPwdBtn');
     if (mode === 'add') {
         title.textContent = '新增使用者帳號';
         document.getElementById('mUsername').readOnly = false;
         document.getElementById('mUsername').classList.remove('bg-slate-100');
         document.getElementById('mPasswordHint').textContent = '請設定至少 8 字元的密碼';
         document.getElementById('mRole').value = '內容管理人員';
-        document.getElementById('mOffice').value = '';
-        document.getElementById('mIsActive').value = '1';
+        if (document.getElementById('mOffice')) document.getElementById('mOffice').value = '';
+        if (activeSelect) activeSelect.value = '1';
+        if (resetBtn) resetBtn.classList.add('hidden');
         onUserRoleSelectChange('內容管理人員');
     } else {
         const u = coreDataCache.users.find(x => x.user_id === id);
         if (!u) return;
         const isProtectedAdmin = u.username === 'admin' || (typeof currentAdminUser !== 'undefined' && currentAdminUser && u.username === currentAdminUser.username);
+        const sysDefPwd = u.system_default_password || ((u.role === '系統管理員' || u.role === '管理員') ? 'admin123' : '123456');
         title.textContent = `編輯帳號與權限：${u.username}${isProtectedAdmin ? ' (🛡️ 系統保護帳號)' : ''}`;
         document.getElementById('mUserId').value = u.user_id;
         document.getElementById('mUsername').value = u.username;
@@ -440,8 +528,8 @@ function openUserModal(mode, id = null) {
         const roleVal = (u.role === '管理員' || u.role === '系統管理員')
             ? '系統管理員' : u.role;
         document.getElementById('mRole').value = roleVal;
-        document.getElementById('mOffice').value = u.office || '';
-        document.getElementById('mIsActive').value = String((u.is_active === undefined || u.is_active === null) ? 1 : Number(u.is_active));
+        if (document.getElementById('mOffice')) document.getElementById('mOffice').value = u.office || '';
+        if (activeSelect) activeSelect.value = String((u.is_active === undefined || u.is_active === null) ? 1 : Number(u.is_active));
         if (isProtectedAdmin) {
             if (roleSelect) roleSelect.disabled = true;
             if (activeSelect) activeSelect.disabled = true;
@@ -451,7 +539,9 @@ function openUserModal(mode, id = null) {
         document.getElementById('mStudentId').value = u.student_id || '';
         document.getElementById('mAdvisedClass').value = u.advised_class || '';
         document.getElementById('mCanManageDorm').checked = Boolean(u.can_manage_dorm);
-        document.getElementById('mPasswordHint').textContent = '留空表示維持原密碼不變更（新密碼至少 8 字元）';
+        if (resetBtn) resetBtn.classList.remove('hidden');
+        const statusText = u.is_default_password ? `目前為預設密碼（${sysDefPwd}）` : `目前為自訂密碼`;
+        document.getElementById('mPasswordHint').textContent = `${statusText}｜留空維持原密碼，或點「恢復預設密碼」還原為 ${sysDefPwd}`;
     }
     modal.classList.remove('hidden');
 }
@@ -505,12 +595,12 @@ async function saveUser(e) {
         username,
         full_name: fullName,
         role,
-        office: document.getElementById('mOffice').value.trim(),
+        office: (document.getElementById('mOffice')?.value || '').trim(),
         permissions: collectModalPermissions() || '查看',
-        is_active: Number(document.getElementById('mIsActive').value),
+        is_active: document.getElementById('mIsActive') ? Number(document.getElementById('mIsActive').value) : 1,
         student_id: studentId,
-        advised_class: document.getElementById('mAdvisedClass').value.trim() || null,
-        can_manage_dorm: document.getElementById('mCanManageDorm').checked
+        advised_class: (document.getElementById('mAdvisedClass')?.value || '').trim() || null,
+        can_manage_dorm: Boolean(document.getElementById('mCanManageDorm')?.checked)
     };
     if (password) payload.password = password;
 
@@ -664,8 +754,8 @@ async function searchCredentials() {
                     <td class="p-2.5">${pwdBadge}</td>
                     <td class="p-2.5 text-xs">${activeBadge}</td>
                     <td class="p-2.5 text-center space-x-1 whitespace-nowrap">
-                        <button type="button" onclick="quickResetDefaultPassword(${u.user_id}, '${escapeHtml(u.username)}')"
-                            class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-semibold transition" title="還原為系統預設密碼 (123456 / admin123)">還原預設</button>
+                        <button type="button" onclick="quickResetDefaultPassword(${u.user_id}, '${escapeHtml(u.username)}', '${escapeHtml(u.system_default_password || ((u.role === '系統管理員' || u.role === '管理員') ? 'admin123' : '123456'))}')"
+                            class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-semibold transition" title="恢復為系統預設密碼 (123456 / admin123)">恢復預設密碼</button>
                         <button type="button" onclick="promptCustomPassword(${u.user_id}, '${escapeHtml(u.username)}')"
                             class="bg-indigo-700 hover:bg-indigo-800 text-white px-2 py-1 rounded text-[11px] font-semibold transition" title="管理者為該帳號指定新密碼">設新密碼</button>
                     </td>
@@ -677,17 +767,47 @@ async function searchCredentials() {
     }
 }
 
-async function quickResetDefaultPassword(userId, username) {
-    if (!confirm(`確定要將使用者「${username}」的密碼重設為系統預設密碼嗎？\n（一般師生預設密碼為 123456；系統管理員為 admin123）`)) return;
+async function quickResetDefaultPassword(userId, username, expectedDefaultPwd = '') {
+    if (!isCurrentSysAdmin()) {
+        showAdminToast('權限不足：僅限系統管理員可恢復使用者預設密碼', 'error');
+        return null;
+    }
+    const pwdHint = expectedDefaultPwd
+        ? `（預設密碼：${expectedDefaultPwd}）`
+        : '（一般師生／家長為 123456；系統管理員為 admin123）';
+    if (!confirm(`確定要將使用者「${username}」的密碼恢復為系統預設密碼嗎？\n${pwdHint}\n\n恢復後該使用者即可使用預設密碼重新登入系統。`)) return null;
     try {
         const res = await adminFetch(`/api/admin/users/${userId}/reset-password`, {
             method: 'POST',
             body: JSON.stringify({ mode: 'default' })
         });
-        showAdminToast(res.message || `使用者「${username}」密碼已重設為預設密碼`, 'success');
-        searchCredentials();
+        showAdminToast(res.message || `使用者「${username}」已恢復預設密碼：${res.new_password || expectedDefaultPwd}`, 'success');
+        const credModal = document.getElementById('credentialQueryModal');
+        if (credModal && !credModal.classList.contains('hidden')) {
+            searchCredentials();
+        }
         loadUsers();
-    } catch (e) {}
+        refreshDbStatus();
+        return res;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function resetEditingUserDefaultPassword() {
+    const userId = Number(document.getElementById('mUserId')?.value || 0);
+    const username = (document.getElementById('mUsername')?.value || '').trim();
+    if (!userId || !username) return;
+    const roleVal = document.getElementById('mRole')?.value || '';
+    const u = (coreDataCache.users || []).find(x => x.user_id === userId);
+    const expectedPwd = u?.system_default_password || ((roleVal === '系統管理員' || roleVal === '管理員') ? 'admin123' : '123456');
+    const res = await quickResetDefaultPassword(userId, username, expectedPwd);
+    if (res && res.status === 'success') {
+        const pwInput = document.getElementById('mPassword');
+        if (pwInput) pwInput.value = '';
+        const hint = document.getElementById('mPasswordHint');
+        if (hint) hint.textContent = `已恢復為系統預設密碼（${res.new_password || expectedPwd}）｜留空維持不變更`;
+    }
 }
 
 async function promptCustomPassword(userId, username) {
@@ -714,17 +834,19 @@ async function promptCustomPassword(userId, username) {
 // ==========================================
 async function loadDepartments() {
     const tbody = document.getElementById('deptTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">載入科系架構中...</td></tr>';
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">載入科系架構中...</td></tr>';
+    }
     try {
         const res = await adminFetch('/api/admin/departments');
         coreDataCache.departments = res.data || [];
         const countSpan = document.getElementById('deptCountBadge');
         if (countSpan) countSpan.textContent = coreDataCache.departments.length;
 
-        // 同步更新其他下拉選單的科系選項
+        // 無論頁面有沒有 deptTableBody，都要同步更新課程/畢業門檻等下拉選單的科系選項
         updateDeptDropdownOptions(coreDataCache.departments);
 
+        if (!tbody) return;
         tbody.innerHTML = coreDataCache.departments.map(d => {
             const hasBoundData = (d.student_count || 0) > 0 || (d.course_count || 0) > 0;
             const deleteBtn = hasBoundData
@@ -2239,13 +2361,65 @@ function switchAdminCoreTab(tabName) {
     else if (tabName === 'smartinsights') { loadSmartInsights(); }
 }
 
+async function loadPageInitialData() {
+    const mode = getAdminPageMode();
+    await refreshDbStatus();
+    if (mode === 'staff') {
+        // 行政人員校務管理後台：僅載入各處室行政業務資料，不呼叫系統管理員專屬 API
+        await loadDepartments();
+        loadCourseMap();
+        loadGraduationRequirements();
+        loadKnowledgeCategories();
+        loadAdminSynonyms();
+        if (typeof loadAllData === 'function') {
+            loadAllData();
+        }
+    } else if (mode === 'sysadmin') {
+        // 系統管理員後台：專注於帳號治理、科系主檔、稽核日誌、會議中控與 AI 決策洞察
+        loadUsers();
+        loadDepartments();
+        loadAuditLogs();
+        loadAdminMeetings();
+        loadSmartInsights();
+    } else {
+        // 既有 admin-core.html 相容模式
+        if (isCurrentSysAdmin()) {
+            loadUsers();
+        }
+        loadDepartments();
+        loadCourseMap();
+        loadGraduationRequirements();
+        loadKnowledgeCategories();
+        loadAdminSynonyms();
+        loadAuditLogs();
+    }
+}
+
 // 啟動時自動載入核心資料與狀態
 async function loadAllCoreAdminData() {
-    const allowedAdminRoles = ['管理員', '系統管理員', '內容管理人員'];
+    const mode = getAdminPageMode();
+    const allowedRoles = mode === 'staff'
+        ? [...SYS_ADMIN_ROLES_JS, ...STAFF_ADMIN_ROLES_JS]
+        : (mode === 'sysadmin' ? SYS_ADMIN_ROLES_JS : [...SYS_ADMIN_ROLES_JS, '內容管理人員']);
     try {
         const meRes = await fetch('/api/auth/me');
         const meData = await meRes.json().catch(() => ({}));
-        if (!(meData.is_authenticated || meData.authenticated) || !allowedAdminRoles.includes(meData.user?.role)) {
+        const role = meData.user?.role;
+        const isDormStaff = isDormOnlyUser(meData.user);
+        // 宿舍行政人員獨立辦理住宿審核，不得進入一般行政人員後台或系統管理員後台
+        if ((meData.is_authenticated || meData.authenticated) && isDormStaff) {
+            currentAdminUser = null;
+            applyRolePermissionUI();
+            showAdminToast('宿舍行政人員僅限於宿舍專區辦理住宿審核，正為您返回首頁…', 'error');
+            setTimeout(() => { window.location.replace('/'); }, 900);
+            return;
+        }
+        // 行政人員誤進系統管理員後台 (/admin) 時，友善導流至行政人員後台 (/staff-admin)
+        if ((meData.is_authenticated || meData.authenticated) && mode === 'sysadmin' && STAFF_ADMIN_ROLES_JS.includes(role)) {
+            window.location.replace('/staff-admin');
+            return;
+        }
+        if (!(meData.is_authenticated || meData.authenticated) || !allowedRoles.includes(role)) {
             currentAdminUser = null;
             applyRolePermissionUI();
             openAdminLoginModal();
@@ -2260,16 +2434,7 @@ async function loadAllCoreAdminData() {
         showAdminToast('無法確認登入狀態，請重新整理後登入', 'error');
         return;
     }
-    await refreshDbStatus();
-    if (isCurrentSysAdmin()) {
-        loadUsers();
-    }
-    loadDepartments();
-    loadCourseMap();
-    loadGraduationRequirements();
-    loadKnowledgeCategories();
-    loadAdminSynonyms();
-    loadAuditLogs();
+    await loadPageInitialData();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

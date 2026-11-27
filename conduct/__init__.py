@@ -37,7 +37,7 @@ DEFAULT_RULES = {
     "grades": [{"min": 90, "label": "優"}, {"min": 80, "label": "甲"}, {"min": 70, "label": "乙"},
                {"min": 60, "label": "丙"}, {"min": 0, "label": "丁"}],
 }
-STAFF_ROLES = ("教職員", "管理員", "系統管理員")
+STAFF_ROLES = ("教職員", "內容管理人員", "處室承辦", "科助", "管理員", "系統管理員")
 DEMO_SETTINGS = {}   # MySQL 離線時後台儲存的規則 (空 = 用預設)
 SEMESTER_PATTERN = re.compile(r"^(\d{2,3})-([12])$")
 
