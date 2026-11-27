@@ -20,3 +20,6 @@ static/uploads/report_*
 static/uploads/*
 !static/uploads/demo_*
 tools/weekly_log_draft.json
+
+# Claude Code 個人設定 (僅限本機，不跟團隊共用)
+.claude/settings.local.json
