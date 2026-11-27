@@ -603,7 +603,7 @@
                     <button type="button" id="notifyBellBtn" onclick="switchTab('tab-notices')"
                         class="hidden relative hover:underline" title="班級通知">
                         🔔<span id="notifyBellCount"
-                            class="hidden absolute -top-1.5 -right-2.5 bg-accent-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 leading-4 text-center"></span>
+                            class="hidden absolute -top-1.5 -right-2.5 bg-accent-500 text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 leading-4 text-center"></span>
                     </button>
                     <a href="/admin" target="_blank" id="adminEntryLink" class="hidden hover:underline">校務管理後台 ↗</a>
                     <a href="/login" id="loginLink" class="font-bold hover:underline">登入</a>
@@ -633,7 +633,7 @@
                             </svg>
                             <!-- 未讀紅點 / 計數徽章 -->
                             <span id="notificationBadge"
-                                class="hidden absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow"></span>
+                                class="hidden absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow"></span>
                         </button>
 
                         <!-- 手機版背景遮罩：點空白處也能關閉通知卡片 -->
@@ -718,7 +718,7 @@
                  資料跟右上角通知中心同一份 (buildNotifications)，只挑要學生動手處理的；點一下直接跳到該功能頁 -->
             <section id="homeMustDo" class="hidden rounded border-2 border-rose-300 bg-rose-50 p-5 sm:p-6 space-y-3"
                 aria-labelledby="homeMustDoTitle">
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
                     <h2 id="homeMustDoTitle" class="ukn-title text-lg sm:text-xl font-bold text-rose-700 flex items-center gap-2">
                         必做事項 <span id="homeMustDoCount"
                             class="text-xs font-bold bg-rose-600 text-white rounded-full px-2 py-0.5"></span></h2>
