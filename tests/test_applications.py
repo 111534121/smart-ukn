@@ -235,6 +235,65 @@ def test_upload_validates_type_and_files(client, login):
     assert upload(client, phone="").status_code == 400
 
 
+JPG = b"\xff\xd8\xff\xe0 fake photo"
+
+
+def upload_slots(client, type="resume", form=None, photo=None, attachments=None):
+    """新版三格上傳：form (申請表，只收 PDF)、photo (證件照)、attachments (其他附件)"""
+    data = {"type": type, "phone": "0912-000-000", "reason": "測試"}
+    if form is not None:
+        data["form"] = form
+    if photo is not None:
+        data["photo"] = photo
+    if attachments is not None:
+        data["attachments"] = attachments
+    return client.post("/api/applications/upload", data=data, content_type="multipart/form-data")
+
+
+def test_photo_cannot_be_uploaded_as_the_form(client, login):
+    """學生拿一張照片充當申請表要被擋下 (新版欄位、舊版 files 欄位都一樣)"""
+    login("student2")
+    for res in (upload_slots(client, form=[(io.BytesIO(JPG), "自拍.jpg")]),
+                upload(client, files=[(io.BytesIO(JPG), "自拍.jpg"), (io.BytesIO(PDF), "表.pdf")])):
+        assert res.status_code == 400 and "申請表只收 PDF" in res.get_json()["message"]
+    assert upload_slots(client, form=[(io.BytesIO(PNG), "表.png")]).status_code == 400
+    res = upload_slots(client, form=[(io.BytesIO(PDF), "表1.pdf"), (io.BytesIO(PDF), "表2.pdf")])
+    assert res.status_code == 400 and "只能上傳 1 個" in res.get_json()["message"]
+    assert upload_slots(client).status_code == 400  # 沒有申請表
+
+
+def test_photo_required_only_for_types_that_need_it(client, login):
+    login("student2")
+    opts = {t["key"]: t for t in client.get("/api/applications/upload-options").get_json()["types"]}
+    assert opts["student_card"]["photos"] == ["2 吋證件照"] and opts["resume"]["photos"] == []
+    assert opts["student_card"]["attachments"] == ["補發費用收據"]  # 證件照有自己的欄位，不重複列在附件
+
+    form = lambda: [(io.BytesIO(PDF), "補發.pdf")]
+    # 學生證補發：沒附照片、照片欄放 PDF 都擋
+    res = upload_slots(client, type="student_card", form=form())
+    assert res.status_code == 400 and "2 吋證件照" in res.get_json()["message"]
+    res = upload_slots(client, type="student_card", form=form(), photo=[(io.BytesIO(PDF), "照片.pdf")])
+    assert res.status_code == 400 and "證件照請上傳 JPG 或 PNG" in res.get_json()["message"]
+    # 不用照片的申請硬塞照片：擋
+    res = upload_slots(client, type="resume", form=form(), photo=[(io.BytesIO(JPG), "a.jpg")])
+    assert res.status_code == 400 and "不用附證件照" in res.get_json()["message"]
+
+    # 正確：申請表 PDF + 證件照 JPG + 附件 (照片也可以)
+    res = upload_slots(client, type="student_card", form=form(), photo=[(io.BytesIO(JPG), "大頭照.jpg")],
+                       attachments=[(io.BytesIO(PNG), "收據.png")])
+    assert res.status_code == 201, res.get_json()
+    files = res.get_json()["data"]["files"]
+    assert [(f["slot"], f["label"], f["name"]) for f in files] == [
+        ("form", "申請表", "補發.pdf"), ("photo", "2 吋證件照", "大頭照.jpg"), ("attachment", "附件", "收據.png")]
+
+
+def test_attachment_limit(client, login):
+    login("student2")
+    res = upload_slots(client, form=[(io.BytesIO(PDF), "表.pdf")],
+                       attachments=[(io.BytesIO(PDF), f"{i}.pdf") for i in range(4)])
+    assert res.status_code == 400 and "其他附件最多 3 個" in res.get_json()["message"]
+
+
 def test_student_cannot_pick_own_stages(client, login):
     login("student2")
     res = upload(client, route=["cashier"], title="自己取的名字")  # 舊參數一律忽略

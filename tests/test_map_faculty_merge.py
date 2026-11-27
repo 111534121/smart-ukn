@@ -31,7 +31,6 @@ def test_index_html_merged_faculty_into_map_tab():
 def test_navigation_and_portal_removed_duplicate_faculty_entry():
     shell_js = (ROOT / "static/js/campus-shell.js").read_text(encoding="utf-8")
     portal_js = (ROOT / "static/js/home-portal.js").read_text(encoding="utf-8")
-    dept_js = (ROOT / "static/js/dept-scope.js").read_text(encoding="utf-8")
     faculty_js = (ROOT / "static/js/faculty.js").read_text(encoding="utf-8")
 
     # FEATURES 中不應再有「學習」分組下的教師專長查詢
@@ -49,9 +48,6 @@ def test_navigation_and_portal_removed_duplicate_faculty_entry():
     # home-portal.js 的身分導覽不應再引用已移除的 faculty key
     assert "'faculty'" not in portal_js
 
-    # dept-scope.js 切換科系範圍時應刷新 tab-map 而非 tab-faculty
-    assert "'tab-faculty'" not in dept_js
-    assert "'tab-map'" in dept_js
 
     # faculty.js 應渲染在 teachersBody 並整合老師辦公室資訊，不再註冊 tab-faculty loader
     assert "document.getElementById('teachersBody')" in faculty_js

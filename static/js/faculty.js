@@ -1,6 +1,6 @@
 // 老師辦公室與目前狀態（整合教師專長查詢）：
 // 關鍵字 (含同義詞)、領域、科別、服務單位、可指導專題篩選，並整合課表、即時狀態、辦公室位置與地圖定位；老師可編輯自己的專長。
-// 依賴 campus-shell.js (api、openModal、toast…)、campus-life.js (teacherAvatar、TEACHER_TONE、showTeacherTimetable、showOnMap、loadTeachers)、dept-scope.js (deptPref) 與 index.html (currentUser、escapeHtml)。
+// 依賴 campus-shell.js (api、openModal、toast…)、campus-life.js (teacherAvatar、TEACHER_TONE、showTeacherTimetable、showOnMap、loadTeachers) 與 index.html (currentUser、escapeHtml)。
 
 const facultyState = { q: '', field: '', dept: '', unit: '', projects: false, initialized: false };
 let facultySearchTimer = null;
@@ -93,19 +93,12 @@ async function searchFaculty() {
     try {
         const data = await api(`/api/faculty?${params}`);
         facultyLastData = data;
-        // 第一次載入：「只看本科」時預設篩選本科老師
+        // 第一次載入：填好科別下拉選單 (預設全部科別)
         if (!facultyState.initialized) {
             facultyState.initialized = true;
-            const mine = deptPref && deptPref.content_scope === 'mine' && deptPref.dept_name
-                ? data.depts.find(d => deptPref.dept_name.includes(d) || d.includes(shortDeptName(deptPref.dept_name))) : null;
             const deptSel = document.getElementById('facultyDept');
             deptSel.innerHTML = '<option value="">全部科別</option>' +
                 data.depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
-            if (mine) {
-                facultyState.dept = mine;
-                deptSel.value = mine;
-                return searchFaculty();
-            }
             deptSel.value = facultyState.dept || '';
         }
         renderFacultyFields(data.fields);

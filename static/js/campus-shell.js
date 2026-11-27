@@ -26,7 +26,7 @@ const FEATURES = [
     { key: 'events', tab: 'tab-events', name: '活動報名', icon: '🎉', group: '校園生活', desc: '線上報名校園活動，查看我的報名與通知狀態' },
     { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課、查教師專長與專題指導' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
-    { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
+    { key: 'links', tab: 'tab-links', name: '購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
     { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { group: '學習', desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
     { key: 'meetings', tab: 'tab-meetings', name: '線上會議', icon: '🎥', group: '社群', desc: '開視訊會議、邀請同學老師、用邀請碼加入' },
 ];
@@ -227,6 +227,8 @@ function tabFromHash() {
 function isAnnouncementsHash() { return decodeURIComponent(location.hash.replace('#', '')) === 'announcements'; }
 function maybeScrollToAnnouncements() {
     if (!isAnnouncementsHash()) return;
+    // 學生首頁精簡版平常不顯示公告區，從 #announcements 連進來時才打開
+    document.getElementById('tab-home')?.classList.add('show-news');
     setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
 }
 window.addEventListener('hashchange', () => {
@@ -512,7 +514,7 @@ async function loadHomeUpcoming() {
     try {
         const results = await Promise.all([0, 1].map(k => {
             const d = new Date(now.getFullYear(), now.getMonth() + k, 1);
-            return api(withScope(`/api/campus/calendar/month?year=${d.getFullYear()}&month=${d.getMonth() + 1}`));
+            return api(`/api/campus/calendar/month?year=${d.getFullYear()}&month=${d.getMonth() + 1}`);
         }));
         const today = results[0].today;
         const seen = new Set();

@@ -290,7 +290,10 @@ def save_board():
     positions = (request.get_json(silent=True) or {}).get("positions")
     if not isinstance(positions, dict):
         return error("positions 格式不正確")
-    mine = {str(i["id"]) for i in submissions() if i["student_id"] == sid}
+    from .services import favorite_scholarships
+    # 收藏的獎學金也貼在牆上，key 是 "sch-<獎學金 id>"
+    mine = {str(i["id"]) for i in submissions() if i["student_id"] == sid} | \
+           {f"sch-{i}" for i in favorite_scholarships(sid)}
     layout = {}
     for key, pos in positions.items():
         if str(key) not in mine or not isinstance(pos, dict):

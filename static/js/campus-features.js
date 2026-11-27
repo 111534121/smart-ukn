@@ -91,7 +91,7 @@ async function refreshCalendar() {
     if (calYear === null) return;
     document.getElementById('calMonthTitle').textContent = `${calYear} 年 ${calMonth} 月`;
     try {
-        calData = await api(withScope(`/api/campus/calendar/month?year=${calYear}&month=${calMonth}`));
+        calData = await api(`/api/campus/calendar/month?year=${calYear}&month=${calMonth}`);
         renderCalendar();
     } catch (e) {
         document.getElementById('calGrid').innerHTML = `<div class="col-span-7 bg-white p-6 text-center text-sm text-rose-700">${esc(e.message)}</div>`;
@@ -278,7 +278,7 @@ let planOfferings = [], planChosen = new Set(), planManualPassed = new Set(), pl
 async function loadPlan() {
     const body = document.getElementById('planBody');
     try {
-        const [off, courses] = await Promise.all([api('/api/campus/course-plan/offerings'), api(withScope('/api/courses'))]);
+        const [off, courses] = await Promise.all([api('/api/campus/course-plan/offerings'), api('/api/courses')]);
         planOfferings = off.data;
         planCourses = courses.data;
     } catch (e) { body.innerHTML = `<div class="text-rose-700 text-sm">${esc(e.message)}</div>`; return; }
@@ -426,7 +426,7 @@ async function loadCerts() {
         <div>
             <div class="flex flex-wrap items-end justify-between gap-2 mb-2">
                 <div><h3 class="font-bold text-slate-900">📌 我的證照牆</h3>
-                    <p class="text-[11px] text-slate-500">拖曳便利貼可以自己排位置，點一下就能看證照。</p></div>
+                    <p class="text-[11px] text-slate-500">拖曳便利貼可以自己排位置，點一下就能看證照。在「獎助學金檢核」收藏的獎學金也會貼在這裡（藍色）。</p></div>
                 <button type="button" onclick="tidyCertBoard()" class="text-xs border border-slate-300 rounded px-2.5 py-1 hover:border-ukn-500">🧹 自動排整齊</button>
             </div>
             <div id="certBoard" class="cert-board" aria-label="我的證照牆"></div>
@@ -528,24 +528,41 @@ let certBoardLayout = {};
 let certBoardSaveTimer = null;
 const CERT_KIND_ICON = { '證照': '🏅', '競賽': '🏆', '作品': '🎨' };
 
+// 牆上的每張便利貼：證照 key 是證照 id；收藏的獎學金 key 是 "sch-<獎學金 id>"
 async function renderCertBoard(items) {
     const board = document.getElementById('certBoard');
     if (!board) return;
-    certBoardItems = items;
-    try { certBoardLayout = (await api('/api/campus/certs/board')).layout || {}; } catch (e) { certBoardLayout = {}; }
-    if (!items.length) {
-        board.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-sm text-amber-950/70 px-6 text-center">上傳證照、獎狀或作品後，就會變成一張便利貼貼在這裡。</div>';
+    const [layout, sch] = await Promise.all([
+        api('/api/campus/certs/board').then(r => r.layout || {}).catch(() => ({})),
+        api('/api/campus/scholarships').then(r => r.data.filter(s => s.favorited)).catch(() => [])]);
+    certBoardLayout = layout;
+    certBoardItems = [...items.map(it => ({ ...it, key: String(it.id), tiltSeed: Number(it.id) })),
+        ...sch.map((s, i) => ({ ...s, key: `sch-${s.id}`, kind: '獎學金', sch: true, tiltSeed: i + 3 }))];
+    if (!certBoardItems.length) {
+        board.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-sm text-amber-950/70 px-6 text-center">上傳證照、獎狀或作品，或在「獎助學金檢核」收藏獎學金，就會變成一張便利貼貼在這裡。</div>';
         return;
     }
     // 還沒排過的便利貼放到空位 (依序往右、往下)
-    items.forEach((it, i) => {
-        if (!certBoardLayout[it.id]) certBoardLayout[it.id] = defaultNoteSpot(i, items.length);
+    certBoardItems.forEach((it, i) => {
+        if (!certBoardLayout[it.key]) certBoardLayout[it.key] = defaultNoteSpot(i, certBoardItems.length);
     });
-    board.innerHTML = items.map(it => {
-        const tilt = ((it.id * 37) % 7) - 3;  // 每張固定歪一點點，看起來像手貼的
+    board.innerHTML = certBoardItems.map(it => {
+        const tilt = ((it.tiltSeed * 37) % 7) - 3;  // 每張固定歪一點點，看起來像手貼的
+        if (it.sch) {
+            const status = it.expired ? '已截止' : it.days_left === 0 ? '今天截止' : `剩 ${it.days_left} 天截止`;
+            return `
+        <button type="button" class="cert-note cert-note-獎學金" data-id="${esc(it.key)}" style="--tilt:${tilt}deg; transform: rotate(${tilt}deg)"
+            aria-label="收藏的獎學金：${esc(it.name)}，${esc(status)}。點一下看要準備什麼，拖曳可移動，也可用方向鍵移動">
+            <span class="pin" aria-hidden="true">📌</span>
+            <span class="block text-[10px] font-bold text-slate-600">💰 收藏的獎學金</span>
+            <span class="block text-sm font-bold text-slate-900 leading-snug line-clamp-2">${esc(it.name)}</span>
+            <span class="block mt-1 text-[10px] font-bold ${it.expired ? 'text-slate-500' : it.days_left <= 7 ? 'text-rose-700' : 'text-amber-800'}">${esc(status)}</span>
+            <span class="block text-[10px] text-slate-600">要準備 ${(it.prepare || []).length} 項文件</span>
+        </button>`;
+        }
         const thumb = (it.files || []).find(f => f.type === 'image');
         return `
-        <button type="button" class="cert-note cert-note-${esc(it.kind)}" data-id="${Number(it.id)}" style="--tilt:${tilt}deg; transform: rotate(${tilt}deg)"
+        <button type="button" class="cert-note cert-note-${esc(it.kind)}" data-id="${esc(it.key)}" style="--tilt:${tilt}deg; transform: rotate(${tilt}deg)"
             aria-label="${esc(it.kind)}：${esc(it.name)}，${esc(it.status)}。點一下查看，拖曳可移動，也可用方向鍵移動">
             <span class="pin" aria-hidden="true">📌</span>
             <span class="block text-[10px] font-bold text-slate-600">${CERT_KIND_ICON[it.kind] || '📄'} ${esc(it.kind)}</span>
@@ -613,7 +630,7 @@ function bindCertNote(note) {
         const s = start;
         start = null;
         note.classList.remove('dragging');
-        if (!s.moved) { openCertNote(Number(id)); return; }
+        if (!s.moved) { openCertNote(id); return; }
         certBoardLayout[id] = { x: s.maxX ? note.offsetLeft / s.maxX : 0, y: s.maxY ? note.offsetTop / s.maxY : 0, z: certBoardLayout[id].z };
         placeCertNotes();
         saveCertBoard();
@@ -621,7 +638,7 @@ function bindCertNote(note) {
     note.addEventListener('pointerup', finish);
     note.addEventListener('pointercancel', () => { start = null; note.classList.remove('dragging'); placeCertNotes(); });
     // 鍵盤：Enter / 空白鍵開啟 (button 預設行為會觸發 click)，方向鍵移動
-    note.addEventListener('click', e => { if (e.detail === 0) openCertNote(Number(id)); });
+    note.addEventListener('click', e => { if (e.detail === 0) openCertNote(id); });
     note.addEventListener('keydown', e => {
         const step = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, -0.05], ArrowDown: [0, 0.05] }[e.key];
         if (!step) return;
@@ -642,15 +659,16 @@ function saveCertBoard() {
 }
 
 function tidyCertBoard() {
-    certBoardItems.forEach((it, i) => { certBoardLayout[it.id] = defaultNoteSpot(i, certBoardItems.length); });
+    certBoardItems.forEach((it, i) => { certBoardLayout[it.key] = defaultNoteSpot(i, certBoardItems.length); });
     placeCertNotes();
     saveCertBoard();
     toast('已排整齊');
 }
 
-function openCertNote(id) {
-    const it = certBoardItems.find(x => Number(x.id) === id);
+function openCertNote(key) {
+    const it = certBoardItems.find(x => x.key === String(key));
     if (!it) return;
+    if (it.sch) { openScholarshipNote(it); return; }
     const row = (label, value) => value ? `<div class="flex gap-3 text-sm"><span class="w-20 shrink-0 text-slate-500">${label}</span><span class="text-slate-900 break-words">${esc(value)}</span></div>` : '';
     const files = (it.files || []).map(f => f.type === 'image'
         ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="block"><img src="${esc(f.url)}" alt="${esc(f.name)}" class="w-full max-h-[60vh] object-contain rounded border border-slate-200 bg-slate-50"></a>`
@@ -666,6 +684,31 @@ function openCertNote(id) {
             ${files || '<div class="text-sm text-slate-500">這筆沒有附檔案。</div>'}
             ${it.status !== '已通過' ? `<div class="text-right"><button type="button" onclick="deleteCert(${Number(it.id)})" class="text-xs text-rose-700 border border-rose-200 rounded px-2.5 py-1 hover:bg-rose-50">刪除這筆</button></div>` : ''}
         </div>`, true);
+}
+
+// 收藏的獎學金便利貼：要準備的文件、資格條件、截止日；可以取消收藏或到獎助學金檢核看完整內容
+function openScholarshipNote(s) {
+    const deadline = s.expired ? `${s.deadline}（已截止）` : `${s.deadline}（${s.days_left === 0 ? '今天截止' : `剩 ${s.days_left} 天`}）`;
+    openModal(`💰 ${s.name}`, `
+        <div class="space-y-4 text-sm">
+            <div class="space-y-1">
+                <div class="flex gap-3"><span class="w-16 shrink-0 text-slate-500">承辦</span><span>${esc(s.office)}</span></div>
+                <div class="flex gap-3"><span class="w-16 shrink-0 text-slate-500">金額</span><span>${esc(s.amount)}</span></div>
+                <div class="flex gap-3"><span class="w-16 shrink-0 text-slate-500">截止</span><span class="${!s.expired && s.days_left <= 7 ? 'text-rose-700 font-bold' : ''}">${esc(deadline)}</span></div>
+            </div>
+            <div class="rounded border border-amber-200 bg-amber-50 p-3">
+                <div class="font-bold text-amber-900 mb-1">📋 要準備的文件</div>
+                <ul class="list-disc pl-5 space-y-0.5 text-amber-950">${(s.prepare || []).map(d => `<li>${esc(d)}</li>`).join('') || '<li>請洽承辦單位</li>'}</ul>
+            </div>
+            <div>
+                <div class="font-bold text-slate-900 mb-1">申請條件</div>
+                <ul class="space-y-0.5 text-slate-700">${s.criteria.map(c => `<li>・${esc(c.text)}${c.auto_value != null ? `<span class="text-[11px] ml-1 ${c.auto_value ? 'text-emerald-700' : 'text-rose-700'}">（系統判斷：${c.auto_value ? '符合' : '不符合'}）</span>` : ''}</li>`).join('')}</ul>
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="button" onclick="toggleScholarshipFav('${esc(s.id)}', false)" class="text-xs text-slate-600 border border-slate-300 rounded px-3 py-1.5 hover:border-rose-400 hover:text-rose-700">取消收藏</button>
+                <button type="button" onclick="closeModal(); switchTab('tab-scholarship')" class="text-xs bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-3 py-1.5">到獎助學金檢核 →</button>
+            </div>
+        </div>`);
 }
 
 async function loadCertReview(status) {

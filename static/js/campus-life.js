@@ -182,10 +182,13 @@ function renderScholarships() {
     const applyLink = (typeof studentLinksCache !== 'undefined' ? studentLinksCache : []).find(l => l.title.includes('獎助學金線上申請'));
     body.innerHTML = catBar + (scholarshipAuto?.avg != null ? `<div class="md:col-span-2 text-xs text-slate-600 bg-ukn-50 border border-ukn-100 rounded px-3 py-2">已依你的成績自動判斷部分條件（上學期平均 ${scholarshipAuto.avg} 分），其他請自己勾選。</div>` : '') +
         shown.map(s => `
-        <div class="rounded border ${s.expired ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-slate-200 bg-white'} p-4 space-y-3" data-sch="${s.id}">
+        <div class="rounded border ${s.expired ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-slate-200 bg-white'} p-4 space-y-3" data-sch="${s.id}" id="sch-card-${esc(s.id)}">
             <div class="flex items-start justify-between gap-2">
                 <div><div class="font-bold text-slate-900">${esc(s.name)}${s.category ? ` <span class="text-[10px] font-normal text-ukn-700 border border-ukn-200 rounded-full px-2 py-0.5 ml-1">${esc(s.category)}</span>` : ''}</div><div class="text-xs text-slate-500">${esc(s.office)} · ${esc(s.amount)}</div></div>
-                ${s.expired ? statusBadge('已截止', 'gray') : statusBadge(`${mmdd(s.deadline)} 截止`, 'amber')}
+                <div class="flex flex-col items-end gap-1.5 shrink-0">
+                    ${s.expired ? statusBadge('已截止', 'gray') : statusBadge(`${mmdd(s.deadline)} 截止`, 'amber')}
+                    <span data-sch-fav>${scholarshipFavButton(s)}</span>
+                </div>
             </div>
             <div class="space-y-1.5">${s.criteria.map((c, ci) => `
                 <label class="flex items-start gap-2 text-sm cursor-pointer">
@@ -193,10 +196,38 @@ function renderScholarships() {
                     <span>${esc(c.text)}${c.auto_value != null ? `<span class="text-[10px] ${c.auto_value ? 'text-emerald-700' : 'text-rose-700'} ml-1">（系統判斷：${c.auto_value ? '符合' : '不符合'}）</span>` : ''}</span>
                 </label>`).join('')}</div>
             <div data-sch-result class="text-sm font-semibold"></div>
+            ${(s.prepare || []).length ? `<div class="text-xs text-slate-600"><span class="font-semibold text-slate-700">📋 要準備：</span>${s.prepare.map(esc).join('、')}</div>` : ''}
             ${!s.expired && applyLink && applyLink.url !== '#' ? `<a href="${esc(applyLink.url)}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs bg-ukn-800 text-white rounded px-3 py-1.5">前往線上申請 ↗</a>` : ''}
         </div>`).join('') +
         '<p class="md:col-span-2 text-[11px] text-slate-400">獎助學金項目為示範資料，實際條件與金額以生輔組或各主辦機關最新公告為準。</p>';
     shown.forEach(s => updateScholarship(s.id));
+}
+
+// 收藏 (只有學生本人)：收藏後貼在證照牆，首頁「必做事項」提醒要準備的文件；已截止的只能取消、不能新收藏
+function scholarshipFavButton(s) {
+    if (currentUser?.role !== '學生' || (s.expired && !s.favorited)) return '';
+    return s.favorited
+        ? `<button type="button" onclick="toggleScholarshipFav('${esc(s.id)}', false)" aria-pressed="true" class="text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded px-2 py-1 hover:bg-amber-200">★ 已收藏</button>`
+        : `<button type="button" onclick="toggleScholarshipFav('${esc(s.id)}', true)" aria-pressed="false" class="text-xs font-bold text-slate-600 border border-slate-300 rounded px-2 py-1 hover:border-amber-400 hover:text-amber-800">☆ 收藏</button>`;
+}
+
+async function toggleScholarshipFav(id, on) {
+    try {
+        const r = await api(`/api/campus/scholarships/${encodeURIComponent(id)}/favorite`, { json: { on } });
+        toast(r.message);
+    } catch (e) { toast(e.message, 'error'); return; }
+    if (!on && typeof closeModal === 'function') closeModal();
+    // 三個地方一起更新：獎助學金檢核卡片、證照牆、首頁必做事項
+    // 只換收藏按鈕，不重畫整張卡片，學生已經勾的條件不會被清掉
+    const s = scholarshipData.find(x => x.id === id);
+    if (s) {
+        s.favorited = on;
+        const slot = document.querySelector(`[data-sch="${CSS.escape(id)}"] [data-sch-fav]`);
+        if (slot) slot.innerHTML = scholarshipFavButton(s);
+    }
+    if (document.getElementById('certBoard') && typeof renderCertBoard === 'function')
+        renderCertBoard(certBoardItems.filter(it => !it.sch));
+    if (typeof loadScholarshipFavsForHome === 'function') loadScholarshipFavsForHome();
 }
 
 function updateScholarship(id) {
@@ -782,7 +813,7 @@ function noticeListHtml(inbox, readonly) {
     return `
         <h3 class="font-bold text-slate-900">${readonly ? '子女收到的通知' : '收到的通知'} ${inbox.unread_count ? `<span class="text-xs text-accent-500">(${inbox.unread_count} 則未讀)</span>` : ''}</h3>
         ${inbox.data.length ? inbox.data.map(n => `
-            <details class="rounded border ${PRIORITY_STYLE[n.priority]?.bar || ''} ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ${readonly ? '' : `ontoggle="if(this.open) readNotice(${n.id}, this)"`}>
+            <details id="notice-item-${Number(n.id)}" class="rounded border ${PRIORITY_STYLE[n.priority]?.bar || ''} ${n.is_read ? 'border-slate-200' : 'border-accent-500/50 bg-accent-50/40'}" ${readonly ? '' : `ontoggle="if(this.open) readNotice(${n.id}, this)"`}>
                 <summary class="cursor-pointer list-none px-4 py-3">
                     <div class="flex items-center gap-2 flex-wrap">${n.is_read ? '' : '<span data-dot class="w-2 h-2 rounded-full bg-accent-500"></span>'}
                         ${priorityBadge(n.priority)}
@@ -1066,7 +1097,7 @@ async function loadNoticesTeacher() {
                             <details class="rounded border border-slate-200 px-4 py-3"><summary class="cursor-pointer list-none">
                                 <div class="flex flex-wrap items-center justify-between gap-2"><span class="flex items-center gap-2">${priorityBadge(n.priority)}<span class="font-semibold text-slate-900">${esc(n.title)}</span></span>
                                     ${statusBadge(`已讀 ${n.read_count} / ${n.total}`, n.read_count === n.total ? 'green' : 'blue')}</div>
-                                <div class="text-[11px] text-slate-500">${noticeTargetText(n)} · ${n.target_type !== '班級' ? `${n.total} 位學生` : (n.whole_class ? '整班' : '個別通知')} · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}</div></summary>
+                                <div class="text-[11px] text-slate-500">${noticeTargetText(n)} · ${n.target_type !== '班級' ? `${n.total} 位學生` : (n.whole_class ? '整班' : '個別通知')} · 發送：<span class="font-semibold text-slate-700">${esc(n.sender || '—')}</span> · ${esc(n.created_at.slice(5, 16).replace('-', '/'))}</div></summary>
                                 <p class="text-sm text-slate-700 mt-2 whitespace-pre-line">${esc(n.content)}</p>
                                 ${sentReplyHtml(n)}
                                 ${n.unread_names.length ? `<p class="text-xs text-amber-800 mt-2">尚未讀：${n.unread_names.map(esc).join('、')}</p>` : ''}

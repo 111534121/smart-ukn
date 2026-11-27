@@ -122,8 +122,12 @@ def _my_courses(student_id):
 
 # 【功能：停調課通知】學生看得到的停調課：自己的班 (含加入的班) + 自己個別修的課
 def changes_for_student(student_id):
+    from .common import find_student
     from .messaging import my_class_names
     classes = set(my_class_names(student_id))
+    me = find_student(student_id)
+    if me and me.get("class_name"):  # 學籍上的班級 (班級群組還沒建立時也算)
+        classes.add(me["class_name"])
     own = _my_courses(student_id)
     return [c for c in all_changes() if c["class_name"] in classes or (c["course_name"], c.get("teacher")) in own]
 

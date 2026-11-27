@@ -51,7 +51,7 @@ FEATURES = [
     {"group": "校園生活", "icon": "🔑", "name": "教室與櫃子租借", "tab": "tab-rent", "routes": ["/api/campus/rooms", "/api/campus/lockers"]},
     {"group": "校園生活", "icon": "🗺️", "name": "校園地圖與老師辦公室", "tab": "tab-map", "routes": ["/api/campus/map", "/api/campus/teachers"]},
     {"group": "校園生活", "icon": "🚌", "name": "天氣與交通", "tab": "tab-traffic", "routes": ["/api/campus/weather", "/api/campus/transport"]},
-    {"group": "校園生活", "icon": "🔗", "name": "學餐、購書與常用系統", "tab": "tab-links", "routes": ["/api/links"]},
+    {"group": "校園生活", "icon": "🔗", "name": "購書與常用系統", "tab": "tab-links", "routes": ["/api/links"]},
     {"group": "社群", "icon": "📣", "name": "科上通知", "tab": "tab-notices", "routes": ["/api/campus/notices", "/api/campus/classes"]},
     {"group": "個人設定", "icon": "🏷️", "name": "我的科系與顯示範圍", "tab": None, "routes": ["/api/me/preferences"]},
     {"group": "個人設定", "icon": "📌", "name": "常用功能置頂與網站導覽", "tab": None, "routes": ["/api/campus/prefs"]},

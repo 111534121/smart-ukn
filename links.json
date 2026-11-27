@@ -33,8 +33,8 @@
     },
     {
       "key": "campus",
-      "name": "學餐、購書與好用軟體",
-      "icon": "🍱"
+      "name": "購書與好用軟體",
+      "icon": "📚"
     }
   ],
   "links": [
@@ -190,24 +190,6 @@
       "url": "https://ec.ukn.edu.tw/NewStd/",
       "group": "",
       "todo": ""
-    },
-    {
-      "id": 18,
-      "category": "campus",
-      "title": "學餐線上點餐",
-      "description": "直接連到學餐點餐頁面，不用再跳轉",
-      "url": "#",
-      "group": "學餐",
-      "todo": "TODO: 向總務處確認學餐合作的線上點餐網址"
-    },
-    {
-      "id": 19,
-      "category": "campus",
-      "title": "學餐今日菜單",
-      "description": "各攤位今日供餐與價格",
-      "url": "#",
-      "group": "學餐",
-      "todo": "TODO: 向總務處確認學餐菜單公告網址"
     },
     {
       "id": 20,

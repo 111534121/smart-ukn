@@ -9,7 +9,6 @@ const TOUR_STEPS = [
     { title: '歡迎來到康寧大學服務系統 👋', text: '花 30 秒帶你認識常用功能。隨時可以按「跳過導覽」，之後也能從上方的「🧭 導覽」重新觀看。' },
     { target: ['#megaNav', '#mobileMenuBtn'], title: '功能選單', text: '所有功能分成「學習、校務、校園生活、社群」四大類，滑過或點開就能看到每個功能的說明。' },
     { target: ['#pinnedServices'], title: '常用服務可以置頂', text: '點功能右上角的 ☆ 就能把它釘在最前面，下次打開首頁直接點。' },
-    { target: ['#deptScopeBtn'], title: '我的科系', text: '設定科系後，可以選擇「只看公開資訊與本科資訊」，其他科系專屬的期限、課程就不會干擾你。轉系也可以在這裡改。' },
     { target: ['#megaNav [data-group="校務"]', '#mobileMenuBtn'], title: '申請問題小幫手', text: '在「校務」裡。直接用一句話問，例如「生病不能來上課怎麼辦」，就會找出要辦的申請流程、步驟與要帶的文件；也可以展開「瀏覽全部規章與申辦流程」直接逛，不用先打字。' },
     { target: ['#homeDashboard', '#loginLink'], title: () => isTourLoggedIn() ? '你今天的重點' : '登入看個人化資訊',
       text: () => isTourLoggedIn()
