@@ -206,6 +206,23 @@ def test_schedule_for_bound_student(client, login, monkeypatch):
     assert isinstance(data["schedule"], list) and data["schedule"]
 
 
+def test_schedule_for_bound_teacher_shows_own_timetable_not_a_student_schedule(client, login, monkeypatch):
+    """老師沒有學號，「我的課表」要是自己的授課課表 (teacher_name/timetable)，不是學生那套 (student/schedule)"""
+    login("teacher1")  # 彭賓鈺，示範課表資管五忠「統計學」等課
+    code = client.post("/api/line/bind/start").get_json()["data"]["code"]
+    line_user_id = "U" + "8" * 32
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
+    client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
+
+    res = client.get("/api/line/schedule", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    data = res.get_json()["data"]
+    assert data["bound"] is True and data["role"] == "老師"
+    assert data["teacher_name"] == "彭賓鈺"
+    assert isinstance(data["timetable"], list) and data["timetable"]
+    assert "student" not in data and "schedule" not in data
+
+
 def test_notices_requires_valid_token(client):
     res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "bad-token"})
     assert res.status_code == 401
@@ -253,11 +270,27 @@ def test_notices_for_bound_student_matches_website_inbox(client, login, monkeypa
     assert mine2["is_read"] is True
 
 
-def test_notices_requires_bound_student_id(client, login, monkeypatch):
-    """沒有學號的帳號 (例如老師) 綁定後查詢我的公告應該回錯誤，不是回一堆不相干的資料"""
-    login("teacher1")
+def test_teacher_notices_shows_sent_class_notices_not_an_error(client, login, monkeypatch):
+    """老師沒有學號，「我的公告」對老師來說不是收到的班級通知，而是自己發出去的通知跟已讀狀況，
+    不應該走學生那套學號檢查、回一個不相干的 403"""
+    login("teacher1")  # 導師班 資管五忠，示範資料有老師發出去的停課/調課通知
     code = client.post("/api/line/bind/start").get_json()["data"]["code"]
     line_user_id = "U" + "a" * 32
+    monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
+    client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
+
+    res = client.get("/api/line/notices", headers={"X-Line-Id-Token": "good-token"})
+    assert res.status_code == 200
+    data = res.get_json()["data"]
+    assert data["bound"] is True and data["role"] == "老師"
+    assert "sent_count" in data and all("recipient_count" in i and "read_count" in i for i in data["items"])
+
+
+def test_staff_without_student_id_or_teacher_role_gets_clear_error(client, login, monkeypatch):
+    """教職員/管理員既沒有學號、也不是老師，沒有「我的公告」可以查，要回清楚的錯誤，不是不相干的資料"""
+    login("staff1")
+    code = client.post("/api/line/bind/start").get_json()["data"]["code"]
+    line_user_id = "U" + "b" * 32
     monkeypatch.setattr(line_binding, "verify_line_id_token", _fake_verify(line_user_id))
     client.post("/api/line/bind/confirm", json={"code": code, "id_token": "good-token"})
 

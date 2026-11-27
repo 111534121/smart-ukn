@@ -38,7 +38,7 @@ def _user_record_for_username(username):
     因為登入 (/api/auth/login) 本身查不到 MySQL 帳號時會退回 admin_db 的 SQLite 備援資料庫，
     這裡要跟登入用一樣的退路，不然帳號其實存在 (在 SQLite 裡)，卻被誤判成查無學號/角色。
     """
-    rows = deps.fetch_db_rows("SELECT role, student_id FROM users WHERE username = %s", (username,))
+    rows = deps.fetch_db_rows("SELECT role, student_id, full_name FROM users WHERE username = %s", (username,))
     if rows:
         return rows[0]
     if rows is None:
@@ -46,7 +46,7 @@ def _user_record_for_username(username):
         return user
     try:
         import admin_db  # 延後匯入，避免跟 admin_db/app 互相匯入造成循環
-        candidates = admin_db.query_db("SELECT role, student_id FROM users WHERE username = %s", (username,))
+        candidates = admin_db.query_db("SELECT role, student_id, full_name FROM users WHERE username = %s", (username,))
         return candidates[0] if candidates else None
     except Exception:
         return None
@@ -55,11 +55,6 @@ def _user_record_for_username(username):
 def _role_for_username(username):
     user = _user_record_for_username(username)
     return user["role"] if user else None
-
-
-def _student_id_for_username(username):
-    user = _user_record_for_username(username)
-    return user.get("student_id") if user else None
 
 
 def _liff_channel_id():
@@ -168,22 +163,39 @@ def line_menu():
 
 @bp.route("/api/line/schedule", methods=["GET"])
 def line_schedule():
-    """LIFF「我的課表」頁面專用：帶 X-Line-Id-Token 標頭呼叫，綁定過的學生直接看自己本學期課表。"""
+    """LIFF「我的課表」頁面專用：帶 X-Line-Id-Token 標頭呼叫；學生看自己本學期課表，
+    老師看自己的授課課表 (兩邊資料來源跟欄位形狀完全不同，分開處理，不能共用學生那一套)。"""
     line_user_id = verify_line_id_token(_id_token_from_request())
     if not line_user_id:
         return error("LINE 驗證失敗，請從 LINE 選單重新打開這個頁面", 401)
     username = username_for_line_user(line_user_id)
     if not username:
         return ok(data={"bound": False})
-    student_id = _student_id_for_username(username)
-    if not student_id:
-        return error("這個帳號沒有綁定學號，無法查詢課表", 403)
-    from retake import recommendations_for  # 延後匯入，避免跟 retake 互相匯入造成循環
-    report = recommendations_for(student_id)
-    if not report:
-        return error("查無學生資料", 404)
-    return ok(data={"bound": True, "username": username, "student": report["student"],
-                    "semester": report["semester"], "schedule": report["schedule"]})
+    user = _user_record_for_username(username) or {}
+    role = user.get("role")
+    if role == "老師":
+        from campus.facilities import load_schedule, PERIODS  # 延後匯入，避免循環 import
+        teacher_name = str(user.get("full_name") or "").replace("老師", "").strip() or username
+        timetable = sorted(({"weekday": s["weekday"], "period_start": s["period_start"], "period_end": s["period_end"],
+                             "course_name": s["course_name"], "classroom": s["classroom"],
+                             "class_name": s.get("class_name") or "重補修"}
+                            for s in load_schedule() if s["teacher"] == teacher_name),
+                           key=lambda s: (s["weekday"], s["period_start"]))
+        if not timetable:
+            return error("系統裡還沒有你的授課資料，請洽教務處建立", 404)
+        return ok(data={"bound": True, "username": username, "role": role,
+                        "teacher_name": teacher_name, "timetable": timetable, "periods": PERIODS})
+    if role in ("學生", "家長"):
+        student_id = user.get("student_id")
+        if not student_id:
+            return error("這個帳號沒有綁定學號，無法查詢課表", 403)
+        from retake import recommendations_for  # 延後匯入，避免跟 retake 互相匯入造成循環
+        report = recommendations_for(student_id)
+        if not report:
+            return error("查無學生資料", 404)
+        return ok(data={"bound": True, "username": username, "role": role, "student": report["student"],
+                        "semester": report["semester"], "schedule": report["schedule"]})
+    return error("這個身分目前沒有課表可以查詢", 403)
 
 
 @bp.route("/api/line/notices", methods=["GET"])
@@ -195,15 +207,25 @@ def line_notices():
     username = username_for_line_user(line_user_id)
     if not username:
         return ok(data={"bound": False})
-    student_id = _student_id_for_username(username)
-    if not student_id:
-        return error("這個帳號沒有綁定學號，無法查詢公告", 403)
+    user = _user_record_for_username(username) or {}
+    role = user.get("role")
     from .messaging import load_notices  # 延後匯入，避免跟 messaging 互相匯入造成循環
-    items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username", "replies")}
-             | {"is_read": student_id in n["read_by"], "my_reply": n.get("replies", {}).get(student_id)}
-             for n in load_notices(student_id=student_id)]
-    return ok(data={"bound": True, "username": username, "items": items,
-                     "unread_count": sum(1 for i in items if not i["is_read"])})
+    if role == "老師":
+        # 老師沒有「收到的班級通知」，「我的公告」對老師來說是自己發出去的通知跟已讀狀況
+        items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username", "replies")}
+                 | {"recipient_count": len(n.get("recipients", [])), "read_count": len(n.get("read_by", []))}
+                 for n in load_notices(sender_username=username)]
+        return ok(data={"bound": True, "username": username, "role": role, "items": items, "sent_count": len(items)})
+    if role in ("學生", "家長"):
+        student_id = user.get("student_id")
+        if not student_id:
+            return error("這個帳號沒有綁定學號，無法查詢公告", 403)
+        items = [{k: v for k, v in n.items() if k not in ("recipients", "read_by", "sender_username", "replies")}
+                 | {"is_read": student_id in n["read_by"], "my_reply": n.get("replies", {}).get(student_id)}
+                 for n in load_notices(student_id=student_id)]
+        return ok(data={"bound": True, "username": username, "role": role, "items": items,
+                        "unread_count": sum(1 for i in items if not i["is_read"])})
+    return error("這個身分目前沒有公告可以查詢", 403)
 
 
 # ---------- LINE 官方帳號加好友：QR Code 與連結，公開資訊，不含任何登入狀態 ----------

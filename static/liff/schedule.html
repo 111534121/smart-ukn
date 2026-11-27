@@ -80,11 +80,35 @@ function renderSchedule(data) {
     <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
 }
 
+// 老師的授課課表：跟學生課表的資料形狀完全不同 (teacher_name/timetable/periods，不是 student/semester/schedule)
+function renderTeacherSchedule(data) {
+  const rows = [...(data.timetable || [])].sort((a, b) => a.weekday - b.weekday || a.period_start - b.period_start);
+  const body = rows.length
+    ? rows.map(s => `
+        <tr>
+          <td>週${WEEKDAYS[s.weekday] || ''}</td>
+          <td>第 ${s.period_start === s.period_end ? s.period_start : `${s.period_start}-${s.period_end}`} 節</td>
+          <td class="course">${s.course_name}</td>
+          <td class="meta">${s.class_name || ''}${s.classroom ? ` · ${s.classroom}` : ''}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="4" class="meta">目前沒有授課資料。</td></tr>';
+  show(`
+    <div class="card">
+      <p class="muted">${data.teacher_name}　老師本學期授課課表</p>
+      <table>
+        <thead><tr><th>星期</th><th>節次</th><th>課程</th><th>班級 / 教室</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+    <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
+}
+
 async function loadSchedule() {
   try {
     const res = await call('/api/line/schedule');
-    if (res.data.bound) renderSchedule(res.data);
-    else renderBindPrompt();
+    if (!res.data.bound) { renderBindPrompt(); return; }
+    if (res.data.role === '老師') renderTeacherSchedule(res.data);
+    else renderSchedule(res.data);
   } catch (e) {
     renderBindPrompt(e.message);
   }

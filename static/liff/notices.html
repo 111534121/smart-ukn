@@ -83,11 +83,32 @@ function renderNotices(data) {
     <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
 }
 
+// 老師的「我的公告」是自己發出去的班級通知 (recipient_count/read_count)，不是收到的通知 (is_read)
+function renderTeacherNotices(data) {
+  const items = data.items || [];
+  const body = items.length
+    ? items.map(n => `
+        <div class="card">
+          <div class="notice-title">
+            ${n.priority && n.priority !== '一般' ? `<span class="badge ${esc(n.priority)}">${esc(n.priority)}</span>` : ''}
+            <span>${esc(n.title)}</span>
+          </div>
+          <div class="notice-meta">${esc(n.class_name)} · ${esc(n.created_at)} · 已讀 ${n.read_count}/${n.recipient_count}${n.due_date ? ` · 期限 ${esc(n.due_date)}` : ''}</div>
+          <div class="notice-content">${esc(n.content)}</div>
+        </div>`).join('')
+    : '<p class="muted">你還沒發過班級通知。</p>';
+  show(`
+    <p class="muted" style="margin:0 0 10px">共發出 ${data.sent_count} 則。</p>
+    ${body}
+    <a class="link-btn" href="/liff/menu">設定常用功能 →</a>`);
+}
+
 async function loadNotices() {
   try {
     const res = await call('/api/line/notices');
-    if (res.data.bound) renderNotices(res.data);
-    else renderBindPrompt();
+    if (!res.data.bound) { renderBindPrompt(); return; }
+    if (res.data.role === '老師') renderTeacherNotices(res.data);
+    else renderNotices(res.data);
   } catch (e) {
     renderBindPrompt(e.message);
   }

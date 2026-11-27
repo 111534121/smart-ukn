@@ -190,7 +190,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 2779
+          "line": 2780
         },
         {
           "file": "static/login.html",
@@ -2266,27 +2266,27 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2567
+          "line": 2568
         },
         {
           "file": "static/index.html",
-          "line": 2582
+          "line": 2583
         },
         {
           "file": "static/index.html",
-          "line": 2624
+          "line": 2625
         },
         {
           "file": "static/index.html",
-          "line": 2640
+          "line": 2641
         },
         {
           "file": "static/index.html",
-          "line": 2651
+          "line": 2652
         },
         {
           "file": "static/index.html",
-          "line": 2686
+          "line": 2687
         }
       ]
     },
@@ -2500,15 +2500,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 2842
-        },
-        {
-          "file": "static/index.html",
           "line": 2843
         },
         {
           "file": "static/index.html",
-          "line": 3673
+          "line": 2844
+        },
+        {
+          "file": "static/index.html",
+          "line": 3674
         },
         {
           "file": "static/js/campus-features.js",
@@ -3929,27 +3929,27 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 1149
+          "line": 1150
         },
         {
           "file": "static/index.html",
-          "line": 3602
+          "line": 3603
         },
         {
           "file": "static/index.html",
-          "line": 3933
+          "line": 3934
         },
         {
           "file": "static/index.html",
-          "line": 3961
+          "line": 3962
         },
         {
           "file": "static/index.html",
-          "line": 4135
+          "line": 4136
         },
         {
           "file": "static/index.html",
-          "line": 4231
+          "line": 4232
         }
       ]
     },
@@ -5037,11 +5037,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1092
+          "line": 1093
         },
         {
           "file": "static/index.html",
-          "line": 2725
+          "line": 2726
         },
         {
           "file": "static/js/admin-core.js",
@@ -6795,15 +6795,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4180
+          "line": 4181
         },
         {
           "file": "static/index.html",
-          "line": 4204
+          "line": 4205
         },
         {
           "file": "static/index.html",
-          "line": 4209
+          "line": 4210
         }
       ]
     },
@@ -8312,7 +8312,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 584
+          "line": 595
         }
       ]
     },
@@ -10187,27 +10187,27 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1081
+          "line": 1082
         },
         {
           "file": "static/index.html",
-          "line": 3725
+          "line": 3726
         },
         {
           "file": "static/index.html",
-          "line": 3729
+          "line": 3730
         },
         {
           "file": "static/index.html",
-          "line": 3731
+          "line": 3732
         },
         {
           "file": "static/index.html",
-          "line": 3831
+          "line": 3832
         },
         {
           "file": "static/index.html",
-          "line": 3869
+          "line": 3870
         },
         {
           "file": "static/js/campus-features.js",
@@ -11647,31 +11647,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1058
+          "line": 1059
         },
         {
           "file": "static/index.html",
-          "line": 1644
+          "line": 1645
         },
         {
           "file": "static/index.html",
-          "line": 2395
+          "line": 2396
         },
         {
           "file": "static/index.html",
-          "line": 2821
+          "line": 2822
         },
         {
           "file": "static/index.html",
-          "line": 3053
+          "line": 3054
         },
         {
           "file": "static/index.html",
-          "line": 3090
+          "line": 3091
         },
         {
           "file": "static/index.html",
-          "line": 4327
+          "line": 4328
         },
         {
           "file": "static/js/campus-features.js",
@@ -11687,11 +11687,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 472
+          "line": 483
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 515
+          "line": 526
         }
       ]
     },
@@ -12879,7 +12879,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1787
+          "line": 1788
         },
         {
           "file": "static/js/campus-life.js",
@@ -14341,7 +14341,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 489
+          "line": 500
         }
       ]
     },
@@ -14575,11 +14575,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1942
+          "line": 1943
         },
         {
           "file": "static/index.html",
-          "line": 2318
+          "line": 2319
         },
         {
           "file": "static/js/home-portal.js",
@@ -16878,7 +16878,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 541
+          "line": 552
         }
       ]
     },
@@ -17259,19 +17259,19 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4282
+          "line": 4283
         },
         {
           "file": "static/index.html",
-          "line": 4291
+          "line": 4292
         },
         {
           "file": "static/index.html",
-          "line": 4306
+          "line": 4307
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 768
+          "line": 779
         },
         {
           "file": "static/js/dept-scope.js",
@@ -18088,19 +18088,19 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 826
+          "line": 837
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 847
+          "line": 858
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 863
+          "line": 874
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 871
+          "line": 882
         }
       ]
     },
@@ -21600,7 +21600,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 386
+          "line": 397
         },
         {
           "file": "static/js/home-portal.js",
@@ -21863,11 +21863,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 303
+          "line": 314
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 339
+          "line": 350
         },
         {
           "file": "static/js/tour.js",
@@ -22517,11 +22517,11 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-access.js",
-          "line": 28
+          "line": 38
         },
         {
           "file": "static/js/campus-access.js",
-          "line": 47
+          "line": 57
         }
       ]
     },
@@ -27505,11 +27505,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 2997
+          "line": 2998
         },
         {
           "file": "static/index.html",
-          "line": 3022
+          "line": 3023
         },
         {
           "file": "static/js/admin-core.js",
@@ -27685,11 +27685,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 600
+          "line": 611
         },
         {
           "file": "static/js/campus-shell.js",
-          "line": 769
+          "line": 780
         }
       ]
     },
@@ -30883,18 +30883,18 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 100,
+          "line": 95,
           "function": "bind_start",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 100,
+              "line": 95,
               "function": "bind_start"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             }
           ],
@@ -30909,28 +30909,28 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 119,
+          "line": 114,
           "function": "bind_confirm",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 119,
+              "line": 114,
               "function": "bind_confirm"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 70,
+              "line": 65,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 65,
+              "line": 60,
               "function": "_liff_channel_id"
             }
           ],
@@ -30945,28 +30945,28 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/line_binding.py",
-          "line": 141,
+          "line": 136,
           "function": "unbind",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 141,
+              "line": 136,
               "function": "unbind"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 70,
+              "line": 65,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 65,
+              "line": 60,
               "function": "_liff_channel_id"
             }
           ],
@@ -30981,7 +30981,7 @@ window.FEATURE_GUIDE = {
             "PUT"
           ],
           "file": "campus/line_binding.py",
-          "line": 153,
+          "line": 148,
           "function": "line_menu",
           "tables": [
             {
@@ -31018,12 +31018,12 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 153,
+              "line": 148,
               "function": "line_menu"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 94,
+              "line": 89,
               "function": "_id_token_from_request"
             },
             {
@@ -31048,22 +31048,22 @@ window.FEATURE_GUIDE = {
             },
             {
               "file": "campus/line_binding.py",
-              "line": 89,
+              "line": 84,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 70,
+              "line": 65,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 65,
+              "line": 60,
               "function": "_liff_channel_id"
             }
           ],
@@ -31077,7 +31077,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 170,
+          "line": 165,
           "function": "line_schedule",
           "tables": [
             {
@@ -31114,18 +31114,8 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 170,
+              "line": 165,
               "function": "line_schedule"
-            },
-            {
-              "file": "campus/line_binding.py",
-              "line": 94,
-              "function": "_id_token_from_request"
-            },
-            {
-              "file": "campus/line_binding.py",
-              "line": 60,
-              "function": "_student_id_for_username"
             },
             {
               "file": "campus/line_binding.py",
@@ -31145,21 +31135,26 @@ window.FEATURE_GUIDE = {
             {
               "file": "campus/line_binding.py",
               "line": 89,
+              "function": "_id_token_from_request"
+            },
+            {
+              "file": "campus/line_binding.py",
+              "line": 84,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 70,
+              "line": 65,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 65,
+              "line": 60,
               "function": "_liff_channel_id"
             }
           ],
@@ -31173,7 +31168,7 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 190,
+          "line": 202,
           "function": "line_notices",
           "tables": [
             {
@@ -31210,18 +31205,8 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 190,
+              "line": 202,
               "function": "line_notices"
-            },
-            {
-              "file": "campus/line_binding.py",
-              "line": 94,
-              "function": "_id_token_from_request"
-            },
-            {
-              "file": "campus/line_binding.py",
-              "line": 60,
-              "function": "_student_id_for_username"
             },
             {
               "file": "campus/line_binding.py",
@@ -31241,21 +31226,26 @@ window.FEATURE_GUIDE = {
             {
               "file": "campus/line_binding.py",
               "line": 89,
+              "function": "_id_token_from_request"
+            },
+            {
+              "file": "campus/line_binding.py",
+              "line": 84,
               "function": "username_for_line_user"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 85,
+              "line": 80,
               "function": "_bindings"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 70,
+              "line": 65,
               "function": "verify_line_id_token"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 65,
+              "line": 60,
               "function": "_liff_channel_id"
             }
           ],
@@ -31269,18 +31259,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 217,
+          "line": 239,
           "function": "line_oa",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 217,
+              "line": 239,
               "function": "line_oa"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 211,
+              "line": 233,
               "function": "_oa_id"
             }
           ],
@@ -31292,18 +31282,18 @@ window.FEATURE_GUIDE = {
             "GET"
           ],
           "file": "campus/line_binding.py",
-          "line": 225,
+          "line": 247,
           "function": "line_oa_qr",
           "tables": [],
           "files": [
             {
               "file": "campus/line_binding.py",
-              "line": 225,
+              "line": 247,
               "function": "line_oa_qr"
             },
             {
               "file": "campus/line_binding.py",
-              "line": 211,
+              "line": 233,
               "function": "_oa_id"
             }
           ],
