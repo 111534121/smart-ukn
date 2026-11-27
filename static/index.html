@@ -545,27 +545,30 @@
             }
         }
 
-        /* 學生首頁精簡版 (loadDashboard 依身分加上 student-home)：
-           必做事項 → 今天的重點 → 常用服務 → 把官網帶著走，其餘區塊在各自的功能頁看 */
-        #tab-home.student-home:not(.hidden) {
+        /* 精簡首頁 (登入後所有身分；loadDashboard 依身分加上 simple-home，訪客維持完整入口頁)：
+           學生／家長：今天的重點 → 常用服務 → 把官網帶著走
+           老師／行政：今日工作台 → 請假審核 → 線上申辦審核 → 常用服務 → 把官網帶著走
+           其餘區塊在各自的功能頁看，到期提醒在右上角通知中心 */
+        #tab-home.simple-home:not(.hidden) {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
-        #tab-home.student-home > * { margin-top: 0 !important; order: 10; }
-        #tab-home.student-home > #homeMustDo { order: 1; }
-        #tab-home.student-home > #homeDashboard { order: 2; }
-        #tab-home.student-home > #homeServices { order: 3; }
-        #tab-home.student-home > .campus-access { order: 4; }
-        #tab-home.student-home > .portal-welcome,
-        #tab-home.student-home > #heroSection,
-        #tab-home.student-home:not(.show-news) > #homeNewsGrid,
-        #tab-home.student-home > #calendarNowBanner,
-        #tab-home.student-home > #homeOnlineApps,
-        #tab-home.student-home > #homeMyApplications {
+        #tab-home.simple-home > * { margin-top: 0 !important; order: 10; }
+        #tab-home.simple-home > #staffHome { order: 1; }
+        #tab-home.simple-home > #homeDashboard { order: 2; }
+        #tab-home.simple-home > #homeLeaveReview { order: 3; }
+        #tab-home.simple-home > #homeAppReview { order: 4; }
+        #tab-home.simple-home > #homeServices { order: 5; }
+        #tab-home.simple-home > .campus-access { order: 6; }
+        #tab-home.simple-home > .portal-welcome,
+        #tab-home.simple-home > #heroSection,
+        #tab-home.simple-home:not(.show-news) > #homeNewsGrid,
+        #tab-home.simple-home > #calendarNowBanner,
+        #tab-home.simple-home > #homeOnlineApps,
+        #tab-home.simple-home > #homeMyApplications {
             display: none !important;
         }
-        .mustdo-item:focus-visible { outline: 3px solid #e11d48; outline-offset: 2px; }
     </style>
     <link rel="stylesheet" href="/css/home-portal.css?v=49">
     <link rel="stylesheet" href="/css/campus-access.css?v=46">
@@ -714,18 +717,6 @@
             <!-- 教職員登入後優先顯示今日工作台 -->
             <div id="staffHome" class="hidden space-y-4"></div>
 
-            <!-- 必做事項 (學生首頁最上面，紅色)：逾期/快到期作業、缺曠扣考、被退回的申請、快截止的獎學金與行事曆期限
-                 資料跟右上角通知中心同一份 (buildNotifications)，只挑要學生動手處理的；點一下直接跳到該功能頁 -->
-            <section id="homeMustDo" class="hidden rounded border-2 border-rose-300 bg-rose-50 p-5 sm:p-6 space-y-3"
-                aria-labelledby="homeMustDoTitle">
-                <div class="flex items-center justify-between gap-2">
-                    <h2 id="homeMustDoTitle" class="ukn-title text-lg sm:text-xl font-bold text-rose-700 flex items-center gap-2">
-                        必做事項 <span id="homeMustDoCount"
-                            class="text-xs font-bold bg-rose-600 text-white rounded-full px-2 py-0.5"></span></h2>
-                    <span class="text-[11px] text-rose-700/80">點一下直接前往處理</span>
-                </div>
-                <ul id="homeMustDoList" class="space-y-2"></ul>
-            </section>
 
             <!-- 今日儀表板：學生/家長登入後一進來先看到自己的課表與修課資料 (登入學生/家長才顯示，資料來源 /api/student/dashboard) -->
             <section id="homeDashboard" class="hidden bg-white rounded border border-slate-200 p-5 sm:p-6 space-y-5">
@@ -1530,7 +1521,7 @@
         <div id="tab-warning" class="tab-content hidden space-y-6">
 
             <!-- 我的缺曠課統計 (登入學生/家長才顯示，資料來源 /api/student/attendance)
-                 原本放在首頁最下面；首頁的「必做事項」與通知中心點缺曠提醒會直接跳到這裡 -->
+                 原本放在首頁最下面；首頁的缺曠數字與通知中心點缺曠提醒會直接跳到這裡 -->
             <section id="homeAttendance" class="hidden bg-white rounded border border-slate-200 px-5 py-4 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h2 class="ukn-title text-sm font-bold text-slate-900 flex items-center gap-1.5">我的缺曠課統計</h2>
@@ -2420,9 +2411,9 @@
                 const data = await res.json();
                 const ongoing = data.ongoing || [];
                 const upcoming = data.upcoming || [];
-                // 學生首頁的必做事項會列出 7 天內截止的進行中事項
+                // 通知中心會提醒 7 天內截止的進行中事項 (精簡首頁不顯示本週可辦橫幅)
                 notifSources.calendar = ongoing;
-                if (typeof renderMustDo === 'function') renderMustDo();
+                if (typeof renderNotifications === 'function') renderNotifications();
                 if (!ongoing.length && !upcoming.length) return;
 
                 document.getElementById('calendarNowOngoing').innerHTML = ongoing.length
@@ -2600,8 +2591,8 @@
         async function loadDashboard(refreshMoodle = false) {
             const section = document.getElementById('homeDashboard');
             const guest = document.getElementById('homeDashboardGuest');
-            // 學生首頁精簡版 (排版見 <style> 的 #tab-home.student-home)
-            document.getElementById('tab-home').classList.toggle('student-home', currentUser.role === '學生');
+            // 精簡首頁：登入後所有身分都用 (排版見 <style> 的 #tab-home.simple-home)；訪客維持完整入口頁
+            document.getElementById('tab-home').classList.toggle('simple-home', !!currentUser.role && currentUser.role !== '訪客');
             if (!isStudentLoggedIn()) {
                 // 教職員/管理員不顯示登入提示
                 guest.classList.toggle('hidden', currentUser.role !== '訪客');
@@ -3328,6 +3319,7 @@
         const NOTIF_LEAVE_DAYS = 7;
         const NOTIF_ABSENCE_DAYS = 3;
         const NOTIF_APP_DAYS = 14;
+        const NOTIF_CALENDAR_DAYS = 7;
         const NOTIF_STYLES = {
             urgent: 'bg-rose-50 text-rose-700 border-rose-200',
             warning: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -3485,6 +3477,15 @@
                     time: s.days_left === 0 ? '今天截止' : `剩 ${s.days_left} 天`, tab: 'tab-scholarship', scrollTo: `sch-card-${s.id}`
                 });
             });
+            // 行事曆：7 天內截止的進行中事項 (例如受理棄選)；有對應申辦流程就直接跳過去
+            (notifSources.calendar || []).filter(e => e.days_left != null && e.days_left <= NOTIF_CALENDAR_DAYS).forEach(e => {
+                list.push({
+                    id: `cal-${e.id}-${e.days_left <= 3 ? 'due' : 'week'}`, level: e.days_left <= 3 ? 'urgent' : 'warning', icon: '📅',
+                    title: `即將截止：${e.event_name}`, desc: `行事曆期限${e.end_date ? `：${e.end_date.slice(5).replace('-', '/')} 截止` : ''}`,
+                    time: e.days_left === 0 ? '今天截止' : `剩 ${e.days_left} 天`,
+                    ...(e.related_checklist_id ? { tab: 'tab-checklist', scrollTo: `checklist-card-${Number(e.related_checklist_id)}` } : { tab: 'tab-calendar' })
+                });
+            });
             // 重補修推薦 (retake.js)：一科一則，id 帶狀態，狀態改變 (例如有班可選了) 會變成新的未讀
             (notifSources.retake || []).forEach(r => {
                 const blocked = r.status === 'prereq_blocked' || r.status === 'all_conflict';
@@ -3531,7 +3532,6 @@
 
             const readIds = loadReadNotifIds();
             systemNotifications = buildNotifications().map(n => ({ ...n, isRead: readIds.has(n.id) }));
-            renderMustDo();
             const unreadCount = systemNotifications.filter(n => !n.isRead).length;
 
             if (badgeEl) {
@@ -3603,7 +3603,7 @@
             openNotifTarget(notif);
         }
 
-        // 通知中心與首頁「必做事項」共用：直接跳到該功能頁，並捲到那一筆、框起來
+        // 通知中心用：直接跳到該功能頁，並捲到那一筆、框起來
         function openNotifTarget(notif) {
             // 帶查詢字串的通知 (例如重補修 /?retake=課程代碼#retake)：先換網址，分頁載入時才知道要捲到哪一科
             if (notif.url) history.replaceState(null, '', notif.url);
@@ -3633,7 +3633,7 @@
             }, waited ? 0 : 100);
         }
 
-        // 收藏的獎學金 (campus/services.py 的 scholarship_favs)：首頁必做事項與通知中心用，只抓還沒截止的
+        // 收藏的獎學金 (campus/services.py 的 scholarship_favs)：通知中心用，只抓還沒截止的
         async function loadScholarshipFavsForHome() {
             if (currentUser?.role !== '學生') return;
             try {
@@ -3641,48 +3641,6 @@
                 notifSources.schFavs = (r.data || []).filter(s => s.favorited && !s.expired);
                 renderNotifications();
             } catch (e) { console.error(e); }
-        }
-
-        // 首頁最上面的「必做事項」(只給學生本人)：從通知中心的資料挑出要動手處理的 (緊急、警告)，已讀也照列，處理完才消失
-        const MUSTDO_CALENDAR_DAYS = 7;
-        function buildMustDo() {
-            const items = buildNotifications().filter(n => n.level === 'urgent' || n.level === 'warning');
-            (notifSources.calendar || []).filter(e => e.days_left != null && e.days_left <= MUSTDO_CALENDAR_DAYS).forEach(e => {
-                items.push({
-                    id: `cal-${e.event_name}-${e.end_date || ''}`, level: e.days_left <= 3 ? 'urgent' : 'warning', icon: '📅',
-                    title: `${e.event_name}`, desc: `行事曆期限${e.end_date ? `：${e.end_date.slice(5).replace('-', '/')} 截止` : ''}`,
-                    time: e.days_left === 0 ? '今天截止' : `剩 ${e.days_left} 天`,
-                    ...(e.related_checklist_id ? { tab: 'tab-checklist', scrollTo: `checklist-card-${Number(e.related_checklist_id)}` } : { tab: 'tab-calendar' })
-                });
-            });
-            return items.sort((a, b) => NOTIF_LEVEL_ORDER[a.level] - NOTIF_LEVEL_ORDER[b.level]);
-        }
-        let mustDoItems = [];
-        function renderMustDo() {
-            const box = document.getElementById('homeMustDo');
-            if (!box) return;
-            if (currentUser?.role !== '學生') { box.classList.add('hidden'); return; }
-            mustDoItems = buildMustDo();
-            document.getElementById('homeMustDoCount').textContent = mustDoItems.length || '';
-            document.getElementById('homeMustDoList').innerHTML = mustDoItems.length
-                ? mustDoItems.map((n, i) => `
-                    <li><button type="button" onclick="openNotifTarget(mustDoItems[${i}])"
-                        class="mustdo-item w-full text-left flex items-start gap-3 rounded border ${n.level === 'urgent' ? 'border-rose-400 bg-white' : 'border-rose-200 bg-white/70'} px-3 py-2.5 hover:border-rose-500 hover:bg-white transition">
-                        <span class="text-lg leading-none shrink-0" aria-hidden="true">${n.icon}</span>
-                        <span class="flex-1 min-w-0">
-                            <span class="block text-sm font-bold text-rose-700">${escapeHtml(n.title)}</span>
-                            <span class="block text-xs text-slate-600 mt-0.5 line-clamp-2">${escapeHtml(n.desc)}</span>
-                        </span>
-                        <span class="text-[11px] font-bold whitespace-nowrap shrink-0 ${n.level === 'urgent' ? 'text-rose-700' : 'text-rose-600/80'}">${escapeHtml(n.time)} →</span>
-                    </button></li>`).join('')
-                : '<li class="text-sm text-slate-600">目前沒有必做事項 👍</li>';
-            // 沒有待辦時不用紅色，避免一直「狼來了」
-            const has = mustDoItems.length > 0;
-            box.classList.toggle('border-rose-300', has);
-            box.classList.toggle('bg-rose-50', has);
-            box.classList.toggle('border-emerald-200', !has);
-            box.classList.toggle('bg-emerald-50', !has);
-            box.classList.remove('hidden');
         }
 
         function markAllNotificationsRead() {
@@ -4511,8 +4469,8 @@
     <script src="/js/campus-shell.js?v=20261127-no-dept-scope"></script>
     <script src="/js/home-portal.js?v=51"></script>
     <script src="/js/campus-access.js?v=48"></script>
-    <script src="/js/campus-features.js?v=20261127-sch-fav"></script>
-    <script src="/js/campus-life.js?v=20261127-sch-fav"></script>
+    <script src="/js/campus-features.js?v=20261127-course-plan"></script>
+    <script src="/js/campus-life.js?v=20261127-simple-home"></script>
     <script src="/js/faculty.js?v=20261127-no-dept-scope"></script>
     <script src="/js/reports.js"></script>
     <script src="/js/applications.js"></script>

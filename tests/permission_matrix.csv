@@ -82,6 +82,8 @@ DELETE,/api/campus/my-events/<int:event_id>,/api/campus/my-events/999999,,刪除
 GET,/api/campus/announcements,/api/campus/announcements,,最新公告,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/course-plan/offerings,/api/campus/course-plan/offerings,,開課清單,OK,OK,OK,OK,OK,OK,OK,
 POST,/api/campus/course-plan/check,/api/campus/course-plan/check,,選課檢查,OK,OK,OK,OK,OK,OK,OK,
+GET,/api/campus/course-plan/mine,/api/campus/course-plan/mine,,我儲存的選課,401,403,OK,OK,403,403,403,家長看子女存的選課
+PUT,/api/campus/course-plan/mine,/api/campus/course-plan/mine,"{""offering_ids"": []}",儲存選課,401,403,OK,403,403,403,403,有擋修、衝堂、重複選課或超過上限不能存
 GET,/api/campus/rules/tree,/api/campus/rules/tree,,校規分類樹,OK,OK,OK,OK,OK,OK,OK,
 GET,/api/campus/certs/mine,/api/campus/certs/mine,,我的證照,401,403,OK,OK,403,403,403,
 GET,/api/campus/records/mine,/api/campus/records/mine,,【獎懲與幹部】我的紀錄,401,403,OK,OK,403,403,403,家長看綁定子女的紀錄
@@ -138,7 +140,7 @@ GET,/api/campus/affairs/mine,/api/campus/affairs/mine,,我的總務申請,401,40
 POST,/api/campus/affairs/check,/api/campus/affairs/check,,報帳檢查,401,403,OK,403,403,403,403,
 POST,/api/campus/affairs/submit,/api/campus/affairs/submit,,送出總務申請,401,403,OK,403,403,403,403,
 GET,/api/campus/scholarships,/api/campus/scholarships,,獎助學金清單,OK,OK,OK,OK,OK,OK,OK,
-POST,/api/campus/scholarships/<sch_id>/favorite,/api/campus/scholarships/SCH07/favorite,"{""on"": false}",收藏 / 取消收藏獎學金,401,403,OK,403,403,403,403,收藏後貼在證照牆並列入必做事項
+POST,/api/campus/scholarships/<sch_id>/favorite,/api/campus/scholarships/SCH07/favorite,"{""on"": false}",收藏 / 取消收藏獎學金,401,403,OK,403,403,403,403,收藏後貼在證照牆並在通知中心提醒
 GET,/api/me/preferences,/api/me/preferences,,我的科系,OK,OK,OK,OK,OK,OK,OK,
 PUT,/api/me/preferences,/api/me/preferences,,修改我的科系,OK,OK,OK,OK,OK,OK,OK,未登入時存在 session，登入後存在帳號
 GET,/api/faculty,/api/faculty,,教師專長查詢,OK,OK,OK,OK,OK,OK,OK,

@@ -4,7 +4,7 @@
 """
 from flask import Blueprint, request
 
-from .common import deps, error, ok, current_user
+from .common import deps, error, ok, current_user, require, store, now_str
 
 bp = Blueprint("campus_courses", __name__)
 
@@ -59,7 +59,56 @@ def student_passed_ids():
 
 @bp.route("/api/campus/course-plan/offerings", methods=["GET"])
 def list_offerings():
-    return ok(data=offerings_with_course(), min_credits=SEMESTER_MIN_CREDITS, max_credits=SEMESTER_MAX_CREDITS)
+    """開課清單；登入學生 / 家長每門課帶 blocked (已及格、擋修的原因)，前端標紅色並不能勾選。
+    未登入時 blocked 一律 None，passed_course_ids 由前端依使用者勾的「已通過的課」自己判斷"""
+    passed, _, from_record = student_passed_ids()
+    data = [{**o, "blocked": block_reason(o, passed) if from_record else None} for o in offerings_with_course()]
+    return ok(data=data, min_credits=SEMESTER_MIN_CREDITS, max_credits=SEMESTER_MAX_CREDITS,
+              passed_course_ids=sorted(passed) if from_record else None)
+
+
+# ---------- 儲存選課 (學生本人)：存在 data/campus_store.json 的 course_plans，不用改資料庫 ----------
+# {學號: {"offering_ids": [...], "saved_at": "YYYY-MM-DD HH:MM"}}
+
+@bp.route("/api/campus/course-plan/mine", methods=["GET"])
+@require("學生", "家長")
+def my_plan():
+    """學生自己、家長看子女儲存過的選課；沒存過回傳 offering_ids = None"""
+    saved = store.section("course_plans", dict).get(current_user()["student_id"])
+    return ok(offering_ids=(saved or {}).get("offering_ids"), saved_at=(saved or {}).get("saved_at"))
+
+
+@bp.route("/api/campus/course-plan/mine", methods=["PUT"])
+@require("學生")
+def save_my_plan():
+    """儲存前再檢查一次：有擋修、已及格、衝堂、同一門課兩班、超過學分上限就不給存"""
+    ids = [str(x) for x in (request.get_json(silent=True) or {}).get("offering_ids") or []]
+    if not ids:
+        return error("請至少選擇一門課")
+    passed, failed, _ = student_passed_ids()
+    result, message = evaluate_plan(ids, passed, failed)
+    if message:
+        return error(message)
+    errors = [i for i in result["issues"] if i["level"] == "error"]
+    if errors:
+        return error("還有問題沒解決，不能儲存：" + "；".join(i["message"] for i in errors))
+    sid = current_user()["student_id"]
+    saved = {"offering_ids": [o["offering_id"] for o in result["chosen"]], "saved_at": now_str()[:16]}
+    with store.lock:
+        store.section("course_plans", dict)[sid] = saved
+        store.save()
+    credits = result["credits"]["selected_total"]
+    return ok(message=f"選課已選填成功！共 {len(saved['offering_ids'])} 門、{credits} 學分", **saved)
+
+
+def block_reason(o, passed):
+    """這門課現在能不能選：已及格、先修未過 (擋修) 回傳原因，可以選回傳 None"""
+    if o["course_id"] in passed:
+        return f"已經及格，不用再修"
+    pre = o.get("prerequisite_id")
+    if pre and pre not in passed:
+        return f"擋修：需先通過「{o.get('prerequisite_name') or pre}」"
+    return None
 
 
 @bp.route("/api/campus/course-plan/check", methods=["POST"])
@@ -69,15 +118,22 @@ def check_plan():
     chosen_ids = [str(x) for x in data.get("offering_ids", [])]
     if not chosen_ids:
         return error("請至少選擇一門課")
-    by_id = {o["offering_id"]: o for o in offerings_with_course()}
-    unknown = [i for i in chosen_ids if i not in by_id]
-    if unknown:
-        return error(f"找不到開課代碼：{', '.join(unknown)}")
-    chosen = [by_id[i] for i in dict.fromkeys(chosen_ids)]
-
     passed, failed, from_record = student_passed_ids()
     if passed is None:
         passed = {str(x) for x in data.get("passed_course_ids", [])}
+    result, message = evaluate_plan(chosen_ids, passed, failed)
+    if message:
+        return error(message)
+    return ok(from_record=from_record, **result)
+
+
+def evaluate_plan(chosen_ids, passed, failed):
+    """回傳 (檢查結果, None) 或 (None, 錯誤訊息)；check 與儲存共用"""
+    by_id = {o["offering_id"]: o for o in offerings_with_course()}
+    unknown = [i for i in chosen_ids if i not in by_id]
+    if unknown:
+        return None, f"找不到開課代碼：{', '.join(unknown)}"
+    chosen = [by_id[i] for i in dict.fromkeys(chosen_ids)]
 
     issues = []
     # 1. 上課時間衝突 (同一天節次重疊)
@@ -136,8 +192,7 @@ def check_plan():
     errors = [i for i in issues if i["level"] == "error"]
     grade = "可以送出" if not errors else "需要調整"
 
-    return ok(
-        from_record=from_record,
+    return dict(
         chosen=chosen,
         issues=issues,
         retake=[{"offering_id": o["offering_id"], "course_name": o["course_name"]} for o in retake],
@@ -160,4 +215,4 @@ def check_plan():
                     "period_start": o["period_start"], "period_end": o["period_end"], "classroom": o["classroom"],
                     "conflict": any(o["offering_id"] in i["offering_ids"] and i["type"] == "time_conflict" for i in issues)}
                    for o in chosen],
-    )
+    ), None

@@ -274,19 +274,31 @@ async function toggleDocCheck(el) {
 // =====================================================================
 
 let planOfferings = [], planChosen = new Set(), planManualPassed = new Set(), planCourses = [], planTimer = null;
+let planSaved = null;          // 學生存過的選課 {offering_ids, saved_at}；沒存過為 null
+let planLastCheck = null;      // 最近一次 /check 的結果 (儲存按鈕要知道有沒有錯誤)
+const PLAN_AUTO_TYPE = '專業必修';  // 這類課一進來自動排進課表；共同必修 (英文等) 由行政人員安排，不自動加
 
 async function loadPlan() {
     const body = document.getElementById('planBody');
     try {
-        const [off, courses] = await Promise.all([api('/api/campus/course-plan/offerings'), api('/api/courses')]);
+        const [off, courses, mine] = await Promise.all([api('/api/campus/course-plan/offerings'), api('/api/courses'),
+            isStudentLoggedIn() ? api('/api/campus/course-plan/mine').catch(() => null) : Promise.resolve(null)]);
         planOfferings = off.data;
         planCourses = courses.data;
+        planSaved = mine && mine.offering_ids ? { offering_ids: mine.offering_ids, saved_at: mine.saved_at } : null;
     } catch (e) { body.innerHTML = `<div class="text-rose-700 text-sm">${esc(e.message)}</div>`; return; }
+    // 存過就照存的；沒存過就把專業必修自動排進去 (同一門課有兩班時挑第一個能選、不衝堂的班)
+    planChosen = new Set(planSaved ? planSaved.offering_ids.filter(id => planOfferings.some(o => o.offering_id === id)) : []);
+    if (!planSaved) {
+        planOfferings.filter(o => o.course_type === PLAN_AUTO_TYPE).forEach(o => {
+            if (!planBlockReason(o)) planChosen.add(o.offering_id);
+        });
+    }
     const groups = {};
     planOfferings.forEach(o => { (groups[o.course_type || '其他'] = groups[o.course_type || '其他'] || []).push(o); });
     body.innerHTML = `
         <div class="lg:col-span-3 space-y-4">
-            ${isStudentLoggedIn() ? `<div class="text-xs text-slate-600 bg-ukn-50 border border-ukn-100 rounded px-3 py-2">已自動帶入 ${esc(currentUser.full_name)} 的歷年成績，已及格的課再選會被標出來。</div>`
+            ${isStudentLoggedIn() ? `<div class="text-xs text-slate-600 bg-ukn-50 border border-ukn-100 rounded px-3 py-2">已自動帶入 ${esc(currentUser.full_name)} 的歷年成績：已及格、擋修、衝堂的課會標紅色不能選。${planSaved ? `已帶入你 ${esc(planSaved.saved_at)} 儲存的選課。` : '專業必修已自動排進課表（共同必修由行政人員安排），選好後按右邊的「儲存選課」。'}</div>`
                 : `<details class="rounded border border-slate-200 bg-slate-50 p-3"><summary class="cursor-pointer text-xs font-semibold text-slate-700">未登入：先勾選你已經通過的課（登入學生帳號會自動帶入）</summary>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-2">${planCourses.map(c => `<label class="text-xs flex items-center gap-1.5"><input type="checkbox" onchange="togglePlanPassed('${esc(c.course_id)}', this.checked)"> ${esc(c.course_name)}</label>`).join('')}</div></details>`}
             ${Object.entries(groups).map(([type, list]) => `
@@ -295,10 +307,11 @@ async function loadPlan() {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         ${list.map(o => `
                             <label id="plan-off-${esc(o.offering_id)}" class="flex items-start gap-2.5 rounded border border-slate-200 bg-white px-3 py-2 cursor-pointer hover:border-ukn-400">
-                                <input type="checkbox" class="mt-1" onchange="togglePlanOffering('${esc(o.offering_id)}', this.checked)">
+                                <input type="checkbox" class="mt-1" ${planChosen.has(o.offering_id) ? 'checked' : ''} onchange="togglePlanOffering('${esc(o.offering_id)}', this.checked)">
                                 <span class="min-w-0">
-                                    <span class="block text-sm font-semibold text-slate-900">${esc(o.course_name)} <span class="text-[11px] font-normal text-slate-500">${esc(o.offering_id)} · ${o.credits} 學分</span></span>
+                                    <span class="block text-sm font-semibold text-slate-900">${esc(o.course_name)} <span class="text-[11px] font-normal text-slate-500">${esc(o.offering_id)} · ${o.credits} 學分</span>${o.course_type === PLAN_AUTO_TYPE ? ' <span class="text-[10px] font-bold text-ukn-700 border border-ukn-200 rounded px-1">必修</span>' : ''}</span>
                                     <span class="block text-[11px] text-slate-500">${esc(o.slot)} · ${esc(o.classroom)} · ${esc(o.teacher)}${o.prerequisite_name ? ` · 先修：${esc(o.prerequisite_name)}` : ''}</span>
+                                    <span data-plan-block class="block"></span>
                                     <span data-plan-flag class="block"></span>
                                 </span>
                             </label>`).join('')}
@@ -306,30 +319,130 @@ async function loadPlan() {
                 </div>`).join('')}
             <div><div class="text-xs font-bold text-slate-600 mb-1.5">我的課表預覽</div><div id="planTimetable" class="overflow-x-auto"></div></div>
         </div>
-        <div class="lg:col-span-2"><div id="planResult" class="lg:sticky lg:top-40 space-y-4">${planEmptyResult()}</div></div>`;
+        <div class="lg:col-span-2"><div class="lg:sticky lg:top-40 space-y-4"><div id="planSaveBar"></div><div id="planResult" class="space-y-4">${planEmptyResult()}</div></div></div>`;
     renderPlanTimetable([]);
+    refreshPlanBlocks();
+    renderPlanSaveBar();
+    if (planChosen.size) runPlanCheck();
 }
 
 function planEmptyResult() {
     return '<div class="rounded border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">勾選左邊想修的課，這裡會即時顯示學分評分與撞修檢查。</div>';
 }
 
-function togglePlanOffering(id, on) { on ? planChosen.add(id) : planChosen.delete(id); schedulePlanCheck(); }
-function togglePlanPassed(id, on) { on ? planManualPassed.add(id) : planManualPassed.delete(id); schedulePlanCheck(); }
+// 這門課現在能不能選。固定的：已及格、擋修 (登入學生由後端算好 o.blocked；未登入用自己勾的「已通過」判斷)；
+// 跟已選的課有關的：同一門課已選了另一班、跟已選的課衝堂
+function planBlockReason(o) {
+    if (o.blocked) return o.blocked;
+    if (!isStudentLoggedIn()) {
+        if (planManualPassed.has(o.course_id)) return '已經及格，不用再修';
+        if (o.prerequisite_id && !planManualPassed.has(o.prerequisite_id)) return `擋修：需先通過「${o.prerequisite_name || o.prerequisite_id}」`;
+    }
+    for (const id of planChosen) {
+        if (id === o.offering_id) continue;
+        const c = planOfferings.find(x => x.offering_id === id);
+        if (!c) continue;
+        if (c.course_id === o.course_id) return `已選了 ${c.offering_id}，要換班請先取消那一班`;
+        if (c.weekday === o.weekday && c.period_start <= o.period_end && o.period_start <= c.period_end) return `跟「${c.course_name}」（${c.slot}）衝堂`;
+    }
+    return null;
+}
+
+// 會擋的課：紅框、紅字寫原因、不能勾 (已經勾著的還是可以取消)
+function refreshPlanBlocks() {
+    planOfferings.forEach(o => {
+        const card = document.getElementById(`plan-off-${o.offering_id}`);
+        if (!card) return;
+        const input = card.querySelector('input[type=checkbox]');
+        const chosen = planChosen.has(o.offering_id);
+        const reason = planBlockReason(o);
+        const blocked = !!reason && !chosen;
+        input.checked = chosen;
+        input.disabled = blocked;
+        card.classList.toggle('border-rose-400', !!reason);
+        card.classList.toggle('bg-rose-50', blocked);
+        card.classList.toggle('cursor-not-allowed', blocked);
+        card.classList.toggle('cursor-pointer', !blocked);
+        card.querySelector('[data-plan-block]').innerHTML = reason
+            ? `<span class="block text-[11px] font-bold text-rose-700 mt-0.5">🚫 ${esc(reason)}${chosen ? '（請取消）' : ''}</span>` : '';
+    });
+}
+
+function togglePlanOffering(id, on) {
+    const o = planOfferings.find(x => x.offering_id === id);
+    if (on && o && planBlockReason(o)) { refreshPlanBlocks(); toast(planBlockReason(o), 'error'); return; }
+    on ? planChosen.add(id) : planChosen.delete(id);
+    refreshPlanBlocks();
+    renderPlanSaveBar();
+    schedulePlanCheck();
+}
+function togglePlanPassed(id, on) { on ? planManualPassed.add(id) : planManualPassed.delete(id); refreshPlanBlocks(); schedulePlanCheck(); }
+
+// 儲存列：只有學生本人能存；有錯誤 (衝堂、擋修…) 時不能存；改過沒存會提醒
+function planIsDirty() {
+    const saved = new Set(planSaved?.offering_ids || []);
+    return saved.size !== planChosen.size || [...planChosen].some(id => !saved.has(id));
+}
+function renderPlanSaveBar() {
+    const bar = document.getElementById('planSaveBar');
+    if (!bar) return;
+    if (currentUser?.role !== '學生') {
+        bar.innerHTML = currentUser?.role === '家長' && planSaved
+            ? `<div class="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">✓ 子女已於 ${esc(planSaved.saved_at)} 選填完成（下方為子女選的課）</div>`
+            : '<div class="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">登入學生帳號就能儲存選課。</div>';
+        return;
+    }
+    const errors = (planLastCheck?.issues || []).filter(i => i.level === 'error');
+    const dirty = planIsDirty();
+    const canSave = planChosen.size > 0 && !errors.length && dirty;
+    const status = !planChosen.size ? '還沒有選課'
+        : errors.length ? `還有 ${errors.length} 個問題要先解決才能儲存`
+        : !dirty ? `✓ 已選填成功（${esc(planSaved.saved_at)} 儲存）`
+        : planSaved ? '有修改還沒儲存' : '還沒儲存';
+    bar.innerHTML = `
+        <div class="rounded border ${!dirty && planSaved ? 'border-emerald-300 bg-emerald-50' : errors.length ? 'border-rose-300 bg-rose-50' : 'border-amber-300 bg-amber-50'} px-4 py-3 flex items-center justify-between gap-3">
+            <span class="text-sm font-semibold ${!dirty && planSaved ? 'text-emerald-800' : errors.length ? 'text-rose-800' : 'text-amber-900'}">${status}</span>
+            <button type="button" onclick="savePlan()" ${canSave ? '' : 'disabled'}
+                class="shrink-0 text-sm font-bold rounded px-4 py-2 ${canSave ? 'bg-ukn-800 hover:bg-ukn-900 text-white' : 'bg-slate-200 text-slate-500 cursor-not-allowed'}">💾 儲存選課</button>
+        </div>`;
+}
+
+async function savePlan() {
+    let r;
+    try {
+        r = await api('/api/campus/course-plan/mine', { method: 'PUT', json: { offering_ids: [...planChosen] } });
+    } catch (e) { toast(e.message, 'error'); return; }
+    planSaved = { offering_ids: r.offering_ids, saved_at: r.saved_at };
+    renderPlanSaveBar();
+    toast(r.message);
+    const chosen = planOfferings.filter(o => planChosen.has(o.offering_id));
+    openModal('✅ 選課已選填成功', `
+        <div class="space-y-3 text-sm">
+            <p>${esc(r.message)}（${esc(r.saved_at)} 儲存）。之後回來這一頁會自動帶入，想改可以重新勾選再儲存。</p>
+            <ul class="divide-y divide-slate-100 border border-slate-200 rounded">${chosen.map(o => `
+                <li class="px-3 py-2 flex justify-between gap-2"><span class="font-semibold">${esc(o.course_name)} <span class="text-[11px] font-normal text-slate-500">${esc(o.offering_id)}</span></span><span class="text-xs text-slate-500">${esc(o.slot)} · ${o.credits} 學分</span></li>`).join('')}</ul>
+            <div class="text-right"><button type="button" onclick="closeModal()" class="bg-ukn-800 hover:bg-ukn-900 text-white font-bold rounded px-4 py-2 text-sm">好</button></div>
+        </div>`);
+}
 function schedulePlanCheck() { clearTimeout(planTimer); planTimer = setTimeout(runPlanCheck, 200); }
 
 async function runPlanCheck() {
     document.querySelectorAll('[data-plan-flag]').forEach(el => el.innerHTML = '');
-    document.querySelectorAll('[id^="plan-off-"]').forEach(el => el.classList.remove('border-rose-400', 'bg-rose-50/50'));
+    document.querySelectorAll('[id^="plan-off-"]').forEach(el => el.classList.remove('bg-rose-50/50'));
+    refreshPlanBlocks();  // 紅框先照「能不能選」重畫，下面再加上檢查結果的錯誤
     if (!planChosen.size) {
+        planLastCheck = null;
         document.getElementById('planResult').innerHTML = planEmptyResult();
         renderPlanTimetable([]);
+        renderPlanSaveBar();
         return;
     }
     let r;
     try {
         r = await api('/api/campus/course-plan/check', { json: { offering_ids: [...planChosen], passed_course_ids: [...planManualPassed] } });
     } catch (e) { toast(e.message, 'error'); return; }
+    planLastCheck = r;
+    renderPlanSaveBar();
     const c = r.credits;
     const errors = r.issues.filter(i => i.level === 'error'), warns = r.issues.filter(i => i.level === 'warn');
     r.issues.forEach(i => i.offering_ids.forEach(id => {

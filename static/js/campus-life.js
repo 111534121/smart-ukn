@@ -203,7 +203,7 @@ function renderScholarships() {
     shown.forEach(s => updateScholarship(s.id));
 }
 
-// 收藏 (只有學生本人)：收藏後貼在證照牆，首頁「必做事項」提醒要準備的文件；已截止的只能取消、不能新收藏
+// 收藏 (只有學生本人)：收藏後貼在證照牆，通知中心提醒要準備的文件；已截止的只能取消、不能新收藏
 function scholarshipFavButton(s) {
     if (currentUser?.role !== '學生' || (s.expired && !s.favorited)) return '';
     return s.favorited
@@ -217,7 +217,7 @@ async function toggleScholarshipFav(id, on) {
         toast(r.message);
     } catch (e) { toast(e.message, 'error'); return; }
     if (!on && typeof closeModal === 'function') closeModal();
-    // 三個地方一起更新：獎助學金檢核卡片、證照牆、首頁必做事項
+    // 三個地方一起更新：獎助學金檢核卡片、證照牆、通知中心
     // 只換收藏按鈕，不重畫整張卡片，學生已經勾的條件不會被清掉
     const s = scholarshipData.find(x => x.id === id);
     if (s) {
