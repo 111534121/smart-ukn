@@ -1909,9 +1909,16 @@
                 <div id="mapBody" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
             </section>
             <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div class="border-b border-slate-100 pb-3">
-                    <h2 class="ukn-title text-xl font-bold text-slate-900">老師辦公室與目前狀態</h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">連結老師課表，看得出老師現在是不是在上課、什麼時候在辦公室。</p>
+                <div
+                    class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                    <div>
+                        <h2 class="ukn-title text-xl font-bold text-slate-900">老師辦公室與目前狀態</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-1">連結老師課表與專長資料，可查看老師現在是不是在上課、辦公室與可找時間，也能輸入關鍵字（例如
+                            AI、資安、長照、多益）或依領域找專題指導老師。</p>
+                    </div>
+                    <button type="button" id="facultyEditMineBtn" onclick="openMyFacultyProfile()"
+                        class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-3 py-1.5 font-semibold whitespace-nowrap">✏️
+                        編輯我的專長</button>
                 </div>
                 <div id="teachersBody"></div>
             </section>
@@ -1973,24 +1980,6 @@
             </section>
         </div>
 
-
-        <!-- 教師專長查詢 (faculty.js) -->
-        <div id="tab-faculty" class="tab-content hidden space-y-6">
-            <section class="bg-white rounded border border-slate-200 p-6 sm:p-7 space-y-5">
-                <div
-                    class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                    <div>
-                        <h2 class="ukn-title text-xl font-bold text-slate-900">教師專長查詢</h2>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-1">找專題指導老師、想請教某個領域的問題？輸入關鍵字（例如
-                            AI、資安、長照、多益），或用領域篩選。</p>
-                    </div>
-                    <button type="button" id="facultyEditMineBtn" onclick="openMyFacultyProfile()"
-                        class="hidden text-xs border border-ukn-300 text-ukn-800 hover:bg-ukn-50 rounded px-3 py-1.5 font-semibold whitespace-nowrap">✏️
-                        編輯我的專長</button>
-                </div>
-                <div id="facultyBody"></div>
-            </section>
-        </div>
 
         <!-- 我的課表 (老師專用，campus-features.js loadMySchedule) -->
         <div id="tab-myschedule" class="tab-content hidden space-y-6">
@@ -4413,13 +4402,13 @@
         // 分頁切換 switchTab()：見 campus-shell.js (同步網址 #hash、選單反白、分頁第一次打開時才載入資料)
     </script>
     <script src="/js/field-validate.js"></script>
-    <script src="/js/campus-shell.js?v=20261126-merge-rules"></script>
+    <script src="/js/campus-shell.js?v=20261127-merge-faculty"></script>
     <script src="/js/home-portal.js?v=51"></script>
     <script src="/js/campus-access.js?v=48"></script>
     <script src="/js/campus-features.js?v=20261126-merge-rules"></script>
-    <script src="/js/campus-life.js?v=20261121-coursechange"></script>
-    <script src="/js/dept-scope.js"></script>
-    <script src="/js/faculty.js?v=20261029"></script>
+    <script src="/js/campus-life.js?v=20261127-merge-faculty"></script>
+    <script src="/js/dept-scope.js?v=20261126-mapmerge"></script>
+    <script src="/js/faculty.js?v=20261126-realukn"></script>
     <script src="/js/reports.js"></script>
     <script src="/js/applications.js"></script>
     <script src="/js/conduct.js"></script>

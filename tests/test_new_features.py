@@ -145,11 +145,12 @@ def test_synonym_expansion():
 
 
 @pytest.mark.parametrize("query, expected", [
-    ("AI", "彭賓鈺"),
-    ("資安", "林志明"),
-    ("長照", "許美玲"),
-    ("多益", "Amy Chen"),
-    ("網頁", "吳建宏"),
+    ("AI", "謝樹明"),
+    ("資安", "李栢松"),
+    ("長照", "李劭懷"),
+    ("多益", "李智偉"),
+    ("網頁", "嚴竹華"),
+    ("統計", "彭賓鈺"),
 ])
 def test_search_finds_expert(client, query, expected):
     data = client.get(f"/api/faculty?q={query}").get_json()
@@ -160,7 +161,8 @@ def test_search_finds_expert(client, query, expected):
 def test_search_filters(client):
     data = client.get("/api/faculty?field=護理與健康照護&projects=1").get_json()
     names = {t["name"] for t in data["data"]}
-    assert names == {"許美玲", "蔡宗翰"}  # 鄭如君目前不收專題生
+    assert {"葉美玉", "劉璧瑜", "呂莉婷", "嚴惠宇", "王凱立", "陳秀珍"} == names  # 林宛萱目前不收專題生
+    assert "林宛萱" not in names
     assert client.get("/api/faculty?dept=護理科").get_json()["data"][0]["office"]["room"].startswith("B")  # 護理科教室在第二教學大樓 (B 棟)
     assert client.get("/api/faculty?q=量子物理").get_json()["data"] == []
 

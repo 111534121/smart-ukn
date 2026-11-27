@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS meetings (
  start_at datetime NOT NULL,
  duration_min int NOT NULL DEFAULT 60,
  room_name varchar(80) NOT NULL,
- invite_code varchar(12) NOT NULL,
+ invite_code varchar(20) NOT NULL,
  allow_code_join tinyint(1) NOT NULL DEFAULT 1,
  status varchar(10) NOT NULL DEFAULT '排定' COMMENT '排定 / 已取消',
  created_at datetime NOT NULL,

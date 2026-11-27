@@ -16,7 +16,6 @@ const FEATURES = [
     { key: 'warning', tab: 'tab-warning', name: '學業預警', icon: '⚠️', group: '學習', desc: '這學期不及格科目與擋修提醒', staff: { group: '導師班', desc: '導師班誰有科目沒過、誰要特別注意（行政人員可用學號查詢）' } },
     { key: 'retake', tab: 'tab-retake', name: '重補修推薦', icon: '🔁', group: '學習', desc: '沒過的科目哪班可以補、會不會衝堂' },
     { key: 'conduct', tab: 'tab-conduct', name: '我的操行', icon: '🎖️', group: '學習', desc: '操行成績、獎懲與怎麼算的' },
-    { key: 'faculty', tab: 'tab-faculty', name: '教師專長查詢', icon: '🧑‍🏫', group: '學習', desc: '找專題指導老師、依領域找專長' },
     { key: 'assistant', tab: 'tab-assistant', name: '申請問題小幫手', icon: '🤖', group: '校務', desc: '一句話問要辦什麼、怎麼辦，或直接瀏覽全部規章與流程', staff: false },
     { key: 'checklist', tab: 'tab-checklist', name: '行政申請流程', icon: '📝', group: '校務', desc: '要準備什麼、去哪裡辦', staff: false },
     { key: 'calendar', tab: 'tab-calendar', name: '行事曆', icon: '📅', group: '校務', desc: '假日、申辦期限與我的行程' },
@@ -25,7 +24,7 @@ const FEATURES = [
     { key: 'reports', tab: 'tab-reports', name: '報表與文件下載', icon: '📄', group: '校務', desc: '公告、表單、活動資料下載' },
     { key: 'rent', tab: 'tab-rent', name: '教室與櫃子租借', icon: '🔑', group: '校園生活', desc: '線上看空教室、點格子租櫃子', staff: { name: '教室借用', desc: '線上看空教室、借教室' } },
     { key: 'events', tab: 'tab-events', name: '活動報名', icon: '🎉', group: '校園生活', desc: '線上報名校園活動，查看我的報名與通知狀態' },
-    { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課' },
+    { key: 'map', tab: 'tab-map', name: '校園地圖與老師辦公室', icon: '🗺️', group: '校園生活', desc: '找教室、看老師現在有沒有課、查教師專長與專題指導' },
     { key: 'traffic', tab: 'tab-traffic', name: '天氣與交通', icon: '🚌', group: '校園生活', desc: '目前天氣、預報與上學路線', staff: false },
     { key: 'links', tab: 'tab-links', name: '學餐、購書與常用系統', icon: '🔗', group: '校園生活', desc: '直接連到要用的系統', staff: false },
     { key: 'notices', tab: 'tab-notices', name: '班級通知', icon: '📣', group: '社群', desc: '導師、任課老師發給你的通知', staff: { group: '學習', desc: '發給導師班、課程廣播；教職員可廣播科系、年級、全校' } },
@@ -199,6 +198,7 @@ function highlightNav(tabId) {
 
 let currentTabId = HOME_TAB;
 function switchTab(tabId, { updateHash = true, skipScroll = false } = {}) {
+    if (tabId === 'tab-faculty') tabId = 'tab-map';
     const target = document.getElementById(tabId);
     if (!target) return;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -221,6 +221,7 @@ function switchTab(tabId, { updateHash = true, skipScroll = false } = {}) {
 
 function tabFromHash() {
     const key = decodeURIComponent(location.hash.replace('#', ''));
+    if (key === 'faculty') return 'tab-map';
     return featureByKey(key)?.tab || HOME_TAB;
 }
 function isAnnouncementsHash() { return decodeURIComponent(location.hash.replace('#', '')) === 'announcements'; }

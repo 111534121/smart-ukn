@@ -91,7 +91,8 @@ function refreshScopedContent() {
     if (typeof loadDeadlines === 'function') loadDeadlines();
     if (typeof loadHomeUpcoming === 'function') loadHomeUpcoming();
     if (typeof refreshCalendar === 'function') refreshCalendar();
-    ['tab-plan', 'tab-faculty'].forEach(tab => loadedTabs.delete(tab));
+    ['tab-plan', 'tab-map'].forEach(tab => loadedTabs.delete(tab));
+    if (typeof facultyState !== 'undefined') { facultyState.initialized = false; facultyState.dept = ''; }
     if (tabLoaders[currentTabId] && !loadedTabs.has(currentTabId)) {
         loadedTabs.add(currentTabId);
         Promise.resolve(tabLoaders[currentTabId]()).catch(e => console.error(e));

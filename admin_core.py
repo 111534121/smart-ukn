@@ -2142,6 +2142,7 @@ def admin_smart_insights():
 
     return jsonify({
         "status": "success",
+        "insights": insights,
         "data": insights,
         "total": len(insights)
     }), 200

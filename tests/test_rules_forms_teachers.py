@@ -52,32 +52,32 @@ def test_favorite_forms_listed_first_and_saved_per_account(client, login):
 def test_teacher_list_includes_teachers_only_in_schedule(client):
     data = client.get("/api/campus/teachers").get_json()
     names = {t["name"]: t for t in data["data"]}
-    assert "謝樹明" in names and names["謝樹明"]["registered"] is False  # 只在課表上
+    assert "張丕白" in names and names["張丕白"]["registered"] is False  # 兼任教師只在課表上
     assert names["彭賓鈺"]["registered"] and "資訊管理科" in data["depts"] and "通識教育中心" in data["units"]
     faculty = {t["name"] for t in client.get("/api/faculty").get_json()["data"]}
-    assert {"謝樹明", "益西曲珍", "彭賓鈺"} <= faculty  # 教師專長查詢也列出全部老師
+    assert {"張丕白", "謝樹明", "益西曲珍", "彭賓鈺"} <= faculty  # 教師專長查詢也列出全部老師
 
 
 def test_staff_changes_need_admin_review(client, login):
-    body = {"name": "謝樹明", "title": "講師", "dept": "資訊管理科", "unit": "資訊管理科", "building": "A", "office": "A415",
+    body = {"name": "張丕白", "title": "兼任教師", "dept": "資訊管理科", "unit": "資訊管理科", "building": "A", "office": "A415",
             "office_hours": [{"weekday": 3, "start": "10:30", "end": "12:20"}]}
     login("staff1")
     new_id = client.post("/api/admin/teachers", json=body).get_json()["id"]
     listed = lambda: {t["name"]: t for t in client.get("/api/campus/teachers").get_json()["data"]}
-    assert listed()["謝樹明"]["registered"] is False  # 核准前學生看不到
+    assert listed()["張丕白"]["registered"] is False  # 核准前學生看不到
     assert client.post(f"/api/admin/teachers/{new_id}/review", json={"decision": "核准"}).status_code == 403
 
     login("admin", "admin123")
     assert client.post(f"/api/admin/teachers/{new_id}/review", json={"decision": "退回"}).status_code == 400  # 退回要寫原因
     assert client.post(f"/api/admin/teachers/{new_id}/review", json={"decision": "核准"}).status_code == 200
-    assert listed()["謝樹明"]["office"] == "A415"
+    assert listed()["張丕白"]["office"] == "A415"
 
     login("staff1")
     client.put(f"/api/admin/teachers/{new_id}", json={**body, "ext": "分機 999"})
-    assert listed()["謝樹明"]["ext"] == ""  # 修改審核中，學生仍看到原本的資料
+    assert listed()["張丕白"]["ext"] == ""  # 修改審核中，學生仍看到原本的資料
     login("admin", "admin123")
     client.post(f"/api/admin/teachers/{new_id}/review", json={"decision": "核准"})
-    assert listed()["謝樹明"]["ext"] == "分機 999"
+    assert listed()["張丕白"]["ext"] == "分機 999"
 
 
 def test_teacher_photo_upload_checks_file_content(client, login, tmp_path, monkeypatch):

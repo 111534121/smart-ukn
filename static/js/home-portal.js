@@ -3,8 +3,8 @@ const PORTAL_AUDIENCES = [
     {id:'student', name:'在校學生', icon:'01', hint:'上課、申辦與學習進度，快速抵達。', keys:['course-plan','calendar','scholarship','assistant','meetings','map','links']},
     {id:'parent', name:'家長', icon:'02', hint:'掌握校園消息與學習資訊；個人資料需登入已綁定的家長帳號。', keys:['calendar','graduation','warning','assistant','traffic','map']},
     {id:'staff', name:'教職員', icon:'03', hint:'教學、班級與行政服務；可用功能依實際登入權限提供。', keys:['my-schedule','my-class','notices','meetings','calendar','rent','reports']},
-    {id:'freshman', name:'準新生', icon:'04', hint:'從認識科系到規劃到校路線，為下一步做好準備。', keys:['faculty','scholarship','traffic','map'], official:true},
-    {id:'visitor', name:'訪客', icon:'05', hint:'認識校園、尋找地點，輕鬆安排來訪。', keys:['map','traffic','calendar','faculty'], official:true}
+    {id:'freshman', name:'準新生', icon:'04', hint:'從認識科系到規劃到校路線，為下一步做好準備。', keys:['map','scholarship','traffic'], official:true},
+    {id:'visitor', name:'訪客', icon:'05', hint:'認識校園、尋找地點，輕鬆安排來訪。', keys:['map','traffic','calendar'], official:true}
 ];
 let portalAudience = 'student';
 let portalCategory = '全部';
