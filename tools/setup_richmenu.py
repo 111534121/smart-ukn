@@ -2,17 +2,23 @@
 
 ⚠️ 這支程式會動到正式帳號正在使用中的圖文選單，預設不會真的呼叫 LINE API：
    - 不加 --yes：只印出每個選單會建立的區域/動作，方便核對座標對不對，不連線。
-   - 加 --yes：才會真的連線刪掉舊的 ukn-main / ukn-student / ukn-visitor alias 並重建。
+   - 加 --yes：才會真的連線刪掉舊的 alias 並重建。
    執行前務必先用 --yes 以外的方式確認輸出內容跟現在線上的選單一致，再加 --yes 執行，
    避免把正常運作中的選單蓋成錯的。
 
-座標是用實際的三張選單圖片 (line_assets/richmenu-*.jpg, 2500x1686) 量測出來的：
-   標題列高 150px，內容兩排各 693px，底部列高 150px (150+693+693+150=1686)；
-   三欄寬度約略平分 (834/833/833)。子選單左上角 (0,0,620,150) 是「回主選單」熱區
-   (2026-11-16 換新版子選單圖後，回主選單按鈕放大變寬，熱區從 450 改成 620，
-   不然點按鈕右半邊會誤點到「課表查詢」/「參觀須知」)。
+2026-11-27 改版：選單從「主選單→學生/訪客」兩層，改成「主選單→校內人士/訪客專區→
+(校內人士底下再分)學生專區/行政人員專區」三層，共 5 張選單圖 (line_assets/richmenu-*.jpg)。
+座標用實際圖片 (2500x1686) 量出來：
+   標題列高 155px，內容兩排 (155-845、845-1540)，底部列高 1540-1686=146px。
+   三欄版面欄寬 795px，x 起點 25 / 860 / 1690；兩欄版面 (只有 2 個按鈕的列或整頁 2 大塊)
+   對半分，各 1250px 寬。子選單左上角 (0,0,620,155) 是「回主選單」熱區，一律直接跳回
+   最上層主選單 (不是跳回上一層)，跟圖上「點左上角『回主選單』切換身分」的文字一致。
    這是用圖片量出來的最佳估計，正式執行前建議先用 GET /v2/bot/richmenu/list 比對
    現在線上的區域設定，避免跟實際已上線的版本有落差。
+
+⚠️ line_assets/richmenu-student.jpg 目前是 1329x896 的草稿圖，不是 LINE 要求的 2500x1686，
+   還不能真的上傳；下面的欄位座標是照其他已經是正確尺寸的選單量出來的共用版面，等換成正式
+   尺寸的圖之後，相對位置理論上會對得上，但建議換圖後仍先用預覽模式核對一次。
 
 用法：
     python tools/setup_richmenu.py                # 預覽，不連線
@@ -25,10 +31,13 @@
     LINE_DEMO_HOME_URL           圖文選單裡還沒換成自己網站的項目用的退路網址
     LINE_STUDENT_SCHEDULE_URL    「課表查詢」要連去的網址 (line-student.html 的完整網址)
     LINE_LIFF_ID_FAVORITES      「我的常用功能」那一格要連去的 LIFF ID
-    LINE_LIFF_ID_NOTICES        「我的公告」那一格要連去的 LIFF ID
+    LINE_LIFF_ID_NOTICES        「我的公告」那一格要連去的 LIFF ID (目前學生、行政人員專區
+                                 共用同一個 LIFF 頁面；這個頁面查學生公告需要帳號綁學號，
+                                 行政人員帳號沒有學號，目前點了會看到「沒有綁定學號」的錯誤，
+                                 是已知限制，不是這次改版要解決的範圍)
     PUBLIC_SITE_URL / RENDER_EXTERNAL_URL  自己網站的公開網址 (跟 public_portal.py 共用這組)；
-                                 有設定的話「活動報名」「最新公告」會直接連到自己網站對應分頁，
-                                 本機測試時可以先設成目前的 ngrok 網址
+                                 有設定的話「活動報名」「最新公告」「待辦通知」「預約參觀」
+                                 會直接連到自己網站對應分頁，本機測試時可以先設成目前的 ngrok 網址
 """
 import argparse
 import json
@@ -36,6 +45,8 @@ import os
 import sys
 import urllib.error
 import urllib.request
+
+from PIL import Image
 
 try:
     from dotenv import load_dotenv
@@ -52,10 +63,14 @@ API_DATA = "https://api-data.line.me"  # 上傳/下載二進位內容 (圖文選
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "line_assets")
 
 W, H = 2500, 1686
-HEADER_H = 150
-ROW_H = 693          # 150 + 693 + 693 + 150 = 1686
-COL_X = [0, 834, 1667]
-COL_W = [834, 833, 833]
+HEADER_H = 155
+FOOTER_TOP = 1540
+ROW_Y = [HEADER_H, 845]
+ROW_H = [845 - HEADER_H, FOOTER_TOP - 845]
+COL_X = [25, 860, 1690]
+COL_W = [795, 795, 795]
+HALF_X = [0, 1250]
+HALF_W = 1250
 BACK_BUTTON = {"x": 0, "y": 0, "width": 620, "height": HEADER_H}
 
 
@@ -64,8 +79,23 @@ def area(x, y, width, height, action):
 
 
 def grid_cell(row, col, action):
-    y = HEADER_H + row * ROW_H
-    return area(COL_X[col], y, COL_W[col], ROW_H, action)
+    """三欄版面格子 (一列 3 個按鈕時用)"""
+    return area(COL_X[col], ROW_Y[row], COL_W[col], ROW_H[row], action)
+
+
+def half_cell(row, col, action):
+    """兩欄版面格子 (一列只有 2 個按鈕時用，寬度對半分)"""
+    return area(HALF_X[col], ROW_Y[row], HALF_W, ROW_H[row], action)
+
+
+def top_half(col, action):
+    """整頁只有 2 個大按鈕、沒有上方「回主選單」列的選單 (ukn-main) 用：從最上面到最下面"""
+    return area(HALF_X[col], 0, HALF_W, H, action)
+
+
+def sub_half(col, action):
+    """整頁只有 2 個大按鈕、但上面有「回主選單」列的選單 (ukn-insider) 用：避開標題列"""
+    return area(HALF_X[col], HEADER_H, HALF_W, FOOTER_TOP - HEADER_H, action)
 
 
 def switch_action(alias, label):
@@ -91,7 +121,8 @@ def build_menus():
     favorites_url = f"https://liff.line.me/{favorites_liff_id}" if favorites_liff_id else demo_home
     notices_liff_id = os.getenv("LINE_LIFF_ID_NOTICES", "")
     notices_url = f"https://liff.line.me/{notices_liff_id}" if notices_liff_id else demo_home
-    # 「活動報名」「最新公告」是我們自己網站的分頁，不是 demo_home (隊友的示範網站)；
+    menu_url = f"https://liff.line.me/{liff_id}"
+    # 「活動報名」「最新公告」「待辦通知」「預約參觀」是我們自己網站的分頁，不是 demo_home (隊友的示範網站)；
     # PUBLIC_SITE_URL/RENDER_EXTERNAL_URL 還沒設定時才退回 demo_home
     own_site = (os.getenv("PUBLIC_SITE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
     events_url = f"{own_site}/#events" if own_site else demo_home
@@ -99,20 +130,33 @@ def build_menus():
     # 不需要登入，一打開就是對的內容，不會有「先看到別的、才跳過去」的感覺
     announcements_url = f"{own_site}/announcements" if own_site else demo_home
     calendar_url = f"{own_site}/#calendar" if own_site else demo_home
+    # 「待辦通知」(行政人員) 跟「預約參觀」(訪客) 都是首頁 (tab-home) 上就有的卡片，連回首頁即可，不用特別的 hash
+    home_url = own_site if own_site else demo_home
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",
         "chatBarText": "選單", "alias": "ukn-main",
         "image": os.path.join(ASSETS_DIR, "richmenu-main.jpg"),
         "areas": [
-            area(0, 0, 1250, H, switch_action("ukn-student", "學生・老師專區")),
-            area(1250, 0, 1250, H, switch_action("ukn-visitor", "訪客・家長專區")),
+            top_half(0, switch_action("ukn-insider", "校內人士")),
+            top_half(1, switch_action("ukn-visitor", "訪客專區")),
+        ],
+    }
+
+    insider = {
+        "size": {"width": W, "height": H}, "selected": False, "name": "ukn-insider",
+        "chatBarText": "校內人士", "alias": "ukn-insider",
+        "image": os.path.join(ASSETS_DIR, "richmenu-insider.jpg"),
+        "areas": [
+            area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
+            sub_half(0, switch_action("ukn-student", "學生專區")),
+            sub_half(1, switch_action("ukn-staff", "行政人員專區")),
         ],
     }
 
     student = {
         "size": {"width": W, "height": H}, "selected": False, "name": "ukn-student",
-        "chatBarText": "學生・老師專區", "alias": "ukn-student",
+        "chatBarText": "學生專區", "alias": "ukn-student",
         "image": os.path.join(ASSETS_DIR, "richmenu-student.jpg"),
         "areas": [
             area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
@@ -121,13 +165,27 @@ def build_menus():
             grid_cell(0, 2, uri_action("我的公告", notices_url)),
             grid_cell(1, 0, uri_action("校園行事曆", calendar_url)),
             grid_cell(1, 1, uri_action("我的常用功能", favorites_url)),
-            grid_cell(1, 2, uri_action("設定常用功能", f"https://liff.line.me/{liff_id}")),
+            grid_cell(1, 2, uri_action("設定常用功能", menu_url)),
+        ],
+    }
+
+    staff = {
+        "size": {"width": W, "height": H}, "selected": False, "name": "ukn-staff",
+        "chatBarText": "老師・行政人員專區", "alias": "ukn-staff",
+        "image": os.path.join(ASSETS_DIR, "richmenu-staff.jpg"),
+        "areas": [
+            area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
+            grid_cell(0, 0, uri_action("待辦通知", home_url)),
+            grid_cell(0, 1, uri_action("我的公告", notices_url)),
+            grid_cell(0, 2, uri_action("校園行事曆", calendar_url)),
+            half_cell(1, 0, uri_action("我的常用功能", favorites_url)),
+            half_cell(1, 1, uri_action("設定常用功能", menu_url)),
         ],
     }
 
     visitor = {
         "size": {"width": W, "height": H}, "selected": False, "name": "ukn-visitor",
-        "chatBarText": "訪客・家長專區", "alias": "ukn-visitor",
+        "chatBarText": "訪客專區", "alias": "ukn-visitor",
         "image": os.path.join(ASSETS_DIR, "richmenu-visitor.jpg"),
         "areas": [
             area(**BACK_BUTTON, action=switch_action("ukn-main", "回主選單")),
@@ -136,10 +194,10 @@ def build_menus():
             grid_cell(0, 2, message_action("聯絡我們", "聯絡我們")),
             grid_cell(1, 0, message_action("校園行事曆", "行事曆")),
             grid_cell(1, 1, uri_action("最新公告", announcements_url)),
-            grid_cell(1, 2, uri_action("AI 客服", demo_home)),
+            grid_cell(1, 2, uri_action("預約參觀", home_url)),
         ],
     }
-    return [main, student, visitor]
+    return [main, insider, student, staff, visitor]
 
 
 def _request(token, method, path, body=None, data=None, content_type="application/json", base=API):
@@ -211,6 +269,9 @@ def main():
     for spec in menus:
         if not os.path.isfile(spec["image"]):
             sys.exit(f"找不到圖片檔案：{spec['image']}")
+        with Image.open(spec["image"]) as im:
+            if im.size != (W, H):
+                sys.exit(f"{spec['image']} 尺寸是 {im.size}，LINE 要求 {W}x{H}，請先換成正確尺寸的圖再執行")
 
     names = {m["name"] for m in menus}
     print("刪除舊的同名圖文選單與 alias…")
