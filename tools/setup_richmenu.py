@@ -130,8 +130,10 @@ def build_menus():
     # 不需要登入，一打開就是對的內容，不會有「先看到別的、才跳過去」的感覺
     announcements_url = f"{own_site}/announcements" if own_site else demo_home
     calendar_url = f"{own_site}/#calendar" if own_site else demo_home
-    # 「待辦通知」(行政人員) 跟「預約參觀」(訪客) 都是首頁 (tab-home) 上就有的卡片，連回首頁即可，不用特別的 hash
+    # 「待辦通知」(行政人員) 是首頁 (tab-home) 一打開就看得到的卡片，連回首頁即可
     home_url = own_site if own_site else demo_home
+    # 「預約參觀」表單藏在首頁訪客歡迎區塊裡的收合區，用 #visit 讓首頁載入後自動展開並捲過去
+    visit_url = f"{own_site}/#visit" if own_site else demo_home
 
     main = {
         "size": {"width": W, "height": H}, "selected": True, "name": "ukn-main",
@@ -194,7 +196,7 @@ def build_menus():
             grid_cell(0, 2, message_action("聯絡我們", "聯絡我們")),
             grid_cell(1, 0, message_action("校園行事曆", "行事曆")),
             grid_cell(1, 1, uri_action("最新公告", announcements_url)),
-            grid_cell(1, 2, uri_action("預約參觀", home_url)),
+            grid_cell(1, 2, uri_action("預約參觀", visit_url)),
         ],
     }
     return [main, insider, student, staff, visitor]

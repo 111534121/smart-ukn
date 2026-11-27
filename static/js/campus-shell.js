@@ -225,13 +225,24 @@ function tabFromHash() {
     return featureByKey(key)?.tab || HOME_TAB;
 }
 function isAnnouncementsHash() { return decodeURIComponent(location.hash.replace('#', '')) === 'announcements'; }
-function maybeScrollToAnnouncements() {
-    if (!isAnnouncementsHash()) return;
-    setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
+function isVisitHash() { return decodeURIComponent(location.hash.replace('#', '')) === 'visit'; }
+function isScrollAnchorHash() { return isAnnouncementsHash() || isVisitHash(); }
+function maybeScrollToHashTarget() {
+    if (isAnnouncementsHash()) {
+        setTimeout(() => document.getElementById('homeNewsSection')?.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
+    }
+    if (isVisitHash()) {
+        // 預約參觀表單藏在首頁的 <details> 折疊區塊裡，跳過去前先展開，不然只會看到收合的標題列
+        setTimeout(() => {
+            const details = document.getElementById('visitBookingDetails');
+            if (details) details.open = true;
+            details?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }, 0);
+    }
 }
 window.addEventListener('hashchange', () => {
-    switchTab(tabFromHash(), { updateHash: false, skipScroll: isAnnouncementsHash() });
-    maybeScrollToAnnouncements();
+    switchTab(tabFromHash(), { updateHash: false, skipScroll: isScrollAnchorHash() });
+    maybeScrollToHashTarget();
 });
 
 // ---------- 首頁：主視覺輪播 ----------
@@ -693,8 +704,8 @@ function campusInit() {
     loadHomeCertReminder();
     renderVisitorWelcome();
     if (typeof campusFeaturesInit === 'function') campusFeaturesInit();
-    switchTab(tabFromHash(), { updateHash: false, skipScroll: isAnnouncementsHash() });
-    maybeScrollToAnnouncements();
+    switchTab(tabFromHash(), { updateHash: false, skipScroll: isScrollAnchorHash() });
+    maybeScrollToHashTarget();
 }
 
 // ---------- 我的導師班：總覽、出缺勤、學業預警、關懷紀錄、學分與證照 共用上方分頁列 ----------
