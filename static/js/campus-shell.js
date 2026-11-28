@@ -860,9 +860,9 @@ async function loadVisitorVisits() {
         const mine = (await api('/api/campus/visits')).data;
         box.innerHTML = mine.length ? `<div class="text-xs font-bold text-slate-500">我的預約</div>` +
             mine.map(v => `
-                <div class="flex items-center justify-between text-xs border border-slate-200 rounded px-3 py-2">
+                <div class="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-xs border border-slate-200 rounded px-3 py-2">
                     <span>${escapeHtml(v.date)} ${escapeHtml(v.slot)}（${v.party_size} 人）</span>
-                    <span class="flex items-center gap-2">
+                    <span class="flex items-center gap-2 shrink-0">
                         <span class="px-1.5 py-0.5 rounded ${v.status === '已取消' ? 'bg-slate-100 text-slate-500' : v.status === '已確認' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}">${escapeHtml(v.status)}</span>
                         ${v.status === '待確認' ? `<button type="button" onclick="cancelVisitBooking(${v.id})" class="text-rose-600 hover:underline">取消</button>` : ''}
                     </span>

@@ -617,7 +617,7 @@ async function loadLockers() {
             </div>
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">${r.areas.map(a => `
                 <div>
-                    <div class="flex items-center justify-between text-sm mb-2"><span class="font-bold text-slate-900">${esc(a.area)}</span><span class="text-xs text-slate-500">剩 ${a.free} 格 · 每學期 ${a.fee} 元</span></div>
+                    <div class="flex items-center justify-between flex-wrap gap-x-3 gap-y-0.5 text-sm mb-2"><span class="font-bold text-slate-900">${esc(a.area)}</span><span class="text-xs text-slate-500 shrink-0">剩 ${a.free} 格 · 每學期 ${a.fee} 元</span></div>
                     <div class="grid gap-1" style="grid-template-columns: repeat(${a.cols}, minmax(0, 1fr))">
                         ${a.cells.map(c => `<button type="button" ${c.status === '可租借' ? `onclick="reserveLocker('${esc(c.locker_id)}', ${a.fee})"` : 'disabled'}
                             class="aspect-square rounded-sm border text-[9px] sm:text-[10px] ${colors[c.status]}" title="${esc(c.locker_id)} ${esc(c.status)}">${esc(c.locker_id.slice(1))}</button>`).join('')}
