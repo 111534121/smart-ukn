@@ -581,7 +581,7 @@ def auto_answers(student_id):
 SCHOLARSHIP_BY_ID = {s["id"]: s for s in SCHOLARSHIPS}
 
 
-# ---------- 收藏獎學金：收藏後會貼在證照牆上，首頁「必做事項」提醒要準備什麼 ----------
+# ---------- 收藏獎學金：收藏後會貼在證照牆上，通知中心提醒要準備什麼 ----------
 # 存在 data/campus_store.json 的 scholarship_favs (不用資料庫)：{學號: [獎學金 id, ...]}
 
 def favorite_scholarships(student_id):

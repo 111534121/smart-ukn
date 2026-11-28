@@ -190,7 +190,7 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 2810
+          "line": 2801
         },
         {
           "file": "static/login.html",
@@ -2262,31 +2262,31 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 730
+          "line": 721
         },
         {
           "file": "static/index.html",
-          "line": 2595
+          "line": 2586
         },
         {
           "file": "static/index.html",
-          "line": 2612
+          "line": 2603
         },
         {
           "file": "static/index.html",
-          "line": 2655
+          "line": 2646
         },
         {
           "file": "static/index.html",
-          "line": 2671
+          "line": 2662
         },
         {
           "file": "static/index.html",
-          "line": 2682
+          "line": 2673
         },
         {
           "file": "static/index.html",
-          "line": 2717
+          "line": 2708
         }
       ]
     },
@@ -2500,19 +2500,19 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 2873
+          "line": 2864
         },
         {
           "file": "static/index.html",
-          "line": 2874
+          "line": 2865
         },
         {
           "file": "static/index.html",
-          "line": 3780
+          "line": 3738
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 281
+          "line": 284
         }
       ]
     },
@@ -2762,12 +2762,33 @@ window.FEATURE_GUIDE = {
           "file": "campus/courses_ext.py",
           "line": 61,
           "function": "list_offerings",
-          "tables": [],
+          "tables": [
+            {
+              "name": "student_credits",
+              "file": "app.py",
+              "line": 2061,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 2413
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 104
+                }
+              ]
+            }
+          ],
           "files": [
             {
               "file": "campus/courses_ext.py",
               "line": 61,
               "function": "list_offerings"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 104,
+              "function": "block_reason"
             },
             {
               "file": "campus/courses_ext.py",
@@ -2793,9 +2814,125 @@ window.FEATURE_GUIDE = {
               "file": "app.py",
               "line": 220,
               "function": "get_db_connection"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 52,
+              "function": "student_passed_ids"
+            },
+            {
+              "file": "app.py",
+              "line": 2058,
+              "function": "load_student_credits"
+            },
+            {
+              "file": "app.py",
+              "line": 2085,
+              "function": "summarize_credits"
             }
           ],
           "storage": []
+        },
+        {
+          "url": "/api/campus/course-plan/mine",
+          "methods": [
+            "GET"
+          ],
+          "file": "campus/courses_ext.py",
+          "line": 75,
+          "function": "my_plan",
+          "tables": [],
+          "files": [
+            {
+              "file": "campus/courses_ext.py",
+              "line": 75,
+              "function": "my_plan"
+            }
+          ],
+          "storage": [
+            "data/campus_store.json → course_plans"
+          ]
+        },
+        {
+          "url": "/api/campus/course-plan/mine",
+          "methods": [
+            "PUT"
+          ],
+          "file": "campus/courses_ext.py",
+          "line": 83,
+          "function": "save_my_plan",
+          "tables": [
+            {
+              "name": "student_credits",
+              "file": "app.py",
+              "line": 2061,
+              "schema": [
+                {
+                  "file": "smart_ukn.sql",
+                  "line": 2413
+                },
+                {
+                  "file": "init_db.py",
+                  "line": 104
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "file": "campus/courses_ext.py",
+              "line": 83,
+              "function": "save_my_plan"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 130,
+              "function": "evaluate_plan"
+            },
+            {
+              "file": "app.py",
+              "line": 2052,
+              "function": "load_course_map"
+            },
+            {
+              "file": "app.py",
+              "line": 1606,
+              "function": "fetch_db_rows"
+            },
+            {
+              "file": "app.py",
+              "line": 220,
+              "function": "get_db_connection"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 38,
+              "function": "offerings_with_course"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 33,
+              "function": "slot_text"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 52,
+              "function": "student_passed_ids"
+            },
+            {
+              "file": "app.py",
+              "line": 2058,
+              "function": "load_student_credits"
+            },
+            {
+              "file": "app.py",
+              "line": 2085,
+              "function": "summarize_credits"
+            }
+          ],
+          "storage": [
+            "data/campus_store.json → course_plans"
+          ]
         },
         {
           "url": "/api/campus/course-plan/check",
@@ -2803,7 +2940,7 @@ window.FEATURE_GUIDE = {
             "POST"
           ],
           "file": "campus/courses_ext.py",
-          "line": 66,
+          "line": 115,
           "function": "check_plan",
           "tables": [
             {
@@ -2825,8 +2962,13 @@ window.FEATURE_GUIDE = {
           "files": [
             {
               "file": "campus/courses_ext.py",
-              "line": 66,
+              "line": 115,
               "function": "check_plan"
+            },
+            {
+              "file": "campus/courses_ext.py",
+              "line": 130,
+              "function": "evaluate_plan"
             },
             {
               "file": "app.py",
@@ -2875,11 +3017,19 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 281
+          "line": 284
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 331
+          "line": 285
+        },
+        {
+          "file": "static/js/campus-features.js",
+          "line": 413
+        },
+        {
+          "file": "static/js/campus-features.js",
+          "line": 442
         }
       ]
     },
@@ -3929,27 +4079,27 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 1166
+          "line": 1157
         },
         {
           "file": "static/index.html",
-          "line": 3709
+          "line": 3667
         },
         {
           "file": "static/index.html",
-          "line": 4040
+          "line": 3998
         },
         {
           "file": "static/index.html",
-          "line": 4068
+          "line": 4026
         },
         {
           "file": "static/index.html",
-          "line": 4242
+          "line": 4200
         },
         {
           "file": "static/index.html",
-          "line": 4338
+          "line": 4296
         }
       ]
     },
@@ -5037,11 +5187,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1533
+          "line": 1524
         },
         {
           "file": "static/index.html",
-          "line": 2756
+          "line": 2747
         },
         {
           "file": "static/js/admin-core.js",
@@ -5049,11 +5199,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 823
+          "line": 936
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 837
+          "line": 950
         }
       ]
     },
@@ -6005,23 +6155,23 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 1103
+          "line": 1216
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1115
+          "line": 1228
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1231
+          "line": 1344
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1242
+          "line": 1355
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1383
+          "line": 1496
         }
       ]
     },
@@ -6614,35 +6764,35 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 939
+          "line": 1052
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 960
+          "line": 1073
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 972
+          "line": 1085
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1080
+          "line": 1193
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1082
+          "line": 1195
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1092
+          "line": 1205
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1098
+          "line": 1211
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1384
+          "line": 1497
         }
       ]
     },
@@ -6795,15 +6945,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4287
+          "line": 4245
         },
         {
           "file": "static/index.html",
-          "line": 4311
+          "line": 4269
         },
         {
           "file": "static/index.html",
-          "line": 4316
+          "line": 4274
         }
       ]
     },
@@ -8276,39 +8426,39 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 445
+          "line": 558
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 487
+          "line": 600
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 507
+          "line": 620
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 519
+          "line": 632
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 536
+          "line": 649
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 656
+          "line": 769
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 717
+          "line": 830
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 743
+          "line": 856
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 753
+          "line": 866
         },
         {
           "file": "static/js/campus-shell.js",
@@ -9361,15 +9511,15 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 776
+          "line": 889
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 782
+          "line": 895
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1381
+          "line": 1494
         },
         {
           "file": "static/js/campus-life.js",
@@ -10187,27 +10337,27 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1110
+          "line": 1101
         },
         {
           "file": "static/index.html",
-          "line": 3832
+          "line": 3790
         },
         {
           "file": "static/index.html",
-          "line": 3836
+          "line": 3794
         },
         {
           "file": "static/index.html",
-          "line": 3838
+          "line": 3796
         },
         {
           "file": "static/index.html",
-          "line": 3938
+          "line": 3896
         },
         {
           "file": "static/index.html",
-          "line": 3976
+          "line": 3934
         },
         {
           "file": "static/js/campus-features.js",
@@ -11647,31 +11797,31 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1087
+          "line": 1078
         },
         {
           "file": "static/index.html",
-          "line": 1674
+          "line": 1665
         },
         {
           "file": "static/index.html",
-          "line": 2420
+          "line": 2411
         },
         {
           "file": "static/index.html",
-          "line": 2852
+          "line": 2843
         },
         {
           "file": "static/index.html",
-          "line": 3084
+          "line": 3075
         },
         {
           "file": "static/index.html",
-          "line": 3121
+          "line": 3112
         },
         {
           "file": "static/index.html",
-          "line": 4434
+          "line": 4392
         },
         {
           "file": "static/js/campus-features.js",
@@ -12879,7 +13029,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1817
+          "line": 1808
         },
         {
           "file": "static/js/campus-life.js",
@@ -14575,11 +14725,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 1972
+          "line": 1963
         },
         {
           "file": "static/index.html",
-          "line": 2343
+          "line": 2334
         },
         {
           "file": "static/js/home-portal.js",
@@ -16894,43 +17044,43 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/js/campus-features.js",
-          "line": 454
+          "line": 567
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 458
+          "line": 571
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 823
+          "line": 936
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 929
+          "line": 1042
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1167
+          "line": 1280
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1173
+          "line": 1286
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1209
+          "line": 1322
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1211
+          "line": 1324
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1218
+          "line": 1331
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1385
+          "line": 1498
         },
         {
           "file": "static/js/campus-life.js",
@@ -17359,15 +17509,15 @@ window.FEATURE_GUIDE = {
       "frontend": [
         {
           "file": "static/index.html",
-          "line": 4389
+          "line": 4347
         },
         {
           "file": "static/index.html",
-          "line": 4398
+          "line": 4356
         },
         {
           "file": "static/index.html",
-          "line": 4413
+          "line": 4371
         },
         {
           "file": "static/js/campus-shell.js",
@@ -18401,7 +18551,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 537
+          "line": 650
         },
         {
           "file": "static/js/campus-life.js",
@@ -27646,11 +27796,11 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/index.html",
-          "line": 3028
+          "line": 3019
         },
         {
           "file": "static/index.html",
-          "line": 3053
+          "line": 3044
         },
         {
           "file": "static/js/admin-core.js",
@@ -27814,7 +27964,7 @@ window.FEATURE_GUIDE = {
         },
         {
           "file": "static/js/campus-features.js",
-          "line": 1382
+          "line": 1495
         },
         {
           "file": "static/js/campus-life.js",
@@ -32481,7 +32631,7 @@ window.FEATURE_GUIDE = {
       "frontend": []
     }
   ],
-  "routeCount": 305,
+  "routeCount": 307,
   "schemaCount": 64,
   "schema": {
     "academic_calendar": [
