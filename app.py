@@ -252,12 +252,15 @@ def format_updated_at(value):
 # ==========================================
 
 ADMIN_ROLES = {"管理員", "系統管理員"}
+OFFICE_STAFF_ROLES = {"教職員", "內容管理人員", "處室承辦", "科助"}
 
 def _expand_roles(roles):
-    """將包含任一管理員角色的身分集合自動展開為包含所有同等管理員身分"""
+    """將包含任一管理員或行政人員角色的身分集合自動展開為同等角色"""
     s = set(roles)
     if s & ADMIN_ROLES:
         s.update(ADMIN_ROLES)
+    if "教職員" in s:
+        s.update(OFFICE_STAFF_ROLES)
     return s
 
 def login_required(f):
@@ -444,7 +447,8 @@ _DEMO_PW_123456 = "123456"
 _DEMO_PW_ADMIN123 = "12345678"
 
 DEMO_USERS = [
-    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "can_manage_dorm": True},
+    {"user_id": 20, "username": "dorm_demo", "password_hash": _DEMO_PW_123456, "role": "教職員", "student_id": None, "full_name": "宿舍管理示範員", "office": "學生事務處／住宿管理", "can_manage_dorm": True},
+    {"user_id": 21, "username": "staff_admin", "password_hash": _DEMO_PW_123456, "role": "內容管理人員", "student_id": None, "full_name": "林怡君 (校務行政人員)", "office": "教務處", "permissions": "查看,建立,修改", "can_manage_dorm": False},
     {"user_id": 1, "username": "student1", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112001", "full_name": "王小明"},
     {"user_id": 2, "username": "student2", "password_hash": _DEMO_PW_123456, "role": "學生", "student_id": "S112002", "full_name": "李美華"},
     {"user_id": 3, "username": "parent1", "password_hash": _DEMO_PW_123456, "role": "家長", "student_id": "S112001", "full_name": "王大明 (小明家長)"},
@@ -894,9 +898,11 @@ CAMPUS_CONTACT_DIRECTORY = [
 
 @app.route("/")
 def serve_index():
-    # 管理員不使用前台，只要管理員登入即直接導向後台 (/admin)
-    if session.get("role") in ('系統管理員', '管理員', '內容管理人員'):
+    # 系統管理員導向系統管理員後台 (/admin)；行政人員直達行政人員後台 (/staff-admin)；宿舍行政人員維持前台宿舍審核頁面
+    if session.get("role") in ('系統管理員', '管理員'):
         return redirect("/admin")
+    if session.get("role") in ('內容管理人員', '處室承辦', '科助') and not session.get("can_manage_dorm"):
+        return redirect("/staff-admin")
     return app.send_static_file("index.html")
 
 @app.route("/login")
@@ -906,6 +912,10 @@ def serve_login():
 @app.route("/admin")
 def serve_admin():
     return app.send_static_file("admin.html")
+
+@app.route("/staff-admin")
+def serve_staff_admin():
+    return app.send_static_file("staff-admin.html")
 
 @app.route("/admin-core")
 def serve_admin_core():
@@ -1002,7 +1012,7 @@ def auth_login():
         if str(stored_val) in ("12345678", "admin123") and str(input_val) in ("12345678", "admin123"):
             return True
         try:
-            if str(stored_val).startswith("scrypt:"):
+            if str(stored_val).startswith(("scrypt:", "pbkdf2:")):
                 return check_password_hash(str(stored_val), str(input_val))
         except Exception as e:
             app.logger.error("密碼雜湊格式異常，視為驗證失敗：%s", e)
@@ -1101,7 +1111,12 @@ def auth_login():
                 "role": user_record["role"],
                 "permissions": user_record.get("permissions"),
                 "office": user_record.get("office", ""),
-                "workbench_url": "/admin" if user_record["role"] in ('系統管理員', '管理員', '內容管理人員') else ("/admin-workbench" if user_record["role"] in ('處室承辦', '科助', '住宿管理員') else "/"),
+                "can_manage_dorm": bool(session.get("can_manage_dorm")),
+                "workbench_url": (
+                    "/admin" if user_record["role"] in ('系統管理員', '管理員')
+                    else ("/staff-admin" if (user_record["role"] in ('內容管理人員', '處室承辦', '科助') and not session.get("can_manage_dorm"))
+                          else "/")
+                ),
                 "full_name": user_record["full_name"],
                 "student_id": user_record.get("student_id"),
                 "dept_name": user_record.get("dept_name", "資訊管理科（五專）"),

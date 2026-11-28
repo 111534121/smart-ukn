@@ -33,7 +33,10 @@ bp = Blueprint("admin_core", __name__)
 
 SYS_ADMIN_ROLES = ("系統管理員", "管理員")
 CONTENT_MANAGER_ROLES = ("內容管理人員",)
+DORM_ONLY_ROLES = ("住宿管理員",)
+STAFF_ADMIN_ROLES = ("內容管理人員", "處室承辦", "科助", "教職員")
 ALL_ADMIN_ROLES = SYS_ADMIN_ROLES + CONTENT_MANAGER_ROLES
+STAFF_AND_ADMIN_ROLES = SYS_ADMIN_ROLES + STAFF_ADMIN_ROLES
 VALID_USER_ROLES = (
     "系統管理員", "管理員", "內容管理人員", "處室承辦", "科助", "住宿管理員", "教職員", "老師", "學生", "家長"
 )
@@ -42,9 +45,30 @@ VALID_USER_ROLES = (
 def _default_permissions_for_role(role):
     if role in SYS_ADMIN_ROLES:
         return "查看,建立,修改,帳號管理,權限設定,系統檢測"
-    if role in CONTENT_MANAGER_ROLES:
+    if role in STAFF_ADMIN_ROLES:
         return "查看,建立,修改"
     return "查看"
+
+
+def _system_default_password(role):
+    """依身分角色回傳系統預設密碼（系統管理員 admin123，其餘師生家長 123456）"""
+    return "admin123" if role in SYS_ADMIN_ROLES else "123456"
+
+
+def _matches_password(pw_hash, plain):
+    """比對明文或 Werkzeug 雜湊（scrypt / pbkdf2）是否符合指定密碼"""
+    if not pw_hash or not plain:
+        return False
+    pw_str = str(pw_hash)
+    plain_str = str(plain)
+    if pw_str == plain_str:
+        return True
+    if pw_str.startswith(("scrypt:", "pbkdf2:")):
+        try:
+            return check_password_hash(pw_str, plain_str)
+        except Exception:
+            return False
+    return False
 
 
 def _sanitize_permissions(role, perms_raw):
@@ -102,22 +126,72 @@ def _check_user_active_and_perms(required_perm=None):
             if row.get("is_active") is not None and int(row.get("is_active")) == 0:
                 return False, "此帳號已停用，請洽系統管理員"
             if required_perm:
-                perms_str = row.get("permissions") or _default_permissions_for_role(row.get("role"))
-                perms = [p.strip() for p in str(perms_str).split(",") if p.strip()]
+                raw_perms = [p.strip() for p in str(row.get("permissions") or "").split(",") if p.strip()]
+                # 若該帳號採用標準 CRUD 權限字詞則嚴格檢查；舊有業務描述字串或空白則依角色預設權限補齊
+                has_crud_tokens = any(p in ("查看", "建立", "修改") for p in raw_perms)
+                perms = raw_perms if has_crud_tokens else _default_permissions_for_role(row.get("role")).split(",")
                 if required_perm not in perms:
                     return False, f"權限不足：您的帳號未開放「{required_perm}」權限"
     return True, None
 
 
+def _is_dorm_only_user(role=None, username=None):
+    """判斷是否為宿舍專責行政人員（住宿管理員或具 can_manage_dorm 旗標之非系統管理員），與一般校務行政人員明確區分"""
+    eff_role = role if role is not None else _get_effective_role()
+    if eff_role in SYS_ADMIN_ROLES:
+        return False
+    if eff_role in DORM_ONLY_ROLES:
+        return True
+    if bool(session.get("can_manage_dorm")):
+        return True
+    uname = username or session.get("username")
+    if uname:
+        try:
+            row = admin_db.query_one("SELECT role, can_manage_dorm FROM users WHERE username = %s", (uname,))
+        except Exception:
+            row = None
+        if row:
+            if row.get("role") in SYS_ADMIN_ROLES:
+                return False
+            if row.get("role") in DORM_ONLY_ROLES or int(row.get("can_manage_dorm") or 0) == 1:
+                return True
+    return False
+
+
+def staff_admin_required(f):
+    """行政人員校務管理後台權限裝飾器（各處室行政人員與系統管理員皆可存取；宿舍行政人員獨立隔離）"""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        role = _get_effective_role()
+        if not role:
+            return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
+        if role in DORM_ONLY_ROLES:
+            return jsonify({"status": "error", "message": "權限不足：宿舍行政人員僅限辦理住宿相關審核與案件，無法存取一般行政人員校務管理後台"}), 403
+        if role not in STAFF_AND_ADMIN_ROLES:
+            return jsonify({"status": "error", "message": "權限不足，僅限行政人員或系統管理員存取"}), 403
+        if _is_dorm_only_user(role):
+            return jsonify({"status": "error", "message": "權限不足：宿舍行政人員僅限辦理住宿相關審核與案件，無法存取一般行政人員校務管理後台"}), 403
+        req_perm = "查看"
+        if request.method == "POST":
+            req_perm = "建立"
+        elif request.method in ("PUT", "DELETE"):
+            req_perm = "修改"
+        ok_perm, err_msg = _check_user_active_and_perms(req_perm)
+        if not ok_perm:
+            return jsonify({"status": "error", "message": err_msg}), 403
+        return f(*args, **kwargs)
+    return wrapper
+
+
 def admin_required(f):
-    """後台共用權限裝飾器（系統管理員與內容管理人員皆可存取，但依 HTTP 方法檢查查看／建立／修改權限）"""
+    """系統管理與稽核權限裝飾器（系統管理員與內容管理人員可存取）"""
     @wraps(f)
     def wrapper(*args, **kwargs):
         role = _get_effective_role()
         if not role:
             return jsonify({"status": "error", "message": "請先登入後再進行操作"}), 401
         if role not in ALL_ADMIN_ROLES:
-            return jsonify({"status": "error", "message": "權限不足，僅限系統管理員或內容管理人員存取"}), 403
+            return jsonify({"status": "error", "message": "權限不足，僅限系統管理員存取"}), 403
         req_perm = "查看"
         if request.method == "POST":
             req_perm = "建立"
@@ -131,7 +205,7 @@ def admin_required(f):
 
 
 def sys_admin_required(f):
-    """系統管理員專用裝飾器：內容管理人員不可管理帳號或修改權限"""
+    """系統管理員專用裝飾器：行政人員與內容管理人員不可管理帳號或修改權限"""
     @wraps(f)
     def wrapper(*args, **kwargs):
         role = _get_effective_role()
@@ -140,7 +214,7 @@ def sys_admin_required(f):
         if role not in SYS_ADMIN_ROLES:
             return jsonify({
                 "status": "error",
-                "message": "權限不足：內容管理人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作"
+                "message": "權限不足：內容管理人員與一般行政人員不能管理帳號或修改權限，此功能僅限「系統管理員」操作"
             }), 403
         ok_perm, err_msg = _check_user_active_and_perms("修改" if request.method != "GET" else "查看")
         if not ok_perm:
@@ -153,7 +227,7 @@ def sys_admin_required(f):
 # 資料庫連線狀態與總覽統計 (/api/admin/db-status)
 # ==========================================
 @bp.route("/api/admin/db-status", methods=["GET"])
-@admin_required
+@staff_admin_required
 def get_db_status():
     mysql_active = admin_db.is_mysql_active()
     counts = {}
@@ -164,7 +238,7 @@ def get_db_status():
         "audit_logs", "search_logs", "search_feedback",
         "unmatched_queries", "visitor_logs",
         "student_credits", "attendance_records", "student_records",
-        "anniversary_events", "anniversary_wishes"
+        "anniversary_events", "anniversary_wishes", "meetings"
     ]
     for t in tables:
         try:
@@ -197,7 +271,7 @@ def list_users():
     search = request.args.get("search", "").strip()
 
     sql = """
-        SELECT u.user_id, u.username, u.role, u.student_id, u.full_name,
+        SELECT u.user_id, u.username, u.password_hash, u.role, u.student_id, u.full_name,
                u.advised_class, u.can_manage_dorm, u.office, u.permissions,
                u.is_active, u.created_at, u.default_password,
                s.class_name, s.dept_id
@@ -209,6 +283,10 @@ def list_users():
     if role_filter:
         if role_filter in SYS_ADMIN_ROLES:
             sql += " AND u.role IN ('系統管理員', '管理員')"
+        elif role_filter == "住宿管理員":
+            sql += " AND (u.role = '住宿管理員' OR (u.role = '教職員' AND COALESCE(u.can_manage_dorm, 0) = 1))"
+        elif role_filter == "教職員":
+            sql += " AND u.role IN ('教職員', '處室承辦') AND COALESCE(u.can_manage_dorm, 0) = 0"
         else:
             sql += " AND u.role = %s"
             params.append(role_filter)
@@ -223,12 +301,23 @@ def list_users():
     sql += " ORDER BY u.user_id DESC"
     users = admin_db.query_db(sql, tuple(params))
     for u in users:
+        pw_hash = u.pop("password_hash", None) or ""
+        sys_def = _system_default_password(u.get("role"))
         u["is_active"] = 1 if u.get("is_active") is None else int(u.get("is_active"))
         u["office"] = u.get("office") or ""
-        u["default_password"] = u.get("default_password") or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456")
+        u["system_default_password"] = sys_def
+        u["default_password"] = u.get("default_password") or sys_def
+        u["is_default_password"] = _matches_password(pw_hash, sys_def)
         u["permissions"] = _sanitize_permissions(u.get("role"), u.get("permissions"))
-        # 對齊角色顯示名稱：管理員 -> 系統管理員
-        u["role_display"] = "系統管理員" if u.get("role") in SYS_ADMIN_ROLES else u.get("role")
+        # 對齊角色顯示名稱：明確區分系統管理員、行政人員與宿舍行政人員
+        if u.get("role") in SYS_ADMIN_ROLES:
+            u["role_display"] = "系統管理員"
+        elif u.get("role") in DORM_ONLY_ROLES or (u.get("role") == "教職員" and int(u.get("can_manage_dorm") or 0) == 1):
+            u["role_display"] = "宿舍行政人員"
+        elif u.get("role") == "內容管理人員":
+            u["role_display"] = "行政人員"
+        else:
+            u["role_display"] = u.get("role")
     return jsonify({"status": "success", "data": users, "total": len(users)}), 200
 
 @bp.route("/api/admin/users", methods=["POST"])
@@ -408,9 +497,10 @@ def update_user(user_id):
         pw_hash = generate_password_hash(pw_clean)
         admin_db.execute_db("""
             UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s,
-                             can_manage_dorm = %s, office = %s, permissions = %s, is_active = %s, password_hash = %s
+                             can_manage_dorm = %s, office = %s, permissions = %s, is_active = %s,
+                             password_hash = %s, default_password = %s
             WHERE user_id = %s
-        """, (role, full_name, student_id, advised_class, can_manage_dorm, office, permissions, is_active, pw_hash, user_id))
+        """, (role, full_name, student_id, advised_class, can_manage_dorm, office, permissions, is_active, pw_hash, pw_clean, user_id))
     else:
         admin_db.execute_db("""
             UPDATE users SET role = %s, full_name = %s, student_id = %s, advised_class = %s,
@@ -432,14 +522,14 @@ def update_user(user_id):
     try:
         from app import DEMO_USERS
         for u in DEMO_USERS:
-            if u.get("username") == before["username"]:
+            if (u.get("username") or "").lower() == before["username"].lower():
                 u.update({
                     "role": role, "full_name": full_name, "student_id": student_id,
                     "office": office, "permissions": permissions, "is_active": is_active,
                     "can_manage_dorm": bool(can_manage_dorm)
                 })
                 if password and str(password).strip():
-                    u["password_hash"] = generate_password_hash(str(password).strip())
+                    u["password_hash"] = pw_hash
     except Exception as e:
         current_app.logger.warning("更新使用者同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
@@ -501,6 +591,10 @@ def query_user_credentials():
     if role_filter:
         if role_filter in SYS_ADMIN_ROLES:
             sql += " AND u.role IN ('系統管理員', '管理員')"
+        elif role_filter == "住宿管理員":
+            sql += " AND (u.role = '住宿管理員' OR (u.role = '教職員' AND COALESCE(u.can_manage_dorm, 0) = 1))"
+        elif role_filter == "教職員":
+            sql += " AND u.role IN ('教職員', '處室承辦') AND COALESCE(u.can_manage_dorm, 0) = 0"
         else:
             sql += " AND u.role = %s"
             params.append(role_filter)
@@ -519,15 +613,21 @@ def query_user_credentials():
     for u in users:
         pw_hash = u.get("password_hash") or ""
         def_pwd = u.get("default_password")
-        if pw_hash and def_pwd and (pw_hash == def_pwd or (pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, def_pwd))):
-            pw_status = f"預設密碼 ({def_pwd})"
+        sys_def = _system_default_password(u.get("role"))
+        if _matches_password(pw_hash, sys_def):
+            pw_status = f"預設密碼 ({sys_def})"
             is_default = True
-            suggested_pwd = def_pwd
-        elif pw_hash == "123456" or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "123456")):
+            suggested_pwd = sys_def
+        elif def_pwd and _matches_password(pw_hash, def_pwd):
+            is_sys_std = def_pwd in ("123456", "admin123")
+            pw_status = f"預設密碼 ({def_pwd})" if is_sys_std else "已自訂密碼 (加密雜湊保護)"
+            is_default = is_sys_std
+            suggested_pwd = def_pwd if is_sys_std else None
+        elif _matches_password(pw_hash, "123456"):
             pw_status = "預設密碼 (123456)"
             is_default = True
             suggested_pwd = "123456"
-        elif pw_hash in ("admin123", "12345678", "888888") or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "admin123")):
+        elif pw_hash in ("admin123", "12345678", "888888") or _matches_password(pw_hash, "admin123"):
             pw_status = f"預設密碼 ({pw_hash if pw_hash in ('admin123', '12345678', '888888') else 'admin123'})"
             is_default = True
             suggested_pwd = pw_hash if pw_hash in ("admin123", "12345678", "888888") else "admin123"
@@ -552,7 +652,8 @@ def query_user_credentials():
             "advised_class": u.get("advised_class") or "",
             "office": u.get("office") or "",
             "is_active": 1 if u.get("is_active") is None else int(u.get("is_active")),
-            "default_password": u.get("default_password") or suggested_pwd or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456"),
+            "system_default_password": sys_def,
+            "default_password": u.get("default_password") or suggested_pwd or sys_def,
             "password_status": pw_status,
             "is_default_password": is_default,
             "suggested_password": suggested_pwd,
@@ -564,7 +665,7 @@ def query_user_credentials():
 @bp.route("/api/admin/users/<int:user_id>/reset-password", methods=["POST"])
 @sys_admin_required
 def reset_user_password(user_id):
-    """管理員重設使用者密碼：可選擇一鍵還原預設密碼 (123456 / admin123) 或指定新密碼。"""
+    """管理員重設使用者密碼：可選擇一鍵恢復系統預設密碼 (123456 / admin123) 或指定新密碼。"""
     data = request.get_json(silent=True) or {}
     custom_pwd = (data.get("new_password") or "").strip()
     mode = data.get("mode", "custom" if custom_pwd else "default")
@@ -580,10 +681,7 @@ def reset_user_password(user_id):
             return jsonify({"status": "error", "message": "新密碼長度須介於 8～100 字元之間"}), 400
         new_pwd = custom_pwd
     else:
-        if target["role"] in SYS_ADMIN_ROLES:
-            new_pwd = "admin123"
-        else:
-            new_pwd = "123456"
+        new_pwd = _system_default_password(target["role"])
 
     new_hash = generate_password_hash(new_pwd)
     admin_db.execute_db("UPDATE users SET password_hash = %s, default_password = %s WHERE user_id = %s", (new_hash, new_pwd, user_id))
@@ -591,26 +689,33 @@ def reset_user_password(user_id):
     try:
         from app import DEMO_USERS
         for u in DEMO_USERS:
-            if u.get("username") == target["username"]:
+            if (u.get("username") or "").lower() == target["username"].lower():
                 u["password_hash"] = new_hash
                 break
     except Exception as e:
         current_app.logger.warning("重設密碼同步 DEMO_USERS 失敗（資料庫已寫入，不影響正式資料）：%s", e)
 
     actor_name, actor_role, actor_ip = _get_current_actor()
+    is_default = (mode != "custom")
+    audit_action = "恢復預設密碼" if is_default else "重設密碼"
     admin_db.log_audit_trail(
-        "users", user_id, "重設密碼",
+        "users", user_id, audit_action,
         {"user_id": user_id, "username": target["username"], "full_name": target["full_name"]},
-        {"user_id": user_id, "username": target["username"], "reset_mode": mode},
+        {"user_id": user_id, "username": target["username"], "reset_mode": mode, "restored_default": is_default},
         actor_name, actor_role, actor_ip
     )
 
+    msg = (
+        f"使用者「{target['username']}」已成功恢復預設密碼：{new_pwd}"
+        if is_default else
+        f"使用者「{target['username']}」密碼已成功重設為：{new_pwd}"
+    )
     return jsonify({
         "status": "success",
-        "message": f"使用者「{target['username']}」密碼已成功重設為：{new_pwd}",
+        "message": msg,
         "username": target["username"],
         "new_password": new_pwd,
-        "is_default": (mode != "custom")
+        "is_default": is_default
     }), 200
 
 @bp.route("/api/admin/users/<int:user_id>/credential-info", methods=["GET"])
@@ -631,15 +736,21 @@ def get_user_credential_info(user_id):
 
     pw_hash = u.get("password_hash") or ""
     def_pwd = u.get("default_password")
-    if pw_hash and def_pwd and (pw_hash == def_pwd or (pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, def_pwd))):
-        pw_status = f"初始預設密碼 ({def_pwd})"
+    sys_def = _system_default_password(u.get("role"))
+    if _matches_password(pw_hash, sys_def):
+        pw_status = f"預設密碼 ({sys_def})"
         is_default = True
-        suggested_pwd = def_pwd
-    elif pw_hash == "123456" or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "123456")):
+        suggested_pwd = sys_def
+    elif def_pwd and _matches_password(pw_hash, def_pwd):
+        is_sys_std = def_pwd in ("123456", "admin123")
+        pw_status = f"初始預設密碼 ({def_pwd})" if is_sys_std else "已自訂密碼 (加密雜湊保護)"
+        is_default = is_sys_std
+        suggested_pwd = def_pwd if is_sys_std else None
+    elif _matches_password(pw_hash, "123456"):
         pw_status = "預設密碼 (123456)"
         is_default = True
         suggested_pwd = "123456"
-    elif pw_hash in ("admin123", "12345678", "888888") or (pw_hash and pw_hash.startswith("scrypt:") and check_password_hash(pw_hash, "admin123")):
+    elif pw_hash in ("admin123", "12345678", "888888") or _matches_password(pw_hash, "admin123"):
         pw_status = f"預設密碼 ({pw_hash if pw_hash in ('admin123', '12345678', '888888') else 'admin123'})"
         is_default = True
         suggested_pwd = pw_hash if pw_hash in ("admin123", "12345678", "888888") else "admin123"
@@ -666,7 +777,8 @@ def get_user_credential_info(user_id):
             "advised_class": u.get("advised_class") or "",
             "office": u.get("office") or "",
             "is_active": 1 if u.get("is_active") is None else int(u.get("is_active")),
-            "default_password": u.get("default_password") or suggested_pwd or ("admin123" if u.get("role") in SYS_ADMIN_ROLES else "123456"),
+            "system_default_password": sys_def,
+            "default_password": u.get("default_password") or suggested_pwd or sys_def,
             "password_status": pw_status,
             "is_default_password": is_default,
             "suggested_password": suggested_pwd,
@@ -678,7 +790,7 @@ def get_user_credential_info(user_id):
 # 2. departments（科系與學院架構）
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/departments", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_departments():
     departments = admin_db.query_db("""
         SELECT d.dept_id, d.dept_name, d.college_name,
@@ -821,7 +933,7 @@ def _has_circular_prerequisite(course_id, prereq_id):
     return False
 
 @bp.route("/api/admin/course-map", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_course_map():
     dept_id = request.args.get("dept_id")
     course_type = request.args.get("course_type")
@@ -855,7 +967,7 @@ def list_course_map():
     return jsonify({"status": "success", "data": courses, "total": len(courses)}), 200
 
 @bp.route("/api/admin/course-map", methods=["POST"])
-@admin_required
+@staff_admin_required
 def create_course():
     import re
     data = request.get_json(silent=True) or {}
@@ -923,7 +1035,7 @@ def create_course():
     return jsonify({"status": "success", "message": f"已成功新增課程「{course_name}」({course_id})", "data": new_dict}), 201
 
 @bp.route("/api/admin/course-map/<string:course_id>", methods=["PUT"])
-@admin_required
+@staff_admin_required
 def update_course(course_id):
     course_id = course_id.strip().upper()
     data = request.get_json(silent=True) or {}
@@ -986,7 +1098,7 @@ def update_course(course_id):
     return jsonify({"status": "success", "message": f"課程「{course_name}」資訊已更新"}), 200
 
 @bp.route("/api/admin/course-map/<string:course_id>", methods=["DELETE"])
-@admin_required
+@staff_admin_required
 def delete_course(course_id):
     course_id = course_id.strip().upper()
     before = admin_db.query_one("SELECT * FROM course_map WHERE course_id = %s", (course_id,))
@@ -1059,7 +1171,7 @@ def _validate_grad_req_values(data, defaults=None):
     }, None
 
 @bp.route("/api/admin/graduation-requirements", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_graduation_requirements():
     reqs = admin_db.query_db("""
         SELECT g.*, d.dept_name, d.college_name
@@ -1070,7 +1182,7 @@ def list_graduation_requirements():
     return jsonify({"status": "success", "data": reqs}), 200
 
 @bp.route("/api/admin/graduation-requirements", methods=["POST"])
-@admin_required
+@staff_admin_required
 def create_graduation_requirement():
     data = request.get_json(silent=True) or {}
     dept_id = (data.get("dept_id") or "").strip().upper()
@@ -1128,7 +1240,7 @@ def create_graduation_requirement():
     return jsonify({"status": "success", "message": f"已成功設定科系「{dept_id}」畢業門檻", "req_id": new_id, "data": new_dict}), 201
 
 @bp.route("/api/admin/graduation-requirements/<int:req_id>", methods=["PUT"])
-@admin_required
+@staff_admin_required
 def update_graduation_requirement(req_id):
     data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM graduation_requirements WHERE req_id = %s", (req_id,))
@@ -1161,7 +1273,7 @@ def update_graduation_requirement(req_id):
     return jsonify({"status": "success", "message": f"科系「{dept_id}」畢業門檻已更新"}), 200
 
 @bp.route("/api/admin/graduation-requirements/<int:req_id>", methods=["DELETE"])
-@admin_required
+@staff_admin_required
 def delete_graduation_requirement(req_id):
     before = admin_db.query_one("SELECT * FROM graduation_requirements WHERE req_id = %s", (req_id,))
     if not before:
@@ -1183,7 +1295,7 @@ def delete_graduation_requirement(req_id):
 # 5. knowledge_categories（知識庫主分類、總目錄）
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/knowledge-categories", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_knowledge_categories():
     categories = admin_db.query_db("""
         SELECT c.*,
@@ -1195,7 +1307,7 @@ def list_knowledge_categories():
     return jsonify({"status": "success", "data": categories}), 200
 
 @bp.route("/api/admin/knowledge-categories", methods=["POST"])
-@admin_required
+@staff_admin_required
 def create_knowledge_category():
     data = request.get_json(silent=True) or {}
     category_name = (data.get("category_name") or "").strip()
@@ -1233,7 +1345,7 @@ def create_knowledge_category():
     return jsonify({"status": "success", "message": f"已新增規章分類「{category_name}」", "category_id": new_id, "data": new_dict}), 201
 
 @bp.route("/api/admin/knowledge-categories/<int:category_id>", methods=["PUT"])
-@admin_required
+@staff_admin_required
 def update_knowledge_category(category_id):
     data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM knowledge_categories WHERE category_id = %s", (category_id,))
@@ -1275,7 +1387,7 @@ def update_knowledge_category(category_id):
     return jsonify({"status": "success", "message": f"規章分類「{category_name}」已更新"}), 200
 
 @bp.route("/api/admin/knowledge-categories/<int:category_id>", methods=["DELETE"])
-@admin_required
+@staff_admin_required
 def delete_knowledge_category(category_id):
     before = admin_db.query_one("SELECT * FROM knowledge_categories WHERE category_id = %s", (category_id,))
     if not before:
@@ -1308,7 +1420,7 @@ def delete_knowledge_category(category_id):
 # 6. synonym_dictionary（搜尋同義詞字典）
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/synonyms", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_synonyms():
     category_id = request.args.get("category_id")
     search = request.args.get("search", "").strip()
@@ -1334,7 +1446,7 @@ def list_synonyms():
     return jsonify({"status": "success", "data": synonyms, "total": len(synonyms)}), 200
 
 @bp.route("/api/admin/synonyms", methods=["POST"])
-@admin_required
+@staff_admin_required
 def create_synonym():
     data = request.get_json(silent=True) or {}
     user_keyword = (data.get("user_keyword") or "").strip()
@@ -1382,7 +1494,7 @@ def create_synonym():
     return jsonify({"status": "success", "message": f"已成功新增同義詞「{user_keyword}」→「{official_term}」", "synonym_id": new_id, "data": new_dict}), 201
 
 @bp.route("/api/admin/synonyms/<int:synonym_id>", methods=["PUT"])
-@admin_required
+@staff_admin_required
 def update_synonym(synonym_id):
     data = request.get_json(silent=True) or {}
     before = admin_db.query_one("SELECT * FROM synonym_dictionary WHERE synonym_id = %s", (synonym_id,))
@@ -1424,7 +1536,7 @@ def update_synonym(synonym_id):
     return jsonify({"status": "success", "message": f"同義詞「{user_keyword}」已更新"}), 200
 
 @bp.route("/api/admin/synonyms/<int:synonym_id>", methods=["DELETE"])
-@admin_required
+@staff_admin_required
 def delete_synonym(synonym_id):
     before = admin_db.query_one("SELECT * FROM synonym_dictionary WHERE synonym_id = %s", (synonym_id,))
     if not before:
@@ -1543,7 +1655,7 @@ def list_search_logs():
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/core/unmatched-queries", methods=["GET"])
 @bp.route("/api/admin/unmatched-queries", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_unmatched_queries():
     status = request.args.get("status")
     sql = "SELECT * FROM unmatched_queries WHERE 1=1"
@@ -1557,7 +1669,7 @@ def list_unmatched_queries():
 
 @bp.route("/api/admin/core/unmatched-queries/convert-synonym", methods=["POST"])
 @bp.route("/api/admin/unmatched-queries/convert-synonym", methods=["POST"])
-@admin_required
+@staff_admin_required
 def convert_unmatched_to_synonym():
     data = request.get_json() or {}
     query_id = data.get("query_id")
@@ -1621,7 +1733,7 @@ def convert_unmatched_to_synonym():
 
 @bp.route("/api/admin/core/unmatched-queries/<int:query_id>/status", methods=["PUT"])
 @bp.route("/api/admin/unmatched-queries/<int:query_id>/status", methods=["PUT"])
-@admin_required
+@staff_admin_required
 def update_unmatched_status(query_id):
     data = request.get_json() or {}
     new_status = data.get("status", "待處理").strip()
@@ -1651,7 +1763,7 @@ def update_unmatched_status(query_id):
 # -------------------------------------------------------------------------
 @bp.route("/api/admin/core/visitor-logs", methods=["GET"])
 @bp.route("/api/admin/visitor-logs", methods=["GET"])
-@admin_required
+@staff_admin_required
 def list_visitor_logs():
     try:
         days = max(1, min(365, int(request.args.get("days", 30))))
@@ -1672,7 +1784,7 @@ def list_visitor_logs():
 
 @bp.route("/api/admin/core/visitor-logs/export.csv", methods=["GET"])
 @bp.route("/api/admin/visitor-logs/export.csv", methods=["GET"])
-@admin_required
+@staff_admin_required
 def export_visitor_logs():
     logs = admin_db.query_db("SELECT * FROM visitor_logs ORDER BY log_id DESC")
     output = io.StringIO()

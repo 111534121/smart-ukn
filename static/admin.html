@@ -2318,7 +2318,12 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">登入密碼</label>
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <label class="block font-semibold text-slate-700">登入密碼</label>
+                            <button type="button" id="mResetDefaultPwdBtn" onclick="resetEditingUserDefaultPassword()"
+                                class="hidden bg-amber-500 hover:bg-amber-600 text-white px-2 py-0.5 rounded text-[11px] font-bold transition shadow-sm"
+                                title="忘記密碼時可一鍵將此帳號密碼恢復為系統預設密碼">🔄 恢復預設密碼</button>
+                        </div>
                         <input type="password" id="mPassword" placeholder="••••••••"
                             class="w-full border rounded p-2 focus:ring-2 focus:ring-ukn-500">
                         <span id="mPasswordHint" class="text-[11px] text-slate-500 mt-0.5 block">新增帳號時請設定至少 8
@@ -2824,6 +2829,7 @@
         </div>
     </div>
     <script>
+        window.ADMIN_PAGE_MODE = 'sysadmin';
         let rulesCache = [];
         let synonymsCache = [];
         let checklistsCache = [];

@@ -29,7 +29,7 @@ def stamp():
 
 
 def accounts():
-    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('教職員','管理員','系統管理員','處室承辦','科助','住宿管理員')")
+    rows = deps.fetch_db_rows("SELECT username, full_name, role FROM users WHERE role IN ('教職員','內容管理人員','管理員','系統管理員','處室承辦','科助','住宿管理員')")
     source = rows if rows is not None else deps.users
     return [{k: u.get(k, '') for k in ('username', 'full_name', 'role')}
             for u in source if u['role'] in WORK_ROLES]
@@ -38,7 +38,7 @@ def accounts():
 def assignments():
     # 示範帳號在未連接校務資料庫時預設隸屬教務處；正式帳號由管理員明確設定。
     with store.lock:
-        members = store.section('admin_offices', lambda: {'staff1': '教務處', 'dorm_demo': '學生事務處／住宿管理'}
+        members = store.section('admin_offices', lambda: {'staff1': '教務處', 'staff_admin': '教務處', 'dorm_demo': '學生事務處／住宿管理'}
                                 if deps.fetch_db_rows('SELECT username FROM users LIMIT 1') is None else {})
         if members.get('demo_dorm') == '學生事務處／住宿管理' or members.get('dorm_demo') == '學生事務處':
             members.pop('demo_dorm', None)

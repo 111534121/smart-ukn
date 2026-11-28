@@ -119,7 +119,7 @@
         $('heading').textContent = student ? '我的行政申請' : user.role === '管理員' ? '全校處室工作台' : config.office ? config.office + '工作台' : '行政人員工作台';
         $('intro').textContent = student ? '送出申請、追蹤進度，補齊資料後直接重新送審。' : '先處理待辦，再把每一件申請穩穩往前推進。';
         $('scope').textContent = student ? '僅顯示自己的申請與處理紀錄。' : user.role === '管理員' ? '管理員可查看全處室案件。' : config.office ? `可查看 ${config.office} 案件與自己提出的申請。` : '尚未指定處室，請聯絡管理員設定後再重新整理。';
-        $('newRequest').hidden = dormStaff; $('shortcuts').hidden = student || dormStaff; $('legacy').hidden = student || dormStaff;
+        $('newRequest').hidden = dormStaff; $('shortcuts').hidden = student || dormStaff; if ($('staffAdminLink')) $('staffAdminLink').hidden = student || dormStaff;
         $('mine').parentElement.hidden = student;
         $('kind').innerHTML = option('', '請選擇申請類別') + Object.entries(config.workflows).filter(([,v]) => v.roles.includes(user.role)).map(([k,v]) => option(k, `${v.office} · ${k}`)).join('');
         $('requestFields').innerHTML = ''; $('requestGuide').innerHTML = '';
